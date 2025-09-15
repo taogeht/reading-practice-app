@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { StoryLibrary } from "@/components/stories/story-library";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
+import { CreateClassDialog } from "@/components/classes/create-class-dialog";
+import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +18,8 @@ import {
   Plus,
   Volume2,
   BarChart3,
-  LogOut
+  LogOut,
+  List
 } from "lucide-react";
 
 type Teacher = {
@@ -56,7 +60,10 @@ type DashboardData = {
 };
 
 export default function TeacherDashboardPage() {
+  const router = useRouter();
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
+  const [showCreateClass, setShowCreateClass] = useState(false);
+  const [showCreateStudent, setShowCreateStudent] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +131,16 @@ export default function TeacherDashboardPage() {
     console.log('Assignment created successfully!');
   };
 
+  const handleClassCreated = () => {
+    // Refresh dashboard data after class creation
+    fetchDashboardData();
+  };
+
+  const handleStudentCreated = () => {
+    // Refresh dashboard data after student creation
+    fetchDashboardData();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -160,6 +177,10 @@ export default function TeacherDashboardPage() {
               <Button variant="outline">
                 <BarChart3 className="w-4 h-4 mr-2" />
                 View Reports
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
+                <List className="w-4 h-4 mr-2" />
+                Manage Assignments
               </Button>
               <Button onClick={() => setShowCreateAssignment(true)}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -280,7 +301,12 @@ export default function TeacherDashboardPage() {
                   </div>
                 ))}
                 
-                <Button variant="outline" size="sm" className="w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => router.push('/teacher/submissions')}
+                >
                   View All Submissions
                 </Button>
               </CardContent>
@@ -292,13 +318,29 @@ export default function TeacherDashboardPage() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={() => setShowCreateAssignment(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create New Assignment
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setShowCreateClass(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Class
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setShowCreateStudent(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Student
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
                   <Volume2 className="w-4 h-4 mr-2" />
@@ -308,9 +350,13 @@ export default function TeacherDashboardPage() {
                   <BarChart3 className="w-4 h-4 mr-2" />
                   View Class Progress
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => window.location.href = '/teacher/classes'}
+                >
                   <Users className="w-4 h-4 mr-2" />
-                  Manage Students
+                  Manage Classes & Students
                 </Button>
               </CardContent>
             </Card>
@@ -368,11 +414,23 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
-      {/* Create Assignment Dialog */}
+      {/* Dialogs */}
       <CreateAssignmentDialog
         open={showCreateAssignment}
         onOpenChange={setShowCreateAssignment}
         onSuccess={handleAssignmentCreated}
+      />
+
+      <CreateClassDialog
+        open={showCreateClass}
+        onOpenChange={setShowCreateClass}
+        onSuccess={handleClassCreated}
+      />
+
+      <CreateStudentDialog
+        open={showCreateStudent}
+        onOpenChange={setShowCreateStudent}
+        onSuccess={handleStudentCreated}
       />
     </div>
   );

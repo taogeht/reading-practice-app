@@ -1,0 +1,56 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { schools } from '@/lib/db/schema';
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const allSchools = await db.select().from(schools).orderBy(schools.name);
+
+    return NextResponse.json({ schools: allSchools });
+
+  } catch (error) {
+    console.error('Error fetching schools:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { name, district, address, city, state, zipCode } = body;
+
+    if (!name) {
+      return NextResponse.json({ error: 'School name is required' }, { status: 400 });
+    }
+
+    const newSchool = await db.insert(schools).values({
+      name,
+      district: district || null,
+      address: address || null,
+      city: city || null,
+      state: state || null,
+      zipCode: zipCode || null,
+    }).returning();
+
+    return NextResponse.json({ school: newSchool[0] }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating school:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -1,0 +1,1 @@
+ALTER TABLE "stories" ALTER COLUMN "tts_audio_url" SET DATA TYPE text;

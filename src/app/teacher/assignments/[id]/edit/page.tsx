@@ -1,0 +1,520 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { CalendarIcon, BookOpen, Users, Volume2, VolumeX, ArrowLeft, Save } from "lucide-react";
+import { format } from "date-fns";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useRouter } from "next/navigation";
+
+const assignmentSchema = z.object({
+  title: z.string().min(1, "Assignment title is required"),
+  description: z.string().optional(),
+  storyId: z.string().min(1, "Please select a story"),
+  classId: z.string().min(1, "Please select a class"),
+  dueDate: z.date().optional(),
+  maxAttempts: z.number().min(1).max(10).default(3),
+  instructions: z.string().optional(),
+  status: z.enum(['draft', 'published', 'archived']).default('published'),
+});
+
+type AssignmentFormData = z.infer<typeof assignmentSchema>;
+
+interface Story {
+  id: string;
+  title: string;
+  readingLevel?: string | null;
+  gradeLevels: number[];
+  ttsAudioUrl?: string | null;
+  wordCount?: number | null;
+}
+
+interface Class {
+  id: string;
+  name: string;
+  gradeLevel?: number | null;
+  studentCount: number;
+}
+
+interface Assignment {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  assignedAt: string;
+  dueAt: string | null;
+  maxAttempts: number;
+  instructions: string | null;
+  storyId: string;
+  classId: string;
+}
+
+interface EditAssignmentPageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function EditAssignmentPage({ params }: EditAssignmentPageProps) {
+  const router = useRouter();
+  const [stories, setStories] = useState<Story[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const form = useForm<AssignmentFormData>({
+    resolver: zodResolver(assignmentSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      storyId: "",
+      classId: "",
+      maxAttempts: 3,
+      instructions: "",
+      status: "published",
+    },
+  });
+
+  useEffect(() => {
+    loadData();
+  }, [params.id]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [storiesResponse, classesResponse, assignmentResponse] = await Promise.all([
+        fetch('/api/stories'),
+        fetch('/api/classes'),
+        fetch(`/api/assignments/${params.id}`),
+      ]);
+
+      if (storiesResponse.ok) {
+        const storiesData = await storiesResponse.json();
+        setStories(storiesData.stories || []);
+      }
+
+      if (classesResponse.ok) {
+        const classesData = await classesResponse.json();
+        setClasses(classesData.classes || []);
+      }
+
+      if (assignmentResponse.ok) {
+        const assignmentData = await assignmentResponse.json();
+        const assignment: Assignment = assignmentData.assignment;
+
+        // Populate form with existing data
+        form.reset({
+          title: assignment.title,
+          description: assignment.description || "",
+          storyId: assignment.storyId,
+          classId: assignment.classId,
+          dueDate: assignment.dueAt ? new Date(assignment.dueAt) : undefined,
+          maxAttempts: assignment.maxAttempts,
+          instructions: assignment.instructions || "",
+          status: assignment.status as 'draft' | 'published' | 'archived',
+        });
+      } else if (assignmentResponse.status === 404) {
+        setError('Assignment not found');
+      } else {
+        throw new Error('Failed to load assignment');
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError('Failed to load assignment data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSubmit = async (data: AssignmentFormData) => {
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/assignments/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...data,
+          dueAt: data.dueDate?.toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update assignment');
+      }
+
+      router.push(`/teacher/assignments/${params.id}`);
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      alert('Failed to update assignment. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectedStory = stories.find(story => story.id === form.watch('storyId'));
+  const selectedClass = classes.find(cls => cls.id === form.watch('classId'));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading assignment...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => router.push('/teacher/assignments')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Assignments
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/assignments/${params.id}`)}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Assignment
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Edit Assignment</h1>
+              <p className="text-gray-600 mt-1">
+                Update assignment details and settings
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Assignment Title */}
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assignment Title</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., Read 'The Little Red Hen'"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Status */}
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select assignment status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Only published assignments are visible to students
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Story Selection */}
+              <FormField
+                control={form.control}
+                name="storyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Story</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a story for students to read" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {stories.map((story) => (
+                          <SelectItem key={story.id} value={story.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span>{story.title}</span>
+                              <div className="flex items-center gap-1 ml-2">
+                                {story.ttsAudioUrl ? (
+                                  <Volume2 className="w-3 h-3 text-green-600" />
+                                ) : (
+                                  <VolumeX className="w-3 h-3 text-gray-400" />
+                                )}
+                                {story.readingLevel && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {story.readingLevel}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedStory && (
+                      <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm">
+                          <BookOpen className="w-4 h-4" />
+                          <span className="font-medium">{selectedStory.title}</span>
+                          {selectedStory.ttsAudioUrl ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              <Volume2 className="w-3 h-3 mr-1" />
+                              Audio Available
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              <VolumeX className="w-3 h-3 mr-1" />
+                              No Audio
+                            </Badge>
+                          )}
+                        </div>
+                        {selectedStory.readingLevel && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Reading Level: {selectedStory.readingLevel}
+                          </p>
+                        )}
+                        {selectedStory.wordCount && (
+                          <p className="text-xs text-gray-600">
+                            {selectedStory.wordCount} words
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Class Selection */}
+              <FormField
+                control={form.control}
+                name="classId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Class</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose which class to assign this to" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {classes.map((cls) => (
+                          <SelectItem key={cls.id} value={cls.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span>{cls.name}</span>
+                              <div className="flex items-center gap-1 ml-2">
+                                <Users className="w-3 h-3" />
+                                <span className="text-xs">{cls.studentCount}</span>
+                                {cls.gradeLevel && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Grade {cls.gradeLevel}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedClass && (
+                      <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Users className="w-4 h-4" />
+                          <span className="font-medium">{selectedClass.name}</span>
+                          <Badge variant="outline">
+                            {selectedClass.studentCount} students
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Due Date */}
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Due Date (Optional)</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a due date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      When do you want students to complete this assignment?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Max Attempts */}
+              <FormField
+                control={form.control}
+                name="maxAttempts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Maximum Attempts</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      How many times can students submit recordings for this assignment?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Description */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Add any additional details about this assignment..."
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Instructions */}
+              <FormField
+                control={form.control}
+                name="instructions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Instructions for Students (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="e.g., Read clearly and slowly. Pay attention to punctuation..."
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push(`/teacher/assignments/${params.id}`)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {submitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </div>
+    </div>
+  );
+}

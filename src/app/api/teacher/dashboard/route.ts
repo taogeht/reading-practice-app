@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { classes, assignments, recordings, classEnrollments, stories, users, students } from '@/lib/db/schema';
+import { classes, assignments, recordings, classEnrollments, stories, users, students, teachers, schools, schoolMemberships } from '@/lib/db/schema';
 import { eq, and, desc, count, sql } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
@@ -15,6 +15,57 @@ export async function GET(request: NextRequest) {
         { error: 'Not authorized' },
         { status: 401 }
       );
+    }
+
+    // Ensure teacher record exists
+    const teacherRecord = await db
+      .select({ id: teachers.id })
+      .from(teachers)
+      .where(eq(teachers.id, user.id))
+      .limit(1);
+
+    if (!teacherRecord.length) {
+      // Create teacher record if it doesn't exist
+      await db.insert(teachers).values({
+        id: user.id,
+        employeeId: null,
+        department: null,
+        subjects: null,
+      });
+    }
+
+    // Ensure teacher has school association
+    let teacherSchool = await db
+      .select({ schoolId: schoolMemberships.schoolId })
+      .from(schoolMemberships)
+      .where(and(
+        eq(schoolMemberships.userId, user.id),
+        eq(schoolMemberships.isPrimary, true)
+      ))
+      .limit(1);
+
+    if (!teacherSchool.length) {
+      // Create a default school for the teacher
+      const defaultSchool = await db
+        .insert(schools)
+        .values({
+          name: `${user.firstName} ${user.lastName}'s School`,
+          district: null,
+          address: null,
+          city: null,
+          state: null,
+          zipCode: null,
+        })
+        .returning();
+
+      // Associate teacher with the new school
+      await db
+        .insert(schoolMemberships)
+        .values({
+          userId: user.id,
+          schoolId: defaultSchool[0].id,
+          isPrimary: true,
+        });
     }
 
     // Get teacher's classes with student counts
@@ -33,10 +84,7 @@ export async function GET(request: NextRequest) {
     const activeAssignmentsResult = await db
       .select({ count: count() })
       .from(assignments)
-      .where(and(
-        eq(assignments.teacherId, user.id),
-        eq(assignments.status, 'published')
-      ));
+      .where(eq(assignments.teacherId, user.id));
 
     // Get pending reviews count
     const pendingReviewsResult = await db

@@ -1,0 +1,151 @@
+***
+
+# Product Requirements Document (PRD)
+## Enhanced Reading Practice Platform
+
+### 📄 Document History
+* **Version 1.0:** Initial draft, October 11, 2025
+* **Version 1.1:** Updated with Next.js, shadcn/ui, Tailwind, and BetterAuth, October 15, 2025
+* **Version 1.2:** **Updated with ElevenLabs for TTS and Cloudflare R2 for storage**, October 16, 2025
+
+***
+
+## 1. Product Overview
+### **Vision**
+A comprehensive educational platform for reading practice that is fast, reliable, and delightful for students and teachers. By leveraging modern web technologies, we will deliver an experience that is engaging for students and efficient for teachers, with a foundation that is easy to scale and maintain.
+
+### **Mission**
+To provide schools with a high-performance, cost-effective reading assessment platform that eliminates the high, recurring API costs of traditional solutions. We will achieve this by building a server-rendered, data-driven application with a one-time TTS generation model using **ElevenLabs**, and give teachers and administrators complete control over content and student progress.
+
+### **Current State Analysis**
+Current educational platforms often suffer from slow performance, complex user interfaces, and unpredictable costs tied to third-party APIs. Our solution addresses these pain points by using a modern, server-first approach with a design system that ensures a consistent and intuitive user experience. We will use the high-quality, expressive voices from **ElevenLabs** to create our pre-generated audio library, which will be stored on **Cloudflare R2** to eliminate egress fees.
+
+### **Target Users**
+* **Teachers:** Content managers, assignment creators, progress reviewers.
+* **Students:** Content consumers, recording submitters.
+* **School Administrators:** System managers, data overseers.
+
+### **User Personas**
+* **Elementary Teacher (Grade 1-3):** "Ms. Davis" needs a simple, intuitive dashboard to manage assignments and track her students' progress quickly.
+* **Reading Specialist:** "Mr. Chen" requires detailed, performant analytics to identify and support struggling readers with targeted interventions.
+* **School IT Administrator:** "Ms. Rodriguez" needs a cost-effective system that is easy to deploy, reliable, and doesn't have variable costs.
+
+***
+
+## 2. Product Goals & Business Rationale
+### **Educational Goals**
+* **Improve Reading Fluency:** Provide a consistent and accessible tool for students to practice reading.
+* **Actionable Insights:** Give teachers clear, data-driven insights into student reading progress.
+* **Scalable Assessment:** Enable school districts to perform large-scale reading assessments without significant administrative or financial burden.
+
+### **Business Goals**
+* **Cost Predictability:** Eliminate recurring, per-use API costs for TTS by using **ElevenLabs** for a one-time, bulk generation model. The resulting audio files are stored on **Cloudflare R2** to ensure zero egress fees for serving the audio.
+* **Scalable Solution:** Build a server-first architecture that can handle a large number of concurrent users without a linear increase in costs.
+* **Increased Teacher Satisfaction:** Reduce the time teachers spend on manual tasks by providing a streamlined, performant platform.
+
+### **Technical Goals**
+* **Performance:** Achieve sub-second page loads and audio loading times for a seamless user experience, leveraging Next.js's **Server-Side Rendering (SSR)** and **Static Site Generation (SSG)**.
+* **Reliability:** Maintain 99.5%+ system uptime during school hours.
+* **Developer Experience:** Use a modern stack (**Next.js, Tailwind CSS, shadcn/ui**) to enable rapid development and easy maintenance.
+* **Storage Efficiency:** Handle unlimited student recordings with a scalable, cost-effective solution using **Cloudflare R2**.
+
+***
+
+## 3. Core Features
+The platform will be built in three progressive phases, focusing on delivering a functional core product before adding more advanced capabilities.
+
+### **Phase 1: Foundation & Student Flow (MVP)**
+This phase focuses on the core user loop: a student can log in, access content, and submit a recording.
+
+* **1.1 Visual & Simple Student Authentication:** A password-free login process where students select their name and avatar, then enter a visual password (a picture).
+* **1.2 High-Performance Story Library:** A library of pre-approved educational stories with **pre-generated TTS audio files**. The use of Next.js and static audio files served from **Cloudflare R2** ensures lightning-fast loading times.
+* **1.3 Student Recording & Submission:** A streamlined workflow for students to record their reading and upload it to **Cloudflare R2** for storage.
+
+### **Phase 2: Teacher & Admin Management Tools**
+This phase enhances the platform to give teachers and administrators the control and insights they need.
+
+* **2.1 Assignment Creation & Review:** An intuitive interface for teachers to create assignments, review student submissions, and provide feedback.
+* **2.2 Progress Tracking & Analytics:** Dashboards with clear data visualizations that show individual and class-wide reading progress.
+* **2.3 Bulk Audio Generation (using ElevenLabs):** A powerful tool for teachers to upload new story text and **bulk-generate TTS audio files using the ElevenLabs API**. The resulting audio files are then uploaded directly to a **Cloudflare R2** bucket to be served statically. This approach minimizes costs by only paying for the initial generation and not for every subsequent playback.
+* **2.4 Administrative Oversight:** A dedicated area for administrators to manage users, schools, and monitor system-wide usage.
+
+### **Phase 3: Advanced Features**
+This phase introduces more complex, data-driven functionality.
+
+* **3.1 Automated Student Flagging:** The system automatically flags students who may be struggling based on submission history or performance metrics.
+* **3.2 Learning Management System (LMS) Integration:** Integration with popular school LMS platforms (e.g., Canvas, Schoology).
+* **3.3 Mobile App:** A mobile-first experience for tablet-based recording and use.
+
+***
+
+## 4. User Experience (UX) Requirements
+The user interface will be built using **shadcn/ui** and **Tailwind CSS** to ensure a consistent, responsive, and accessible design across all devices.
+
+### **Student Experience**
+The student workflow must be as simple as possible to minimize friction.
+* **User Story:** "As a first-grade student, I want to easily find my assigned story and record my reading in just a few clicks so I can finish my homework without help."
+* **Flow:** Student accesses login screen → selects name and avatar → enters visual password → sees assigned stories → clicks story → listens to TTS audio → records reading → submits.
+* **Non-Functional Requirements:** A maximum of 3 clicks from story selection to recording. High-contrast visuals and large button targets for young students.
+
+### **Teacher Experience**
+The teacher workflow should save time and provide valuable insights without being overly complex.
+* **User Story:** "As a teacher, I want to quickly review a student's reading submission and track their progress over time."
+* **Daily Workflow:** Check dashboard for new submissions → review flagged recordings → provide feedback → track class progress.
+* **Non-Functional Requirements:** Automated flagging and bulk actions should reduce review time by at least 50%.
+
+### **School Administrator Experience**
+The administrator account is for high-level system management.
+* **User Story:** "As a school IT administrator, I want to onboard all new teachers at the start of the school year with a single bulk upload so I can save time."
+* **Core Capabilities:** Manage all user accounts, view and listen to all student recordings, and monitor system usage and storage.
+
+***
+
+## 5. Technical Requirements
+### **Architecture Overview**
+We will build a **full-stack Next.js application** using the **App Router** to handle both frontend rendering and backend API routes. We will use **Railway** for a seamless deployment experience.
+
+* **Frontend:** **Next.js** with React Server Components for optimal performance. We will use **shadcn/ui** for the component library and **Tailwind CSS** for styling.
+* **Backend:** **Next.js API Routes** for our backend logic. We will use **BetterAuth** for robust authentication and a **PostgreSQL** database for our data.
+* **Database:** A **PostgreSQL** database instance hosted on **Railway**.
+* **Storage:** **Cloudflare R2** will be used for all audio file storage. This provides an S3-compatible API with zero egress fees, making it the most cost-effective solution for our use case.
+* **Deployment:** The entire application will be deployed and managed on **Railway**, which simplifies the process of connecting the Next.js app to the PostgreSQL database.
+
+### **TTS & Audio Workflow**
+* We will use the **ElevenLabs API** to generate high-quality TTS audio files.
+* A Next.js API route will call the ElevenLabs API, receive the audio data, and then upload the file directly to our **Cloudflare R2** bucket.
+* This process will be handled as an asynchronous background job to avoid timeouts. The resulting files will be permanently stored on R2, and the system will no longer need to call the ElevenLabs API for playback.
+
+### **Authentication System**
+* **Teachers & Administrators:** Will use **BetterAuth's** standard email/password authentication.
+* **Students:** Will use a **simplified visual login** process that we'll build on top of BetterAuth's user management. This involves students selecting an avatar and entering a visual password.
+
+### **API Endpoints**
+* **Next.js API Routes** will handle all backend logic, including:
+    * `GET /api/assignments`: Get a list of assigned stories.
+    * `POST /api/recordings`: Upload a new student recording to **Cloudflare R2**.
+    * `POST /api/assignments/create`: Create a new assignment.
+    * `GET /api/submissions`: Get student submissions for review.
+    * `POST /api/audio/generate`: Initiate a bulk audio generation job with the **ElevenLabs API** and store the output in **Cloudflare R2**.
+
+***
+
+## 6. Implementation Timeline & Roadmap
+* **Phase 1 (Weeks 1-3):** Build the core foundation, including authentication, the student's recording workflow, and the teacher's basic review system.
+* **Phase 2 (Weeks 4-7):** Focus on teacher and admin dashboards, analytics, and the bulk audio generation feature.
+* **Phase 3 (Weeks 8+):** Implement advanced features like automated flagging and LMS integration.
+
+***
+
+## 7. Success Metrics
+* **Student Engagement:** 90%+ assignment completion rate.
+* **Teacher Satisfaction:** 85%+ positive feedback from usability surveys.
+* **Performance:** Average audio load time of less than 1 second.
+* **API Cost Reduction:** 95%+ reduction in ongoing, per-use TTS API costs.
+
+***
+
+## 8. Risk Assessment
+* **Technical Risks:** The primary risks are related to performance under heavy load and managing the asynchronous nature of the bulk audio generation process.
+* **Mitigation:** We will use Next.js's built-in performance optimizations and a scalable object storage solution. Asynchronous background jobs will handle large tasks like bulk audio generation. The use of a one-time generation model with **ElevenLabs** and **Cloudflare R2** mitigates the risk of unpredictable, recurring costs.
+* **Adoption Risks:** Teachers may resist new technology.
+* **Mitigation:** We will provide comprehensive training and a user-friendly design to make the transition as smooth as possible.
