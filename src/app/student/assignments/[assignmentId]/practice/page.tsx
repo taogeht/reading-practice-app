@@ -69,8 +69,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       }
 
       const data = await response.json();
-      console.log('Assignment data:', data.assignment);
-      console.log('Story TTS URL:', data.assignment?.story?.ttsAudioUrl);
       setAssignment(data.assignment);
     } catch (error) {
       console.error('Error fetching assignment:', error);
@@ -189,9 +187,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{assignment.title}</h1>
               <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                  Step: {currentStep}
-                </span>
                 <span className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4" />
                   {assignment.story.title}

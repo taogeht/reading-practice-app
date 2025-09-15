@@ -77,10 +77,39 @@ export function AudioRecorder({
       
       streamRef.current = stream;
 
+      // Check what formats are actually supported
+      const formats = [
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/wav',
+        'audio/ogg;codecs=opus',
+        'audio/webm;codecs=opus',
+        'audio/webm'
+      ];
+
+      console.log('Checking MediaRecorder format support:');
+      formats.forEach(format => {
+        console.log(`${format}: ${MediaRecorder.isTypeSupported(format)}`);
+      });
+
+      // Try most compatible formats first
+      let mimeType = 'audio/webm'; // ultimate fallback
+      if (MediaRecorder.isTypeSupported('audio/wav')) {
+        mimeType = 'audio/wav';
+      } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
+        mimeType = 'audio/mpeg';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+        mimeType = 'audio/ogg;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      }
+
+      console.log('Selected audio format:', mimeType);
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-          ? 'audio/webm;codecs=opus' 
-          : 'audio/webm',
+        mimeType: mimeType,
       });
 
       mediaRecorderRef.current = mediaRecorder;

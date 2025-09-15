@@ -73,41 +73,46 @@ export async function authenticateUser(email: string, password: string): Promise
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get(COOKIE_NAME)?.value;
+  try {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get(COOKIE_NAME)?.value;
 
-  if (!sessionId) {
-    return null;
-  }
-
-  // Find valid session
-  const sessionData = await db.query.session.findFirst({
-    where: eq(session.id, sessionId),
-    with: {
-      user: true,
+    if (!sessionId) {
+      return null;
     }
-  });
 
-  if (!sessionData || sessionData.expiresAt < new Date()) {
-    // Clean up expired session
-    if (sessionData) {
-      await deleteSession(sessionId);
+    // Find valid session
+    const sessionData = await db.query.session.findFirst({
+      where: eq(session.id, sessionId),
+      with: {
+        user: true,
+      }
+    });
+
+    if (!sessionData || sessionData.expiresAt < new Date()) {
+      // Clean up expired session
+      if (sessionData) {
+        await deleteSession(sessionId);
+      }
+      return null;
     }
+
+    const user = sessionData.user;
+    if (!user || !user.active) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    };
+  } catch (error) {
+    console.error('Error in getCurrentUser:', error);
     return null;
   }
-
-  const user = sessionData.user;
-  if (!user || !user.active) {
-    return null;
-  }
-
-  return {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    firstName: user.firstName,
-    lastName: user.lastName,
-  };
 }
 
 export const COOKIE_OPTIONS = {

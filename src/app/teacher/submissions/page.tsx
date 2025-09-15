@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star } from "lucide-react";
+import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -31,6 +31,9 @@ export default function TeacherSubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [audioErrors, setAudioErrors] = useState<Set<string>>(new Set());
+  const [presignedUrls, setPresignedUrls] = useState<Map<string, string>>(new Map());
+  const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'flagged'>('all');
 
   useEffect(() => {
@@ -56,21 +59,79 @@ export default function TeacherSubmissionsPage() {
     }
   };
 
-  const playAudio = (audioUrl: string, recordingId: string) => {
+  const getPresignedUrl = async (recordingId: string): Promise<string | null> => {
+    try {
+      setLoadingAudio(prev => new Set([...prev, recordingId]));
+
+      const response = await fetch(`/api/recordings/${recordingId}/download-url`);
+      if (!response.ok) {
+        throw new Error('Failed to get download URL');
+      }
+
+      const { downloadUrl } = await response.json();
+      setPresignedUrls(prev => new Map(prev).set(recordingId, downloadUrl));
+      return downloadUrl;
+    } catch (error) {
+      console.error('Error getting presigned URL:', error);
+      setAudioErrors(prev => new Set([...prev, recordingId]));
+      return null;
+    } finally {
+      setLoadingAudio(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(recordingId);
+        return newSet;
+      });
+    }
+  };
+
+  const playAudio = async (recordingId: string) => {
     if (playingAudio === recordingId) {
-      setPlayingAudio(null);
-      // Stop audio if playing
+      // Pause current audio
       const audio = document.getElementById(`audio-${recordingId}`) as HTMLAudioElement;
       if (audio) {
         audio.pause();
-        audio.currentTime = 0;
       }
-    } else {
+      setPlayingAudio(null);
+      return;
+    }
+
+    // Stop any currently playing audio
+    if (playingAudio) {
+      const currentAudio = document.getElementById(`audio-${playingAudio}`) as HTMLAudioElement;
+      if (currentAudio) {
+        currentAudio.pause();
+      }
+    }
+
+    let audioUrl = presignedUrls.get(recordingId);
+
+    if (!audioUrl) {
+      audioUrl = await getPresignedUrl(recordingId);
+      if (!audioUrl) {
+        alert('Unable to load recording. Please try again.');
+        return;
+      }
+    }
+
+    // Get the audio element and update its source
+    const audio = document.getElementById(`audio-${recordingId}`) as HTMLAudioElement;
+    if (audio) {
       setPlayingAudio(recordingId);
-      // Play audio
-      const audio = document.getElementById(`audio-${recordingId}`) as HTMLAudioElement;
-      if (audio) {
-        audio.play();
+
+      // Update audio source with presigned URL
+      const sources = audio.querySelectorAll('source');
+      sources.forEach(source => {
+        source.src = audioUrl;
+      });
+
+      audio.load(); // Reload the audio element with new source
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error('Error playing audio:', error);
+        setPlayingAudio(null);
+        setAudioErrors(prev => new Set([...prev, recordingId]));
       }
     }
   };
@@ -235,22 +296,73 @@ export default function TeacherSubmissionsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => playAudio(recording.audioUrl, recording.id)}
+                        onClick={() => playAudio(recording.id)}
+                        disabled={loadingAudio.has(recording.id)}
                       >
                         {playingAudio === recording.id ? (
                           <Pause className="w-4 h-4 mr-1" />
+                        ) : loadingAudio.has(recording.id) ? (
+                          <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
                         ) : (
                           <Play className="w-4 h-4 mr-1" />
                         )}
-                        {playingAudio === recording.id ? 'Pause' : 'Play'} Recording
+                        {loadingAudio.has(recording.id) ? 'Loading...' :
+                         playingAudio === recording.id ? 'Pause' : 'Listen to Recording'}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          let downloadUrl = presignedUrls.get(recording.id);
+                          if (!downloadUrl) {
+                            downloadUrl = await getPresignedUrl(recording.id);
+                          }
+                          if (downloadUrl) {
+                            window.open(downloadUrl, '_blank');
+                          } else {
+                            alert('Unable to generate download link. Please try again.');
+                          }
+                        }}
+                        title="Download recording"
+                        disabled={loadingAudio.has(recording.id)}
+                      >
+                        📥 Download
                       </Button>
 
                       <audio
                         id={`audio-${recording.id}`}
-                        src={recording.audioUrl}
                         onEnded={() => setPlayingAudio(null)}
                         onPause={() => setPlayingAudio(null)}
-                      />
+                        onError={(e) => {
+                          console.error('Audio playback error for recording:', recording.id);
+                          const audio = e.target as HTMLAudioElement;
+                          console.error('Audio error details:', {
+                            code: audio.error?.code,
+                            message: audio.error?.message,
+                            networkState: audio.networkState,
+                            readyState: audio.readyState,
+                            currentSrc: audio.currentSrc
+                          });
+                          setPlayingAudio(null);
+                          setAudioErrors(prev => new Set([...prev, recording.id]));
+                        }}
+                        onLoadedData={() => {
+                          console.log('Audio loaded successfully for recording:', recording.id);
+                        }}
+                        onLoadStart={() => {
+                          console.log('Audio loading started for recording:', recording.id);
+                        }}
+                        preload="none"
+                        controls={false}
+                        style={{ display: 'none' }}
+                      >
+                        <source type="audio/webm; codecs=opus" />
+                        <source type="audio/webm" />
+                        <source type="audio/mp4" />
+                        <source type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
                     </div>
 
                     <div className="flex gap-2">
