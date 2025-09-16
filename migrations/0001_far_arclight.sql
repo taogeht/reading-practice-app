@@ -1,0 +1,2 @@
+-- This file is intentionally blank.
+-- It was created to fix a missing migration file issue.

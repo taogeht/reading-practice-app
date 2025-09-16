@@ -36,7 +36,7 @@ class ElevenLabsClient {
     this.apiKey = process.env.ELEVEN_LABS_API_KEY || '';
     
     if (!this.apiKey) {
-      throw new Error('ELEVEN_LABS_API_KEY environment variable is required');
+      console.warn('ELEVEN_LABS_API_KEY is not set. ElevenLabs functionality will be disabled.');
     }
   }
 
@@ -262,7 +262,7 @@ class ElevenLabsClient {
     requiredChars: number;
   }> {
     try {
-      const subscription = await getUserSubscription();
+      const subscription = await this.getUserSubscription();
       const remainingChars = subscription.character_limit - subscription.character_count;
       
       return {
