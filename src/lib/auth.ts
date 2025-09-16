@@ -110,7 +110,11 @@ export async function getCurrentUser(): Promise<User | null> {
       lastName: user.lastName,
     };
   } catch (error) {
-    console.error('Error in getCurrentUser:', error);
+    if (error.message?.includes('Client has encountered a connection error')) {
+      console.error('Database connection error in getCurrentUser:', error.message);
+    } else {
+      console.error('Error in getCurrentUser:', error);
+    }
     return null;
   }
 }

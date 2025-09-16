@@ -97,6 +97,8 @@ export async function GET(
         status: recordings.status,
         accuracyScore: recordings.accuracyScore,
         submittedAt: recordings.submittedAt,
+        teacherFeedback: recordings.teacherFeedback,
+        reviewedAt: recordings.reviewedAt,
       })
       .from(recordings)
       .where(and(
@@ -111,6 +113,11 @@ export async function GET(
       ? Math.max(...completedRecordings.map(r => Number(r.accuracyScore) || 0))
       : null;
 
+    // Get the most recent recording with feedback
+    const latestRecordingWithFeedback = studentRecordings
+      .filter(r => r.teacherFeedback)
+      .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0];
+
     const assignmentData = {
       id: assignment.id,
       title: assignment.title,
@@ -121,6 +128,9 @@ export async function GET(
       attempts: studentRecordings.length,
       status: completedRecordings.length > 0 ? 'completed' as const : 'pending' as const,
       bestScore: bestScore ? Math.round(bestScore) : null,
+      teacherFeedback: latestRecordingWithFeedback?.teacherFeedback || null,
+      reviewedAt: latestRecordingWithFeedback?.reviewedAt?.toISOString() || null,
+      hasTeacherFeedback: !!latestRecordingWithFeedback?.teacherFeedback,
       story: {
         id: assignment.storyId,
         title: assignment.storyTitle,
@@ -141,6 +151,8 @@ export async function GET(
         status: recording.status,
         accuracyScore: recording.accuracyScore ? Math.round(Number(recording.accuracyScore)) : null,
         submittedAt: recording.submittedAt?.toISOString() || new Date().toISOString(),
+        teacherFeedback: recording.teacherFeedback,
+        reviewedAt: recording.reviewedAt?.toISOString() || null,
       })),
     };
 

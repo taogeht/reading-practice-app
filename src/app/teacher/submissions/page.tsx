@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -35,6 +37,9 @@ export default function TeacherSubmissionsPage() {
   const [presignedUrls, setPresignedUrls] = useState<Map<string, string>>(new Map());
   const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'flagged'>('all');
+  const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState<string>('');
+  const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
 
   useEffect(() => {
     fetchRecordings();
@@ -72,7 +77,6 @@ export default function TeacherSubmissionsPage() {
       setPresignedUrls(prev => new Map(prev).set(recordingId, downloadUrl));
       return downloadUrl;
     } catch (error) {
-      console.error('Error getting presigned URL:', error);
       setAudioErrors(prev => new Set([...prev, recordingId]));
       return null;
     } finally {
@@ -129,11 +133,64 @@ export default function TeacherSubmissionsPage() {
       try {
         await audio.play();
       } catch (error) {
-        console.error('Error playing audio:', error);
         setPlayingAudio(null);
         setAudioErrors(prev => new Set([...prev, recordingId]));
       }
     }
+  };
+
+  const submitFeedback = async (recordingId: string) => {
+    if (!feedbackText.trim()) {
+      alert('Please enter feedback before submitting.');
+      return;
+    }
+
+    try {
+      setSubmittingFeedback(true);
+
+      const response = await fetch(`/api/recordings/${recordingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teacherFeedback: feedbackText.trim(),
+          status: 'reviewed',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback');
+      }
+
+      // Update the recording in local state
+      setRecordings(prev =>
+        prev.map(recording =>
+          recording.id === recordingId
+            ? { ...recording, teacherFeedback: feedbackText.trim(), status: 'reviewed' as const }
+            : recording
+        )
+      );
+
+      // Reset feedback form
+      setFeedbackMode(null);
+      setFeedbackText('');
+
+    } catch (error) {
+      alert('Failed to submit feedback. Please try again.');
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const startFeedback = (recordingId: string, existingFeedback?: string) => {
+    setFeedbackMode(recordingId);
+    setFeedbackText(existingFeedback || '');
+  };
+
+  const cancelFeedback = () => {
+    setFeedbackMode(null);
+    setFeedbackText('');
   };
 
   const getStatusColor = (status: string) => {
@@ -334,24 +391,15 @@ export default function TeacherSubmissionsPage() {
                         id={`audio-${recording.id}`}
                         onEnded={() => setPlayingAudio(null)}
                         onPause={() => setPlayingAudio(null)}
-                        onError={(e) => {
-                          console.error('Audio playback error for recording:', recording.id);
-                          const audio = e.target as HTMLAudioElement;
-                          console.error('Audio error details:', {
-                            code: audio.error?.code,
-                            message: audio.error?.message,
-                            networkState: audio.networkState,
-                            readyState: audio.readyState,
-                            currentSrc: audio.currentSrc
-                          });
+                        onError={() => {
                           setPlayingAudio(null);
                           setAudioErrors(prev => new Set([...prev, recording.id]));
                         }}
                         onLoadedData={() => {
-                          console.log('Audio loaded successfully for recording:', recording.id);
+                          // Audio loaded successfully
                         }}
                         onLoadStart={() => {
-                          console.log('Audio loading started for recording:', recording.id);
+                          // Audio loading started
                         }}
                         preload="none"
                         controls={false}
@@ -366,25 +414,67 @@ export default function TeacherSubmissionsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/teacher/submissions/${recording.id}`)}
-                      >
-                        Review
-                      </Button>
-                      {recording.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          onClick={() => router.push(`/teacher/submissions/${recording.id}?action=review`)}
-                        >
-                          Provide Feedback
-                        </Button>
+                      {feedbackMode === recording.id ? (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => submitFeedback(recording.id)}
+                            disabled={submittingFeedback || !feedbackText.trim()}
+                          >
+                            {submittingFeedback ? 'Saving...' : 'Save Feedback'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={cancelFeedback}
+                            disabled={submittingFeedback}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
+                          >
+                            {recording.teacherFeedback ? 'Edit Feedback' : 'Add Feedback'}
+                          </Button>
+                          {recording.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
+                            >
+                              Provide Feedback
+                            </Button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
 
-                  {recording.teacherFeedback && (
+                  {feedbackMode === recording.id && (
+                    <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
+                      <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-2">
+                        Teacher Feedback
+                      </label>
+                      <Textarea
+                        id={`feedback-${recording.id}`}
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                        placeholder="Enter your feedback for this recording..."
+                        rows={4}
+                        disabled={submittingFeedback}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This feedback will be visible to the student and will mark the recording as reviewed.
+                      </p>
+                    </div>
+                  )}
+
+                  {recording.teacherFeedback && feedbackMode !== recording.id && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <h4 className="font-medium text-blue-800 mb-1">Your Feedback:</h4>
                       <p className="text-blue-700 text-sm">{recording.teacherFeedback}</p>

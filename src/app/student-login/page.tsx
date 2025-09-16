@@ -48,7 +48,21 @@ export default function StudentLoginPage() {
 
       const data = await response.json();
       console.log(`Student ${selectedStudent.firstName} logged in successfully`);
-      router.push('/student/dashboard');
+
+      // Use replace instead of push to avoid back navigation issues
+      // Also use window.location.href as a fallback
+      try {
+        router.replace('/student/dashboard');
+        // Force redirect after a short delay if router doesn't work
+        setTimeout(() => {
+          if (window.location.pathname === '/student-login') {
+            window.location.href = '/student/dashboard';
+          }
+        }, 1000);
+      } catch (routerError) {
+        console.log('Router failed, using window.location fallback');
+        window.location.href = '/student/dashboard';
+      }
     } catch (error) {
       console.error('Login error:', error);
       // Handle error - could show toast or pass error back to VisualPasswordInput

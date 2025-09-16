@@ -35,6 +35,9 @@ interface Assignment {
   story: Story;
   attempts: number;
   status: 'pending' | 'completed';
+  teacherFeedback: string | null;
+  reviewedAt: string | null;
+  hasTeacherFeedback: boolean;
 }
 
 interface AssignmentPracticePageProps {
@@ -207,44 +210,95 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Progress Steps */}
-        <Card className="mb-8">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className={`flex items-center gap-2 ${currentStep === 'instructions' || currentStep === 'ready' ? 'text-blue-600 font-medium' : 'text-green-600'}`}>
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${
-                  currentStep === 'record' || currentStep === 'complete' ? 'bg-green-600 border-green-600 text-white' :
-                  'border-blue-600'
-                }`}>
-                  {currentStep === 'record' || currentStep === 'complete' ? <CheckCircle className="w-3 h-3" /> : '1'}
+        {/* Teacher Feedback View - Show when feedback exists */}
+        {assignment.hasTeacherFeedback ? (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  Assignment Complete - Teacher Feedback
+                </CardTitle>
+                <CardDescription>
+                  Your teacher has reviewed your recording and provided feedback.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <h3 className="font-medium text-blue-800 mb-3">Feedback from your teacher:</h3>
+                  <p className="text-blue-700 whitespace-pre-wrap">{assignment.teacherFeedback}</p>
+                  {assignment.reviewedAt && (
+                    <p className="text-blue-600 text-sm mt-4 opacity-75">
+                      Reviewed on {format(new Date(assignment.reviewedAt), 'MMMM do, yyyy')}
+                    </p>
+                  )}
                 </div>
-                <span className="hidden sm:inline">Read Instructions</span>
-                <span className="sm:hidden">Read</span>
-              </div>
-
-              <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                <div className={`h-full transition-all duration-300 ${
-                  currentStep === 'record' || currentStep === 'complete' ? 'bg-green-600 w-full' :
-                  currentStep === 'ready' ? 'bg-blue-600 w-1/2' : 'bg-gray-200 w-0'
-                }`}></div>
-              </div>
-
-              <div className={`flex items-center gap-2 ${
-                currentStep === 'record' ? 'text-blue-600 font-medium' :
-                currentStep === 'complete' ? 'text-green-600' : 'text-gray-400'
-              }`}>
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${
-                  currentStep === 'complete' ? 'bg-green-600 border-green-600 text-white' :
-                  currentStep === 'record' ? 'border-blue-600' : 'border-gray-300'
-                }`}>
-                  {currentStep === 'complete' ? <CheckCircle className="w-3 h-3" /> : '2'}
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-medium text-green-800 mb-2">🎉 Great Job!</h4>
+                  <p className="text-green-700 text-sm">
+                    You have successfully completed this assignment. Your recording has been reviewed and you've received feedback from your teacher.
+                    Keep practicing to improve your reading skills!
+                  </p>
                 </div>
-                <span className="hidden sm:inline">Record Reading</span>
-                <span className="sm:hidden">Record</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+
+            {/* Story reference for completed assignment */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Story Reference</CardTitle>
+                <CardDescription>The story you read for this assignment</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-medium mb-2">{assignment.story.title}</h3>
+                  <p className="text-gray-700 text-sm">{assignment.story.content}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <>
+            {/* Progress Steps */}
+            <Card className="mb-8">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className={`flex items-center gap-2 ${currentStep === 'instructions' || currentStep === 'ready' ? 'text-blue-600 font-medium' : 'text-green-600'}`}>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${
+                      currentStep === 'record' || currentStep === 'complete' ? 'bg-green-600 border-green-600 text-white' :
+                      'border-blue-600'
+                    }`}>
+                      {currentStep === 'record' || currentStep === 'complete' ? <CheckCircle className="w-3 h-3" /> : '1'}
+                    </div>
+                    <span className="hidden sm:inline">Read Instructions</span>
+                    <span className="sm:hidden">Read</span>
+                  </div>
+
+                  <div className="flex-1 h-0.5 bg-gray-200 mx-4">
+                    <div className={`h-full transition-all duration-300 ${
+                      currentStep === 'record' || currentStep === 'complete' ? 'bg-green-600 w-full' :
+                      currentStep === 'ready' ? 'bg-blue-600 w-1/2' : 'bg-gray-200 w-0'
+                    }`}></div>
+                  </div>
+
+                  <div className={`flex items-center gap-2 ${
+                    currentStep === 'record' ? 'text-blue-600 font-medium' :
+                    currentStep === 'complete' ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${
+                      currentStep === 'complete' ? 'bg-green-600 border-green-600 text-white' :
+                      currentStep === 'record' ? 'border-blue-600' : 'border-gray-300'
+                    }`}>
+                      {currentStep === 'complete' ? <CheckCircle className="w-3 h-3" /> : '2'}
+                    </div>
+                    <span className="hidden sm:inline">Record Reading</span>
+                    <span className="sm:hidden">Record</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Assignment & Story */}

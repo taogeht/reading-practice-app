@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
         status: recordings.status,
         accuracyScore: recordings.accuracyScore,
         submittedAt: recordings.submittedAt,
+        teacherFeedback: recordings.teacherFeedback,
+        reviewedAt: recordings.reviewedAt,
       })
       .from(recordings)
       .where(eq(recordings.studentId, user.id))
@@ -85,6 +87,11 @@ export async function GET(request: NextRequest) {
       const bestScore = completedRecordings.length > 0
         ? Math.max(...completedRecordings.map(r => Number(r.accuracyScore) || 0))
         : null;
+
+      // Get the most recent recording with feedback
+      const latestRecordingWithFeedback = assignmentRecordings
+        .filter(r => r.teacherFeedback)
+        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0];
 
       return {
         id: assignment.id,
@@ -99,6 +106,9 @@ export async function GET(request: NextRequest) {
         bestScore: bestScore ? Math.round(bestScore) : null,
         instructions: assignment.instructions,
         className: assignment.className,
+        teacherFeedback: latestRecordingWithFeedback?.teacherFeedback || null,
+        reviewedAt: latestRecordingWithFeedback?.reviewedAt?.toISOString() || null,
+        hasTeacherFeedback: !!latestRecordingWithFeedback?.teacherFeedback,
       };
     });
 

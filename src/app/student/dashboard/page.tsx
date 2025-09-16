@@ -29,6 +29,9 @@ type Assignment = {
   bestScore: number | null;
   instructions: string | null;
   className: string;
+  teacherFeedback: string | null;
+  reviewedAt: string | null;
+  hasTeacherFeedback: boolean;
 };
 
 type DashboardData = {
@@ -202,22 +205,53 @@ export default function StudentDashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {completedAssignments.map((assignment) => (
-                    <div 
-                      key={assignment.id} 
-                      className="border border-green-200 bg-green-50 rounded-lg p-3 cursor-pointer hover:bg-green-100 transition-colors"
-                      onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
+                    <div
+                      key={assignment.id}
+                      className={`border border-green-200 bg-green-50 rounded-lg p-3 transition-colors ${
+                        assignment.hasTeacherFeedback ? '' : 'cursor-pointer hover:bg-green-100'
+                      }`}
+                      onClick={() => {
+                        if (!assignment.hasTeacherFeedback) {
+                          router.push(`/student/assignments/${assignment.id}/practice`);
+                        }
+                      }}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-2">
                         <div>
                           <h4 className="font-medium text-sm">{assignment.title}</h4>
                           <p className="text-xs text-gray-600">{assignment.storyTitle}</p>
                         </div>
-                        {assignment.bestScore && (
-                          <Badge variant="default" className="bg-green-600">
-                            {assignment.bestScore}%
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {assignment.bestScore && (
+                            <Badge variant="default" className="bg-green-600">
+                              {assignment.bestScore}%
+                            </Badge>
+                          )}
+                          {assignment.hasTeacherFeedback && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              ✓ Reviewed
+                            </Badge>
+                          )}
+                        </div>
                       </div>
+
+                      {assignment.teacherFeedback && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <h5 className="text-xs font-medium text-blue-800 mb-1">Teacher Feedback:</h5>
+                          <p className="text-xs text-blue-700">{assignment.teacherFeedback}</p>
+                          {assignment.reviewedAt && (
+                            <p className="text-xs text-blue-600 mt-1 opacity-75">
+                              Reviewed on {new Date(assignment.reviewedAt).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {!assignment.hasTeacherFeedback && assignment.status === 'completed' && (
+                        <div className="mt-2 text-xs text-green-600">
+                          Click to practice again while waiting for teacher feedback
+                        </div>
+                      )}
                     </div>
                   ))}
                 </CardContent>
