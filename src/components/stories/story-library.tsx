@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { StoryCard } from "./story-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Plus, Volume2, VolumeX } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface Story {
   id: string;
@@ -64,17 +64,9 @@ export function StoryLibrary({
 
   useEffect(() => {
     fetchStories();
-  }, [
-    currentPage,
-    searchTerm,
-    selectedReadingLevel,
-    selectedGradeLevel,
-    selectedGenre,
-    audioFilter,
-    filter
-  ]);
+  }, [fetchStories]);
 
-  const fetchStories = async () => {
+  const fetchStories = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -113,7 +105,16 @@ export function StoryLibrary({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    searchTerm,
+    selectedReadingLevel,
+    selectedGradeLevel,
+    selectedGenre,
+    audioFilter,
+    filter,
+    archivedOnly
+  ]);
 
   const clearFilters = () => {
     setSearchTerm('');

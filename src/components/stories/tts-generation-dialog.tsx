@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Volume2, 
   AlertCircle, 
@@ -93,7 +93,7 @@ export function TTSGenerationDialog({
         setIsPreviewPlaying(false);
       }
     }
-  }, [open, story.content]);
+  }, [open, story.content, previewAudio]);
 
   const fetchVoices = async () => {
     setIsLoadingVoices(true);
@@ -250,7 +250,7 @@ export function TTSGenerationDialog({
         <DialogHeader>
           <DialogTitle>Generate Text-to-Speech Audio</DialogTitle>
           <DialogDescription>
-            Create an audio version of "{story.title}" for students to listen along
+            Create an audio version of &ldquo;{story.title}&rdquo; for students to listen along
           </DialogDescription>
         </DialogHeader>
 

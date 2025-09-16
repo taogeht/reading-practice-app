@@ -97,7 +97,7 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
       const testResponse = await fetch('/api/test-r2');
       if (testResponse.ok) {
         const testData = await testResponse.json();
-        const matchingAudioFile = testData.audioFiles.find((file: any) => 
+        const matchingAudioFile = testData.audioFiles.find((file: { key: string }) =>
           file.key.includes(story.id)
         );
         
@@ -345,7 +345,7 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
                         )}
                       </Button>
                       <div>
-                        <div className="font-medium">Listen to "{story.title}"</div>
+                        <div className="font-medium">Listen to &ldquo;{story.title}&rdquo;</div>
                         <div className="text-sm text-muted-foreground">
                           {story.ttsAudioDurationSeconds 
                             ? `Duration: ${formatDuration(story.ttsAudioDurationSeconds)}`
