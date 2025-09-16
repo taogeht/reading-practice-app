@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateClassDialog } from "@/components/classes/create-class-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
+import { ClassQRCode } from "@/components/classes/class-qr-code";
 import {
   Users,
   Plus,
@@ -14,6 +16,7 @@ import {
   UserPlus,
   Calendar,
   GraduationCap,
+  ArrowLeft,
 } from "lucide-react";
 
 interface Class {
@@ -39,6 +42,7 @@ interface Student {
 }
 
 export default function TeacherClassesPage() {
+  const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateClass, setShowCreateClass] = useState(false);
@@ -128,11 +132,20 @@ export default function TeacherClassesPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Classes</h1>
-              <p className="text-gray-600 mt-1">
-                Manage your classes and students
-              </p>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/teacher/dashboard')}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">My Classes</h1>
+                <p className="text-gray-600 mt-1">
+                  Manage your classes and students
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <Button onClick={() => setShowCreateStudent(true)} variant="outline">
@@ -203,6 +216,7 @@ export default function TeacherClassesPage() {
                         <Users className="w-3 h-3" />
                         {cls.studentCount ?? 0} students
                       </Badge>
+                      <ClassQRCode classId={cls.id} className={cls.name} />
                       <Button
                         variant="outline"
                         size="sm"
@@ -210,6 +224,13 @@ export default function TeacherClassesPage() {
                       >
                         <UserPlus className="w-4 h-4 mr-1" />
                         Add Student
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/teacher/classes/${cls.id}`)}
+                      >
+                        Manage Class
                       </Button>
                       <Button
                         variant="outline"

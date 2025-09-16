@@ -17,16 +17,19 @@ interface Student {
 
 interface StudentSelectorProps {
   onStudentSelect: (student: Student) => void;
+  classId?: string; // Optional class ID to filter students
 }
 
-export function StudentSelector({ onStudentSelect }: StudentSelectorProps) {
+export function StudentSelector({ onStudentSelect, classId }: StudentSelectorProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch('/api/students');
+        // Use class-specific endpoint if classId is provided
+        const endpoint = classId ? `/api/classes/${classId}/students` : '/api/students';
+        const response = await fetch(endpoint);
         if (response.ok) {
           const data = await response.json();
           setStudents(data.students);
@@ -41,7 +44,7 @@ export function StudentSelector({ onStudentSelect }: StudentSelectorProps) {
     };
 
     fetchStudents();
-  }, []);
+  }, [classId]);
 
   if (isLoading) {
     return (

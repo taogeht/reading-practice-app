@@ -22,11 +22,22 @@ export async function GET(request: NextRequest) {
     const gradeLevel = searchParams.get('gradeLevel');
     const genre = searchParams.get('genre');
     const hasAudio = searchParams.get('hasAudio'); // 'true', 'false', or null
+    const includeArchived = searchParams.get('includeArchived'); // 'true' to include archived stories
+    const archivedOnly = searchParams.get('archivedOnly'); // 'true' to show only archived stories
 
     const offset = (page - 1) * limit;
 
     // Build query conditions
-    const conditions = [eq(stories.active, true)];
+    const conditions = [];
+
+    // Handle archive filtering
+    if (archivedOnly === 'true') {
+      conditions.push(eq(stories.active, false));
+    } else if (includeArchived !== 'true') {
+      // Default behavior: only show active stories
+      conditions.push(eq(stories.active, true));
+    }
+    // If includeArchived is true but archivedOnly is not, we don't filter by active status
 
     if (search) {
       conditions.push(

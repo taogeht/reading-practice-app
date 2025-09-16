@@ -6,6 +6,7 @@ import { StoryLibrary } from "@/components/stories/story-library";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
 import { CreateClassDialog } from "@/components/classes/create-class-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
+import { ClassQRCode } from "@/components/classes/class-qr-code";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -353,7 +354,7 @@ export default function TeacherDashboardPage() {
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => window.location.href = '/teacher/classes'}
+                  onClick={() => router.push('/teacher/classes')}
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Manage Classes & Students
@@ -380,11 +381,39 @@ export default function TeacherDashboardPage() {
                         <span className="ml-1 font-medium">{classInfo.pendingSubmissions}</span>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" className="mt-3 w-full">
-                      View Class Details
-                    </Button>
+                    <div className="flex gap-2 mt-3">
+                      <ClassQRCode classId={classInfo.id} className={classInfo.name} />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => router.push(`/teacher/classes/${classInfo.id}`)}
+                      >
+                        View Class Details
+                      </Button>
+                    </div>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+
+            {/* Archived Stories Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Archived Stories</CardTitle>
+                <CardDescription>
+                  Stories you've archived - not visible to students
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StoryLibrary
+                  variant="compact"
+                  archivedOnly={true}
+                  selectable={true}
+                  onStorySelect={(story) => {
+                    window.location.href = `/teacher/stories/${story.id}`;
+                  }}
+                />
               </CardContent>
             </Card>
           </div>

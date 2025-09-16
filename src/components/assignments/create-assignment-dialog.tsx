@@ -28,12 +28,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { CalendarIcon, BookOpen, Users, Volume2, VolumeX } from "lucide-react";
-import { format } from "date-fns";
+import { BookOpen, Users, Volume2, VolumeX } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -43,8 +39,6 @@ const assignmentSchema = z.object({
   description: z.string().optional(),
   storyId: z.string().min(1, "Please select a story"),
   classId: z.string().min(1, "Please select a class"),
-  dueDate: z.date().optional(),
-  maxAttempts: z.number().min(1).max(10).default(3),
   instructions: z.string().optional(),
 });
 
@@ -89,7 +83,6 @@ export function CreateAssignmentDialog({
       description: "",
       storyId: "",
       classId: "",
-      maxAttempts: 3,
       instructions: "",
     },
   });
@@ -133,10 +126,7 @@ export function CreateAssignmentDialog({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...data,
-          dueAt: data.dueDate?.toISOString(),
-        }),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -319,75 +309,6 @@ export function CreateAssignmentDialog({
               )}
             />
 
-            {/* Due Date */}
-            <FormField
-              control={form.control}
-              name="dueDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Due Date (Optional)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a due date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormDescription>
-                    When do you want students to complete this assignment?
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Max Attempts */}
-            <FormField
-              control={form.control}
-              name="maxAttempts"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Maximum Attempts</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="10"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    How many times can students submit recordings for this assignment?
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* Description */}
             <FormField

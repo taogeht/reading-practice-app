@@ -60,3 +60,61 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !['teacher', 'admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const recordingId = params.id;
+
+    // First verify the recording exists and the teacher owns the assignment
+    const recording = await db
+      .select({
+        id: recordings.id,
+        assignmentId: recordings.assignmentId,
+        teacherId: assignments.teacherId,
+      })
+      .from(recordings)
+      .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
+      .where(eq(recordings.id, recordingId))
+      .limit(1);
+
+    if (!recording.length) {
+      return NextResponse.json(
+        { error: 'Recording not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if the teacher owns the assignment
+    if (recording[0].teacherId !== user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized to delete this recording' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the recording
+    await db
+      .delete(recordings)
+      .where(eq(recordings.id, recordingId));
+
+    return NextResponse.json({
+      success: true,
+      message: 'Recording deleted successfully',
+    });
+
+  } catch (error) {
+    console.error('Error deleting recording:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

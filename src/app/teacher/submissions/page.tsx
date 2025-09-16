@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star, AlertCircle } from "lucide-react";
+import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star, AlertCircle, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -17,6 +17,8 @@ interface Recording {
   studentId: string;
   studentFirstName: string;
   studentLastName: string;
+  classId: string;
+  className: string;
   audioUrl: string;
   audioDurationSeconds: number | null;
   attemptNumber: number;
@@ -202,10 +204,68 @@ export default function TeacherSubmissionsPage() {
     }
   };
 
+  const deleteRecording = async (recordingId: string, studentName: string) => {
+    const confirmed = confirm(`Are you sure you want to delete the recording by ${studentName}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/recordings/${recordingId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete recording');
+      }
+
+      // Refresh recordings list
+      await fetchRecordings();
+      alert('Recording deleted successfully');
+    } catch (error) {
+      console.error('Error deleting recording:', error);
+      alert('Failed to delete recording. Please try again.');
+    }
+  };
+
+  const deleteAllClassRecordings = async (classId: string, className: string) => {
+    const confirmed = confirm(`Are you sure you want to delete ALL recordings from class "${className}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/recordings?classId=${classId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete recordings');
+      }
+
+      // Refresh recordings list
+      await fetchRecordings();
+      alert(`All recordings from class "${className}" have been deleted`);
+    } catch (error) {
+      console.error('Error deleting class recordings:', error);
+      alert('Failed to delete recordings. Please try again.');
+    }
+  };
+
   const filteredRecordings = recordings.filter(recording => {
     if (filter === 'all') return true;
     return recording.status === filter;
   });
+
+  // Group recordings by class
+  const recordingsByClass = filteredRecordings.reduce((acc, recording) => {
+    const classKey = recording.classId;
+    if (!acc[classKey]) {
+      acc[classKey] = {
+        className: recording.className,
+        classId: recording.classId,
+        recordings: []
+      };
+    }
+    acc[classKey].recordings.push(recording);
+    return acc;
+  }, {} as Record<string, { className: string; classId: string; recordings: Recording[] }>);
 
   const pendingCount = recordings.filter(r => r.status === 'pending').length;
   const reviewedCount = recordings.filter(r => r.status === 'reviewed').length;
@@ -290,7 +350,7 @@ export default function TeacherSubmissionsPage() {
           </Card>
         )}
 
-        {filteredRecordings.length === 0 ? (
+        {Object.keys(recordingsByClass).length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
@@ -306,182 +366,219 @@ export default function TeacherSubmissionsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {filteredRecordings.map((recording) => (
-              <Card key={recording.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-lg">{recording.assignmentTitle}</CardTitle>
-                        <Badge className={getStatusColor(recording.status)}>
-                          {recording.status}
-                        </Badge>
-                        {recording.accuracyScore && (
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <Star className="w-3 h-3" />
-                            {recording.accuracyScore}%
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          {recording.studentFirstName} {recording.studentLastName}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {format(new Date(recording.submittedAt), 'MMM d, yyyy \'at\' h:mm a')}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          Attempt #{recording.attemptNumber}
-                        </span>
-                        {recording.audioDurationSeconds && (
-                          <span className="flex items-center gap-1">
-                            <Volume2 className="w-4 h-4" />
-                            {Math.floor(recording.audioDurationSeconds / 60)}:{(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => playAudio(recording.id)}
-                        disabled={loadingAudio.has(recording.id)}
-                      >
-                        {playingAudio === recording.id ? (
-                          <Pause className="w-4 h-4 mr-1" />
-                        ) : loadingAudio.has(recording.id) ? (
-                          <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                        ) : (
-                          <Play className="w-4 h-4 mr-1" />
-                        )}
-                        {loadingAudio.has(recording.id) ? 'Loading...' :
-                         playingAudio === recording.id ? 'Pause' : 'Listen to Recording'}
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          let downloadUrl = presignedUrls.get(recording.id);
-                          if (!downloadUrl) {
-                            downloadUrl = await getPresignedUrl(recording.id);
-                          }
-                          if (downloadUrl) {
-                            window.open(downloadUrl, '_blank');
-                          } else {
-                            alert('Unable to generate download link. Please try again.');
-                          }
-                        }}
-                        title="Download recording"
-                        disabled={loadingAudio.has(recording.id)}
-                      >
-                        📥 Download
-                      </Button>
-
-                      <audio
-                        id={`audio-${recording.id}`}
-                        onEnded={() => setPlayingAudio(null)}
-                        onPause={() => setPlayingAudio(null)}
-                        onError={() => {
-                          setPlayingAudio(null);
-                          setAudioErrors(prev => new Set([...prev, recording.id]));
-                        }}
-                        onLoadedData={() => {
-                          // Audio loaded successfully
-                        }}
-                        onLoadStart={() => {
-                          // Audio loading started
-                        }}
-                        preload="none"
-                        controls={false}
-                        style={{ display: 'none' }}
-                      >
-                        <source type="audio/webm; codecs=opus" />
-                        <source type="audio/webm" />
-                        <source type="audio/mp4" />
-                        <source type="audio/mpeg" />
-                        Your browser does not support the audio element.
-                      </audio>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {feedbackMode === recording.id ? (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => submitFeedback(recording.id)}
-                            disabled={submittingFeedback || !feedbackText.trim()}
-                          >
-                            {submittingFeedback ? 'Saving...' : 'Save Feedback'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={cancelFeedback}
-                            disabled={submittingFeedback}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
-                          >
-                            {recording.teacherFeedback ? 'Edit Feedback' : 'Add Feedback'}
-                          </Button>
-                          {recording.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
-                            >
-                              Provide Feedback
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {feedbackMode === recording.id && (
-                    <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
-                      <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-2">
-                        Teacher Feedback
-                      </label>
-                      <Textarea
-                        id={`feedback-${recording.id}`}
-                        value={feedbackText}
-                        onChange={(e) => setFeedbackText(e.target.value)}
-                        placeholder="Enter your feedback for this recording..."
-                        rows={4}
-                        disabled={submittingFeedback}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        This feedback will be visible to the student and will mark the recording as reviewed.
+          <div className="space-y-8">
+            {Object.values(recordingsByClass).map(({ className, classId, recordings }) => (
+              <div key={classId} className="space-y-4">
+                {/* Class Header */}
+                <div className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">{className}</h2>
+                      <p className="text-sm text-gray-600">
+                        {recordings.length} submission{recordings.length !== 1 ? 's' : ''}
                       </p>
                     </div>
-                  )}
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteAllClassRecordings(classId, className)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete All from Class
+                  </Button>
+                </div>
 
-                  {recording.teacherFeedback && feedbackMode !== recording.id && (
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-1">Your Feedback:</h4>
-                      <p className="text-blue-700 text-sm">{recording.teacherFeedback}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                {/* Class Recordings */}
+                <div className="space-y-4 ml-4">
+                  {recordings.map((recording) => (
+                    <Card key={recording.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <CardTitle className="text-lg">{recording.assignmentTitle}</CardTitle>
+                              <Badge className={getStatusColor(recording.status)}>
+                                {recording.status}
+                              </Badge>
+                              {recording.accuracyScore && (
+                                <Badge variant="outline" className="flex items-center gap-1">
+                                  <Star className="w-3 h-3" />
+                                  {recording.accuracyScore}%
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <User className="w-4 h-4" />
+                                {recording.studentFirstName} {recording.studentLastName}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {format(new Date(recording.submittedAt), 'MMM d, yyyy \'at\' h:mm a')}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                Attempt #{recording.attemptNumber}
+                              </span>
+                              {recording.audioDurationSeconds && (
+                                <span className="flex items-center gap-1">
+                                  <Volume2 className="w-4 h-4" />
+                                  {Math.floor(recording.audioDurationSeconds / 60)}:{(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteRecording(recording.id, `${recording.studentFirstName} ${recording.studentLastName}`)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => playAudio(recording.id)}
+                              disabled={loadingAudio.has(recording.id)}
+                            >
+                              {playingAudio === recording.id ? (
+                                <Pause className="w-4 h-4 mr-1" />
+                              ) : loadingAudio.has(recording.id) ? (
+                                <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                              ) : (
+                                <Play className="w-4 h-4 mr-1" />
+                              )}
+                              {loadingAudio.has(recording.id) ? 'Loading...' :
+                               playingAudio === recording.id ? 'Pause' : 'Listen to Recording'}
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                let downloadUrl = presignedUrls.get(recording.id);
+                                if (!downloadUrl) {
+                                  downloadUrl = await getPresignedUrl(recording.id);
+                                }
+                                if (downloadUrl) {
+                                  window.open(downloadUrl, '_blank');
+                                } else {
+                                  alert('Unable to generate download link. Please try again.');
+                                }
+                              }}
+                              title="Download recording"
+                              disabled={loadingAudio.has(recording.id)}
+                            >
+                              📥 Download
+                            </Button>
+
+                            <audio
+                              id={`audio-${recording.id}`}
+                              onEnded={() => setPlayingAudio(null)}
+                              onPause={() => setPlayingAudio(null)}
+                              onError={() => {
+                                setPlayingAudio(null);
+                                setAudioErrors(prev => new Set([...prev, recording.id]));
+                              }}
+                              onLoadedData={() => {
+                                // Audio loaded successfully
+                              }}
+                              onLoadStart={() => {
+                                // Audio loading started
+                              }}
+                              preload="none"
+                              controls={false}
+                              style={{ display: 'none' }}
+                            >
+                              <source type="audio/webm; codecs=opus" />
+                              <source type="audio/webm" />
+                              <source type="audio/mp4" />
+                              <source type="audio/mpeg" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+
+                          <div className="flex gap-2">
+                            {feedbackMode === recording.id ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => submitFeedback(recording.id)}
+                                  disabled={submittingFeedback || !feedbackText.trim()}
+                                >
+                                  {submittingFeedback ? 'Saving...' : 'Save Feedback'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={cancelFeedback}
+                                  disabled={submittingFeedback}
+                                >
+                                  Cancel
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
+                                >
+                                  {recording.teacherFeedback ? 'Edit Feedback' : 'Add Feedback'}
+                                </Button>
+                                {recording.status === 'pending' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
+                                  >
+                                    Provide Feedback
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {feedbackMode === recording.id && (
+                          <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
+                            <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-2">
+                              Teacher Feedback
+                            </label>
+                            <Textarea
+                              id={`feedback-${recording.id}`}
+                              value={feedbackText}
+                              onChange={(e) => setFeedbackText(e.target.value)}
+                              placeholder="Enter your feedback for this recording..."
+                              rows={4}
+                              disabled={submittingFeedback}
+                              className="w-full"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              This feedback will be visible to the student and will mark the recording as reviewed.
+                            </p>
+                          </div>
+                        )}
+
+                        {recording.teacherFeedback && feedbackMode !== recording.id && (
+                          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 className="font-medium text-blue-800 mb-1">Your Feedback:</h4>
+                            <p className="text-blue-700 text-sm">{recording.teacherFeedback}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

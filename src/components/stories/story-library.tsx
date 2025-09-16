@@ -36,6 +36,7 @@ interface StoryLibraryProps {
     hasAudio?: boolean;
   };
   selectable?: boolean;
+  archivedOnly?: boolean;
 }
 
 export function StoryLibrary({
@@ -44,6 +45,7 @@ export function StoryLibrary({
   variant = 'grid',
   filter,
   selectable = true,
+  archivedOnly = false,
 }: StoryLibraryProps) {
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +92,11 @@ export function StoryLibrary({
       if (filter?.readingLevel) params.append('readingLevel', filter.readingLevel);
       if (filter?.gradeLevel) params.append('gradeLevel', filter.gradeLevel.toString());
       if (filter?.hasAudio !== undefined) params.append('hasAudio', filter.hasAudio.toString());
+
+      // Add archived filter
+      if (archivedOnly) {
+        params.append('archivedOnly', 'true');
+      }
 
       const response = await fetch(`/api/stories?${params.toString()}`);
       

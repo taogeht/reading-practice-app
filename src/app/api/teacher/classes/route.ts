@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { classes, schools, schoolMemberships, teachers } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { classes, schools, schoolMemberships, teachers, classEnrollments } from '@/lib/db/schema';
+import { eq, and, count } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -34,7 +34,22 @@ export async function GET(request: NextRequest) {
       .where(eq(classes.teacherId, user.id))
       .orderBy(classes.createdAt);
 
-    return NextResponse.json({ classes: teacherClasses }, { status: 200 });
+    // Get student counts for each class
+    const classesWithCounts = await Promise.all(
+      teacherClasses.map(async (cls) => {
+        const studentCount = await db
+          .select({ count: count() })
+          .from(classEnrollments)
+          .where(eq(classEnrollments.classId, cls.id));
+
+        return {
+          ...cls,
+          studentCount: studentCount[0]?.count || 0,
+        };
+      })
+    );
+
+    return NextResponse.json({ classes: classesWithCounts }, { status: 200 });
 
   } catch (error) {
     console.error('Get classes error:', error);

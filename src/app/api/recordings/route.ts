@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { recordings, assignments, students, classes, classEnrollments, users } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // For teachers, get recordings from their assignments
+    // For teachers, get recordings from their assignments with class information
     const teacherRecordings = await db
       .select({
         id: recordings.id,
@@ -141,6 +141,8 @@ export async function GET(request: NextRequest) {
         studentId: recordings.studentId,
         studentFirstName: users.firstName,
         studentLastName: users.lastName,
+        classId: assignments.classId,
+        className: classes.name,
         audioUrl: recordings.audioUrl,
         audioDurationSeconds: recordings.audioDurationSeconds,
         attemptNumber: recordings.attemptNumber,
@@ -154,6 +156,7 @@ export async function GET(request: NextRequest) {
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
       .innerJoin(students, eq(recordings.studentId, students.id))
       .innerJoin(users, eq(students.id, users.id))
+      .innerJoin(classes, eq(assignments.classId, classes.id))
       .where(eq(assignments.teacherId, user.id))
       .orderBy(desc(recordings.submittedAt));
 
@@ -166,6 +169,68 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching recordings:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !['teacher', 'admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const classId = url.searchParams.get('classId');
+
+    if (classId) {
+      // Delete all recordings from a specific class
+      // First verify the teacher owns the class
+      const teacherClass = await db.query.classes.findFirst({
+        where: and(eq(classes.id, classId), eq(classes.teacherId, user.id)),
+      });
+
+      if (!teacherClass) {
+        return NextResponse.json(
+          { error: 'Class not found or unauthorized' },
+          { status: 404 }
+        );
+      }
+
+      // First get all assignment IDs for this class
+      const classAssignments = await db
+        .select({ id: assignments.id })
+        .from(assignments)
+        .where(and(
+          eq(assignments.classId, classId),
+          eq(assignments.teacherId, user.id)
+        ));
+
+      const assignmentIds = classAssignments.map(a => a.id);
+
+      if (assignmentIds.length > 0) {
+        // Delete all recordings from assignments in this class
+        await db
+          .delete(recordings)
+          .where(inArray(recordings.assignmentId, assignmentIds));
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Deleted all recordings from class ${teacherClass.name}`,
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Class ID is required' },
+        { status: 400 }
+      );
+    }
+
+  } catch (error) {
+    console.error('Error deleting recordings:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

@@ -7,18 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { TTSGenerationDialog } from "./tts-generation-dialog";
-import { 
-  ArrowLeft, 
-  Clock, 
-  BookOpen, 
-  Users, 
-  Volume2, 
+import { EditStoryDialog } from "./edit-story-dialog";
+import {
+  ArrowLeft,
+  Clock,
+  BookOpen,
+  Users,
+  Volume2,
   VolumeX,
   Play,
   Pause,
   Download,
   Settings,
-  User
+  User,
+  Trash2,
+  Archive,
+  ArchiveRestore
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -36,6 +40,7 @@ interface Story {
   ttsAudioDurationSeconds?: number | null;
   ttsGeneratedAt?: string | null;
   elevenLabsVoiceId?: string | null;
+  active?: boolean;
   createdAt: string;
   updatedAt: string;
   creatorFirstName?: string | null;
@@ -50,6 +55,9 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
   const router = useRouter();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTTSDialog, setShowTTSDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   const handlePlayPause = () => {
@@ -133,9 +141,67 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const creatorName = story.creatorFirstName && story.creatorLastName 
+  const creatorName = story.creatorFirstName && story.creatorLastName
     ? `${story.creatorFirstName} ${story.creatorLastName}`
     : 'Unknown';
+
+  const handleDeleteStory = async () => {
+    const confirmed = confirm(
+      `Are you sure you want to delete "${story.title}"? This action cannot be undone and will remove all associated assignments and recordings.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/stories/${story.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete story');
+      }
+
+      // Navigate back to story library after successful deletion
+      router.push('/teacher/dashboard');
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete story. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleArchiveStory = async () => {
+    const isCurrentlyArchived = story.active === false;
+    const action = isCurrentlyArchived ? 'unarchive' : 'archive';
+    const confirmed = confirm(
+      `Are you sure you want to ${action} "${story.title}"?${!isCurrentlyArchived ? ' This will hide it from students and the main story library.' : ' This will make it visible again in the story library.'}`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsArchiving(true);
+      const response = await fetch(`/api/stories/${story.id}/archive`, {
+        method: isCurrentlyArchived ? 'DELETE' : 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to ${action} story`);
+      }
+
+      // Refresh the page to show updated story status
+      window.location.reload();
+    } catch (error) {
+      console.error(`Error ${action}ing story:`, error);
+      alert(error instanceof Error ? error.message : `Failed to ${action} story. Please try again.`);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
 
   return (
     <>
@@ -152,9 +218,37 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
           </Button>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEditDialog(true)}
+            >
               <Settings className="w-4 h-4 mr-2" />
               Edit Story
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleArchiveStory}
+              disabled={isArchiving}
+              className={story.active === false ? "text-blue-600 hover:text-blue-700 hover:border-blue-300" : "text-orange-600 hover:text-orange-700 hover:border-orange-300"}
+            >
+              {story.active === false ? (
+                <ArchiveRestore className="w-4 h-4 mr-2" />
+              ) : (
+                <Archive className="w-4 h-4 mr-2" />
+              )}
+              {isArchiving ? (story.active === false ? 'Unarchiving...' : 'Archiving...') : (story.active === false ? 'Unarchive Story' : 'Archive Story')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeleteStory}
+              disabled={isDeleting}
+              className="text-red-600 hover:text-red-700 hover:border-red-300"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {isDeleting ? 'Deleting...' : 'Delete Story'}
             </Button>
             {story.ttsAudioUrl && (
               <Button variant="outline" size="sm" asChild>
@@ -406,6 +500,17 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
         story={story}
         onSuccess={() => {
           // Refresh the page to show updated audio
+          window.location.reload();
+        }}
+      />
+
+      {/* Edit Story Dialog */}
+      <EditStoryDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        story={story}
+        onSuccess={() => {
+          // Refresh the page to show updated story
           window.location.reload();
         }}
       />
