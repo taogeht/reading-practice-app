@@ -24,6 +24,7 @@ interface AudioRecorderProps {
   maxDurationSeconds?: number;
   showLivePreview?: boolean;
   disabled?: boolean;
+  assignmentId?: string;
 }
 
 export function AudioRecorder({
@@ -31,6 +32,7 @@ export function AudioRecorder({
   maxDurationSeconds = 300, // 5 minutes default
   showLivePreview = true,
   disabled = false,
+  assignmentId,
 }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -204,6 +206,94 @@ export function AudioRecorder({
   };
 
   const uploadRecording = async () => {
+    if (!audioBlob) return;
+
+    // Check if we have an assignment ID for assignment-specific upload
+    if (assignmentId) {
+      await uploadAssignmentRecording();
+    } else {
+      await uploadGenericRecording();
+    }
+  };
+
+  const uploadAssignmentRecording = async () => {
+    if (!audioBlob || !assignmentId) return;
+
+    // Convert blob to File with clean MIME type
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const cleanMimeType = audioBlob.type.split(';')[0].trim();
+    const file = new File([audioBlob], `recording-${timestamp}.webm`, {
+      type: cleanMimeType
+    });
+
+    setIsUploading(true);
+    setUploadProgress({ loaded: 0, total: file.size, percentage: 0 });
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('assignmentId', assignmentId);
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (!prev || prev.percentage >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          const newPercentage = Math.min(prev.percentage + 10, 90);
+          return {
+            loaded: (newPercentage / 100) * file.size,
+            total: file.size,
+            percentage: newPercentage
+          };
+        });
+      }, 200);
+
+      const response = await fetch('/api/recordings/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      clearInterval(progressInterval);
+      setUploadProgress({ loaded: file.size, total: file.size, percentage: 100 });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Upload failed');
+      }
+
+      const result = await response.json();
+
+      setUploadResult({
+        success: true,
+        publicUrl: result.recording?.audioUrl,
+        key: result.recording?.id
+      });
+
+      if (onRecordingComplete) {
+        onRecordingComplete({
+          success: true,
+          publicUrl: result.recording?.audioUrl,
+          key: result.recording?.id
+        });
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      setError(errorMessage);
+      setUploadResult({ success: false, error: errorMessage });
+
+      if (onRecordingComplete) {
+        onRecordingComplete({ success: false, error: errorMessage });
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const uploadGenericRecording = async () => {
     if (!audioBlob) return;
 
     // Convert blob to File with clean MIME type

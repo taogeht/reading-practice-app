@@ -62,10 +62,6 @@ export function StoryLibrary({
   const grades = [1, 2, 3, 4, 5];
   const genres = ['Fairy Tale', 'Fiction', 'Non-fiction', 'Poetry', 'Science', 'History'];
 
-  useEffect(() => {
-    fetchStories();
-  }, [fetchStories]);
-
   const fetchStories = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -115,6 +111,10 @@ export function StoryLibrary({
     filter,
     archivedOnly
   ]);
+
+  useEffect(() => {
+    fetchStories();
+  }, [fetchStories]);
 
   const clearFilters = () => {
     setSearchTerm('');

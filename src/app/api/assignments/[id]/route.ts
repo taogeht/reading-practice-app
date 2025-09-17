@@ -1,68 +1,184 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { assignments, stories, classes, teachers } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { assignments, stories, classes, teachers, recordings, classEnrollments } from '@/lib/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || !['teacher', 'admin'].includes(user.role)) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get teacher ID
-    const teacher = await db.query.teachers.findFirst({
-      where: eq(teachers.id, user.id),
-    });
+    const { id: assignmentId } = await params;
 
-    if (!teacher) {
-      return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
-    }
-
-    // Get assignment details
+    // Get assignment with story details
     const assignment = await db
       .select({
         id: assignments.id,
         title: assignments.title,
         description: assignments.description,
-        status: assignments.status,
-        assignedAt: assignments.assignedAt,
         dueAt: assignments.dueAt,
         maxAttempts: assignments.maxAttempts,
         instructions: assignments.instructions,
         createdAt: assignments.createdAt,
         storyId: assignments.storyId,
-        storyTitle: stories.title,
         classId: assignments.classId,
+        teacherId: assignments.teacherId,
+        storyTitle: stories.title,
+        storyContent: stories.content,
+        storyReadingLevel: stories.readingLevel,
+        storyWordCount: stories.wordCount,
+        storyTtsAudioUrl: stories.ttsAudioUrl,
+        storyTtsAudioDurationSeconds: stories.ttsAudioDurationSeconds,
+        storyAuthor: stories.author,
+        storyGenre: stories.genre,
         className: classes.name,
       })
       .from(assignments)
-      .leftJoin(stories, eq(assignments.storyId, stories.id))
+      .innerJoin(stories, eq(assignments.storyId, stories.id))
       .leftJoin(classes, eq(assignments.classId, classes.id))
-      .where(and(
-        eq(assignments.id, params.id),
-        eq(assignments.teacherId, teacher.id)
-      ))
+      .where(eq(assignments.id, assignmentId))
       .limit(1);
 
-    if (!assignment.length) {
+    if (assignment.length === 0) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
-      assignment: assignment[0],
-    });
+    const assignmentData = assignment[0];
+
+    // Handle student access
+    if (user.role === 'student') {
+      // Verify student has access to this assignment through their class enrollment
+      const studentAccess = await db
+        .select({ id: classEnrollments.id })
+        .from(classEnrollments)
+        .where(
+          and(
+            eq(classEnrollments.studentId, user.id),
+            eq(classEnrollments.classId, assignmentData.classId)
+          )
+        )
+        .limit(1);
+
+      if (studentAccess.length === 0) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+
+      // Get student's recording attempts for this assignment
+      const studentRecordings = await db
+        .select({
+          id: recordings.id,
+          attemptNumber: recordings.attemptNumber,
+          audioUrl: recordings.audioUrl,
+          transcription: recordings.transcription,
+          score: recordings.score,
+          feedback: recordings.feedback,
+          createdAt: recordings.createdAt,
+          status: recordings.status,
+        })
+        .from(recordings)
+        .where(
+          and(
+            eq(recordings.assignmentId, assignmentId),
+            eq(recordings.studentId, user.id)
+          )
+        )
+        .orderBy(desc(recordings.attemptNumber));
+
+      // Calculate student's status and progress
+      const completedAttempts = studentRecordings.length;
+      const bestScore = studentRecordings.length > 0
+        ? Math.max(...studentRecordings.map(r => r.score || 0))
+        : null;
+
+      const hasCompletedRecording = studentRecordings.some(r => r.status === 'completed');
+      const canAttempt = completedAttempts < assignmentData.maxAttempts;
+
+      return NextResponse.json({
+        success: true,
+        assignment: {
+          id: assignmentData.id,
+          title: assignmentData.title,
+          description: assignmentData.description,
+          dueAt: assignmentData.dueAt,
+          maxAttempts: assignmentData.maxAttempts,
+          instructions: assignmentData.instructions,
+          story: {
+            id: assignmentData.storyId,
+            title: assignmentData.storyTitle,
+            content: assignmentData.storyContent,
+            readingLevel: assignmentData.storyReadingLevel,
+            wordCount: assignmentData.storyWordCount,
+            ttsAudioUrl: assignmentData.storyTtsAudioUrl,
+            ttsAudioDurationSeconds: assignmentData.storyTtsAudioDurationSeconds,
+            author: assignmentData.storyAuthor,
+            genre: assignmentData.storyGenre,
+          },
+        },
+        studentProgress: {
+          completedAttempts,
+          maxAttempts: assignmentData.maxAttempts,
+          bestScore,
+          hasCompletedRecording,
+          canAttempt,
+          recordings: studentRecordings,
+        },
+      });
+    }
+
+    // Handle teacher/admin access
+    if (['teacher', 'admin'].includes(user.role)) {
+      // For teachers, verify they own this assignment
+      if (user.role === 'teacher') {
+        const teacher = await db.query.teachers.findFirst({
+          where: eq(teachers.id, user.id),
+        });
+
+        if (!teacher || assignmentData.teacherId !== teacher.id) {
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
+      }
+
+      // Return full assignment data for teachers/admins
+      return NextResponse.json({
+        success: true,
+        assignment: {
+          id: assignmentData.id,
+          title: assignmentData.title,
+          description: assignmentData.description,
+          dueAt: assignmentData.dueAt,
+          maxAttempts: assignmentData.maxAttempts,
+          instructions: assignmentData.instructions,
+          classId: assignmentData.classId,
+          className: assignmentData.className,
+          story: {
+            id: assignmentData.storyId,
+            title: assignmentData.storyTitle,
+            content: assignmentData.storyContent,
+            readingLevel: assignmentData.storyReadingLevel,
+            wordCount: assignmentData.storyWordCount,
+            ttsAudioUrl: assignmentData.storyTtsAudioUrl,
+            ttsAudioDurationSeconds: assignmentData.storyTtsAudioDurationSeconds,
+            author: assignmentData.storyAuthor,
+            genre: assignmentData.storyGenre,
+          },
+        },
+      });
+    }
+
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   } catch (error) {
     console.error('Error fetching assignment:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
