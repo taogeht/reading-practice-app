@@ -7,13 +7,15 @@ import { r2Client } from '@/lib/storage/r2-client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     // Get the recording and verify teacher has access to it
     const recording = await db
@@ -25,7 +27,7 @@ export async function GET(
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
       .where(and(
-        eq(recordings.id, params.id),
+        eq(recordings.id, id),
         eq(assignments.teacherId, user.id)
       ))
       .limit(1);

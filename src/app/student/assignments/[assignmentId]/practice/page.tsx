@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
-import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, Calendar } from "lucide-react";
+import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, Calendar, StopCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -52,13 +52,23 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   const [hasRecording, setHasRecording] = useState(false);
   const [isPlayingStory, setIsPlayingStory] = useState(false);
   const [recordingResult, setRecordingResult] = useState<any>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [storyAudio, setStoryAudio] = useState<HTMLAudioElement | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetchAssignment();
   }, [params.assignmentId]);
+
+  // Cleanup audio when component unmounts
+  useEffect(() => {
+    return () => {
+      if (storyAudio) {
+        storyAudio.pause();
+        storyAudio.currentTime = 0;
+      }
+    };
+  }, [storyAudio]);
 
   const fetchAssignment = async () => {
     try {
@@ -87,58 +97,43 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   };
 
   const handlePlayStory = () => {
-    if (assignment?.story.ttsAudioUrl && !isPlayingStory) {
-      setIsPlayingStory(true);
+    if (!assignment?.story.ttsAudioUrl) return;
+
+    if (isPlayingStory && storyAudio) {
+      // Stop the audio
+      storyAudio.pause();
+      storyAudio.currentTime = 0;
+      setIsPlayingStory(false);
+      setStoryAudio(null);
+    } else {
+      // Start playing
       const audio = new Audio(assignment.story.ttsAudioUrl);
-      audio.play();
-      audio.onended = () => setIsPlayingStory(false);
+      setStoryAudio(audio);
+      setIsPlayingStory(true);
+
+      audio.play().catch(() => {
+        setIsPlayingStory(false);
+        setStoryAudio(null);
+        console.error('Error playing TTS audio');
+      });
+
+      audio.onended = () => {
+        setIsPlayingStory(false);
+        setStoryAudio(null);
+      };
+
       audio.onerror = () => {
         setIsPlayingStory(false);
+        setStoryAudio(null);
         console.error('Error playing TTS audio');
       };
     }
   };
 
   const handleRecordingComplete = async (result: any) => {
-    if (result.success && assignment) {
-      setSubmitting(true);
-      try {
-        // Submit the recording to the database
-        const response = await fetch('/api/recordings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            assignmentId: assignment.id,
-            storyId: assignment.story.id,
-            audioUrl: result.publicUrl,
-            audioDurationSeconds: null,
-            fileSizeBytes: null,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to submit recording');
-        }
-
-        const submissionResult = await response.json();
-        setRecordingResult({
-          ...result,
-          submission: submissionResult,
-        });
-      } catch (error) {
-        console.error('Error submitting recording:', error);
-        setRecordingResult({
-          success: false,
-          error: 'Failed to submit recording. Please try again.',
-        });
-      } finally {
-        setSubmitting(false);
-      }
-    } else {
-      setRecordingResult(result);
-    }
+    // The AudioRecorder with assignmentId already handles upload and database insertion
+    // via /api/recordings/upload, so we just need to handle the result
+    setRecordingResult(result);
   };
 
   const handleStartOver = () => {
@@ -289,12 +284,24 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
               <div className="mb-6">
                 <Button
                   onClick={handlePlayStory}
-                  disabled={isPlayingStory}
                   size="lg"
-                  className="w-full h-16 text-xl bg-blue-600 hover:bg-blue-700"
+                  className={`w-full h-16 text-xl ${
+                    isPlayingStory
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  <Volume2 className="w-8 h-8 mr-3" />
-                  {isPlayingStory ? 'Playing Story...' : 'Listen to Story'}
+                  {isPlayingStory ? (
+                    <>
+                      <StopCircle className="w-8 h-8 mr-3" />
+                      Stop Story
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-8 h-8 mr-3" />
+                      Listen to Story
+                    </>
+                  )}
                 </Button>
               </div>
             )}
@@ -354,15 +361,10 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                 onRecordingComplete={handleRecordingComplete}
                 maxDurationSeconds={300}
                 showLivePreview={true}
-                disabled={submitting}
+                disabled={false}
+                assignmentId={assignment.id}
               />
 
-              {submitting && (
-                <div className="mt-8 p-6 bg-blue-50 rounded-lg">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-xl text-blue-800">Submitting your recording...</p>
-                </div>
-              )}
 
               {recordingResult && !recordingResult.success && (
                 <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-lg">
