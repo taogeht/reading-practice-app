@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
     const assignmentWithAccess = await db
       .select({
         id: assignments.id,
-        maxAttempts: assignments.maxAttempts,
         status: assignments.status,
       })
       .from(assignments)
@@ -72,13 +71,6 @@ export async function POST(request: NextRequest) {
       ? (existingRecordings[0].attemptNumber || 0) + 1
       : 1;
 
-    // Check if student has exceeded max attempts
-    if (assignment.maxAttempts && attemptNumber > assignment.maxAttempts) {
-      return NextResponse.json(
-        { error: 'Maximum attempts exceeded' },
-        { status: 400 }
-      );
-    }
 
     // Convert file to buffer
     const arrayBuffer = await audioFile.arrayBuffer();

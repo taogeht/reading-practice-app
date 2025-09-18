@@ -95,16 +95,6 @@ export default function StudentDashboardPage() {
   const pendingAssignments = assignments.filter(a => a.status === 'pending');
   const completedAssignments = assignments.filter(a => a.status === 'completed');
 
-  const formatDueDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffInDays === 0) return "Due today";
-    if (diffInDays === 1) return "Due tomorrow";
-    if (diffInDays > 0) return `Due in ${diffInDays} days`;
-    return "Overdue";
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100">
@@ -170,20 +160,14 @@ export default function StudentDashboardPage() {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-medium">{assignment.title}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {formatDueDate(assignment.dueAt)}
-                        </Badge>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
                         Story: {assignment.storyTitle}
                       </p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <Headphones className="w-3 h-3" />
                           Listen & Record
-                        </span>
-                        <span>
-                          {assignment.attempts}/{assignment.maxAttempts} attempts
                         </span>
                       </div>
                     </div>

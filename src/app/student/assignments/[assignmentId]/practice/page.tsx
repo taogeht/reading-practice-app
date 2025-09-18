@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
-import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, Calendar, StopCircle } from "lucide-react";
+import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, StopCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -29,8 +29,6 @@ interface Assignment {
   title: string;
   description: string | null;
   instructions: string | null;
-  dueAt: string | null;
-  maxAttempts: number;
   story: Story;
   attempts: number;
   status: 'pending' | 'completed';
@@ -143,17 +141,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
     setAudioBlob(null);
   };
 
-  const formatDueDate = (dateString: string | null) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffInDays === 0) return "Due today";
-    if (diffInDays === 1) return "Due tomorrow";
-    if (diffInDays > 0) return `Due in ${diffInDays} days`;
-    return "Overdue";
-  };
 
   if (isLoading) {
     return (
@@ -215,17 +202,15 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                 <Button onClick={handleBackToDashboard} className="w-full" size="lg">
                   Back to Dashboard
                 </Button>
-                {assignment.attempts + 1 < assignment.maxAttempts && (
-                  <Button
-                    variant="outline"
-                    onClick={handleStartOver}
-                    className="w-full"
-                    size="lg"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Record Again ({assignment.maxAttempts - assignment.attempts - 1} attempts left)
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={handleStartOver}
+                  className="w-full"
+                  size="lg"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Record Again
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -250,15 +235,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                 <span className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4" />
                   {assignment.story.title}
-                </span>
-                {assignment.dueAt && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {formatDueDate(assignment.dueAt)}
-                  </span>
-                )}
-                <span>
-                  Attempt {assignment.attempts + 1} of {assignment.maxAttempts}
                 </span>
               </div>
             </div>
@@ -401,10 +377,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
               <li className="flex items-start gap-2">
                 <span className="text-purple-600">•</span>
                 <span>Try to read with expression</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600">•</span>
-                <span>You have {assignment.maxAttempts - assignment.attempts} attempts remaining</span>
               </li>
             </ul>
           </CardContent>
