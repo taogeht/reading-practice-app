@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { recordings, assignments } from '@/lib/db/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { recordings, assignments, classes, classEnrollments } from '@/lib/db/schema';
+import { eq, and, count, desc } from 'drizzle-orm';
 import { uploadAudioToR2, generateRecordingKey } from '@/lib/r2';
 
 export const runtime = 'nodejs';
@@ -31,36 +31,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the assignment exists and the student has access
-    const assignment = await db.query.assignments.findFirst({
-      where: eq(assignments.id, assignmentId),
-      with: {
-        class: {
-          with: {
-            enrollments: {
-              where: eq(assignments.id, assignmentId)
-            }
-          }
-        }
-      }
-    });
+    const assignmentWithAccess = await db
+      .select({
+        id: assignments.id,
+        maxAttempts: assignments.maxAttempts,
+        status: assignments.status,
+      })
+      .from(assignments)
+      .innerJoin(classes, eq(assignments.classId, classes.id))
+      .innerJoin(classEnrollments, and(
+        eq(classEnrollments.classId, classes.id),
+        eq(classEnrollments.studentId, user.id)
+      ))
+      .where(and(
+        eq(assignments.id, assignmentId),
+        eq(assignments.status, 'published')
+      ))
+      .limit(1);
 
-    if (!assignment) {
+    if (!assignmentWithAccess.length) {
       return NextResponse.json(
-        { error: 'Assignment not found' },
+        { error: 'Assignment not found or not accessible' },
         { status: 404 }
       );
     }
 
+    const assignment = assignmentWithAccess[0];
+
     // Get current attempt number for this student and assignment
     const existingRecordings = await db
-      .select({ count: count() })
+      .select({ attemptNumber: recordings.attemptNumber })
       .from(recordings)
       .where(and(
-        eq(recordings.studentId, user.id),
-        eq(recordings.assignmentId, assignmentId)
-      ));
+        eq(recordings.assignmentId, assignmentId),
+        eq(recordings.studentId, user.id)
+      ))
+      .orderBy(desc(recordings.attemptNumber));
 
-    const attemptNumber = (existingRecordings[0]?.count || 0) + 1;
+    const attemptNumber = existingRecordings.length > 0
+      ? (existingRecordings[0].attemptNumber || 0) + 1
+      : 1;
 
     // Check if student has exceeded max attempts
     if (assignment.maxAttempts && attemptNumber > assignment.maxAttempts) {
@@ -86,9 +96,9 @@ export async function POST(request: NextRequest) {
       assignmentId: assignmentId,
       attemptNumber: attemptNumber,
       audioUrl: audioUrl,
-      audioSize: buffer.length,
-      duration: null, // TODO: Calculate duration from audio file
-      status: 'submitted',
+      fileSizeBytes: buffer.length,
+      audioDurationSeconds: null, // TODO: Calculate duration from audio file
+      status: 'pending',
       submittedAt: new Date(),
     }).returning();
 

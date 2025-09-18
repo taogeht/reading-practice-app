@@ -1,0 +1,1 @@
+ALTER TABLE "classes" ADD COLUMN "show_practice_stories" boolean DEFAULT false;

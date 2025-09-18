@@ -18,6 +18,9 @@ export async function GET(
 
     const { id: assignmentId } = await params;
 
+    console.log('Assignment API - User:', user.id, user.role);
+    console.log('Assignment API - Assignment ID:', assignmentId);
+
     // Get assignment with story details
     const assignment = await db
       .select({
@@ -47,11 +50,14 @@ export async function GET(
       .where(eq(assignments.id, assignmentId))
       .limit(1);
 
+    console.log('Assignment query result:', assignment);
+
     if (assignment.length === 0) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
     const assignmentData = assignment[0];
+    console.log('Assignment data:', assignmentData);
 
     // Handle student access
     if (user.role === 'student') {
@@ -186,13 +192,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id: assignmentId } = await params;
 
     // Get teacher ID
     const teacher = await db.query.teachers.findFirst({
@@ -228,7 +236,7 @@ export async function PUT(
       .select({ id: assignments.id })
       .from(assignments)
       .where(and(
-        eq(assignments.id, params.id),
+        eq(assignments.id, assignmentId),
         eq(assignments.teacherId, teacher.id)
       ))
       .limit(1);
@@ -250,7 +258,7 @@ export async function PUT(
         instructions,
         status: status || 'published',
       })
-      .where(eq(assignments.id, params.id))
+      .where(eq(assignments.id, assignmentId))
       .returning();
 
     return NextResponse.json({
@@ -269,13 +277,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id: assignmentId } = await params;
 
     // Get teacher ID
     const teacher = await db.query.teachers.findFirst({
@@ -291,7 +301,7 @@ export async function DELETE(
       .select({ id: assignments.id })
       .from(assignments)
       .where(and(
-        eq(assignments.id, params.id),
+        eq(assignments.id, assignmentId),
         eq(assignments.teacherId, teacher.id)
       ))
       .limit(1);
@@ -303,7 +313,7 @@ export async function DELETE(
     // Delete the assignment
     await db
       .delete(assignments)
-      .where(eq(assignments.id, params.id));
+      .where(eq(assignments.id, assignmentId));
 
     return NextResponse.json({
       success: true,

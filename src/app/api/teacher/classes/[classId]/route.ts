@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -20,7 +20,7 @@ export async function GET(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
 
     // Get class details with student count
     const classData = await db
@@ -31,6 +31,7 @@ export async function GET(
         gradeLevel: classes.gradeLevel,
         academicYear: classes.academicYear,
         active: classes.active,
+        showPracticeStories: classes.showPracticeStories,
         createdAt: classes.createdAt,
       })
       .from(classes)
@@ -82,7 +83,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -94,9 +95,9 @@ export async function PUT(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
     const body = await request.json();
-    const { name, description, gradeLevel, academicYear, active } = body;
+    const { name, description, gradeLevel, academicYear, active, showPracticeStories } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -131,6 +132,7 @@ export async function PUT(
         gradeLevel: gradeLevel || null,
         academicYear: academicYear?.trim() || null,
         active: active !== undefined ? active : true,
+        showPracticeStories: showPracticeStories !== undefined ? showPracticeStories : false,
         updatedAt: new Date(),
       })
       .where(eq(classes.id, classId))
@@ -152,7 +154,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -164,7 +166,7 @@ export async function DELETE(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
 
     // Verify teacher owns this class
     const existingClass = await db

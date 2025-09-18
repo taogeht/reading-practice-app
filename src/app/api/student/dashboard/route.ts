@@ -40,6 +40,21 @@ export async function GET(request: NextRequest) {
 
     const student = studentDetails[0];
 
+    // Check if any of the student's classes have practice stories enabled
+    const classWithPracticeStories = await db
+      .select({
+        showPracticeStories: classes.showPracticeStories,
+      })
+      .from(classes)
+      .innerJoin(classEnrollments, eq(classEnrollments.classId, classes.id))
+      .where(and(
+        eq(classEnrollments.studentId, user.id),
+        eq(classes.showPracticeStories, true)
+      ))
+      .limit(1);
+
+    const showPracticeStories = classWithPracticeStories.length > 0;
+
     // Get student's assignments with story details
     const studentAssignments = await db
       .select({
@@ -83,7 +98,7 @@ export async function GET(request: NextRequest) {
     // Build assignment data with attempt information
     const assignmentsWithStatus = studentAssignments.map(assignment => {
       const assignmentRecordings = studentRecordings.filter(r => r.assignmentId === assignment.id);
-      const completedRecordings = assignmentRecordings.filter(r => r.status === 'reviewed');
+      const completedRecordings = assignmentRecordings.filter(r => r.status === 'reviewed' || r.status === 'submitted');
       const bestScore = completedRecordings.length > 0
         ? Math.max(...completedRecordings.map(r => Number(r.accuracyScore) || 0))
         : null;
@@ -135,7 +150,8 @@ export async function GET(request: NextRequest) {
               .reduce((sum, a) => sum + (a.bestScore || 0), 0) /
               completedAssignments.filter(a => a.bestScore).length)
           : null,
-      }
+      },
+      showPracticeStories
     };
 
     return NextResponse.json(dashboardData, { status: 200 });

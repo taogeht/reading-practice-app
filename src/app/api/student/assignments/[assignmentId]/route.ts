@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { assignmentId: string } }
+  { params }: { params: Promise<{ assignmentId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -19,6 +19,8 @@ export async function GET(
         { status: 401 }
       );
     }
+
+    const { assignmentId } = await params;
 
     // Get student details
     const studentDetails = await db
@@ -75,7 +77,7 @@ export async function GET(
         eq(classEnrollments.studentId, user.id)
       ))
       .where(and(
-        eq(assignments.id, params.assignmentId),
+        eq(assignments.id, assignmentId),
         eq(assignments.status, 'published')
       ))
       .limit(1);
@@ -102,13 +104,13 @@ export async function GET(
       })
       .from(recordings)
       .where(and(
-        eq(recordings.assignmentId, params.assignmentId),
+        eq(recordings.assignmentId, assignmentId),
         eq(recordings.studentId, user.id)
       ))
       .orderBy(desc(recordings.submittedAt));
 
     // Determine assignment completion status
-    const completedRecordings = studentRecordings.filter(r => r.status === 'reviewed');
+    const completedRecordings = studentRecordings.filter(r => r.status === 'reviewed' || r.status === 'submitted');
     const bestScore = completedRecordings.length > 0
       ? Math.max(...completedRecordings.map(r => Number(r.accuracyScore) || 0))
       : null;

@@ -37,6 +37,7 @@ interface Class {
   gradeLevel: number | null;
   academicYear: string | null;
   active: boolean;
+  showPracticeStories: boolean;
   createdAt: string;
   studentCount: number;
   students: Student[];
@@ -69,6 +70,7 @@ export default function ClassDetailPage() {
     gradeLevel: "",
     academicYear: "",
     active: true,
+    showPracticeStories: false,
   });
 
   useEffect(() => {
@@ -91,6 +93,7 @@ export default function ClassDetailPage() {
           gradeLevel: data.class.gradeLevel?.toString() || "",
           academicYear: data.class.academicYear || "",
           active: data.class.active,
+          showPracticeStories: data.class.showPracticeStories || false,
         });
       } else {
         console.error('Failed to fetch class data');
@@ -117,6 +120,7 @@ export default function ClassDetailPage() {
           gradeLevel: editForm.gradeLevel ? parseInt(editForm.gradeLevel) : null,
           academicYear: editForm.academicYear || null,
           active: editForm.active,
+          showPracticeStories: editForm.showPracticeStories,
         }),
       });
 
@@ -195,6 +199,7 @@ export default function ClassDetailPage() {
       gradeLevel: classData?.gradeLevel?.toString() || "",
       academicYear: classData?.academicYear || "",
       active: classData?.active || true,
+      showPracticeStories: classData?.showPracticeStories || false,
     });
   };
 
@@ -404,6 +409,21 @@ export default function ClassDetailPage() {
                       />
                       <Label htmlFor="active">Active Class</Label>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="showPracticeStories"
+                        checked={editForm.showPracticeStories}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, showPracticeStories: e.target.checked }))}
+                        className="rounded"
+                      />
+                      <Label htmlFor="showPracticeStories">
+                        <div>
+                          <div>Show Practice Stories to Students</div>
+                          <p className="text-xs text-gray-600 font-normal">Students will see a practice stories library on their dashboard</p>
+                        </div>
+                      </Label>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -432,6 +452,18 @@ export default function ClassDetailPage() {
                       <Badge variant={classData.active ? "default" : "secondary"}>
                         {classData.active ? "Active" : "Inactive"}
                       </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Practice Stories</p>
+                      <Badge variant={classData.showPracticeStories ? "default" : "secondary"}>
+                        {classData.showPracticeStories ? "Enabled" : "Hidden"}
+                      </Badge>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {classData.showPracticeStories
+                          ? "Students can see practice stories on their dashboard"
+                          : "Practice stories are hidden from students"
+                        }
+                      </p>
                     </div>
                   </>
                 )}

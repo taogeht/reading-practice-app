@@ -43,6 +43,7 @@ type DashboardData = {
     completedAssignments: number;
     averageScore: number | null;
   };
+  showPracticeStories: boolean;
 };
 
 export default function StudentDashboardPage() {
@@ -90,7 +91,7 @@ export default function StudentDashboardPage() {
     );
   }
 
-  const { student, assignments, stats } = dashboardData;
+  const { student, assignments, stats, showPracticeStories } = dashboardData;
   const pendingAssignments = assignments.filter(a => a.status === 'pending');
   const completedAssignments = assignments.filter(a => a.status === 'completed');
 
@@ -280,35 +281,37 @@ export default function StudentDashboardPage() {
           </div>
 
           {/* Right Column - Story Library */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" />
-                  Practice Stories
-                </CardTitle>
-                <CardDescription>
-                  Listen to stories and practice reading along
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <StoryLibrary
-                  variant="compact"
-                  filter={{
-                    readingLevel: student.readingLevel,
-                    gradeLevel: student.gradeLevel,
-                    // hasAudio: true, // Temporarily disabled until stories have TTS audio
-                  }}
-                  onStorySelect={(story) => {
-                    // Navigate to reading practice page (free practice)
-                    router.push(`/student/practice/${story.id}`);
-                  }}
-                  selectable={true}
-                  showCreateButton={false}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          {showPracticeStories && (
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5" />
+                    Practice Stories
+                  </CardTitle>
+                  <CardDescription>
+                    Listen to stories and practice reading along
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StoryLibrary
+                    variant="compact"
+                    filter={{
+                      readingLevel: student.readingLevel,
+                      gradeLevel: student.gradeLevel,
+                      // hasAudio: true, // Temporarily disabled until stories have TTS audio
+                    }}
+                    onStorySelect={(story) => {
+                      // Navigate to reading practice page (free practice)
+                      router.push(`/student/practice/${story.id}`);
+                    }}
+                    selectable={true}
+                    showCreateButton={false}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>

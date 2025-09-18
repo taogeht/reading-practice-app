@@ -16,7 +16,7 @@ export default function StudentLayout({
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== 'student')) {
-      router.push('/student2.0-login');
+      router.push('/student-login');
     }
   }, [user, isLoading, router]);
 
@@ -47,14 +47,14 @@ export default function StudentLayout({
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-8">
               <Link
-                href="/student2.0/dashboard"
+                href="/student/dashboard"
                 className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium"
               >
                 <Home className="w-5 h-5" />
                 Dashboard
               </Link>
               <Link
-                href="/student2.0/practice"
+                href="/student/practice"
                 className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium"
               >
                 <Headphones className="w-5 h-5" />
@@ -82,14 +82,14 @@ export default function StudentLayout({
           <div className="md:hidden py-4 border-t">
             <div className="flex flex-col space-y-3">
               <Link
-                href="/student2.0/dashboard"
+                href="/student/dashboard"
                 className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium py-2"
               >
                 <Home className="w-5 h-5" />
                 Dashboard
               </Link>
               <Link
-                href="/student2.0/practice"
+                href="/student/practice"
                 className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium py-2"
               >
                 <Headphones className="w-5 h-5" />

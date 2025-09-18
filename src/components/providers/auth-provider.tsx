@@ -90,13 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const publicRoutes = ['/', '/login', '/student-login', '/student2.0-login'];
-    const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/student2.0-login');
+    const publicRoutes = ['/', '/login', '/student-login'];
+    const isPublicRoute = publicRoutes.includes(pathname);
 
     // Redirect to login if not authenticated on protected route
     if (!user && !isPublicRoute) {
-      const loginUrl = pathname.startsWith('/student2.0') ? '/student2.0-login' :
-                      pathname.startsWith('/student') ? '/student-login' : '/login';
+      const loginUrl = pathname.startsWith('/student') ? '/student-login' : '/login';
       router.push(loginUrl);
       return;
     }
@@ -104,9 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Handle authenticated users on public routes
     if (isPublicRoute && user) {
       if (user.role === 'student') {
-        // Direct to student2.0 dashboard for the new interface
-        const targetDashboard = pathname.startsWith('/student2.0-login') ? '/student2.0/dashboard' : '/student/dashboard';
-        router.push(targetDashboard);
+        router.push('/student/dashboard');
       } else if (user.role === 'teacher') {
         router.push('/teacher/dashboard');
       } else if (user.role === 'admin') {
@@ -131,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if ((pathname.startsWith('/student') || pathname.startsWith('/student2.0')) && user.role !== 'student') {
+      if (pathname.startsWith('/student') && user.role !== 'student') {
         router.push('/unauthorized');
         return;
       }

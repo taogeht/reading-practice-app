@@ -121,6 +121,7 @@ export const classes = pgTable('classes', {
   gradeLevel: integer('grade_level'),
   academicYear: varchar('academic_year', { length: 20 }),
   active: boolean('active').default(true),
+  showPracticeStories: boolean('show_practice_stories').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -254,6 +255,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   schoolMemberships: many(schoolMemberships),
   createdStories: many(stories),
   auditLogs: many(auditLogs),
+  sessions: many(session),
 }));
 
 export const schoolsRelations = relations(schools, ({ many }) => ({

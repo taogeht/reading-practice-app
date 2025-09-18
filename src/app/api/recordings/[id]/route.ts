@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -14,6 +14,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { teacherFeedback, status } = body;
 
@@ -26,7 +27,7 @@ export async function PATCH(
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
       .where(and(
-        eq(recordings.id, params.id),
+        eq(recordings.id, id),
         eq(assignments.teacherId, user.id)
       ))
       .limit(1);
@@ -45,7 +46,7 @@ export async function PATCH(
         reviewedBy: user.id,
         updatedAt: new Date(),
       })
-      .where(eq(recordings.id, params.id));
+      .where(eq(recordings.id, id));
 
     return NextResponse.json({
       success: true,

@@ -75,6 +75,10 @@ export async function authenticateUser(email: string, password: string): Promise
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
+    if (!cookieStore) {
+      console.log('No cookie store available');
+      return null;
+    }
     const sessionId = cookieStore.get(COOKIE_NAME)?.value;
 
     if (!sessionId) {

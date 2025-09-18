@@ -2,21 +2,19 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Mic, 
-  Square, 
-  Play, 
-  Pause, 
-  Upload, 
-  Trash2, 
+import {
+  Mic,
+  Square,
+  Play,
+  Pause,
+  Upload,
+  Trash2,
   CheckCircle,
   AlertCircle,
   Volume2
 } from "lucide-react";
-import { uploadAudioFile, validateAudioFile, formatFileSize, formatDuration } from "@/lib/storage/upload-utils";
+import { formatFileSize, formatDuration } from "@/lib/storage/upload-utils";
 import type { UploadProgress, UploadResult } from "@/lib/storage/upload-utils";
 
 interface AudioRecorderProps {
@@ -69,30 +67,15 @@ export function AudioRecorder({
   const startRecording = async () => {
     try {
       setError('');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           sampleRate: 44100,
-        } 
+        }
       });
-      
+
       streamRef.current = stream;
-
-      // Check what formats are actually supported
-      const formats = [
-        'audio/mp4',
-        'audio/mpeg',
-        'audio/wav',
-        'audio/ogg;codecs=opus',
-        'audio/webm;codecs=opus',
-        'audio/webm'
-      ];
-
-      console.log('Checking MediaRecorder format support:');
-      formats.forEach(format => {
-        console.log(`${format}: ${MediaRecorder.isTypeSupported(format)}`);
-      });
 
       // Try most compatible formats first
       let mimeType = 'audio/webm'; // ultimate fallback
@@ -108,8 +91,6 @@ export function AudioRecorder({
         mimeType = 'audio/webm;codecs=opus';
       }
 
-      console.log('Selected audio format:', mimeType);
-
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,
       });
@@ -124,18 +105,18 @@ export function AudioRecorder({
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { 
-          type: mediaRecorder.mimeType 
+        const blob = new Blob(chunksRef.current, {
+          type: mediaRecorder.mimeType
         });
         setAudioBlob(blob);
-        
+
         // Create audio URL for playback
         if (audioUrl) {
           URL.revokeObjectURL(audioUrl);
         }
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
-        
+
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
         streamRef.current = null;
@@ -166,7 +147,7 @@ export function AudioRecorder({
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -208,11 +189,24 @@ export function AudioRecorder({
   const uploadRecording = async () => {
     if (!audioBlob) return;
 
-    // Check if we have an assignment ID for assignment-specific upload
+    // Always use assignment-specific upload path if assignmentId is provided
     if (assignmentId) {
       await uploadAssignmentRecording();
     } else {
-      await uploadGenericRecording();
+      // For generic practice mode, we'll just show success without upload
+      setUploadResult({
+        success: true,
+        publicUrl: audioUrl,
+        key: 'practice-recording'
+      });
+
+      if (onRecordingComplete) {
+        onRecordingComplete({
+          success: true,
+          publicUrl: audioUrl,
+          key: 'practice-recording'
+        });
+      }
     }
   };
 
@@ -293,242 +287,177 @@ export function AudioRecorder({
     }
   };
 
-  const uploadGenericRecording = async () => {
-    if (!audioBlob) return;
 
-    // Convert blob to File with clean MIME type
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const cleanMimeType = audioBlob.type.split(';')[0].trim();
-    const file = new File([audioBlob], `recording-${timestamp}.webm`, {
-      type: cleanMimeType
-    });
-
-    // Validate file
-    const validation = validateAudioFile(file);
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid file');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress({ loaded: 0, total: file.size, percentage: 0 });
-    setError('');
-
-    try {
-      const result = await uploadAudioFile(
-        file,
-        'recording',
-        (progress) => setUploadProgress(progress)
-      );
-
-      setUploadResult(result);
-
-      if (result.success) {
-        onRecordingComplete?.(result);
-      } else {
-        setError(result.error || 'Upload failed');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      setError(errorMessage);
-      setUploadResult({ success: false, error: errorMessage });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const getRecordingStatus = () => {
-    if (uploadResult?.success) return 'uploaded';
-    if (audioBlob) return 'recorded';
-    if (isRecording) return 'recording';
-    return 'idle';
-  };
-
-  const status = getRecordingStatus();
   const progressPercentage = (recordingTime / maxDurationSeconds) * 100;
 
   return (
-    <Card className={`w-full max-w-md ${disabled ? 'opacity-50' : ''}`}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Mic className="w-5 h-5" />
-          Audio Recorder
-          {status === 'recording' && (
-            <Badge variant="destructive" className="animate-pulse">
-              Recording
-            </Badge>
-          )}
-          {status === 'recorded' && (
-            <Badge variant="secondary">
-              Ready to Upload
-            </Badge>
-          )}
-          {status === 'uploaded' && (
-            <Badge variant="default" className="bg-green-100 text-green-800">
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Uploaded
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
+    <div className="w-full space-y-6">
+      {/* Main Recording Button */}
+      {!isRecording && !audioBlob ? (
+        <Button
+          size="lg"
+          onClick={startRecording}
+          disabled={disabled}
+          className="w-full h-24 text-2xl bg-green-600 hover:bg-green-700 text-white rounded-2xl shadow-lg transform transition-transform hover:scale-105"
+        >
+          <Mic className="w-12 h-12 mr-4" />
+          Start Recording
+        </Button>
+      ) : isRecording ? (
+        <div className="space-y-4">
+          <Button
+            size="lg"
+            onClick={stopRecording}
+            className="w-full h-24 text-2xl bg-red-600 hover:bg-red-700 text-white rounded-2xl shadow-lg animate-pulse"
+          >
+            <Square className="w-12 h-12 mr-4" />
+            Stop Recording
+          </Button>
 
-      <CardContent className="space-y-4">
-        {/* Recording Controls */}
-        <div className="flex items-center justify-center">
-          {!isRecording && !audioBlob ? (
-            <Button
-              size="lg"
-              onClick={startRecording}
-              disabled={disabled}
-              className="w-full"
-            >
-              <Mic className="w-4 h-4 mr-2" />
-              Start Recording
-            </Button>
-          ) : isRecording ? (
-            <Button
-              size="lg"
-              variant="destructive"
-              onClick={stopRecording}
-              className="w-full"
-            >
-              <Square className="w-4 h-4 mr-2" />
-              Stop Recording
-            </Button>
-          ) : (
-            <div className="flex gap-2 w-full">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={playRecording}
-                className="flex-1"
-              >
-                {isPlaying ? (
-                  <Pause className="w-4 h-4 mr-1" />
-                ) : (
-                  <Play className="w-4 h-4 mr-1" />
-                )}
-                {isPlaying ? 'Pause' : 'Play'}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={clearRecording}
-                disabled={isUploading}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Recording Progress */}
-        {isRecording && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Recording time</span>
+          {/* Recording Progress */}
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+            <div className="flex items-center justify-between text-lg font-medium text-red-800 mb-3">
+              <span>🎤 Recording...</span>
               <span className="font-mono">
                 {formatDuration(recordingTime)} / {formatDuration(maxDurationSeconds)}
               </span>
             </div>
-            <Progress value={progressPercentage} className="h-2" />
+            <Progress value={progressPercentage} className="h-3 bg-red-100" />
             {recordingTime >= maxDurationSeconds * 0.9 && (
-              <p className="text-xs text-orange-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
+              <p className="text-sm text-red-700 flex items-center gap-2 mt-2">
+                <AlertCircle className="w-4 h-4" />
                 Recording will stop automatically at {formatDuration(maxDurationSeconds)}
               </p>
             )}
           </div>
-        )}
-
-        {/* Audio Playback */}
-        {audioUrl && (
-          <div className="border rounded-lg p-3">
-            <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-              <span className="flex items-center gap-1">
-                <Volume2 className="w-3 h-3" />
-                Recording Preview
+        </div>
+      ) : (
+        /* Recording Complete - Show Playback and Upload */
+        <div className="space-y-4">
+          {/* Playback Controls */}
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+            <div className="flex items-center justify-between text-lg font-medium text-blue-800 mb-4">
+              <span className="flex items-center gap-2">
+                <Volume2 className="w-6 h-6" />
+                Your Recording
               </span>
-              <span>{formatDuration(recordingTime)}</span>
+              <span className="font-mono">{formatDuration(recordingTime)}</span>
             </div>
-            <audio 
+
+            <div className="flex gap-3">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={playRecording}
+                className="flex-1 h-16 text-lg"
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause className="w-6 h-6 mr-2" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-6 h-6 mr-2" />
+                    Listen
+                  </>
+                )}
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={clearRecording}
+                disabled={isUploading}
+                className="h-16 px-6"
+              >
+                <Trash2 className="w-6 h-6" />
+              </Button>
+            </div>
+
+            <audio
               ref={audioRef}
               src={audioUrl}
               onEnded={() => setIsPlaying(false)}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
-              className="w-full h-8"
-              controls={showLivePreview}
+              className="hidden"
             />
+
             {audioBlob && (
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-sm text-blue-700 mt-3 text-center">
                 File size: {formatFileSize(audioBlob.size)}
               </p>
             )}
           </div>
-        )}
 
-        {/* Upload Section */}
-        {audioBlob && !uploadResult?.success && (
-          <div className="space-y-3">
+          {/* Upload Button */}
+          {!uploadResult?.success && (
             <Button
               onClick={uploadRecording}
               disabled={isUploading || disabled}
-              className="w-full"
+              size="lg"
+              className="w-full h-24 text-2xl bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg transform transition-transform hover:scale-105"
             >
               {isUploading ? (
                 <>
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                  <div className="w-8 h-8 animate-spin rounded-full border-4 border-white border-t-transparent mr-4" />
                   Uploading...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Recording
+                  <Upload className="w-12 h-12 mr-4" />
+                  Submit Recording
                 </>
               )}
             </Button>
+          )}
 
-            {uploadProgress && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span>Upload progress</span>
-                  <span>{uploadProgress.percentage}%</span>
-                </div>
-                <Progress value={uploadProgress.percentage} className="h-2" />
+          {/* Upload Progress */}
+          {uploadProgress && isUploading && (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+              <div className="flex items-center justify-between text-sm font-medium text-blue-800 mb-2">
+                <span>Uploading your recording...</span>
+                <span>{uploadProgress.percentage}%</span>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Success Message */}
-        {uploadResult?.success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-green-800 text-sm">
-              <CheckCircle className="w-4 h-4" />
-              Recording uploaded successfully!
+              <Progress value={uploadProgress.percentage} className="h-3" />
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={clearRecording}
-              className="mt-2 w-full"
-            >
-              Record Another
-            </Button>
-          </div>
-        )}
+          )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-red-800 text-sm">
-              <AlertCircle className="w-4 h-4" />
-              {error}
+          {/* Success Message */}
+          {uploadResult?.success && (
+            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center">
+              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-green-800 mb-2">
+                Recording uploaded successfully! 🎉
+              </h3>
+              <p className="text-green-700 mb-4">
+                Great job! Your teacher will review your recording.
+              </p>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={clearRecording}
+                className="text-lg h-12"
+              >
+                Record Another
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+          <div className="flex items-center gap-3 text-red-800">
+            <AlertCircle className="w-8 h-8" />
+            <div>
+              <h4 className="font-bold text-lg">Oops! Something went wrong</h4>
+              <p className="text-red-700">{error}</p>
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StoryCard } from "@/components/stories/story-card";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
-import { ArrowLeft, Play, Mic, CheckCircle, RotateCcw, BookOpen, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -49,10 +48,12 @@ interface AssignmentPracticePageProps {
 export default function AssignmentPracticePage({ params }: AssignmentPracticePageProps) {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentStep, setCurrentStep] = useState<'instructions' | 'ready' | 'record' | 'complete'>('instructions');
-  const [hasListened, setHasListened] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasRecording, setHasRecording] = useState(false);
+  const [isPlayingStory, setIsPlayingStory] = useState(false);
   const [recordingResult, setRecordingResult] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -85,8 +86,17 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
     router.push('/student/dashboard');
   };
 
-  const handleStepChange = (newStep: typeof currentStep) => {
-    setCurrentStep(newStep);
+  const handlePlayStory = () => {
+    if (assignment?.story.ttsAudioUrl && !isPlayingStory) {
+      setIsPlayingStory(true);
+      const audio = new Audio(assignment.story.ttsAudioUrl);
+      audio.play();
+      audio.onended = () => setIsPlayingStory(false);
+      audio.onerror = () => {
+        setIsPlayingStory(false);
+        console.error('Error playing TTS audio');
+      };
+    }
   };
 
   const handleRecordingComplete = async (result: any) => {
@@ -103,8 +113,8 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
             assignmentId: assignment.id,
             storyId: assignment.story.id,
             audioUrl: result.publicUrl,
-            audioDurationSeconds: null, // Could be calculated from recording
-            fileSizeBytes: null, // Could be included from upload result
+            audioDurationSeconds: null,
+            fileSizeBytes: null,
           }),
         });
 
@@ -117,7 +127,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
           ...result,
           submission: submissionResult,
         });
-        setCurrentStep('complete');
       } catch (error) {
         console.error('Error submitting recording:', error);
         setRecordingResult({
@@ -133,9 +142,10 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   };
 
   const handleStartOver = () => {
-    setCurrentStep('instructions');
-    setHasListened(false);
+    setIsRecording(false);
+    setHasRecording(false);
     setRecordingResult(null);
+    setAudioBlob(null);
   };
 
   const formatDueDate = (dateString: string | null) => {
@@ -155,7 +165,7 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your assignment...</p>
+          <p className="text-gray-600 text-xl">Loading your assignment...</p>
         </div>
       </div>
     );
@@ -166,13 +176,65 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
-            <p className="text-gray-600 mb-4">Assignment not found</p>
-            <Button onClick={handleBackToDashboard}>
+            <p className="text-gray-600 mb-4 text-xl">Assignment not found</p>
+            <Button onClick={handleBackToDashboard} size="lg">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Show completion message if successfully submitted
+  if (recordingResult?.success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-100">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={handleBackToDashboard}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold">{assignment.title}</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <Card className="bg-green-50 border-green-200">
+            <CardContent className="p-12 text-center">
+              <CheckCircle className="w-24 h-24 mx-auto mb-6 text-green-600" />
+              <h2 className="text-3xl font-bold mb-4 text-green-800">
+                Great Job! 🎉
+              </h2>
+              <p className="text-xl text-gray-600 mb-8">
+                You've successfully submitted your recording! Your teacher will review it and provide feedback.
+              </p>
+
+              <div className="space-y-4">
+                <Button onClick={handleBackToDashboard} className="w-full" size="lg">
+                  Back to Dashboard
+                </Button>
+                {assignment.attempts + 1 < assignment.maxAttempts && (
+                  <Button
+                    variant="outline"
+                    onClick={handleStartOver}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Record Again ({assignment.maxAttempts - assignment.attempts - 1} attempts left)
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -209,272 +271,142 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Teacher Feedback View - Show when feedback exists */}
-        {assignment.hasTeacherFeedback ? (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                  Assignment Complete - Teacher Feedback
-                </CardTitle>
-                <CardDescription>
-                  Your teacher has reviewed your recording and provided feedback.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <h3 className="font-medium text-blue-800 mb-3">Feedback from your teacher:</h3>
-                  <p className="text-blue-700 whitespace-pre-wrap">{assignment.teacherFeedback}</p>
-                  {assignment.reviewedAt && (
-                    <p className="text-blue-600 text-sm mt-4 opacity-75">
-                      Reviewed on {format(new Date(assignment.reviewedAt), 'MMMM do, yyyy')}
-                    </p>
-                  )}
-                </div>
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-medium text-green-800 mb-2">🎉 Great Job!</h4>
-                  <p className="text-green-700 text-sm">
-                    You have successfully completed this assignment. Your recording has been reviewed and you've received feedback from your teacher.
-                    Keep practicing to improve your reading skills!
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Story reference for completed assignment */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Story Reference</CardTitle>
-                <CardDescription>The story you read for this assignment</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium mb-2">{assignment.story.title}</h3>
-                  <p className="text-gray-700 text-sm">{assignment.story.content}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <>
-            {/* Progress Steps */}
-            <Card className="mb-8">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className={`flex items-center gap-2 ${currentStep === 'instructions' || currentStep === 'ready' ? 'text-blue-600 font-medium' : 'text-green-600'}`}>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${
-                      currentStep === 'record' || currentStep === 'complete' ? 'bg-green-600 border-green-600 text-white' :
-                      'border-blue-600'
-                    }`}>
-                      {currentStep === 'record' || currentStep === 'complete' ? <CheckCircle className="w-3 h-3" /> : '1'}
-                    </div>
-                    <span className="hidden sm:inline">Read Instructions</span>
-                    <span className="sm:hidden">Read</span>
-                  </div>
-
-                  <div className="flex-1 h-0.5 bg-gray-200 mx-4">
-                    <div className={`h-full transition-all duration-300 ${
-                      currentStep === 'record' || currentStep === 'complete' ? 'bg-green-600 w-full' :
-                      currentStep === 'ready' ? 'bg-blue-600 w-1/2' : 'bg-gray-200 w-0'
-                    }`}></div>
-                  </div>
-
-                  <div className={`flex items-center gap-2 ${
-                    currentStep === 'record' ? 'text-blue-600 font-medium' :
-                    currentStep === 'complete' ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${
-                      currentStep === 'complete' ? 'bg-green-600 border-green-600 text-white' :
-                      currentStep === 'record' ? 'border-blue-600' : 'border-gray-300'
-                    }`}>
-                      {currentStep === 'complete' ? <CheckCircle className="w-3 h-3" /> : '2'}
-                    </div>
-                    <span className="hidden sm:inline">Record Reading</span>
-                    <span className="sm:hidden">Record</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Assignment & Story */}
-          <div>
-            {/* Assignment Instructions */}
-            {currentStep === 'instructions' && (
-              <Card className="mb-4">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    {assignment.instructions ? 'Instructions from Your Teacher' : 'Ready to Start'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {assignment.instructions && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <p className="text-blue-800 whitespace-pre-wrap">{assignment.instructions}</p>
-                    </div>
-                  )}
-                  {!assignment.instructions && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <p className="text-blue-800">Listen to the story above if you'd like, then click below when you're ready to record your reading.</p>
-                    </div>
-                  )}
-                  <Button
-                    onClick={() => setCurrentStep('ready')}
-                    className="w-full"
-                  >
-                    Ready to Begin
-                  </Button>
-                </CardContent>
-              </Card>
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* Story Card with Listen Button */}
+        <Card className="border-2 border-blue-200">
+          <CardHeader className="bg-blue-50">
+            <CardTitle className="text-2xl flex items-center gap-3">
+              <BookOpen className="w-8 h-8 text-blue-600" />
+              {assignment.story.title}
+            </CardTitle>
+            {assignment.story.author && (
+              <p className="text-lg text-gray-600">by {assignment.story.author}</p>
             )}
-
-            {/* Story Card */}
-            <StoryCard
-              story={assignment.story}
-              showFullContent={true}
-              isSelectable={false}
-              showAudioControls={currentStep !== 'complete'}
-              variant="detailed"
-            />
-
-            {currentStep === 'ready' && (
-              <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mic className="w-5 h-5 text-orange-600" />
-                    Ready to Record
-                  </CardTitle>
-                  <CardDescription>
-                    {assignment.story.ttsAudioUrl
-                      ? "You can listen to the story above if you'd like, or jump straight to recording when you're ready."
-                      : "Read the story carefully, then start recording when you're ready."
-                    }
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-800 mb-2">Reading Tips:</h4>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li>• Read slowly and clearly</li>
-                      <li>• Take your time with difficult words</li>
-                      <li>• Try to read with expression</li>
-                      <li>• You have {assignment.maxAttempts - assignment.attempts} attempts remaining</li>
-                    </ul>
-                  </div>
-                  <Button
-                    onClick={() => setCurrentStep('record')}
-                    className="w-full"
-                  >
-                    <Mic className="w-4 h-4 mr-2" />
-                    Start Recording
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-          </div>
-
-          {/* Right Column - Recording */}
-          <div>
-            {(currentStep === 'instructions' || currentStep === 'ready') && (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Play className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">
-                    {currentStep === 'instructions' ? 'Read Instructions First' : 'Optional: Listen to the Story'}
-                  </h3>
-                  <p className="text-gray-600">
-                    {currentStep === 'instructions'
-                      ? 'Read the assignment instructions to get started.'
-                      : 'You can listen to the story to help with pronunciation, or jump straight to recording when ready.'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {currentStep === 'record' && (
-              <div className="space-y-6">
-                <AudioRecorder
-                  onRecordingComplete={handleRecordingComplete}
-                  maxDurationSeconds={300}
-                  showLivePreview={true}
-                  disabled={submitting}
-                />
-
-                {submitting && (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Submitting your recording...</p>
-                    </CardContent>
-                  </Card>
-                )}
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Listen Button at the top */}
+            {assignment.story.ttsAudioUrl && (
+              <div className="mb-6">
+                <Button
+                  onClick={handlePlayStory}
+                  disabled={isPlayingStory}
+                  size="lg"
+                  className="w-full h-16 text-xl bg-blue-600 hover:bg-blue-700"
+                >
+                  <Volume2 className="w-8 h-8 mr-3" />
+                  {isPlayingStory ? 'Playing Story...' : 'Listen to Story'}
+                </Button>
               </div>
             )}
 
-            {currentStep === 'complete' && recordingResult && (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  {recordingResult.success ? (
-                    <>
-                      <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
-                      <h3 className="text-lg font-medium mb-2 text-green-800">
-                        Great Job! 🎉
-                      </h3>
-                      <p className="text-gray-600 mb-6">
-                        You've successfully submitted your recording! Your teacher will review it and provide feedback.
-                      </p>
+            {/* Story Content */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <div className="prose prose-lg max-w-none">
+                <p className="text-lg leading-relaxed whitespace-pre-wrap">
+                  {assignment.story.content}
+                </p>
+              </div>
+            </div>
 
-                      <div className="space-y-3">
-                        <Button onClick={handleBackToDashboard} className="w-full">
-                          Back to Dashboard
-                        </Button>
-                        {assignment.attempts + 1 < assignment.maxAttempts && (
-                          <Button
-                            variant="outline"
-                            onClick={handleStartOver}
-                            className="w-full"
-                          >
-                            <RotateCcw className="w-4 h-4 mr-2" />
-                            Record Again ({assignment.maxAttempts - assignment.attempts - 1} attempts left)
-                          </Button>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-8 h-8 text-red-600" />
-                      </div>
-                      <h3 className="text-lg font-medium mb-2 text-red-800">
-                        Submission Failed
-                      </h3>
-                      <p className="text-gray-600 mb-6">
-                        {recordingResult.error || 'There was an error submitting your recording. Please try again.'}
-                      </p>
+            {/* Story Info */}
+            <div className="flex gap-2 mt-4">
+              {assignment.story.readingLevel && (
+                <Badge variant="outline" className="text-sm">
+                  Level: {assignment.story.readingLevel}
+                </Badge>
+              )}
+              {assignment.story.wordCount && (
+                <Badge variant="outline" className="text-sm">
+                  {assignment.story.wordCount} words
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-                      <div className="space-y-3">
-                        <Button onClick={handleStartOver} className="w-full">
-                          <RotateCcw className="w-4 h-4 mr-2" />
-                          Try Again
-                        </Button>
-                        <Button variant="outline" onClick={handleBackToDashboard} className="w-full">
-                          Back to Dashboard
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+        {/* Instructions Card */}
+        {assignment.instructions && (
+          <Card className="border-2 border-yellow-200">
+            <CardHeader className="bg-yellow-50">
+              <CardTitle className="text-xl text-yellow-800">
+                Instructions from Your Teacher
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <p className="text-lg text-yellow-900 whitespace-pre-wrap">
+                {assignment.instructions}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recording Card */}
+        <Card className="border-2 border-green-200">
+          <CardHeader className="bg-green-50">
+            <CardTitle className="text-2xl flex items-center gap-3">
+              <Mic className="w-8 h-8 text-green-600" />
+              Record Your Reading
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <AudioRecorder
+                onRecordingComplete={handleRecordingComplete}
+                maxDurationSeconds={300}
+                showLivePreview={true}
+                disabled={submitting}
+              />
+
+              {submitting && (
+                <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-xl text-blue-800">Submitting your recording...</p>
+                </div>
+              )}
+
+              {recordingResult && !recordingResult.success && (
+                <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="text-red-800 text-lg">
+                    ❌ {recordingResult.error || 'There was an error with your recording. Please try again.'}
+                  </div>
+                  <Button onClick={handleStartOver} className="mt-4" size="lg">
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Try Again
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Reading Tips Card */}
+        <Card className="border-2 border-purple-200">
+          <CardHeader className="bg-purple-50">
+            <CardTitle className="text-xl text-purple-800">
+              📚 Reading Tips
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <ul className="text-lg text-purple-900 space-y-3">
+              <li className="flex items-start gap-2">
+                <span className="text-purple-600">•</span>
+                <span>Read slowly and clearly</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-purple-600">•</span>
+                <span>Take your time with difficult words</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-purple-600">•</span>
+                <span>Try to read with expression</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-purple-600">•</span>
+                <span>You have {assignment.maxAttempts - assignment.attempts} attempts remaining</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

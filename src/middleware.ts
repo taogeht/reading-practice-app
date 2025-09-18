@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/student-login', '/student2.0-login', '/unauthorized'];
+  const publicRoutes = ['/', '/login', '/student-login', '/unauthorized'];
   const apiPublicRoutes = ['/api/auth/login', '/api/auth/logout', '/api/auth/student-login'];
   
   // Skip auth check for public routes and API auth routes
