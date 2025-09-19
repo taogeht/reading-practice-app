@@ -6,6 +6,7 @@ import { StoryLibrary } from "@/components/stories/story-library";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
 import { CreateClassDialog } from "@/components/classes/create-class-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
+import { CreateStoryDialog } from "@/components/stories/create-story-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ export default function TeacherDashboardPage() {
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [showCreateClass, setShowCreateClass] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
+  const [showCreateStory, setShowCreateStory] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +141,11 @@ export default function TeacherDashboardPage() {
 
   const handleStudentCreated = () => {
     // Refresh dashboard data after student creation
+    fetchDashboardData();
+  };
+
+  const handleStoryCreated = () => {
+    // Refresh dashboard data after story creation
     fetchDashboardData();
   };
 
@@ -436,6 +443,7 @@ export default function TeacherDashboardPage() {
                   }}
                   showCreateButton={true}
                   selectable={true}
+                  onCreateStory={() => setShowCreateStory(true)}
                 />
               </CardContent>
             </Card>
@@ -460,6 +468,12 @@ export default function TeacherDashboardPage() {
         open={showCreateStudent}
         onOpenChange={setShowCreateStudent}
         onSuccess={handleStudentCreated}
+      />
+
+      <CreateStoryDialog
+        open={showCreateStory}
+        onOpenChange={setShowCreateStory}
+        onSuccess={handleStoryCreated}
       />
     </div>
   );

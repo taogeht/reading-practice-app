@@ -29,6 +29,7 @@ interface Story {
 interface StoryLibraryProps {
   onStorySelect?: (story: Story) => void;
   showCreateButton?: boolean;
+  onCreateStory?: () => void;
   variant?: 'grid' | 'list' | 'compact';
   filter?: {
     readingLevel?: string;
@@ -42,6 +43,7 @@ interface StoryLibraryProps {
 export function StoryLibrary({
   onStorySelect,
   showCreateButton = false,
+  onCreateStory,
   variant = 'grid',
   filter,
   selectable = true,
@@ -186,7 +188,7 @@ export function StoryLibrary({
           </p>
         </div>
         {showCreateButton && (
-          <Button>
+          <Button onClick={onCreateStory}>
             <Plus className="w-4 h-4 mr-2" />
             Add Story
           </Button>
