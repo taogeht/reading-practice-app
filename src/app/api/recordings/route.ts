@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { recordings, assignments, students, classes, classEnrollments, users } from '@/lib/db/schema';
 import { eq, and, desc, inArray } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error submitting recording:', error);
+    logError(error, 'api/recordings');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -168,7 +169,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching recordings:', error);
+    logError(error, 'api/recordings');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -230,7 +231,7 @@ export async function DELETE(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Error deleting recordings:', error);
+    logError(error, 'api/recordings');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

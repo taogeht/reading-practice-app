@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, assignments, recordings, classEnrollments, stories, users, students, teachers, schools, schoolMemberships } from '@/lib/db/schema';
 import { eq, and, desc, count, sql } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -160,7 +161,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(dashboardData, { status: 200 });
 
   } catch (error) {
-    console.error('Teacher dashboard error:', error);
+    logError(error, 'api/teacher/dashboard');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

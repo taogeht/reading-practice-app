@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fixing story audio:', error);
+    logError(error, 'api/fix-story-audio');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

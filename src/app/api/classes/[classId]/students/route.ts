@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { classes, classEnrollments, students, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -49,7 +50,7 @@ export async function GET(
     }, { status: 200 });
 
   } catch (error) {
-    console.error('Get class students error:', error);
+    logError(error, 'api/classes/[classId]/students');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

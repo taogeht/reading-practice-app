@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, classEnrollments } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -71,7 +72,7 @@ export async function DELETE(
     );
 
   } catch (error) {
-    console.error('Remove student from class error:', error);
+    logError(error, 'api/teacher/classes/[classId]/students/[studentId]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

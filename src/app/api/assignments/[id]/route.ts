@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, stories, classes, teachers, recordings, classEnrollments } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -182,7 +183,7 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   } catch (error) {
-    console.error('Error fetching assignment:', error);
+    logError(error, 'api/assignments/[id]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -267,7 +268,7 @@ export async function PUT(
       message: 'Assignment updated successfully',
     });
   } catch (error) {
-    console.error('Error updating assignment:', error);
+    logError(error, 'api/assignments/[id]');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -320,7 +321,7 @@ export async function DELETE(
       message: 'Assignment deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting assignment:', error);
+    logError(error, 'api/assignments/[id]');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

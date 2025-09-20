@@ -5,6 +5,7 @@ import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error generating TTS:', error);
+    logError(error, 'api/tts/generate');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { recordings, assignments } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -58,7 +59,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error generating download URL:', error);
+    logError(error, 'api/recordings/[id]/download-url');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

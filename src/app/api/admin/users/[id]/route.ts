@@ -3,6 +3,7 @@ import { getCurrentUser, hashPassword } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -30,7 +31,7 @@ export async function GET(
     return NextResponse.json({ user: userResponse });
 
   } catch (error) {
-    console.error('Error fetching user:', error);
+    logError(error, 'api/admin/users/[id]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -110,7 +111,7 @@ export async function PUT(
     return NextResponse.json({ user: userResponse });
 
   } catch (error) {
-    console.error('Error updating user:', error);
+    logError(error, 'api/admin/users/[id]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -152,7 +153,7 @@ export async function DELETE(
     return NextResponse.json({ message: 'User deleted successfully' });
 
   } catch (error) {
-    console.error('Error deleting user:', error);
+    logError(error, 'api/admin/users/[id]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

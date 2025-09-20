@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, schools, stories, recordings } from '@/lib/db/schema';
 import { count } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ stats });
 
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    logError(error, 'api/admin/stats');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

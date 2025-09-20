@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { systemSettings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ settings: allSettings });
 
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    logError(error, 'api/admin/settings');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ settings: updatedSettings, message: 'Settings updated successfully' });
   } catch (error) {
-    console.error('Error updating settings:', error);
+    logError(error, 'api/admin/settings');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

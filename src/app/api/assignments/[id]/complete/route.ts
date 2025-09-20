@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, teachers } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -61,7 +62,7 @@ export async function POST(
       message: 'Assignment marked as completed',
     });
   } catch (error) {
-    console.error('Error marking assignment as completed:', error);
+    logError(error, 'api/assignments/[id]/complete');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

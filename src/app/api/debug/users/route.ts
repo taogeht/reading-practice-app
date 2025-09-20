@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
       users: allUsers,
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    logError(error, 'api/debug/users');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

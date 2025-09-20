@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, classEnrollments, students, users } from '@/lib/db/schema';
 import { eq, and, notInArray } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -60,7 +61,7 @@ export async function GET(
     return NextResponse.json({ students: enrolledStudents }, { status: 200 });
 
   } catch (error) {
-    console.error('Get class students error:', error);
+    logError(error, 'api/teacher/classes/[classId]/students');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -156,7 +157,7 @@ export async function POST(
     );
 
   } catch (error) {
-    console.error('Enroll student error:', error);
+    logError(error, 'api/teacher/classes/[classId]/students');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

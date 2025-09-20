@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { r2Client } from '@/lib/storage/r2-client';
 import { getCurrentUser } from '@/lib/auth';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error generating presigned URL:', error);
+    logError(error, 'api/upload/presigned-url');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -58,7 +59,7 @@ export async function POST(
         return NextResponse.json({ error: 'Unknown audio URL format' }, { status: 400 });
       }
     } catch (error) {
-      console.error('Error parsing audio URL:', error);
+      logError(error, 'api/stories/[id]/refresh-audio');
       return NextResponse.json({ error: 'Invalid audio URL format' }, { status: 400 });
     }
 
@@ -87,7 +88,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error refreshing audio URL:', error);
+    logError(error, 'api/stories/[id]/refresh-audio');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

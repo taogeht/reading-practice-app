@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     );
     
   } catch (error) {
-    console.error('Get current user error:', error);
+    logError(error, 'api/auth/me');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

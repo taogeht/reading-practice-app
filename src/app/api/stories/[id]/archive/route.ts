@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -64,7 +65,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error archiving story:', error);
+    logError(error, 'api/stories/[id]/archive');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -130,7 +131,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Error unarchiving story:', error);
+    logError(error, 'api/stories/[id]/archive');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

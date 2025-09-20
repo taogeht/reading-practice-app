@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
 import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -164,7 +165,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Student assignment error:', error);
+    logError(error, 'api/student/assignments/[assignmentId]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

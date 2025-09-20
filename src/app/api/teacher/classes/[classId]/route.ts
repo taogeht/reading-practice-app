@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, classEnrollments, users, students } from '@/lib/db/schema';
 import { eq, and, count } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -73,7 +74,7 @@ export async function GET(
     }, { status: 200 });
 
   } catch (error) {
-    console.error('Get class details error:', error);
+    logError(error, 'api/teacher/classes/[classId]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -144,7 +145,7 @@ export async function PUT(
     );
 
   } catch (error) {
-    console.error('Update class error:', error);
+    logError(error, 'api/teacher/classes/[classId]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -209,7 +210,7 @@ export async function DELETE(
     );
 
   } catch (error) {
-    console.error('Delete class error:', error);
+    logError(error, 'api/teacher/classes/[classId]');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

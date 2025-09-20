@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { setCookie } from 'cookies-next';
 import { authenticateUser, createSession, COOKIE_NAME, COOKIE_OPTIONS } from '@/lib/auth';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -46,7 +47,8 @@ export async function POST(request: NextRequest) {
     return response;
     
   } catch (error) {
-    console.error('Login error:', error);
+    const context = createRequestContext('POST', '/api/auth/login');
+    logError(error, context);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

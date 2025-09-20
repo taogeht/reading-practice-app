@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { recordings, assignments, classes, classEnrollments } from '@/lib/db/schema';
 import { eq, and, count, desc } from 'drizzle-orm';
 import { uploadAudioToR2, generateRecordingKey } from '@/lib/r2';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Recording upload error:', error);
+    logError(error, 'api/recordings/upload');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

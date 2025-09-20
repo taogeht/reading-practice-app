@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { r2Client } from '@/lib/storage/r2-client';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('R2 test error:', error);
+    logError(error, 'api/test-r2');
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Error fixing story:', error);
+    logError(error, 'api/test-r2');
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

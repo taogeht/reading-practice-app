@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, students, teachers, classEnrollments, classes, schoolMemberships, schools } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ students: teacherStudents }, { status: 200 });
 
   } catch (error) {
-    console.error('Get students error:', error);
+    logError(error, 'api/teacher/students');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -209,7 +210,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Create student error:', error);
+    logError(error, 'api/teacher/students');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

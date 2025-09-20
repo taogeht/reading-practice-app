@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({ stories: allStories });
   } catch (error) {
-    console.error('Error fetching stories:', error);
+    logError(error, 'api/admin/stories');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ story: newStory[0] }, { status: 201 });
   } catch (error) {
-    console.error('Error creating story:', error);
+    logError(error, 'api/admin/stories');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

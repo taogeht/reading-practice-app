@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { schools } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({ school: school[0] });
   } catch (error) {
-    console.error('Error fetching school:', error);
+    logError(error, 'api/admin/schools/[id]');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -59,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({ school: updatedSchool[0] });
   } catch (error) {
-    console.error('Error updating school:', error);
+    logError(error, 'api/admin/schools/[id]');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -82,7 +83,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     return NextResponse.json({ message: 'School deleted successfully' });
   } catch (error) {
-    console.error('Error deleting school:', error);
+    logError(error, 'api/admin/schools/[id]');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

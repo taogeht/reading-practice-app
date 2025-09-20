@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { schools } from '@/lib/db/schema';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ schools: allSchools });
 
   } catch (error) {
-    console.error('Error fetching schools:', error);
+    logError(error, 'api/admin/schools');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ school: newSchool[0] }, { status: 201 });
   } catch (error) {
-    console.error('Error creating school:', error);
+    logError(error, 'api/admin/schools');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

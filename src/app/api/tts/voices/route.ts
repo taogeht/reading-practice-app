@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { elevenLabsClient } from '@/lib/elevenlabs/client';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching voices:', error);
+    logError(error, 'api/tts/voices');
     return NextResponse.json(
       { error: 'Failed to fetch voices' },
       { status: 500 }
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error handling quota request:', error);
+    logError(error, 'api/tts/voices');
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }

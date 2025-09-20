@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { db } from './db';
 import { users, session } from './db/schema';
 import { eq, lt } from 'drizzle-orm';
+import { logError } from './logger';
 
 const COOKIE_NAME = 'session-id';
 
@@ -114,11 +115,7 @@ export async function getCurrentUser(): Promise<User | null> {
       lastName: user.lastName,
     };
   } catch (error) {
-    if (error.message?.includes('Client has encountered a connection error')) {
-      console.error('Database connection error in getCurrentUser:', error.message);
-    } else {
-      console.error('Error in getCurrentUser:', error);
-    }
+    logError(error, 'getCurrentUser');
     return null;
   }
 }

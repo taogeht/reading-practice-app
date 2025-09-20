@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { recordings, assignments } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export async function PATCH(
   request: NextRequest,
@@ -54,7 +55,7 @@ export async function PATCH(
     });
 
   } catch (error) {
-    console.error('Error updating recording:', error);
+    logError(error, 'api/recordings/[id]');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -112,7 +113,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Error deleting recording:', error);
+    logError(error, 'api/recordings/[id]');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

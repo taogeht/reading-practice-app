@@ -4,6 +4,7 @@ import { students, users, session } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateSessionId } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const body = await request.clone().json().catch(() => ({}));
-    console.error('Student login error:', error);
+    logError(error, 'api/auth/student-login');
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stories, users } from '@/lib/db/schema';
 import { eq, and, asc, desc, like, inArray, sql } from 'drizzle-orm';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching stories:', error);
+    logError(error, 'api/stories');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -199,7 +200,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error creating story:', error);
+    logError(error, 'api/stories');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
