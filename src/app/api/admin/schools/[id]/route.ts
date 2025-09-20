@@ -5,15 +5,16 @@ import { getCurrentUser } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const school = await db.select().from(schools).where(eq(schools.id, params.id)).limit(1);
+    const { id } = await params;
+    const school = await db.select().from(schools).where(eq(schools.id, id)).limit(1);
     
     if (school.length === 0) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
@@ -26,14 +27,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { name, district, address, city, state, zipCode } = body;
 
@@ -51,7 +53,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         zipCode: zipCode || null,
         updatedAt: new Date(),
       })
-      .where(eq(schools.id, params.id))
+      .where(eq(schools.id, id))
       .returning();
 
     if (updatedSchool.length === 0) {
@@ -65,16 +67,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const deletedSchool = await db.delete(schools)
-      .where(eq(schools.id, params.id))
+      .where(eq(schools.id, id))
       .returning();
 
     if (deletedSchool.length === 0) {

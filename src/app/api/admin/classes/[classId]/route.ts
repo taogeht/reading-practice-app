@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -21,7 +21,7 @@ export async function GET(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
 
     // Get class details with teacher information
     const classData = await db
@@ -99,7 +99,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -111,7 +111,7 @@ export async function PUT(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
     const body = await request.json();
     const { name, description, gradeLevel, academicYear, active } = body;
 
@@ -166,7 +166,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -178,7 +178,7 @@ export async function DELETE(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
 
     // Verify class exists
     const existingClass = await db
