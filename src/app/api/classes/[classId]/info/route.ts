@@ -8,10 +8,10 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
-    const { classId } = params;
+    const { classId } = await params;
 
     // Get class info with teacher name (public endpoint for login)
     const classInfo = await db

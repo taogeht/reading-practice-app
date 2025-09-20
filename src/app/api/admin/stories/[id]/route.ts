@@ -5,15 +5,16 @@ import { getCurrentUser } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const story = await db.select().from(stories).where(eq(stories.id, params.id)).limit(1);
+    const { id } = await params;
+    const story = await db.select().from(stories).where(eq(stories.id, id)).limit(1);
     
     if (story.length === 0) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
@@ -26,14 +27,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const {
       title,
@@ -67,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         active: active ?? true,
         updatedAt: new Date(),
       })
-      .where(eq(stories.id, params.id))
+      .where(eq(stories.id, id))
       .returning();
 
     if (updatedStory.length === 0) {
@@ -81,16 +83,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const deletedStory = await db.delete(stories)
-      .where(eq(stories.id, params.id))
+      .where(eq(stories.id, id))
       .returning();
 
     if (deletedStory.length === 0) {
