@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 // Remove student from class
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { classId: string; studentId: string } }
+  { params }: { params: Promise<{ classId: string; studentId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -22,7 +22,7 @@ export async function DELETE(
       );
     }
 
-    const { classId, studentId } = params;
+    const { classId, studentId } = await params;
 
     // Verify teacher owns this class
     const teacherClass = await db

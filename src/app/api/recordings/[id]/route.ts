@@ -65,7 +65,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -73,7 +73,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const recordingId = params.id;
+    const { id: recordingId } = await params;
 
     // First verify the recording exists and the teacher owns the assignment
     const recording = await db

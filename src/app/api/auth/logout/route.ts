@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionId = cookieStore.get(COOKIE_NAME)?.value;
 
     // Delete session from database if it exists

@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 // Get students in a specific class
 export async function GET(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -22,7 +22,7 @@ export async function GET(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
 
     // Verify teacher owns this class
     const teacherClass = await db
@@ -72,7 +72,7 @@ export async function GET(
 // Add existing student to class
 export async function POST(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -84,7 +84,7 @@ export async function POST(
       );
     }
 
-    const { classId } = params;
+    const { classId } = await params;
     const body = await request.json();
     const { studentId } = body;
 

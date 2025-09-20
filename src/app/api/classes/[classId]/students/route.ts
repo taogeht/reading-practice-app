@@ -8,10 +8,10 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { classId: string } }
+  { params }: { params: Promise<{ classId: string }> }
 ) {
   try {
-    const { classId } = params;
+    const { classId } = await params;
 
     // Verify the class exists and is active (public endpoint for student login)
     const classData = await db

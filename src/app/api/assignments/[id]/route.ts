@@ -84,9 +84,9 @@ export async function GET(
           id: recordings.id,
           attemptNumber: recordings.attemptNumber,
           audioUrl: recordings.audioUrl,
-          transcription: recordings.transcription,
-          score: recordings.score,
-          feedback: recordings.feedback,
+          wpmScore: recordings.wpmScore,
+          accuracyScore: recordings.accuracyScore,
+          teacherFeedback: recordings.teacherFeedback,
           createdAt: recordings.createdAt,
           status: recordings.status,
         })
@@ -102,11 +102,11 @@ export async function GET(
       // Calculate student's status and progress
       const completedAttempts = studentRecordings.length;
       const bestScore = studentRecordings.length > 0
-        ? Math.max(...studentRecordings.map(r => r.score || 0))
+        ? Math.max(...studentRecordings.map(r => Number(r.wpmScore) || Number(r.accuracyScore) || 0))
         : null;
 
-      const hasCompletedRecording = studentRecordings.some(r => r.status === 'completed');
-      const canAttempt = completedAttempts < assignmentData.maxAttempts;
+      const hasCompletedRecording = studentRecordings.some(r => r.status === 'reviewed');
+      const canAttempt = completedAttempts < (assignmentData.maxAttempts || 3);
 
       return NextResponse.json({
         success: true,
