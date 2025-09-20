@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
-import { eq, and, desc, count, sql } from 'drizzle-orm';
+import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -78,7 +78,7 @@ export async function GET(
       ))
       .where(and(
         eq(assignments.id, assignmentId),
-        eq(assignments.status, 'published')
+        inArray(assignments.status, ['published', 'archived'])
       ))
       .limit(1);
 

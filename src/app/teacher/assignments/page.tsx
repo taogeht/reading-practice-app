@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
-import { ArrowLeft, Plus, Eye, Edit2, Trash2, Calendar, Users, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, Eye, Edit2, Trash2, Calendar, Users, BookOpen, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -58,6 +58,33 @@ export default function TeacherAssignmentsPage() {
     setShowCreateDialog(false);
   };
 
+  const handleMarkAsCompleted = async (assignmentId: string, assignmentTitle: string) => {
+    const confirmed = confirm(
+      `Mark "${assignmentTitle}" as completed? Students will still be able to see this assignment and teacher feedback.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/assignments/${assignmentId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark assignment as completed');
+      }
+
+      // Refresh the assignments list
+      fetchAssignments();
+    } catch (error) {
+      console.error('Error marking assignment as completed:', error);
+      alert('Failed to mark assignment as completed. Please try again.');
+    }
+  };
+
   const handleDeleteAssignment = async (assignmentId: string, assignmentTitle: string) => {
     const confirmed = confirm(
       `Are you sure you want to delete "${assignmentTitle}"? This action cannot be undone.`
@@ -90,9 +117,17 @@ export default function TeacherAssignmentsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'archived': return 'bg-blue-100 text-blue-800'; // Treat archived as completed
       case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'archived': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'archived': return 'completed'; // Show archived as completed
+      default: return status;
     }
   };
 
@@ -163,7 +198,7 @@ export default function TeacherAssignmentsPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <CardTitle className="text-xl">{assignment.title}</CardTitle>
                         <Badge className={getStatusColor(assignment.status)}>
-                          {assignment.status}
+                          {getStatusLabel(assignment.status)}
                         </Badge>
                       </div>
                       <CardDescription className="text-base">
@@ -187,6 +222,17 @@ export default function TeacherAssignmentsPage() {
                         <Edit2 className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
+                      {assignment.status === 'published' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => handleMarkAsCompleted(assignment.id, assignment.title)}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Mark Complete
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
