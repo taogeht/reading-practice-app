@@ -405,7 +405,7 @@ export function TTSGenerationDialog({
           </Button>
           <Button
             onClick={handleGenerate}
-            disabled={isGenerating || !selectedVoiceId || (quotaInfo && !quotaInfo.hasQuota)}
+            disabled={isGenerating || !selectedVoiceId || (quotaInfo && !(quotaInfo.hasQuota ?? true))}
           >
             {isGenerating ? (
               <>

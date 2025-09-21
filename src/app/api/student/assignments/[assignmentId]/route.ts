@@ -118,8 +118,8 @@ export async function GET(
 
     // Get the most recent recording with feedback
     const latestRecordingWithFeedback = studentRecordings
-      .filter(r => r.teacherFeedback)
-      .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0];
+      .filter(r => r.teacherFeedback && r.submittedAt)
+      .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())[0];
 
     const assignmentData = {
       id: assignment.id,

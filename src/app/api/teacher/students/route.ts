@@ -199,7 +199,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         student: {
-          id: userId,
           firstName: newUser[0].firstName,
           lastName: newUser[0].lastName,
           ...newStudent[0],

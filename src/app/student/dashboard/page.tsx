@@ -281,8 +281,8 @@ export default function StudentDashboardPage() {
                   <StoryLibrary
                     variant="compact"
                     filter={{
-                      readingLevel: student.readingLevel,
-                      gradeLevel: student.gradeLevel,
+                      readingLevel: student.readingLevel || undefined,
+                      gradeLevel: student.gradeLevel || undefined,
                       // hasAudio: true, // Temporarily disabled until stories have TTS audio
                     }}
                     onStorySelect={(story) => {

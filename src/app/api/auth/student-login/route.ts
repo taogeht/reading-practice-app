@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate visual password
-    const correctAnswer = getCorrectAnswer(student.visualPasswordData, student.visualPasswordType);
+    const correctAnswer = getCorrectAnswer(student.visualPasswordData, student.visualPasswordType || '');
     
     if (visualPassword !== correctAnswer) {
       return NextResponse.json({ error: 'Invalid visual password' }, { status: 401 });
