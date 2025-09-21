@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
     const body = await request.clone().json().catch(() => ({}));
     logError(error, 'api/auth/student-login');
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
       studentId: body?.studentId,
       visualPassword: body?.visualPassword
     });

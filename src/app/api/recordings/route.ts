@@ -85,9 +85,10 @@ export async function POST(request: NextRequest) {
       : 1;
 
     // Check if student has exceeded max attempts
-    if (nextAttemptNumber > assignment[0].maxAttempts) {
+    const maxAttempts = assignment[0].maxAttempts || 3;
+    if (nextAttemptNumber > maxAttempts) {
       return NextResponse.json({
-        error: `Maximum attempts (${assignment[0].maxAttempts}) exceeded for this assignment`
+        error: `Maximum attempts (${maxAttempts}) exceeded for this assignment`
       }, { status: 400 });
     }
 

@@ -58,8 +58,8 @@ export async function POST(
       message: 'Story archived successfully',
       story: {
         ...archivedStory[0],
-        createdAt: archivedStory[0].createdAt.toISOString(),
-        updatedAt: archivedStory[0].updatedAt.toISOString(),
+        createdAt: archivedStory[0].createdAt?.toISOString() || null,
+        updatedAt: archivedStory[0].updatedAt?.toISOString() || null,
         ttsGeneratedAt: archivedStory[0].ttsGeneratedAt?.toISOString() || null,
       },
     });
@@ -124,8 +124,8 @@ export async function DELETE(
       message: 'Story unarchived successfully',
       story: {
         ...unarchivedStory[0],
-        createdAt: unarchivedStory[0].createdAt.toISOString(),
-        updatedAt: unarchivedStory[0].updatedAt.toISOString(),
+        createdAt: unarchivedStory[0].createdAt?.toISOString() || null,
+        updatedAt: unarchivedStory[0].updatedAt?.toISOString() || null,
         ttsGeneratedAt: unarchivedStory[0].ttsGeneratedAt?.toISOString() || null,
       },
     });

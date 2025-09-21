@@ -62,8 +62,8 @@ export async function GET(
     return NextResponse.json({
       story: {
         ...story,
-        createdAt: story.createdAt.toISOString(),
-        updatedAt: story.updatedAt.toISOString(),
+        createdAt: story.createdAt?.toISOString() || null,
+        updatedAt: story.updatedAt?.toISOString() || null,
         ttsGeneratedAt: story.ttsGeneratedAt?.toISOString() || null,
       },
     });
@@ -144,8 +144,8 @@ export async function PATCH(
       success: true,
       story: {
         ...updatedStory[0],
-        createdAt: updatedStory[0].createdAt.toISOString(),
-        updatedAt: updatedStory[0].updatedAt.toISOString(),
+        createdAt: updatedStory[0].createdAt?.toISOString() || null,
+        updatedAt: updatedStory[0].updatedAt?.toISOString() || null,
         ttsGeneratedAt: updatedStory[0].ttsGeneratedAt?.toISOString() || null,
       },
     });
