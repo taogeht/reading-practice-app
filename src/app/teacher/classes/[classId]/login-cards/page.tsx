@@ -48,7 +48,7 @@ function getOptionById(options: VisualPasswordOption[], id?: string | null) {
 function getVisualPasswordDisplay(
   type: Student["visualPasswordType"],
   data: Student["visualPasswordData"],
-): VisualPasswordDisplay {
+): VisualPasswordDisplay & { colorClass?: string } {
   if (!type || !data) {
     return {
       label: "Visual Password",
@@ -84,6 +84,7 @@ function getVisualPasswordDisplay(
       label: "Color & Shape Password",
       emoji: option?.emoji ?? "🔷",
       description: option?.name ?? `${capitalize(color)} ${capitalize(shape)}`.trim(),
+      colorClass: option?.colorClass,
     };
   }
 
@@ -229,7 +230,7 @@ export default function LoginCardsPage() {
                         <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                           {visual.label}
                         </p>
-                        <div className="text-4xl mb-1">{visual.emoji}</div>
+                        <div className={`text-4xl mb-1 ${visual.colorClass ?? ''}`}>{visual.emoji}</div>
                         <p className="text-sm text-blue-800 font-medium">{visual.description}</p>
                       </div>
                     </div>
