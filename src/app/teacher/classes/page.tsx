@@ -17,6 +17,7 @@ import {
   Calendar,
   GraduationCap,
   ArrowLeft,
+  Printer,
 } from "lucide-react";
 
 interface Class {
@@ -39,6 +40,8 @@ interface Student {
   gradeLevel: number | null;
   readingLevel: string | null;
   enrolledAt: string;
+  visualPasswordType?: 'animal' | 'object' | 'color_shape' | null;
+  visualPasswordData?: any;
 }
 
 export default function TeacherClassesPage() {
@@ -217,6 +220,14 @@ export default function TeacherClassesPage() {
                         {cls.studentCount ?? 0} students
                       </Badge>
                       <ClassQRCode classId={cls.id} className={cls.name} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/teacher/classes/${cls.id}/login-cards`)}
+                      >
+                        <Printer className="w-4 h-4 mr-1" />
+                        Export Login Cards
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"

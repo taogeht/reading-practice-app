@@ -58,6 +58,8 @@ export async function GET(
         gradeLevel: students.gradeLevel,
         readingLevel: students.readingLevel,
         enrolledAt: classEnrollments.enrolledAt,
+        visualPasswordType: students.visualPasswordType,
+        visualPasswordData: students.visualPasswordData,
       })
       .from(classEnrollments)
       .innerJoin(students, eq(classEnrollments.studentId, students.id))
