@@ -210,14 +210,11 @@ export default function LoginCardsPage() {
                         const studentLoginUrl = `${loginUrl}?student=${student.id}`;
                         const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(studentLoginUrl)}`;
                         return (
-                          <>
-                            <div className="text-xs font-mono text-gray-500 break-all">{studentLoginUrl}</div>
-                            <img
-                              src={qrSrc}
-                              alt={`QR code for ${student.firstName}`}
-                              className="mx-auto w-24 h-24 border border-gray-200 rounded"
-                            />
-                          </>
+                          <img
+                            src={qrSrc}
+                            alt={`QR code for ${student.firstName}`}
+                            className="mx-auto w-24 h-24 border border-gray-200 rounded"
+                          />
                         );
                       })()}
                       <div>
@@ -233,6 +230,9 @@ export default function LoginCardsPage() {
                         <div className={`text-4xl mb-1 ${visual.colorClass ?? ''}`}>{visual.emoji}</div>
                         <p className="text-sm text-blue-800 font-medium">{visual.description}</p>
                       </div>
+                      <p className="text-xs text-gray-500">
+                        Ask your teacher for help if you can't scan the code.
+                      </p>
                     </div>
                     <div className="mt-4 text-xs text-gray-400 text-center">
                       Scan the QR code or visit the link above. Choose your name and tap your picture password to log in.
