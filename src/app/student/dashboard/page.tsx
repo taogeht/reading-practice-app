@@ -5,7 +5,10 @@ import { StoryLibrary } from "@/components/stories/story-library";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, Star, Headphones, LogOut } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AvatarPickerDialog } from "@/components/students/avatar-picker-dialog";
+import { AVATARS } from "@/components/auth/visual-password-options";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Student = {
@@ -14,6 +17,7 @@ type Student = {
   lastName: string;
   gradeLevel: number | null;
   readingLevel: string | null;
+  avatarUrl?: string | null;
 };
 
 type Assignment = {
@@ -51,6 +55,8 @@ export default function StudentDashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAvatarDialog, setShowAvatarDialog] = useState(false);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -90,6 +96,40 @@ export default function StudentDashboardPage() {
     }
   };
 
+  const handleAvatarSelect = async (emoji: string) => {
+    try {
+      setUpdatingAvatar(true);
+      const response = await fetch('/api/student/avatar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ avatar: emoji }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update avatar');
+      }
+
+      setDashboardData((prev) =>
+        prev
+          ? {
+              ...prev,
+              student: {
+                ...prev.student,
+                avatarUrl: emoji,
+              },
+            }
+          : prev
+      );
+      setShowAvatarDialog(false);
+    } catch (error) {
+      console.error('Avatar update error:', error);
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -109,6 +149,7 @@ export default function StudentDashboardPage() {
   const { student, assignments, stats, showPracticeStories } = dashboardData;
   const pendingAssignments = assignments.filter(a => a.status === 'pending');
   const completedAssignments = assignments.filter(a => a.status === 'completed');
+  const avatarEmoji = student.avatarUrl || AVATARS[0].emoji;
 
 
   return (
@@ -125,7 +166,23 @@ export default function StudentDashboardPage() {
                 Ready to practice reading today?
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6 flex-wrap justify-end">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-12 h-12">
+                  <AvatarFallback className="text-2xl">
+                    {avatarEmoji}
+                  </AvatarFallback>
+                </Avatar>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAvatarDialog(true)}
+                  className="flex items-center gap-2"
+                >
+                  <SmilePlus className="w-4 h-4" />
+                  Choose Avatar
+                </Button>
+              </div>
               <Button variant="outline" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
@@ -317,8 +374,17 @@ export default function StudentDashboardPage() {
               </Card>
             </div>
           )}
-        </div>
       </div>
+    </div>
+
+      <AvatarPickerDialog
+        open={showAvatarDialog}
+        onOpenChange={setShowAvatarDialog}
+        avatars={AVATARS}
+        selectedAvatar={student.avatarUrl}
+        onSelect={handleAvatarSelect}
+        loading={updatingAvatar}
+      />
     </div>
   );
 }

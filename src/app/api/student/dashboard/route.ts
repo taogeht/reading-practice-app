@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         lastName: users.lastName,
         gradeLevel: students.gradeLevel,
         readingLevel: students.readingLevel,
+        avatarUrl: students.avatarUrl,
       })
       .from(students)
       .innerJoin(users, eq(students.id, users.id))
@@ -139,6 +140,7 @@ export async function GET(request: NextRequest) {
         lastName: student.lastName,
         gradeLevel: student.gradeLevel,
         readingLevel: student.readingLevel,
+        avatarUrl: student.avatarUrl,
       },
       assignments: assignmentsWithStatus,
       stats: {

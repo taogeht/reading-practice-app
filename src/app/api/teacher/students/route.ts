@@ -84,6 +84,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (gender !== 'girl' && gender !== 'boy') {
+      return NextResponse.json(
+        { error: 'Invalid avatar selection' },
+        { status: 400 }
+      );
+    }
+
     // Verify teacher owns the class
     const teacherClass = await db
       .select({ id: classes.id })

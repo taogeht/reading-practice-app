@@ -51,8 +51,22 @@ export const SHAPES_AND_COLORS: VisualPasswordOption[] = [
 ];
 
 export const AVATARS: VisualPasswordOption[] = [
-  { id: 'girl', name: 'Girl Avatar', emoji: '👧🏼' },
-  { id: 'boy', name: 'Boy Avatar', emoji: '👦🏼' },
+  { id: 'girl_blonde', name: 'Girl (Blonde)', emoji: '👧🏼' },
+  { id: 'boy_blonde', name: 'Boy (Blonde)', emoji: '👦🏼' },
+  { id: 'girl_brown', name: 'Girl (Brown Hair)', emoji: '👧🏽' },
+  { id: 'boy_brown', name: 'Boy (Brown Hair)', emoji: '👦🏽' },
+  { id: 'girl_dark', name: 'Girl (Dark Hair)', emoji: '👧🏿' },
+  { id: 'boy_dark', name: 'Boy (Dark Hair)', emoji: '👦🏿' },
+  { id: 'student_yellow', name: 'Student', emoji: '🧒' },
+  { id: 'student_light', name: 'Student (Light Skin)', emoji: '🧒🏻' },
+  { id: 'student_medium', name: 'Student (Medium Skin)', emoji: '🧒🏽' },
+  { id: 'student_dark', name: 'Student (Dark Skin)', emoji: '🧒🏿' },
+  { id: 'cat', name: 'Friendly Cat', emoji: '🐱' },
+  { id: 'dog', name: 'Happy Dog', emoji: '🐶' },
+  { id: 'panda', name: 'Playful Panda', emoji: '🐼' },
+  { id: 'dino', name: 'Cute Dinosaur', emoji: '🦕' },
+  { id: 'rocket', name: 'Rocket Pilot', emoji: '🚀' },
+  { id: 'star', name: 'Shining Star', emoji: '⭐' },
 ];
 
 export function getVisualPasswordOptions(type: 'animal' | 'object' | 'color_shape'): VisualPasswordOption[] {
