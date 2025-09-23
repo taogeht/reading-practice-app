@@ -35,6 +35,7 @@ export function CreateStudentDialog({
     readingLevel: "",
     parentEmail: "",
     classId: preselectedClassId || "",
+    gender: "girl" as "girl" | "boy",
   });
   const [visualPassword, setVisualPassword] = useState<{type: string; data: any} | null>(null);
 
@@ -108,6 +109,7 @@ export function CreateStudentDialog({
           visualPasswordType: visualPassword.type,
           visualPasswordData: visualPassword.data,
           classId: formData.classId,
+          gender: formData.gender,
         }),
       });
 
@@ -124,6 +126,7 @@ export function CreateStudentDialog({
         readingLevel: "",
         parentEmail: "",
         classId: preselectedClassId || "",
+        gender: "girl",
       });
       setVisualPassword(null);
 
@@ -202,6 +205,26 @@ export function CreateStudentDialog({
                 onChange={(e) => setFormData({ ...formData, readingLevel: e.target.value })}
                 placeholder="e.g., 2.5, Beginning, Advanced"
               />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Student Avatar</Label>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant={formData.gender === "girl" ? "default" : "outline"}
+                onClick={() => setFormData((prev) => ({ ...prev, gender: "girl" }))}
+              >
+                👧🏼 Girl
+              </Button>
+              <Button
+                type="button"
+                variant={formData.gender === "boy" ? "default" : "outline"}
+                onClick={() => setFormData((prev) => ({ ...prev, gender: "boy" }))}
+              >
+                👦🏼 Boy
+              </Button>
             </div>
           </div>
 

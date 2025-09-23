@@ -45,6 +45,7 @@ export async function GET(
         lastName: users.lastName,
         visualPasswordType: students.visualPasswordType,
         visualPasswordData: students.visualPasswordData,
+        avatarUrl: students.avatarUrl,
       })
       .from(students)
       .innerJoin(users, eq(students.id, users.id))
@@ -62,6 +63,7 @@ export async function GET(
         lastName: studentRecord.lastName,
         visualPasswordType: studentRecord.visualPasswordType,
         visualPasswordData: studentRecord.visualPasswordData,
+        avatarUrl: studentRecord.avatarUrl,
       },
     });
   } catch (error) {

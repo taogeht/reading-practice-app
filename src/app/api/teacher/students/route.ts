@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
         readingLevel: students.readingLevel,
         parentEmail: students.parentEmail,
         visualPasswordType: students.visualPasswordType,
+        avatarUrl: students.avatarUrl,
         createdAt: users.createdAt,
         className: classes.name,
         classId: classes.id,
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest) {
       parentEmail,
       visualPasswordType,
       visualPasswordData,
-      classId
+      classId,
+      gender,
     } = body;
 
     // Validate required fields
@@ -166,6 +168,8 @@ export async function POST(request: NextRequest) {
 
     const userId = newUser[0].id;
 
+    const avatarEmoji = gender === 'boy' ? '👦🏼' : '👧🏼';
+
     // Create student record
     const newStudent = await db
       .insert(students)
@@ -176,6 +180,7 @@ export async function POST(request: NextRequest) {
         parentEmail: parentEmail?.trim() || null,
         visualPasswordType,
         visualPasswordData,
+        avatarUrl: avatarEmoji,
       })
       .returning();
 

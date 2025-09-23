@@ -10,7 +10,7 @@ interface Student {
   id: string;
   firstName: string;
   lastName: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   visualPasswordType: 'animal' | 'object' | 'color_shape';
   visualPasswordData: any;
 }
@@ -78,7 +78,7 @@ export function StudentSelector({ onStudentSelect, classId }: StudentSelectorPro
               <div className="flex items-center space-x-4">
                 <Avatar className="w-16 h-16">
                   <AvatarFallback className="text-2xl">
-                    {AVATARS[index % AVATARS.length].emoji}
+                    {student.avatarUrl || AVATARS[index % AVATARS.length].emoji}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-left">
