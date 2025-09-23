@@ -51,18 +51,8 @@ export const SHAPES_AND_COLORS: VisualPasswordOption[] = [
 ];
 
 export const AVATARS: VisualPasswordOption[] = [
-  { id: 'student1', name: 'Student 1', emoji: '👧' },
-  { id: 'student2', name: 'Student 2', emoji: '👦' },
-  { id: 'student3', name: 'Student 3', emoji: '👧🏻' },
-  { id: 'student4', name: 'Student 4', emoji: '👦🏻' },
-  { id: 'student5', name: 'Student 5', emoji: '👧🏽' },
-  { id: 'student6', name: 'Student 6', emoji: '👦🏽' },
-  { id: 'student7', name: 'Student 7', emoji: '👧🏿' },
-  { id: 'student8', name: 'Student 8', emoji: '👦🏿' },
-  { id: 'student9', name: 'Student 9', emoji: '🧒' },
-  { id: 'student10', name: 'Student 10', emoji: '🧒🏻' },
-  { id: 'student11', name: 'Student 11', emoji: '🧒🏽' },
-  { id: 'student12', name: 'Student 12', emoji: '🧒🏿' },
+  { id: 'girl', name: 'Girl Avatar', emoji: '👧🏼' },
+  { id: 'boy', name: 'Boy Avatar', emoji: '👦🏼' },
 ];
 
 export function getVisualPasswordOptions(type: 'animal' | 'object' | 'color_shape'): VisualPasswordOption[] {
