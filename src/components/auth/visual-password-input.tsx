@@ -45,27 +45,26 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
   }
 
   const handleOptionSelect = (optionId: string) => {
-    setSelectedOption(optionId);
-    setError("");
-  };
-
-  const handleSubmit = () => {
-    if (!selectedOption) {
-      setError("Please select an option");
+    if (attempts >= maxAttempts) {
       return;
     }
 
-    if (selectedOption === correctAnswer) {
-      onSuccess(selectedOption);
+    setSelectedOption(optionId);
+    setError("");
+
+    if (optionId === correctAnswer) {
+      onSuccess(optionId);
+      return;
+    }
+
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
+    setSelectedOption("");
+
+    if (nextAttempts >= maxAttempts) {
+      setError(`Too many incorrect attempts. Please ask your teacher for help.`);
     } else {
-      setAttempts(prev => prev + 1);
-      setSelectedOption("");
-      
-      if (attempts + 1 >= maxAttempts) {
-        setError(`Too many incorrect attempts. Please ask your teacher for help.`);
-      } else {
-        setError(`That's not right. Try again! (${maxAttempts - attempts - 1} attempts left)`);
-      }
+      setError(`That's not right. Try again! (${maxAttempts - nextAttempts} attempts left)`);
     }
   };
 
@@ -148,13 +147,6 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
           <Button onClick={onBack} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={!selectedOption || attempts >= maxAttempts}
-            className="px-8"
-          >
-            Sign In
           </Button>
         </div>
       </CardContent>
