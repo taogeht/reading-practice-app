@@ -46,7 +46,7 @@ export function AvatarPickerDialog({
                 type="button"
                 variant={isSelected ? "default" : "outline"}
                 className={cn(
-                  "h-24 flex flex-col items-center justify-center gap-2",
+                  "h-20 flex flex-col items-center justify-center",
                   isSelected && "border-blue-600"
                 )}
                 onClick={() => onSelect(avatar.emoji)}
@@ -55,9 +55,7 @@ export function AvatarPickerDialog({
                 <span className="text-3xl" aria-hidden>
                   {avatar.emoji}
                 </span>
-                <span className="text-xs font-medium text-center leading-tight">
-                  {avatar.name}
-                </span>
+                <span className="sr-only">{avatar.name}</span>
                 {isSelected && <Check className="w-4 h-4" />}
               </Button>
             );
