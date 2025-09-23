@@ -142,12 +142,6 @@ export default function LoginCardsPage() {
     return `${base}/student-login/${classId}`;
   }, [classId, origin]);
 
-  const qrCodeSrc = useMemo(() => {
-    if (!loginUrl) return "";
-    const encoded = encodeURIComponent(loginUrl);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encoded}`;
-  }, [loginUrl]);
-
   const handlePrint = () => {
     if (typeof window !== "undefined") {
       window.print();
@@ -211,14 +205,20 @@ export default function LoginCardsPage() {
                 >
                   <CardContent className="p-4 flex flex-col h-full justify-between">
                     <div className="space-y-3 text-center">
-                      <div className="text-xs font-mono text-gray-500 break-all">{loginUrl}</div>
-                      {qrCodeSrc && (
-                        <img
-                          src={qrCodeSrc}
-                          alt={`QR code for ${classData.name}`}
-                          className="mx-auto w-24 h-24 border border-gray-200 rounded"
-                        />
-                      )}
+                      {(() => {
+                        const studentLoginUrl = `${loginUrl}?student=${student.id}`;
+                        const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(studentLoginUrl)}`;
+                        return (
+                          <>
+                            <div className="text-xs font-mono text-gray-500 break-all">{studentLoginUrl}</div>
+                            <img
+                              src={qrSrc}
+                              alt={`QR code for ${student.firstName}`}
+                              className="mx-auto w-24 h-24 border border-gray-200 rounded"
+                            />
+                          </>
+                        );
+                      })()}
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">
                           {student.firstName} {student.lastName}
