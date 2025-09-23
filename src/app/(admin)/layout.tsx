@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
-import { Home, Users, School, Settings, BookOpen, LogOut } from "lucide-react";
+import { Home, Users, School, Settings, BookOpen, LogOut, Layers } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 
 export default function AdminLayout({
@@ -54,6 +54,12 @@ export default function AdminLayout({
               <Link href="/schools" className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
                 <School className="w-6 h-6 mr-3" />
                 School Management
+              </Link>
+            </li>
+            <li>
+              <Link href="/classes" className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
+                <Layers className="w-6 h-6 mr-3" />
+                Classes
               </Link>
             </li>
             <li>

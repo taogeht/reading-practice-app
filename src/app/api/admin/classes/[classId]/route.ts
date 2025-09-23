@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { classes, classEnrollments, users, students } from '@/lib/db/schema';
-import { eq, and, count } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import {
+  classes,
+  classEnrollments,
+  users,
+  students,
+  schools,
+  teachers,
+} from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -32,6 +39,7 @@ export async function GET(
         gradeLevel: classes.gradeLevel,
         academicYear: classes.academicYear,
         active: classes.active,
+        showPracticeStories: classes.showPracticeStories,
         createdAt: classes.createdAt,
         teacherId: classes.teacherId,
         teacherFirstName: users.firstName,
@@ -76,6 +84,7 @@ export async function GET(
         gradeLevel: classInfo.gradeLevel,
         academicYear: classInfo.academicYear,
         active: classInfo.active,
+        showPracticeStories: classInfo.showPracticeStories,
         createdAt: classInfo.createdAt,
         studentCount: enrolledStudents.length,
         students: enrolledStudents,
@@ -113,7 +122,16 @@ export async function PUT(
 
     const { classId } = await params;
     const body = await request.json();
-    const { name, description, gradeLevel, academicYear, active } = body;
+    const {
+      name,
+      description,
+      gradeLevel,
+      academicYear,
+      active,
+      schoolId,
+      teacherId,
+      showPracticeStories,
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -136,17 +154,88 @@ export async function PUT(
       );
     }
 
-    // Update class (admin can modify any class)
+    const updateData: Partial<typeof classes.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+
+    updateData.name = String(name).trim();
+    updateData.description = description ? String(description).trim() : null;
+
+    if (gradeLevel !== undefined) {
+      const parsed =
+        gradeLevel === null || gradeLevel === '' ? null : Number(gradeLevel);
+
+      if (parsed !== null && (Number.isNaN(parsed) || parsed < 0)) {
+        return NextResponse.json(
+          { error: 'Grade level must be a positive number' },
+          { status: 400 }
+        );
+      }
+
+      updateData.gradeLevel = parsed;
+    }
+
+    if (academicYear !== undefined) {
+      updateData.academicYear = academicYear
+        ? String(academicYear).trim()
+        : null;
+    }
+
+    if (active !== undefined) {
+      updateData.active = Boolean(active);
+    }
+
+    if (showPracticeStories !== undefined) {
+      updateData.showPracticeStories = Boolean(showPracticeStories);
+    }
+
+    if (schoolId !== undefined) {
+      const [schoolExists] = await db
+        .select({ id: schools.id })
+        .from(schools)
+        .where(eq(schools.id, schoolId))
+        .limit(1);
+
+      if (!schoolExists) {
+        return NextResponse.json(
+          { error: 'School not found' },
+          { status: 404 }
+        );
+      }
+
+      updateData.schoolId = schoolId;
+    }
+
+    if (teacherId !== undefined) {
+      const [teacherUserRecord] = await db
+        .select({ id: users.id, role: users.role })
+        .from(users)
+        .where(eq(users.id, teacherId))
+        .limit(1);
+
+      if (!teacherUserRecord || teacherUserRecord.role !== 'teacher') {
+        return NextResponse.json(
+          { error: 'Teacher not found or not a teacher account' },
+          { status: 400 }
+        );
+      }
+
+      const [existingTeacherProfile] = await db
+        .select({ id: teachers.id })
+        .from(teachers)
+        .where(eq(teachers.id, teacherId))
+        .limit(1);
+
+      if (!existingTeacherProfile) {
+        await db.insert(teachers).values({ id: teacherId });
+      }
+
+      updateData.teacherId = teacherId;
+    }
+
     const updatedClass = await db
       .update(classes)
-      .set({
-        name: name.trim(),
-        description: description?.trim() || null,
-        gradeLevel: gradeLevel || null,
-        academicYear: academicYear?.trim() || null,
-        active: active !== undefined ? active : true,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(classes.id, classId))
       .returning();
 

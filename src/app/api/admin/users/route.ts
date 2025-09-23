@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, hashPassword } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { and, eq } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -16,7 +16,53 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allUsers = await db.select().from(users);
+    const { searchParams } = new URL(request.url);
+    const roleFilter = searchParams.get('role');
+    const activeFilter = searchParams.get('active');
+
+    if (roleFilter && !['student', 'teacher', 'admin'].includes(roleFilter)) {
+      return NextResponse.json(
+        { error: 'Invalid role filter' },
+        { status: 400 }
+      );
+    }
+
+    if (activeFilter && !['true', 'false'].includes(activeFilter.toLowerCase())) {
+      return NextResponse.json(
+        { error: 'Invalid active filter. Use true or false.' },
+        { status: 400 }
+      );
+    }
+
+    const conditions: any[] = [];
+
+    if (roleFilter) {
+      conditions.push(eq(users.role, roleFilter as 'student' | 'teacher' | 'admin'));
+    }
+
+    if (activeFilter) {
+      const isActive = activeFilter.toLowerCase() === 'true';
+      conditions.push(eq(users.active, isActive));
+    }
+
+    let query = db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        active: users.active,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users);
+
+    if (conditions.length) {
+      query = query.where(and(...conditions));
+    }
+
+    const allUsers = await query.orderBy(users.lastName, users.firstName);
 
     return NextResponse.json({ users: allUsers });
 
