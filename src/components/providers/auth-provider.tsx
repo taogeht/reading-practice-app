@@ -91,7 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isLoading) return;
 
     const publicRoutes = ['/', '/login', '/student-login'];
-    const isPublicRoute = publicRoutes.includes(pathname);
+    const isPublicRoute =
+      publicRoutes.includes(pathname) ||
+      pathname.startsWith('/student-login');
 
     // Redirect to login if not authenticated on protected route
     if (!user && !isPublicRoute) {
