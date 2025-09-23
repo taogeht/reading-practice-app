@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { students, users, session } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { students, users, session, classEnrollments, classes } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { generateSessionId } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { logError, createRequestContext } from '@/lib/logger';
@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentId, visualPassword } = body;
+    const { studentId, visualPassword, classId } = body;
 
     if (!studentId || !visualPassword) {
       return NextResponse.json({ error: 'Student ID and visual password are required' }, { status: 400 });
@@ -43,6 +43,28 @@ export async function POST(request: NextRequest) {
 
     if (!student.active) {
       return NextResponse.json({ error: 'Student account is inactive' }, { status: 403 });
+    }
+
+    if (classId) {
+      const enrollment = await db
+        .select({
+          classActive: classes.active,
+        })
+        .from(classEnrollments)
+        .innerJoin(classes, eq(classEnrollments.classId, classes.id))
+        .where(and(
+          eq(classEnrollments.studentId, studentId),
+          eq(classEnrollments.classId, classId)
+        ))
+        .limit(1);
+
+      if (!enrollment.length) {
+        return NextResponse.json({ error: 'Student is not enrolled in this class' }, { status: 403 });
+      }
+
+      if (!enrollment[0].classActive) {
+        return NextResponse.json({ error: 'Class is not active' }, { status: 403 });
+      }
     }
 
     // Validate visual password
@@ -92,7 +114,8 @@ export async function POST(request: NextRequest) {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       studentId: body?.studentId,
-      visualPassword: body?.visualPassword
+      visualPassword: body?.visualPassword,
+      classId: body?.classId,
     });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -170,9 +170,9 @@ export default function ClassStudentLoginPage() {
               </a>
             </p>
             <p className="text-xs text-gray-400 mt-2">
-              Looking for a different class? {" "}
+              Need a different class link? {" "}
               <a href="/student-login" className="text-blue-600 hover:text-blue-500">
-                View all students
+                Enter another code
               </a>
             </p>
           </div>

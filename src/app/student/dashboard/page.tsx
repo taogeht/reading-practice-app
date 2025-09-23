@@ -5,7 +5,7 @@ import { StoryLibrary } from "@/components/stories/story-library";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, Star, Headphones } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Student = {
@@ -75,6 +75,21 @@ export default function StudentDashboardPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      window.location.href = '/student-login';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -110,17 +125,23 @@ export default function StudentDashboardPage() {
                 Ready to practice reading today?
               </p>
             </div>
-            <div className="text-right">
-              {student.gradeLevel && (
-                <Badge variant="outline" className="text-sm">
-                  Grade {student.gradeLevel}
-                </Badge>
-              )}
-              {student.readingLevel && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {student.readingLevel} Reader
-                </div>
-              )}
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+              <div className="text-right">
+                {student.gradeLevel && (
+                  <Badge variant="outline" className="text-sm">
+                    Grade {student.gradeLevel}
+                  </Badge>
+                )}
+                {student.readingLevel && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {student.readingLevel} Reader
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
