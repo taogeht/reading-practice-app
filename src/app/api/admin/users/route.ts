@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, hashPassword } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
+import { users, schoolMemberships, schools, teachers } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
+import { alias } from 'drizzle-orm/pg-core';
 
 export const runtime = 'nodejs';
 
@@ -45,6 +46,8 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(users.active, isActive));
     }
 
+    const primaryMembership = alias(schoolMemberships, 'primary_membership');
+
     let query = db
       .select({
         id: users.id,
@@ -55,8 +58,18 @@ export async function GET(request: NextRequest) {
         active: users.active,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
+        primarySchoolId: primaryMembership.schoolId,
+        primarySchoolName: schools.name,
       })
-      .from(users);
+      .from(users)
+      .leftJoin(
+        primaryMembership,
+        and(
+          eq(primaryMembership.userId, users.id),
+          eq(primaryMembership.isPrimary, true)
+        )
+      )
+      .leftJoin(schools, eq(primaryMembership.schoolId, schools.id));
 
     if (conditions.length) {
       query = query.where(and(...conditions));
@@ -85,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, role, firstName, lastName } = body;
+    const { email, password, role, firstName, lastName, schoolId } = body;
 
     // Validate required fields
     if (!email || !password || !role || !firstName || !lastName) {
@@ -101,6 +114,31 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid role' },
         { status: 400 }
       );
+    }
+
+    let resolvedSchoolId: string | null = null;
+    if (role === 'teacher') {
+      resolvedSchoolId = typeof schoolId === 'string' && schoolId.trim().length > 0 ? schoolId.trim() : null;
+
+      if (!resolvedSchoolId) {
+        return NextResponse.json(
+          { error: 'Teachers must be assigned to a school' },
+          { status: 400 }
+        );
+      }
+
+      const schoolExists = await db
+        .select({ id: schools.id })
+        .from(schools)
+        .where(eq(schools.id, resolvedSchoolId))
+        .limit(1);
+
+      if (!schoolExists.length) {
+        return NextResponse.json(
+          { error: 'Assigned school not found' },
+          { status: 404 }
+        );
+      }
     }
 
     // Check if user already exists
@@ -124,6 +162,25 @@ export async function POST(request: NextRequest) {
       lastName,
       active: true,
     }).returning();
+
+    if (role === 'teacher') {
+      await db
+        .insert(teachers)
+        .values({ id: newUser.id })
+        .onConflictDoNothing();
+
+      if (resolvedSchoolId) {
+        await db
+          .delete(schoolMemberships)
+          .where(eq(schoolMemberships.userId, newUser.id));
+
+        await db.insert(schoolMemberships).values({
+          userId: newUser.id,
+          schoolId: resolvedSchoolId,
+          isPrimary: true,
+        });
+      }
+    }
 
     // Remove password hash from response
     const { passwordHash: _, ...userResponse } = newUser;

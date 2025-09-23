@@ -10,6 +10,9 @@ interface DashboardStats {
   totalSchools: number;
   totalStories: number;
   totalRecordings: number;
+  totalAdmins: number;
+  totalTeachers: number;
+  totalStudents: number;
 }
 
 export default function AdminDashboard() {
@@ -111,6 +114,35 @@ export default function AdminDashboard() {
           <CardContent>
             <p className="text-4xl font-bold">{stats?.totalRecordings.toLocaleString() || 0}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Student recordings</p>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Admins</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{stats?.totalAdmins.toLocaleString() || 0}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Administrative accounts</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Teachers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{stats?.totalTeachers.toLocaleString() || 0}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Active teachers</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Students</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{stats?.totalStudents.toLocaleString() || 0}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Student accounts</p>
           </CardContent>
         </Card>
       </div>
