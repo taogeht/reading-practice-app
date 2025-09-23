@@ -108,7 +108,7 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
         <div className="flex items-center justify-center mb-4">
           <Avatar className="w-20 h-20">
             <AvatarFallback className="text-3xl">
-              {AVATARS[0].emoji}
+              {student.avatarUrl || AVATARS[0].emoji}
             </AvatarFallback>
           </Avatar>
         </div>
