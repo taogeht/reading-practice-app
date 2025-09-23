@@ -176,3 +176,25 @@ class R2Client {
 
 // Export singleton instance
 export const r2Client = new R2Client();
+
+export function generateRecordingKey(
+  studentId: string,
+  assignmentId: string,
+  attemptNumber: number,
+  extension: string = 'webm'
+): string {
+  const timestamp = Date.now();
+  return `audio/recordings/${studentId}/${assignmentId}/attempt-${attemptNumber}-${timestamp}.${extension}`;
+}
+
+export async function uploadRecordingToR2(
+  key: string,
+  body: Buffer | Uint8Array,
+  contentType: string
+): Promise<string> {
+  await r2Client.uploadFile(key, body, contentType, {
+    'artifact-type': 'student-recording',
+  });
+
+  return r2Client.getPublicUrl(key);
+}

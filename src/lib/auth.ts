@@ -24,8 +24,21 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export function generateSessionId(): string {
-  // Generate a simple session ID without crypto module
-  return Math.random().toString(36).substring(2) + Date.now().toString(36) + Math.random().toString(36).substring(2);
+  const cryptoObj = typeof globalThis.crypto !== 'undefined' ? globalThis.crypto : undefined;
+
+  if (cryptoObj?.randomUUID) {
+    // Remove dashes to keep cookie-friendly format
+    return cryptoObj.randomUUID().replace(/-/g, '');
+  }
+
+  if (cryptoObj?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Fallback for environments without Web Crypto support
+  return `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
 }
 
 export async function createSession(userId: string): Promise<string> {

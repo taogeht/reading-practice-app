@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { recordings, assignments, classes, classEnrollments } from '@/lib/db/schema';
-import { eq, and, count, desc } from 'drizzle-orm';
-import { uploadAudioToR2, generateRecordingKey } from '@/lib/r2';
+import { eq, and, desc } from 'drizzle-orm';
+import { generateRecordingKey, uploadRecordingToR2 } from '@/lib/storage/r2-client';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -78,10 +78,21 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Generate unique key for R2 storage
-    const recordingKey = generateRecordingKey(user.id, assignmentId, attemptNumber);
+    const extension = (() => {
+      const mimeSubtype = audioFile.type?.split('/')[1] || '';
+      if (mimeSubtype.includes('mpeg')) return 'mp3';
+      if (mimeSubtype.includes('ogg')) return 'ogg';
+      if (mimeSubtype.includes('webm')) return 'webm';
+      if (mimeSubtype.includes('wav')) return 'wav';
+      if (mimeSubtype.includes('mp4')) return 'mp4';
+      if (mimeSubtype.includes('m4a')) return 'm4a';
+      return mimeSubtype.replace(/[^a-z0-9]/gi, '') || 'webm';
+    })();
+
+    const recordingKey = generateRecordingKey(user.id, assignmentId, attemptNumber, extension);
 
     // Upload to R2
-    const audioUrl = await uploadAudioToR2(buffer, recordingKey, audioFile.type);
+    const audioUrl = await uploadRecordingToR2(recordingKey, buffer, audioFile.type);
 
     // Create recording record in database
     const [newRecording] = await db.insert(recordings).values({
