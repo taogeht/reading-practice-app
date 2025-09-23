@@ -3,6 +3,8 @@ export interface VisualPasswordOption {
   name: string;
   emoji: string;
   color?: string;
+  colorClass?: string;
+  shape?: string;
 }
 
 export const ANIMALS: VisualPasswordOption[] = [
@@ -35,20 +37,36 @@ export const OBJECTS: VisualPasswordOption[] = [
   { id: 'ball', name: 'Ball', emoji: '⚽' },
 ];
 
-export const SHAPES_AND_COLORS: VisualPasswordOption[] = [
-  { id: 'red-circle', name: 'Red Circle', emoji: '🔴', color: 'red' },
-  { id: 'blue-circle', name: 'Blue Circle', emoji: '🔵', color: 'blue' },
-  { id: 'yellow-circle', name: 'Yellow Circle', emoji: '🟡', color: 'yellow' },
-  { id: 'green-circle', name: 'Green Circle', emoji: '🟢', color: 'green' },
-  { id: 'purple-circle', name: 'Purple Circle', emoji: '🟣', color: 'purple' },
-  { id: 'orange-circle', name: 'Orange Circle', emoji: '🟠', color: 'orange' },
-  { id: 'red-square', name: 'Red Square', emoji: '🟥', color: 'red' },
-  { id: 'blue-square', name: 'Blue Square', emoji: '🟦', color: 'blue' },
-  { id: 'yellow-square', name: 'Yellow Square', emoji: '🟨', color: 'yellow' },
-  { id: 'green-square', name: 'Green Square', emoji: '🟩', color: 'green' },
-  { id: 'purple-square', name: 'Purple Square', emoji: '🟪', color: 'purple' },
-  { id: 'orange-square', name: 'Orange Square', emoji: '🟧', color: 'orange' },
+const COLOR_DEFINITIONS = [
+  { value: 'red', name: 'Red', className: 'text-red-500' },
+  { value: 'blue', name: 'Blue', className: 'text-blue-500' },
+  { value: 'green', name: 'Green', className: 'text-green-500' },
+  { value: 'yellow', name: 'Yellow', className: 'text-yellow-400' },
+  { value: 'purple', name: 'Purple', className: 'text-purple-500' },
+  { value: 'orange', name: 'Orange', className: 'text-orange-500' },
+  { value: 'pink', name: 'Pink', className: 'text-pink-500' },
+  { value: 'brown', name: 'Brown', className: 'text-amber-800' },
 ];
+
+const SHAPE_DEFINITIONS = [
+  { value: 'circle', name: 'Circle', symbol: '●' },
+  { value: 'square', name: 'Square', symbol: '■' },
+  { value: 'triangle', name: 'Triangle', symbol: '▲' },
+  { value: 'star', name: 'Star', symbol: '★' },
+  { value: 'heart', name: 'Heart', symbol: '♥' },
+  { value: 'diamond', name: 'Diamond', symbol: '♦' },
+];
+
+export const SHAPES_AND_COLORS: VisualPasswordOption[] = COLOR_DEFINITIONS.flatMap((color) =>
+  SHAPE_DEFINITIONS.map((shape) => ({
+    id: `${color.value}-${shape.value}`,
+    name: `${color.name} ${shape.name}`,
+    emoji: shape.symbol,
+    color: color.value,
+    colorClass: color.className,
+    shape: shape.value,
+  }))
+);
 
 export const AVATARS: VisualPasswordOption[] = [
   { id: 'girl_blonde', name: 'Girl (Blonde)', emoji: '👧🏼' },

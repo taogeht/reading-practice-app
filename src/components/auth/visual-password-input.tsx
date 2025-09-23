@@ -130,7 +130,9 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
               disabled={attempts >= maxAttempts}
             >
               <div className="text-center">
-                <div className="text-4xl mb-2">{option.emoji}</div>
+                <div className={`text-4xl mb-2 ${option.colorClass ?? ''}`}>
+                  {option.emoji}
+                </div>
                 <div className="text-xs font-medium">{option.name}</div>
               </div>
             </Button>
