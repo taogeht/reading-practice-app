@@ -92,7 +92,7 @@ async function seed() {
         gradeLevel: 2,
         readingLevel: 'Beginning',
         visualPasswordType: 'animal' as const,
-        visualPasswordData: { animal: 'cat', color: 'orange' },
+        visualPasswordData: { animal: 'cat' },
         parentEmail: 'parent.wilson@example.com',
       },
       {
@@ -100,8 +100,8 @@ async function seed() {
         lastName: 'Brown',
         gradeLevel: 2,
         readingLevel: 'Intermediate',
-        visualPasswordType: 'color_shape' as const,
-        visualPasswordData: { shape: 'circle', color: 'blue' },
+        visualPasswordType: 'animal' as const,
+        visualPasswordData: { animal: 'dog' },
         parentEmail: 'parent.brown@example.com',
       },
       {
@@ -110,7 +110,7 @@ async function seed() {
         gradeLevel: 3,
         readingLevel: 'Advanced',
         visualPasswordType: 'object' as const,
-        visualPasswordData: { object: 'apple', color: 'red' },
+        visualPasswordData: { object: 'apple' },
         parentEmail: 'parent.davis@example.com',
       },
     ];

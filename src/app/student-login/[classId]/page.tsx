@@ -10,7 +10,7 @@ interface Student {
   firstName: string;
   lastName: string;
   avatarUrl?: string;
-  visualPasswordType: "animal" | "object" | "color_shape";
+  visualPasswordType: "animal" | "object";
   visualPasswordData: any;
 }
 

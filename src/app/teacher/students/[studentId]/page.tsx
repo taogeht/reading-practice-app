@@ -90,10 +90,6 @@ export default function TeacherStudentProfilePage() {
         return data?.animal ? `Animal password: ${data.animal}` : "Animal password";
       case "object":
         return data?.object ? `Picture password: ${data.object}` : "Picture password";
-      case "color_shape":
-        return data?.color && data?.shape
-          ? `Color & shape password: ${data.color} ${data.shape}`
-          : "Color & shape password";
       default:
         return "Visual password not set";
     }

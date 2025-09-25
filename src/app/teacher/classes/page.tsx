@@ -40,7 +40,7 @@ interface Student {
   gradeLevel: number | null;
   readingLevel: string | null;
   enrolledAt: string;
-  visualPasswordType?: 'animal' | 'object' | 'color_shape' | null;
+  visualPasswordType?: 'animal' | 'object' | null;
   visualPasswordData?: any;
 }
 

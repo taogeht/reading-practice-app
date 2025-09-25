@@ -127,8 +127,6 @@ function getCorrectAnswer(passwordData: any, type: string): string {
       return passwordData.animal;
     case 'object':
       return passwordData.object;
-    case 'color_shape':
-      return `${passwordData.color}-${passwordData.shape}`;
     default:
       return '';
   }

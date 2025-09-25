@@ -34,7 +34,7 @@ This is a reading practice homework application where students record themselves
 - **Teachers**: Create stories, manage classes, review recordings
 - **Admin**: Manage schools, users, and system settings
 
-Authentication uses session cookies managed by `src/lib/auth.ts`. Visual passwords for students use color/shape/animal combinations in `src/components/students/visual-password-creator.tsx`.
+Authentication uses session cookies managed by `src/lib/auth.ts`. Visual passwords for students use animal or object selections in `src/components/students/visual-password-creator.tsx`.
 
 ### Database Schema (src/lib/db/schema.ts)
 Core entities:

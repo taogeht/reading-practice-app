@@ -12,7 +12,7 @@ interface Student {
   firstName: string;
   lastName: string;
   avatarUrl?: string;
-  visualPasswordType: 'animal' | 'object' | 'color_shape';
+  visualPasswordType: 'animal' | 'object';
   visualPasswordData: any;
 }
 
@@ -37,8 +37,6 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
         return passwordData.animal;
       case 'object':
         return passwordData.object;
-      case 'color_shape':
-        return `${passwordData.color}-${passwordData.shape}`;
       default:
         return '';
     }
@@ -74,8 +72,6 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
         return "Which animal is your password?";
       case 'object':
         return "Which object is your password?";
-      case 'color_shape':
-        return "Which color and shape is your password?";
       default:
         return "Select your password:";
     }
@@ -130,7 +126,7 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
               disabled={attempts >= maxAttempts}
             >
               <div className="text-center">
-                <div className={`text-4xl mb-2 ${option.colorClass ?? ''}`}>
+                <div className="text-4xl mb-2">
                   {option.emoji}
                 </div>
                 <div className="text-xs font-medium">{option.name}</div>

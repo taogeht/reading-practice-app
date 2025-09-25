@@ -20,7 +20,7 @@ import { relations } from 'drizzle-orm';
 export const userRoleEnum = pgEnum('user_role', ['student', 'teacher', 'admin']);
 export const assignmentStatusEnum = pgEnum('assignment_status', ['draft', 'published', 'archived']);
 export const recordingStatusEnum = pgEnum('recording_status', ['pending', 'submitted', 'reviewed', 'flagged']);
-export const visualPasswordTypeEnum = pgEnum('visual_password_type', ['color_shape', 'animal', 'object']);
+export const visualPasswordTypeEnum = pgEnum('visual_password_type', ['animal', 'object']);
 
 // Core tables
 export const users = pgTable(
@@ -339,4 +339,3 @@ export const session = pgTable('session', {
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(users, { fields: [session.userId], references: [users.id] }),
 }));
-

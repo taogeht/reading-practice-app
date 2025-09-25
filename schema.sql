@@ -5,7 +5,7 @@
 CREATE TYPE user_role AS ENUM ('student', 'teacher', 'admin');
 CREATE TYPE assignment_status AS ENUM ('draft', 'published', 'archived');
 CREATE TYPE recording_status AS ENUM ('pending', 'submitted', 'reviewed', 'flagged');
-CREATE TYPE visual_password_type AS ENUM ('color_shape', 'animal', 'object');
+CREATE TYPE visual_password_type AS ENUM ('animal', 'object');
 
 -- Core users table with role-based architecture
 CREATE TABLE users (
@@ -320,3 +320,4 @@ COMMENT ON TABLE recordings IS 'Student audio recordings and submissions';
 COMMENT ON TABLE student_progress IS 'Aggregated student progress and analytics data';
 COMMENT ON TABLE system_settings IS 'Configurable system parameters';
 COMMENT ON TABLE audit_logs IS 'Security and activity audit trail';
+

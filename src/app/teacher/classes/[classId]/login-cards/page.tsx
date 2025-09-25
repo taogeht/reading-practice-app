@@ -4,19 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  ANIMALS,
-  OBJECTS,
-  SHAPES_AND_COLORS,
-  VisualPasswordOption,
-} from "@/components/auth/visual-password-options";
+import { ANIMALS, OBJECTS, VisualPasswordOption } from "@/components/auth/visual-password-options";
 import { ArrowLeft, Loader2, Printer } from "lucide-react";
 
 interface Student {
   id: string;
   firstName: string;
   lastName: string;
-  visualPasswordType: "animal" | "object" | "color_shape" | null;
+  visualPasswordType: "animal" | "object" | null;
   visualPasswordData: any;
 }
 
@@ -48,7 +43,7 @@ function getOptionById(options: VisualPasswordOption[], id?: string | null) {
 function getVisualPasswordDisplay(
   type: Student["visualPasswordType"],
   data: Student["visualPasswordData"],
-): VisualPasswordDisplay & { colorClass?: string } {
+): VisualPasswordDisplay {
   if (!type || !data) {
     return {
       label: "Visual Password",
@@ -72,19 +67,6 @@ function getVisualPasswordDisplay(
       label: "Picture Password",
       emoji: option?.emoji ?? "🎨",
       description: option?.name ?? capitalize(data?.object),
-    };
-  }
-
-  if (type === "color_shape") {
-    const color = data?.color;
-    const shape = data?.shape;
-    const optionId = color && shape ? `${color}-${shape}` : undefined;
-    const option = getOptionById(SHAPES_AND_COLORS, optionId);
-    return {
-      label: "Color & Shape Password",
-      emoji: option?.emoji ?? "🔷",
-      description: option?.name ?? `${capitalize(color)} ${capitalize(shape)}`.trim(),
-      colorClass: option?.colorClass,
     };
   }
 
@@ -227,7 +209,7 @@ export default function LoginCardsPage() {
                         <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                           {visual.label}
                         </p>
-                        <div className={`text-4xl mb-1 ${visual.colorClass ?? ''}`}>{visual.emoji}</div>
+                        <div className="text-4xl mb-1">{visual.emoji}</div>
                         <p className="text-sm text-blue-800 font-medium">{visual.description}</p>
                       </div>
                       <p className="text-xs text-gray-500">

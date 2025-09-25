@@ -2,9 +2,6 @@ export interface VisualPasswordOption {
   id: string;
   name: string;
   emoji: string;
-  color?: string;
-  colorClass?: string;
-  shape?: string;
 }
 
 export const ANIMALS: VisualPasswordOption[] = [
@@ -37,37 +34,6 @@ export const OBJECTS: VisualPasswordOption[] = [
   { id: 'ball', name: 'Ball', emoji: '⚽' },
 ];
 
-const COLOR_DEFINITIONS = [
-  { value: 'red', name: 'Red', className: 'text-red-500' },
-  { value: 'blue', name: 'Blue', className: 'text-blue-500' },
-  { value: 'green', name: 'Green', className: 'text-green-500' },
-  { value: 'yellow', name: 'Yellow', className: 'text-yellow-400' },
-  { value: 'purple', name: 'Purple', className: 'text-purple-500' },
-  { value: 'orange', name: 'Orange', className: 'text-orange-500' },
-  { value: 'pink', name: 'Pink', className: 'text-pink-500' },
-  { value: 'brown', name: 'Brown', className: 'text-amber-800' },
-];
-
-const SHAPE_DEFINITIONS = [
-  { value: 'circle', name: 'Circle', symbol: '●' },
-  { value: 'square', name: 'Square', symbol: '■' },
-  { value: 'triangle', name: 'Triangle', symbol: '▲' },
-  { value: 'star', name: 'Star', symbol: '★' },
-  { value: 'heart', name: 'Heart', symbol: '♥' },
-  { value: 'diamond', name: 'Diamond', symbol: '♦' },
-];
-
-export const SHAPES_AND_COLORS: VisualPasswordOption[] = COLOR_DEFINITIONS.flatMap((color) =>
-  SHAPE_DEFINITIONS.map((shape) => ({
-    id: `${color.value}-${shape.value}`,
-    name: `${color.name} ${shape.name}`,
-    emoji: shape.symbol,
-    color: color.value,
-    colorClass: color.className,
-    shape: shape.value,
-  }))
-);
-
 export const AVATARS: VisualPasswordOption[] = [
   { id: 'girl_blonde', name: 'Girl (Blonde)', emoji: '👧🏼' },
   { id: 'boy_blonde', name: 'Boy (Blonde)', emoji: '👦🏼' },
@@ -87,14 +53,12 @@ export const AVATARS: VisualPasswordOption[] = [
   { id: 'star', name: 'Shining Star', emoji: '⭐' },
 ];
 
-export function getVisualPasswordOptions(type: 'animal' | 'object' | 'color_shape'): VisualPasswordOption[] {
+export function getVisualPasswordOptions(type: 'animal' | 'object'): VisualPasswordOption[] {
   switch (type) {
     case 'animal':
       return ANIMALS;
     case 'object':
       return OBJECTS;
-    case 'color_shape':
-      return SHAPES_AND_COLORS;
     default:
       return [];
   }

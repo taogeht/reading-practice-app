@@ -71,12 +71,6 @@ export function CreateStudentDialog({
       return;
     }
 
-    // Validate password completeness based on type
-    if (visualPassword.type === 'color_shape' && (!visualPassword.data.color || !visualPassword.data.shape)) {
-      alert('Please select both a color and a shape for the visual password');
-      return;
-    }
-
     if (visualPassword.type === 'animal' && !visualPassword.data.animal) {
       alert('Please select an animal for the visual password');
       return;
