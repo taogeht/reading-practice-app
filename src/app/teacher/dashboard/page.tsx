@@ -11,6 +11,7 @@ import { ClassQRCode } from "@/components/classes/class-qr-code";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import {
   BookOpen,
   Users,
@@ -55,10 +56,22 @@ type Stats = {
   storiesWithoutAudio: number;
 };
 
+type AssignmentSummary = {
+  id: string;
+  title: string;
+  status: string;
+  dueAt: string | null;
+  classId: string | null;
+  className: string | null;
+  totalStudents: number;
+  completedStudents: number;
+};
+
 type DashboardData = {
   teacher: Teacher;
   stats: Stats;
   recentSubmissions: Submission[];
+  assignmentsSummary: AssignmentSummary[];
 };
 
 export default function TeacherDashboardPage() {
@@ -165,7 +178,7 @@ export default function TeacherDashboardPage() {
     );
   }
 
-  const { teacher, stats, recentSubmissions } = dashboardData;
+  const { teacher, stats, recentSubmissions, assignmentsSummary = [] } = dashboardData;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -316,6 +329,76 @@ export default function TeacherDashboardPage() {
                   onClick={() => router.push('/teacher/submissions')}
                 >
                   View All Submissions
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Assignment Progress */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Assignment Progress</CardTitle>
+                <CardDescription>
+                  Track completion across your current assignments
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {assignmentsSummary.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No active assignments yet. Create one to get started.
+                  </p>
+                ) : (
+                  assignmentsSummary.map((assignment) => {
+                    const completionRate = assignment.totalStudents > 0
+                      ? Math.round((assignment.completedStudents / assignment.totalStudents) * 100)
+                      : 0;
+
+                    return (
+                      <div
+                        key={assignment.id}
+                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/teacher/assignments/${assignment.id}`)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="font-medium text-sm text-gray-900">
+                              {assignment.title}
+                            </h4>
+                            <p className="text-xs text-gray-500">
+                              {assignment.className || 'Class'}
+                            </p>
+                          </div>
+                          <Badge variant="secondary">
+                            {assignment.completedStudents}/{assignment.totalStudents || 0}
+                          </Badge>
+                        </div>
+                        <div className="mt-3">
+                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-2 bg-green-500"
+                              style={{ width: `${Math.min(100, completionRate)}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+                            <span>{completionRate}% complete</span>
+                            {assignment.dueAt ? (
+                              <span>Due {format(new Date(assignment.dueAt), 'MMM d')}</span>
+                            ) : (
+                              <span>No due date</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => router.push('/teacher/assignments')}
+                >
+                  View All Assignments
                 </Button>
               </CardContent>
             </Card>

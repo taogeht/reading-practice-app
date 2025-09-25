@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { classes, assignments, recordings, classEnrollments, stories, users, students, teachers, schools, schoolMemberships } from '@/lib/db/schema';
-import { eq, and, desc, count, sql } from 'drizzle-orm';
+import {
+  classes,
+  assignments,
+  recordings,
+  classEnrollments,
+  stories,
+  users,
+  students,
+  teachers,
+  schools,
+  schoolMemberships,
+} from '@/lib/db/schema';
+import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -81,6 +92,46 @@ export async function GET(request: NextRequest) {
       .where(eq(classes.teacherId, user.id))
       .groupBy(classes.id, classes.name);
 
+    const assignmentProgressRows = await db
+      .select({
+        id: assignments.id,
+        title: assignments.title,
+        status: assignments.status,
+        dueAt: assignments.dueAt,
+        createdAt: assignments.createdAt,
+        classId: assignments.classId,
+        className: classes.name,
+        totalStudents: sql<number>`COUNT(DISTINCT ${classEnrollments.studentId})`,
+        completedStudents: sql<number>`COUNT(DISTINCT CASE WHEN ${recordings.id} IS NOT NULL THEN ${classEnrollments.studentId} END)`,
+      })
+      .from(assignments)
+      .leftJoin(classes, eq(assignments.classId, classes.id))
+      .leftJoin(classEnrollments, eq(assignments.classId, classEnrollments.classId))
+      .leftJoin(
+        recordings,
+        and(
+          eq(recordings.assignmentId, assignments.id),
+          eq(recordings.studentId, classEnrollments.studentId),
+          inArray(recordings.status, ['submitted', 'reviewed'])
+        )
+      )
+      .where(and(
+        eq(assignments.teacherId, user.id),
+        inArray(assignments.status, ['published'])
+      ))
+      .groupBy(
+        assignments.id,
+        assignments.title,
+        assignments.status,
+        assignments.dueAt,
+        assignments.createdAt,
+        assignments.classId,
+        classes.name,
+      )
+      .orderBy(
+        sql`COALESCE(${assignments.dueAt}, ${assignments.createdAt}) ASC`
+      );
+
     // Get active assignments count
     const activeAssignmentsResult = await db
       .select({ count: count() })
@@ -127,6 +178,17 @@ export async function GET(request: NextRequest) {
     // Calculate total students across all classes
     const totalStudents = teacherClasses.reduce((sum, cls) => sum + cls.studentCount, 0);
 
+    const assignmentsSummary = assignmentProgressRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      dueAt: row.dueAt ? row.dueAt.toISOString() : null,
+      classId: row.classId,
+      className: row.className ?? 'Class',
+      totalStudents: Number(row.totalStudents ?? 0),
+      completedStudents: Number(row.completedStudents ?? 0),
+    }));
+
     const dashboardData = {
       teacher: {
         id: user.id,
@@ -155,7 +217,8 @@ export async function GET(request: NextRequest) {
         attemptNumber: submission.attemptNumber || 1,
         score: submission.accuracyScore ? Math.round(Number(submission.accuracyScore)) : undefined,
         flagReason: submission.status === 'flagged' ? submission.teacherFeedback : undefined,
-      }))
+      })),
+      assignmentsSummary,
     };
 
     return NextResponse.json(dashboardData, { status: 200 });
