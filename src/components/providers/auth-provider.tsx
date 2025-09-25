@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch('/api/auth/me');
       if (response.ok) {
         const data = await response.json();

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { StudentSelector } from "@/components/auth/student-selector";
 import { VisualPasswordInput } from "@/components/auth/visual-password-input";
+import { useAuth } from "@/components/providers/auth-provider";
 
 interface Student {
   id: string;
@@ -27,6 +28,7 @@ export default function ClassStudentLoginPage() {
   const [loadingStudent, setLoadingStudent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const params = useParams();
   const searchParams = useSearchParams();
   const classId = params.classId as string;
@@ -107,12 +109,8 @@ export default function ClassStudentLoginPage() {
         throw new Error(error.error || "Login failed");
       }
 
+      await refreshUser();
       router.replace("/student/dashboard");
-      setTimeout(() => {
-        if (window.location.pathname.includes("/student-login")) {
-          window.location.href = "/student/dashboard";
-        }
-      }, 1000);
     } catch (error) {
       console.error("Login error:", error);
     }
