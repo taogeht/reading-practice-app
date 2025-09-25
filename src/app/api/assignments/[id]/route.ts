@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { assignments, stories, classes, teachers, recordings, classEnrollments } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import {
+  assignments,
+  stories,
+  classes,
+  teachers,
+  recordings,
+  classEnrollments,
+  students,
+  users,
+} from '@/lib/db/schema';
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -153,6 +162,50 @@ export async function GET(
         }
       }
 
+      const progressRows = await db
+        .select({
+          studentId: classEnrollments.studentId,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          gradeLevel: students.gradeLevel,
+          readingLevel: students.readingLevel,
+          active: users.active,
+          hasCompleted: sql<number>`CASE WHEN count(${recordings.id}) > 0 THEN 1 ELSE 0 END`,
+        })
+        .from(classEnrollments)
+        .innerJoin(students, eq(classEnrollments.studentId, students.id))
+        .innerJoin(users, eq(students.id, users.id))
+        .leftJoin(
+          recordings,
+          and(
+            eq(recordings.assignmentId, assignmentId),
+            eq(recordings.studentId, classEnrollments.studentId),
+            inArray(recordings.status, ['submitted', 'reviewed'])
+          )
+        )
+        .where(eq(classEnrollments.classId, assignmentData.classId))
+        .groupBy(
+          classEnrollments.studentId,
+          users.firstName,
+          users.lastName,
+          users.active,
+          students.gradeLevel,
+          students.readingLevel
+        );
+
+      const studentSummaries = progressRows.map((row) => ({
+        id: row.studentId,
+        firstName: row.firstName ?? 'Unknown',
+        lastName: row.lastName ?? '',
+        gradeLevel: row.gradeLevel ?? null,
+        readingLevel: row.readingLevel ?? null,
+        active: Boolean(row.active),
+        completed: row.hasCompleted > 0,
+      }));
+
+      const completedStudents = studentSummaries.filter((student) => student.completed);
+      const pendingStudents = studentSummaries.filter((student) => !student.completed);
+
       // Return full assignment data for teachers/admins
       return NextResponse.json({
         success: true,
@@ -176,6 +229,12 @@ export async function GET(
             author: assignmentData.storyAuthor,
             genre: assignmentData.storyGenre,
           },
+        },
+        studentProgress: {
+          totalStudents: studentSummaries.length,
+          completedCount: completedStudents.length,
+          completedStudents,
+          pendingStudents,
         },
       });
     }

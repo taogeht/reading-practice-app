@@ -4,9 +4,19 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit2, Trash2, Calendar, Users, BookOpen, Clock, FileText } from "lucide-react";
+import { ArrowLeft, Edit2, Trash2, Calendar, Users, BookOpen, Clock, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+
+interface StudentSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  gradeLevel: number | null;
+  readingLevel: string | null;
+  active: boolean;
+  completed: boolean;
+}
 
 interface Assignment {
   id: string;
@@ -24,6 +34,13 @@ interface Assignment {
   className: string;
 }
 
+interface StudentProgressSummary {
+  totalStudents: number;
+  completedCount: number;
+  completedStudents: StudentSummary[];
+  pendingStudents: StudentSummary[];
+}
+
 interface ViewAssignmentPageProps {
   params: {
     id: string;
@@ -33,6 +50,7 @@ interface ViewAssignmentPageProps {
 export default function ViewAssignmentPage({ params }: ViewAssignmentPageProps) {
   const router = useRouter();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [studentProgress, setStudentProgress] = useState<StudentProgressSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -57,6 +75,7 @@ export default function ViewAssignmentPage({ params }: ViewAssignmentPageProps) 
 
       const data = await response.json();
       setAssignment(data.assignment);
+      setStudentProgress(data.studentProgress ?? null);
     } catch (error) {
       console.error('Error fetching assignment:', error);
       setError('Failed to load assignment');
@@ -216,6 +235,83 @@ export default function ViewAssignmentPage({ params }: ViewAssignmentPageProps) 
               </div>
             </CardContent>
           </Card>
+
+          {studentProgress && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Student Progress
+                </CardTitle>
+                <CardDescription>
+                  Track which students have submitted recordings for this assignment.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <span className="flex items-center gap-2 text-green-600 font-medium">
+                    <CheckCircle className="w-4 h-4" />
+                    {studentProgress.completedCount} of {studentProgress.totalStudents} students have submitted
+                  </span>
+                  {studentProgress.totalStudents > 0 && (
+                    <Badge variant="secondary">
+                      Completion Rate: {studentProgress.totalStudents > 0
+                        ? Math.round((studentProgress.completedCount / studentProgress.totalStudents) * 100)
+                        : 0}%
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      Completed ({studentProgress.completedCount})
+                    </h4>
+                    {studentProgress.completedStudents.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No completed submissions yet.</p>
+                    ) : (
+                      <ul className="space-y-2 text-sm">
+                        {studentProgress.completedStudents.map((student) => (
+                          <li key={student.id} className="flex items-center justify-between gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+                            <span className="text-green-700 font-medium">
+                              {student.firstName} {student.lastName}
+                            </span>
+                            {student.readingLevel && (
+                              <span className="text-xs text-green-600">Level {student.readingLevel}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-4 h-4 text-orange-600" />
+                      Pending ({studentProgress.pendingStudents.length})
+                    </h4>
+                    {studentProgress.pendingStudents.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">All students have completed this assignment.</p>
+                    ) : (
+                      <ul className="space-y-2 text-sm">
+                        {studentProgress.pendingStudents.map((student) => (
+                          <li key={student.id} className="flex items-center justify-between gap-2 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+                            <span className="text-orange-700 font-medium">
+                              {student.firstName} {student.lastName}
+                            </span>
+                            {student.readingLevel && (
+                              <span className="text-xs text-orange-600">Level {student.readingLevel}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Instructions */}
           {assignment.instructions && (

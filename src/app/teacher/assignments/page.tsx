@@ -5,9 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
-import { ArrowLeft, Plus, Eye, Edit2, Trash2, Calendar, Users, BookOpen, CheckCircle } from "lucide-react";
+import { ArrowLeft, Plus, Eye, Edit2, Trash2, Calendar, Users, BookOpen, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+
+interface StudentSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  gradeLevel: number | null;
+  readingLevel: string | null;
+}
 
 interface Assignment {
   id: string;
@@ -20,7 +28,11 @@ interface Assignment {
   instructions: string | null;
   createdAt: string;
   storyTitle: string;
+  classId: string;
   className: string;
+  totalStudents: number;
+  completedCount: number;
+  pendingStudents: StudentSummary[];
 }
 
 export default function TeacherAssignmentsPage() {
@@ -44,7 +56,13 @@ export default function TeacherAssignmentsPage() {
       }
 
       const data = await response.json();
-      setAssignments(data.assignments || []);
+      const formattedAssignments: Assignment[] = (data.assignments || []).map((assignment: any) => ({
+        ...assignment,
+        totalStudents: assignment.totalStudents ?? 0,
+        completedCount: assignment.completedCount ?? 0,
+        pendingStudents: assignment.pendingStudents ?? [],
+      }));
+      setAssignments(formattedAssignments);
     } catch (error) {
       console.error('Error fetching assignments:', error);
       setError('Failed to load assignments');
@@ -190,8 +208,16 @@ export default function TeacherAssignmentsPage() {
           </Card>
         ) : (
           <div className="grid gap-6">
-            {assignments.map((assignment) => (
-              <Card key={assignment.id} className="hover:shadow-md transition-shadow">
+            {assignments.map((assignment) => {
+              const pendingNames = assignment.pendingStudents.map((student) => `${student.firstName} ${student.lastName}`.trim());
+              const displayedPending = pendingNames.slice(0, 5);
+              const extraPending = pendingNames.length - displayedPending.length;
+              const completionRate = assignment.totalStudents > 0
+                ? Math.round((assignment.completedCount / assignment.totalStudents) * 100)
+                : 0;
+
+              return (
+                <Card key={assignment.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -244,8 +270,42 @@ export default function TeacherAssignmentsPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <span className="flex items-center gap-1 text-green-600 font-medium">
+                        <CheckCircle className="w-4 h-4" />
+                        {assignment.totalStudents > 0
+                          ? `${assignment.completedCount} of ${assignment.totalStudents} completed (${completionRate}%)`
+                          : 'No students enrolled yet'}
+                      </span>
+                    </div>
+                    {assignment.totalStudents > 0 && (
+                      pendingNames.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-orange-600">
+                          <span className="flex items-center gap-1 font-medium">
+                            <AlertCircle className="w-4 h-4" />
+                            {pendingNames.length} pending:
+                          </span>
+                          {displayedPending.map((name) => (
+                            <Badge key={name} variant="outline" className="text-orange-700 border-orange-300 bg-orange-50">
+                              {name}
+                            </Badge>
+                          ))}
+                          {extraPending > 0 && (
+                            <span className="text-xs text-orange-500">+{extraPending} more</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          All students have finished this assignment.
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <BookOpen className="w-4 h-4" />
                       <span>Story: {assignment.storyTitle}</span>
@@ -260,15 +320,14 @@ export default function TeacherAssignmentsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center text-sm text-gray-500">
-                      <span>Max attempts: {assignment.maxAttempts}</span>
-                      <span>Created {format(new Date(assignment.createdAt), 'MMM d, yyyy')}</span>
-                    </div>
+                  <div className="flex justify-between items-center text-sm text-gray-500 border-t pt-4">
+                    <span>Max attempts: {assignment.maxAttempts}</span>
+                    <span>Created {format(new Date(assignment.createdAt), 'MMM d, yyyy')}</span>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
