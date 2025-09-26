@@ -7,6 +7,8 @@ import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
+const ACADEMIC_YEAR_REGEX = /^(\d{4})[-/](\d{4})$/;
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -82,6 +84,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!academicYear || typeof academicYear !== 'string' || !ACADEMIC_YEAR_REGEX.test(academicYear.trim())) {
+      return NextResponse.json(
+        { error: 'Academic year is required in format YYYY-YYYY' },
+        { status: 400 }
+      );
+    }
+
     // Ensure teacher record exists
     const teacherRecord = await db
       .select({ id: teachers.id })
@@ -136,13 +145,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new class
+    const parsedGradeLevel =
+      gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== ''
+        ? Number(gradeLevel)
+        : null;
+
+    if (
+      parsedGradeLevel !== null &&
+      (Number.isNaN(parsedGradeLevel) || parsedGradeLevel < 0)
+    ) {
+      return NextResponse.json(
+        { error: 'Grade level must be a non-negative number' },
+        { status: 400 }
+      );
+    }
+
     const newClass = await db
       .insert(classes)
       .values({
         name: name.trim(),
         description: description?.trim() || null,
-        gradeLevel: gradeLevel || null,
-        academicYear: academicYear?.trim() || null,
+        gradeLevel: parsedGradeLevel,
+        academicYear: academicYear.trim(),
         teacherId: user.id,
         schoolId: teacherSchool[0].schoolId,
       })

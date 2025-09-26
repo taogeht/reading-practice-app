@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,12 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (!formData.academicYear) {
+      setLoading(false);
+      alert('Please select an academic year for the class');
+      return;
+    }
 
     try {
       const response = await fetch('/api/teacher/classes', {
@@ -71,6 +77,16 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
     `${currentYear + 1}-${currentYear + 2}`,
   ];
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (!formData.academicYear && academicYears.length > 0) {
+      const defaultYear = academicYears[1] ?? academicYears[0];
+      setFormData((prev) => ({ ...prev, academicYear: defaultYear }));
+    }
+  }, [academicYears, formData.academicYear, open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -110,7 +126,7 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
                 <SelectValue placeholder="Select grade level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="k">Kindergarten</SelectItem>
+                <SelectItem value="0">Kindergarten</SelectItem>
                 <SelectItem value="1">1st Grade</SelectItem>
                 <SelectItem value="2">2nd Grade</SelectItem>
                 <SelectItem value="3">3rd Grade</SelectItem>

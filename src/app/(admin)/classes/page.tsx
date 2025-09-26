@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -11,9 +11,11 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -21,6 +23,9 @@ import ClassForm, {
   AdminClassFormValues,
   AdminClassSummary,
 } from '@/components/admin/class-form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 
 interface TeacherOption {
   id: string;
@@ -50,6 +55,33 @@ interface UsersResponse {
   }>;
 }
 
+const ACADEMIC_YEAR_REGEX = /^(\d{4})[-/](\d{4})$/;
+
+function parseAcademicYearStart(value: string | null | undefined): number {
+  if (!value) return Number.NEGATIVE_INFINITY;
+  const match = value.match(ACADEMIC_YEAR_REGEX);
+  if (!match) return Number.NEGATIVE_INFINITY;
+  return Number.parseInt(match[1]!, 10);
+}
+
+function getNextAcademicYear(value: string): string | null {
+  const match = value.match(ACADEMIC_YEAR_REGEX);
+  if (!match) return null;
+  const start = Number.parseInt(match[1]!, 10);
+  return `${start + 1}-${start + 2}`;
+}
+
+function formatGradeLabel(gradeLevel: number | null | undefined): string {
+  if (gradeLevel === null || gradeLevel === undefined) {
+    return '—';
+  }
+  if (gradeLevel === 0) {
+    return 'Kindergarten';
+  }
+  const suffix = gradeLevel === 1 ? 'st' : gradeLevel === 2 ? 'nd' : gradeLevel === 3 ? 'rd' : 'th';
+  return `${gradeLevel}${suffix} Grade`;
+}
+
 interface SchoolsResponse {
   schools: Array<{
     id: string;
@@ -66,6 +98,22 @@ export default function ClassManagementPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<AdminClassSummary & { studentCount: number } | undefined>(undefined);
   const [formLoading, setFormLoading] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [rolloverDialogOpen, setRolloverDialogOpen] = useState(false);
+  const [rolloverForm, setRolloverForm] = useState({
+    fromAcademicYear: '',
+    toAcademicYear: '',
+    includeInactive: false,
+    deactivateSource: true,
+  });
+  const [rolloverLoading, setRolloverLoading] = useState(false);
+  const [rolloverError, setRolloverError] = useState<string | null>(null);
+  const [rolloverSummary, setRolloverSummary] = useState<{ created: number; skipped: number; message?: string } | null>(null);
+  const [rolloverDetails, setRolloverDetails] = useState<{
+    created: Array<{ id: string; name: string; academicYear: string }>;
+    skipped: Array<{ id: string; name: string; reason: string }>;
+    targetAcademicYear?: string;
+  } | null>(null);
 
   const loadData = async () => {
     try {
@@ -200,6 +248,141 @@ export default function ClassManagementPage() {
     }
   };
 
+  const handleExecuteRollover = async () => {
+    if (!rolloverForm.fromAcademicYear) {
+      setRolloverError('Select the academic year to rollover from.');
+      return;
+    }
+
+    if (
+      rolloverForm.toAcademicYear &&
+      !ACADEMIC_YEAR_REGEX.test(rolloverForm.toAcademicYear.trim())
+    ) {
+      setRolloverError('To academic year must be in format YYYY-YYYY.');
+      return;
+    }
+
+    setRolloverLoading(true);
+    setRolloverError(null);
+    setRolloverSummary(null);
+    setRolloverDetails(null);
+
+    try {
+      const response = await fetch('/api/admin/classes/rollover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fromAcademicYear: rolloverForm.fromAcademicYear,
+          toAcademicYear: rolloverForm.toAcademicYear
+            ? rolloverForm.toAcademicYear.trim()
+            : undefined,
+          includeInactive: rolloverForm.includeInactive,
+          deactivateSource: rolloverForm.deactivateSource,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Rollover failed');
+      }
+
+      setRolloverSummary({
+        created: data.created?.length ?? 0,
+        skipped: data.skipped?.length ?? 0,
+        message: data.message,
+      });
+      setRolloverDetails({
+        created: data.created ?? [],
+        skipped: data.skipped ?? [],
+        targetAcademicYear: data.targetAcademicYear,
+      });
+
+      if (data.targetAcademicYear) {
+        setSelectedYear(data.targetAcademicYear);
+        setRolloverForm((prev) => ({
+          ...prev,
+          toAcademicYear: data.targetAcademicYear,
+        }));
+      }
+
+      await loadData();
+    } catch (err) {
+      setRolloverError(err instanceof Error ? err.message : 'Failed to rollover classes');
+    } finally {
+      setRolloverLoading(false);
+    }
+  };
+
+  const academicYears = useMemo(() => {
+    const years = Array.from(
+      new Set(
+        classes
+          .map((cls) => cls.academicYear)
+          .filter((year): year is string => Boolean(year)),
+      ),
+    );
+    years.sort((a, b) => parseAcademicYearStart(b) - parseAcademicYearStart(a));
+    return years;
+  }, [classes]);
+
+  useEffect(() => {
+    if (academicYears.length === 0) {
+      setSelectedYear('all');
+      setRolloverForm((prev) => ({
+        ...prev,
+        fromAcademicYear: '',
+        toAcademicYear: '',
+      }));
+      return;
+    }
+
+    setSelectedYear((prev) => {
+      if (prev === 'all') {
+        return prev;
+      }
+      if (academicYears.includes(prev)) {
+        return prev;
+      }
+      return academicYears[0]!;
+    });
+  }, [academicYears]);
+
+  useEffect(() => {
+    if (selectedYear === 'all') {
+      if (academicYears.length === 0) {
+        setRolloverForm((prev) => ({
+          ...prev,
+          fromAcademicYear: '',
+          toAcademicYear: '',
+        }));
+      } else {
+        const defaultYear = academicYears[0]!;
+        setRolloverForm((prev) => ({
+          ...prev,
+          fromAcademicYear: defaultYear,
+          toAcademicYear: getNextAcademicYear(defaultYear) ?? prev.toAcademicYear,
+        }));
+      }
+      return;
+    }
+
+    setRolloverForm((prev) => ({
+      ...prev,
+      fromAcademicYear: selectedYear,
+      toAcademicYear: getNextAcademicYear(selectedYear) ?? prev.toAcademicYear,
+    }));
+  }, [selectedYear, academicYears]);
+
+  const filteredClasses = useMemo(() => {
+    if (selectedYear === 'all') {
+      return classes;
+    }
+    return classes.filter((cls) => cls.academicYear === selectedYear);
+  }, [classes, selectedYear]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -221,14 +404,55 @@ export default function ClassManagementPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col gap-4 mb-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Class Management</h1>
           <p className="text-sm text-muted-foreground">
             Create, edit, and archive classes across schools.
           </p>
         </div>
-        <Button onClick={handleAddClass}>Add Class</Button>
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <Select
+            value={selectedYear}
+            onValueChange={(value) => setSelectedYear(value)}
+            disabled={academicYears.length === 0}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter by academic year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All academic years</SelectItem>
+              {academicYears.map((year) => (
+                <SelectItem key={year} value={year}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (academicYears.length > 0) {
+                const baseYear = selectedYear !== 'all'
+                  ? selectedYear
+                  : rolloverForm.fromAcademicYear || academicYears[0]!;
+                setRolloverForm((prev) => ({
+                  ...prev,
+                  fromAcademicYear: baseYear,
+                  toAcademicYear: prev.toAcademicYear || getNextAcademicYear(baseYear) || '',
+                }));
+              }
+              setRolloverError(null);
+              setRolloverSummary(null);
+              setRolloverDetails(null);
+              setRolloverDialogOpen(true);
+            }}
+            disabled={academicYears.length === 0}
+          >
+            Rollover Classes
+          </Button>
+          <Button onClick={handleAddClass}>Add Class</Button>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -239,6 +463,8 @@ export default function ClassManagementPage() {
               <TableHead>Teacher</TableHead>
               <TableHead>School</TableHead>
               <TableHead>Grade</TableHead>
+              <TableHead>Academic Year</TableHead>
+              <TableHead>Rollover From</TableHead>
               <TableHead>Students</TableHead>
               <TableHead>Practice Stories</TableHead>
               <TableHead>Status</TableHead>
@@ -246,19 +472,17 @@ export default function ClassManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {classes.map((classItem) => {
+            {filteredClasses.map((classItem) => {
               const teacher = classItem.teacher;
-
+              const gradeLabel = formatGradeLabel(classItem.gradeLevel ?? null);
+              const rolloverFromLabel = classItem.rolloverFrom
+                ? `${classItem.rolloverFrom.name}${classItem.rolloverFrom.academicYear ? ` (${classItem.rolloverFrom.academicYear})` : ''}`
+                : '—';
               return (
                 <TableRow key={classItem.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
                       <span>{classItem.name}</span>
-                      {classItem.academicYear && (
-                        <span className="text-xs text-muted-foreground">
-                          {classItem.academicYear}
-                        </span>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -278,11 +502,9 @@ export default function ClassManagementPage() {
                     )}
                   </TableCell>
                   <TableCell>{classItem.school?.name ?? '—'}</TableCell>
-                  <TableCell>
-                    {classItem.gradeLevel !== null && classItem.gradeLevel !== undefined
-                      ? `Grade ${classItem.gradeLevel}`
-                      : '—'}
-                  </TableCell>
+                  <TableCell>{gradeLabel}</TableCell>
+                  <TableCell>{classItem.academicYear ?? '—'}</TableCell>
+                  <TableCell>{rolloverFromLabel}</TableCell>
                   <TableCell>{classItem.studentCount}</TableCell>
                   <TableCell>
                     <Badge variant={classItem.showPracticeStories ? 'default' : 'secondary'}>
@@ -319,9 +541,13 @@ export default function ClassManagementPage() {
         </Table>
       </div>
 
-      {classes.length === 0 && (
+      {filteredClasses.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">No classes found.</p>
+          <p className="text-muted-foreground">
+            {selectedYear === 'all'
+              ? 'No classes found.'
+              : `No classes found for ${selectedYear}.`}
+          </p>
         </div>
       )}
 
@@ -343,6 +569,161 @@ export default function ClassManagementPage() {
             onCancel={() => setIsDialogOpen(false)}
             loading={formLoading}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={rolloverDialogOpen}
+        onOpenChange={(open) => {
+          setRolloverDialogOpen(open);
+          if (!open) {
+            setRolloverError(null);
+            setRolloverSummary(null);
+            setRolloverDetails(null);
+            setRolloverLoading(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Rollover Classes</DialogTitle>
+            <DialogDescription>
+              Create new classes for the next academic year and promote existing students.
+            </DialogDescription>
+          </DialogHeader>
+          {academicYears.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No academic years found. Add classes before running a rollover.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>From Academic Year</Label>
+                  <Select
+                    value={rolloverForm.fromAcademicYear}
+                    onValueChange={(value) => {
+                      setRolloverForm((prev) => ({
+                        ...prev,
+                        fromAcademicYear: value,
+                        toAcademicYear: getNextAcademicYear(value) ?? prev.toAcademicYear,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {academicYears.map((year) => (
+                        <SelectItem key={year} value={year}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>To Academic Year</Label>
+                  <Input
+                    value={rolloverForm.toAcademicYear}
+                    onChange={(event) => setRolloverForm((prev) => ({
+                      ...prev,
+                      toAcademicYear: event.target.value,
+                    }))}
+                    placeholder="e.g., 2026-2027"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="include-inactive-classes"
+                    checked={rolloverForm.includeInactive}
+                    onCheckedChange={(checked) =>
+                      setRolloverForm((prev) => ({ ...prev, includeInactive: checked }))
+                    }
+                  />
+                  <Label htmlFor="include-inactive-classes" className="text-sm">
+                    Include inactive classes
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="deactivate-source-classes"
+                    checked={rolloverForm.deactivateSource}
+                    onCheckedChange={(checked) =>
+                      setRolloverForm((prev) => ({ ...prev, deactivateSource: checked }))
+                    }
+                  />
+                  <Label htmlFor="deactivate-source-classes" className="text-sm">
+                    Deactivate source classes after rollover
+                  </Label>
+                </div>
+              </div>
+
+              {rolloverError && (
+                <p className="text-sm text-red-600">{rolloverError}</p>
+              )}
+
+              {rolloverSummary && (
+                <div className="space-y-2 rounded-md border border-muted p-3 text-sm">
+                  <p className="font-medium text-muted-foreground">
+                    {rolloverSummary.message ?? 'Rollover completed'}
+                  </p>
+                  <p>
+                    <span className="font-semibold">{rolloverSummary.created}</span> classes created,
+                    <span className="font-semibold"> {rolloverSummary.skipped}</span> skipped.
+                  </p>
+                  {rolloverDetails && rolloverDetails.targetAcademicYear && (
+                    <p>Target academic year: {rolloverDetails.targetAcademicYear}</p>
+                  )}
+                  {rolloverDetails && rolloverDetails.created.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="font-semibold">Created:</p>
+                      <ul className="ml-4 list-disc text-muted-foreground">
+                        {rolloverDetails.created.map((item) => (
+                          <li key={item.id}>
+                            {item.name} ({item.academicYear})
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {rolloverDetails && rolloverDetails.skipped.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="font-semibold">Skipped:</p>
+                      <ul className="ml-4 list-disc text-muted-foreground">
+                        {rolloverDetails.skipped.map((item) => (
+                          <li key={item.id}>
+                            {item.name} – {item.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setRolloverDialogOpen(false);
+                  }}
+                  disabled={rolloverLoading}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={handleExecuteRollover}
+                  disabled={rolloverLoading || !rolloverForm.fromAcademicYear}
+                >
+                  {rolloverLoading ? 'Running…' : 'Run Rollover'}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
