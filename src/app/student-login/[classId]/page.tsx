@@ -104,13 +104,19 @@ export default function ClassStudentLoginPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Login failed");
+        throw new Error(data.error || "Login failed");
       }
 
       await refreshUser();
-      router.replace("/student/dashboard");
+
+      if (data.nextAssignmentId) {
+        router.replace(`/student/assignments/${data.nextAssignmentId}/practice`);
+      } else {
+        router.replace("/student/dashboard");
+      }
     } catch (error) {
       console.error("Login error:", error);
     }
