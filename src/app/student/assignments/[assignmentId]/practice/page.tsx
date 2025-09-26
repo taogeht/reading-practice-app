@@ -52,6 +52,7 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   const [recordingResult, setRecordingResult] = useState<any>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [storyAudio, setStoryAudio] = useState<HTMLAudioElement | null>(null);
+  const [storyError, setStoryError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -97,6 +98,8 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   const handlePlayStory = () => {
     if (!assignment?.story.ttsAudioUrl) return;
 
+    setStoryError(null);
+
     if (isPlayingStory && storyAudio) {
       // Stop the audio
       storyAudio.pause();
@@ -105,14 +108,18 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       setStoryAudio(null);
     } else {
       // Start playing
-      const audio = new Audio(assignment.story.ttsAudioUrl);
+      const audio = new Audio();
+      audio.crossOrigin = 'anonymous';
+      audio.src = assignment.story.ttsAudioUrl;
       setStoryAudio(audio);
       setIsPlayingStory(true);
 
-      audio.play().catch(() => {
+      audio.play().catch((error) => {
         setIsPlayingStory(false);
         setStoryAudio(null);
+        setStoryError('Unable to play story audio. Please try again or ask your teacher.');
         console.error('Error playing TTS audio');
+        console.error(error);
       });
 
       audio.onended = () => {
@@ -123,6 +130,7 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       audio.onerror = () => {
         setIsPlayingStory(false);
         setStoryAudio(null);
+        setStoryError('There was a problem loading the story audio.');
         console.error('Error playing TTS audio');
       };
     }
@@ -279,6 +287,11 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                     </>
                   )}
                 </Button>
+                {storyError && (
+                  <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                    {storyError}
+                  </div>
+                )}
               </div>
             )}
 

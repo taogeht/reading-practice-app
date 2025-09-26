@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         dueAt: assignments.dueAt,
         assignedAt: assignments.assignedAt,
         createdAt: assignments.createdAt,
-        attemptCount: sql<number>`COUNT(${recordings.id})`,
+        completedCount: sql<number>`COUNT(CASE WHEN ${recordings.id} IS NOT NULL AND ${recordings.status} IN ('submitted', 'reviewed') THEN 1 END)`,
       })
       .from(assignments)
       .innerJoin(classes, eq(assignments.classId, classes.id))
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       );
 
     const nextAssignmentId = pendingAssignmentCandidates.find(
-      (candidate) => Number(candidate.attemptCount ?? 0) === 0,
+      (candidate) => Number(candidate.completedCount ?? 0) === 0,
     )?.id;
 
     // Create session
