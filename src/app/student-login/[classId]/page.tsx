@@ -33,7 +33,10 @@ export default function ClassStudentLoginPage() {
   const searchParams = useSearchParams();
   const classId = params.classId as string;
 
-  const studentIdFromUrl = useMemo(() => searchParams?.get("student") ?? null, [searchParams]);
+  const studentIdFromUrl = useMemo(
+    () => searchParams?.get("student") ?? null,
+    [searchParams],
+  );
 
   useEffect(() => {
     if (classId) {
@@ -47,7 +50,9 @@ export default function ClassStudentLoginPage() {
     const autoSelectStudent = async () => {
       try {
         setLoadingStudent(true);
-        const response = await fetch(`/api/classes/${classId}/students/${studentIdFromUrl}`);
+        const response = await fetch(
+          `/api/classes/${classId}/students/${studentIdFromUrl}`,
+        );
         if (!response.ok) {
           throw new Error("Student not found");
         }
@@ -104,19 +109,13 @@ export default function ClassStudentLoginPage() {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+        const error = await response.json();
+        throw new Error(error.error || "Login failed");
       }
 
       await refreshUser();
-
-      if (data.nextAssignmentId) {
-        router.replace(`/student/assignments/${data.nextAssignmentId}/practice`);
-      } else {
-        router.replace("/student/dashboard");
-      }
+      router.replace("/student/dashboard");
     } catch (error) {
       console.error("Login error:", error);
     }

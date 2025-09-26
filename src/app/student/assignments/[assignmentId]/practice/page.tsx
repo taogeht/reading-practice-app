@@ -52,14 +52,12 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   const [recordingResult, setRecordingResult] = useState<any>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [storyAudio, setStoryAudio] = useState<HTMLAudioElement | null>(null);
-  const [storyError, setStoryError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetchAssignment();
   }, [params.assignmentId]);
 
-  // Cleanup audio when component unmounts
   useEffect(() => {
     return () => {
       if (storyAudio) {
@@ -98,28 +96,20 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   const handlePlayStory = () => {
     if (!assignment?.story.ttsAudioUrl) return;
 
-    setStoryError(null);
-
     if (isPlayingStory && storyAudio) {
-      // Stop the audio
       storyAudio.pause();
       storyAudio.currentTime = 0;
       setIsPlayingStory(false);
       setStoryAudio(null);
     } else {
-      // Start playing
-      const audio = new Audio();
-      audio.crossOrigin = 'anonymous';
-      audio.src = assignment.story.ttsAudioUrl;
+      const audio = new Audio(assignment.story.ttsAudioUrl);
       setStoryAudio(audio);
       setIsPlayingStory(true);
 
-      audio.play().catch((error) => {
+      audio.play().catch(() => {
         setIsPlayingStory(false);
         setStoryAudio(null);
-        setStoryError('Unable to play story audio. Please try again or ask your teacher.');
         console.error('Error playing TTS audio');
-        console.error(error);
       });
 
       audio.onended = () => {
@@ -130,15 +120,12 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       audio.onerror = () => {
         setIsPlayingStory(false);
         setStoryAudio(null);
-        setStoryError('There was a problem loading the story audio.');
         console.error('Error playing TTS audio');
       };
     }
   };
 
   const handleRecordingComplete = async (result: any) => {
-    // The AudioRecorder with assignmentId already handles upload and database insertion
-    // via /api/recordings/upload, so we just need to handle the result
     setRecordingResult(result);
   };
 
@@ -148,7 +135,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
     setRecordingResult(null);
     setAudioBlob(null);
   };
-
 
   if (isLoading) {
     return (
@@ -177,7 +163,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
     );
   }
 
-  // Show completion message if successfully submitted
   if (recordingResult?.success) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-100">
@@ -229,7 +214,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
@@ -251,7 +235,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-        {/* Story Card with Listen Button */}
         <Card className="border-2 border-blue-200">
           <CardHeader className="bg-blue-50">
             <CardTitle className="text-2xl flex items-center gap-3">
@@ -263,7 +246,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
             )}
           </CardHeader>
           <CardContent className="p-6">
-            {/* Listen Button at the top */}
             {assignment.story.ttsAudioUrl && (
               <div className="mb-6">
                 <Button
@@ -287,15 +269,9 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                     </>
                   )}
                 </Button>
-                {storyError && (
-                  <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
-                    {storyError}
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Story Content */}
             <div className="bg-gray-50 rounded-lg p-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg leading-relaxed whitespace-pre-wrap">
@@ -304,7 +280,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
               </div>
             </div>
 
-            {/* Story Info */}
             <div className="flex gap-2 mt-4">
               {assignment.story.readingLevel && (
                 <Badge variant="outline" className="text-sm">
@@ -320,7 +295,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
           </CardContent>
         </Card>
 
-        {/* Instructions Card */}
         {assignment.instructions && (
           <Card className="border-2 border-yellow-200">
             <CardHeader className="bg-yellow-50">
@@ -336,7 +310,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
           </Card>
         )}
 
-        {/* Recording Card */}
         <Card className="border-2 border-green-200">
           <CardHeader className="bg-green-50">
             <CardTitle className="text-2xl flex items-center gap-3">
@@ -354,7 +327,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                 assignmentId={assignment.id}
               />
 
-
               {recordingResult && !recordingResult.success && (
                 <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-lg">
                   <div className="text-red-800 text-lg">
@@ -367,31 +339,6 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Reading Tips Card */}
-        <Card className="border-2 border-purple-200">
-          <CardHeader className="bg-purple-50">
-            <CardTitle className="text-xl text-purple-800">
-              📚 Reading Tips
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <ul className="text-lg text-purple-900 space-y-3">
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600">•</span>
-                <span>Read slowly and clearly</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600">•</span>
-                <span>Take your time with difficult words</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600">•</span>
-                <span>Try to read with expression</span>
-              </li>
-            </ul>
           </CardContent>
         </Card>
       </div>
