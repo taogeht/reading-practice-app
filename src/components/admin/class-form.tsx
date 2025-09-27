@@ -42,8 +42,6 @@ interface AdminClassSummary {
   description?: string | null;
   gradeLevel?: number | null;
   academicYear?: string | null;
-  rolloverFromClassId?: string | null;
-  rolloverFrom?: { id: string; name: string; academicYear?: string | null } | null;
   showPracticeStories: boolean;
   active: boolean;
   school?: { id: string; name: string } | null;
@@ -58,8 +56,6 @@ interface ClassFormProps {
   onCancel: () => void;
   loading?: boolean;
 }
-
-const ACADEMIC_YEAR_REGEX = /^(\d{4})[-/](\d{4})$/;
 
 export default function ClassForm({
   classItem,
@@ -157,12 +153,6 @@ export default function ClassForm({
 
     if (!formData.teacherId) {
       validationErrors.teacherId = 'Select a teacher';
-    }
-
-    if (!formData.academicYear.trim()) {
-      validationErrors.academicYear = 'Academic year is required';
-    } else if (!ACADEMIC_YEAR_REGEX.test(formData.academicYear.trim())) {
-      validationErrors.academicYear = 'Use format YYYY-YYYY';
     }
 
     if (Object.keys(validationErrors).length > 0) {
@@ -283,11 +273,7 @@ export default function ClassForm({
             value={formData.academicYear}
             onChange={(event) => handleChange('academicYear', event.target.value)}
             placeholder="e.g., 2024-2025"
-            className={errors.academicYear ? 'border-red-500' : ''}
           />
-          {errors.academicYear && (
-            <p className="text-sm text-red-500 mt-1">{errors.academicYear}</p>
-          )}
         </div>
       </div>
 

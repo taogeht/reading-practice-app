@@ -43,13 +43,6 @@
       "when": 1758147301955,
       "tag": "0005_remove_color_shape_visual_password",
       "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1758147301956,
-      "tag": "0006_add_class_rollover_support",
-      "breakpoints": true
     }
   ]
 }

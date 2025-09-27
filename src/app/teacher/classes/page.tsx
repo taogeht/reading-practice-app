@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { CreateClassDialog } from "@/components/classes/create-class-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Users,
   Plus,
@@ -51,19 +44,6 @@ interface Student {
   visualPasswordData?: any;
 }
 
-const ACADEMIC_YEAR_REGEX = /^(\d{4})[-/](\d{4})$/;
-
-function formatGradeLabel(gradeLevel: number | null): string {
-  if (gradeLevel === null) {
-    return '—';
-  }
-  if (gradeLevel === 0) {
-    return 'Kindergarten';
-  }
-  const suffix = gradeLevel === 1 ? 'st' : gradeLevel === 2 ? 'nd' : gradeLevel === 3 ? 'rd' : 'th';
-  return `${gradeLevel}${suffix} Grade`;
-}
-
 export default function TeacherClassesPage() {
   const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
@@ -72,48 +52,6 @@ export default function TeacherClassesPage() {
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<string>('all');
-
-  const academicYears = useMemo(() => {
-    const years = Array.from(
-      new Set(
-        classes
-          .map((cls) => cls.academicYear)
-          .filter((year): year is string => Boolean(year)),
-      ),
-    );
-    years.sort((a, b) => {
-      if (a === b) return 0;
-      const aMatch = a.match(ACADEMIC_YEAR_REGEX);
-      const bMatch = b.match(ACADEMIC_YEAR_REGEX);
-      if (!aMatch || !bMatch) return a.localeCompare(b);
-      const aStart = Number.parseInt(aMatch[1]!, 10);
-      const bStart = Number.parseInt(bMatch[1]!, 10);
-      return bStart - aStart;
-    });
-    return years;
-  }, [classes]);
-
-  useEffect(() => {
-    if (academicYears.length === 0) {
-      setSelectedYear('all');
-      return;
-    }
-
-    setSelectedYear((prev) => {
-      if (prev === 'all' || academicYears.includes(prev)) {
-        return prev;
-      }
-      return academicYears[0]!;
-    });
-  }, [academicYears]);
-
-  const filteredClasses = useMemo(() => {
-    if (selectedYear === 'all') {
-      return classes;
-    }
-    return classes.filter((cls) => cls.academicYear === selectedYear);
-  }, [classes, selectedYear]);
 
   useEffect(() => {
     fetchClasses();
@@ -179,12 +117,6 @@ export default function TeacherClassesPage() {
     }
   };
 
-  useEffect(() => {
-    if (expandedClass && !filteredClasses.some((cls) => cls.id === expandedClass)) {
-      setExpandedClass(null);
-    }
-  }, [expandedClass, filteredClasses]);
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -219,22 +151,6 @@ export default function TeacherClassesPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Select
-                value={selectedYear}
-                onValueChange={(value) => setSelectedYear(value)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by year" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All academic years</SelectItem>
-                  {academicYears.map((year) => (
-                    <SelectItem key={year} value={year}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Button onClick={() => setShowCreateStudent(true)} variant="outline">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Add Student
@@ -265,16 +181,7 @@ export default function TeacherClassesPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {filteredClasses.length === 0 ? (
-              <Card className="text-center py-10">
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    No classes found for {selectedYear === 'all' ? 'the selected filter' : selectedYear}.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              filteredClasses.map((cls) => (
+            {classes.map((cls) => (
               <Card key={cls.id} className="overflow-hidden">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -287,14 +194,16 @@ export default function TeacherClassesPage() {
                         )}
                       </CardTitle>
                       <CardDescription className="mt-1">
-                          {cls.description && (
-                            <span className="block">{cls.description}</span>
-                          )}
+                        {cls.description && (
+                          <span className="block">{cls.description}</span>
+                        )}
                         <div className="flex items-center gap-4 mt-2 text-sm">
-                          <span className="flex items-center gap-1">
-                            <GraduationCap className="w-4 h-4" />
-                            {formatGradeLabel(cls.gradeLevel)}
-                          </span>
+                          {cls.gradeLevel && (
+                            <span className="flex items-center gap-1">
+                              <GraduationCap className="w-4 h-4" />
+                              Grade {cls.gradeLevel}
+                            </span>
+                          )}
                           {cls.academicYear && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
@@ -393,8 +302,7 @@ export default function TeacherClassesPage() {
                   </CardContent>
                 )}
               </Card>
-              ))
-            )}
+            ))}
           </div>
         )}
       </div>

@@ -14,7 +14,7 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 
 // Enums
 export const userRoleEnum = pgEnum('user_role', ['student', 'teacher', 'admin']);
@@ -120,18 +120,11 @@ export const classes = pgTable('classes', {
   schoolId: uuid('school_id').notNull().references(() => schools.id, { onDelete: 'cascade' }),
   gradeLevel: integer('grade_level'),
   academicYear: varchar('academic_year', { length: 20 }),
-  rolloverFromClassId: uuid('rollover_from_class_id').references(() => classes.id, { onDelete: 'set null' }),
   active: boolean('active').default(true),
   showPracticeStories: boolean('show_practice_stories').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-},
-  (table) => ({
-    teacherNameYearUnique: uniqueIndex('uniq_classes_teacher_name_year')
-      .on(table.teacherId, table.name, table.academicYear)
-      .where(sql`${table.academicYear} IS NOT NULL`),
-  })
-);
+});
 
 export const classEnrollments = pgTable(
   'class_enrollments',
@@ -297,12 +290,6 @@ export const storiesRelations = relations(stories, ({ one, many }) => ({
 export const classesRelations = relations(classes, ({ one, many }) => ({
   teacher: one(teachers, { fields: [classes.teacherId], references: [teachers.id] }),
   school: one(schools, { fields: [classes.schoolId], references: [schools.id] }),
-  rolloverFrom: one(classes, {
-    relationName: 'classRollover',
-    fields: [classes.rolloverFromClassId],
-    references: [classes.id],
-  }),
-  rolloverTargets: many(classes, { relationName: 'classRollover' }),
   enrollments: many(classEnrollments),
   assignments: many(assignments),
 }));

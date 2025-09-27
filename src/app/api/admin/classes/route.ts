@@ -12,12 +12,9 @@ import { alias } from 'drizzle-orm/pg-core';
 import { count, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
-const ACADEMIC_YEAR_REGEX = /^(\d{4})[-/](\d{4})$/;
-
 export const runtime = 'nodejs';
 
 const teacherUsers = alias(users, 'teacher_users');
-const previousClasses = alias(classes, 'previous_classes');
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +31,6 @@ export async function GET(request: NextRequest) {
         description: classes.description,
         gradeLevel: classes.gradeLevel,
         academicYear: classes.academicYear,
-        rolloverFromClassId: classes.rolloverFromClassId,
         active: classes.active,
         showPracticeStories: classes.showPracticeStories,
         createdAt: classes.createdAt,
@@ -46,14 +42,11 @@ export async function GET(request: NextRequest) {
         teacherLastName: teacherUsers.lastName,
         teacherEmail: teacherUsers.email,
         studentCount: count(classEnrollments.id).as('studentCount'),
-        rolloverFromName: previousClasses.name,
-        rolloverFromYear: previousClasses.academicYear,
       })
       .from(classes)
       .leftJoin(schools, eq(classes.schoolId, schools.id))
       .leftJoin(teachers, eq(classes.teacherId, teachers.id))
       .leftJoin(teacherUsers, eq(teachers.id, teacherUsers.id))
-      .leftJoin(previousClasses, eq(classes.rolloverFromClassId, previousClasses.id))
       .leftJoin(classEnrollments, eq(classEnrollments.classId, classes.id))
       .groupBy(
         classes.id,
@@ -61,7 +54,6 @@ export async function GET(request: NextRequest) {
         classes.description,
         classes.gradeLevel,
         classes.academicYear,
-        classes.rolloverFromClassId,
         classes.active,
         classes.showPracticeStories,
         classes.createdAt,
@@ -72,8 +64,6 @@ export async function GET(request: NextRequest) {
         teacherUsers.firstName,
         teacherUsers.lastName,
         teacherUsers.email,
-        previousClasses.name,
-        previousClasses.academicYear,
       )
       .orderBy(classes.name);
 
@@ -88,14 +78,6 @@ export async function GET(request: NextRequest) {
       createdAt: cls.createdAt,
       updatedAt: cls.updatedAt,
       studentCount: Number(cls.studentCount ?? 0),
-      rolloverFromClassId: cls.rolloverFromClassId,
-      rolloverFrom: cls.rolloverFromClassId
-        ? {
-            id: cls.rolloverFromClassId,
-            name: cls.rolloverFromName ?? 'Previous class',
-            academicYear: cls.rolloverFromYear ?? undefined,
-          }
-        : null,
       school: cls.schoolId
         ? {
             id: cls.schoolId,
@@ -145,21 +127,6 @@ export async function POST(request: NextRequest) {
     if (!name || !schoolId || !teacherId) {
       return NextResponse.json(
         { error: 'Name, schoolId, and teacherId are required' },
-        { status: 400 },
-      );
-    }
-
-    if (!academicYear || typeof academicYear !== 'string' || !academicYear.trim()) {
-      return NextResponse.json(
-        { error: 'Academic year is required (format YYYY-YYYY)' },
-        { status: 400 },
-      );
-    }
-
-    const academicYearValue = academicYear.trim();
-    if (!ACADEMIC_YEAR_REGEX.test(academicYearValue)) {
-      return NextResponse.json(
-        { error: 'Academic year must be in format YYYY-YYYY' },
         { status: 400 },
       );
     }
@@ -220,7 +187,7 @@ export async function POST(request: NextRequest) {
         schoolId,
         teacherId,
         gradeLevel: parsedGradeLevel,
-        academicYear: academicYearValue,
+        academicYear: academicYear ? String(academicYear).trim() : null,
         showPracticeStories: Boolean(showPracticeStories),
         active: Boolean(active),
       })

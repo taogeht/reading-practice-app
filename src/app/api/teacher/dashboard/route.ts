@@ -14,7 +14,7 @@ import {
   schoolMemberships,
 } from '@/lib/db/schema';
 import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
-import { logError } from '@/lib/logger';
+import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
