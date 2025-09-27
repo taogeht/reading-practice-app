@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { stories } from '@/lib/db/schema';
+import {
+  stories,
+  assignments,
+  recordings,
+  studentProgress,
+} from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -92,15 +97,52 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     const { id } = await params;
-    const deletedStory = await db.delete(stories)
-      .where(eq(stories.id, id))
-      .returning();
 
-    if (deletedStory.length === 0) {
+    const result = await db.transaction(async (tx) => {
+      const assignmentsForStory = await tx
+        .select({ id: assignments.id })
+        .from(assignments)
+        .where(eq(assignments.storyId, id));
+
+      const assignmentIds = assignmentsForStory.map((row) => row.id);
+
+      if (assignmentIds.length > 0) {
+        await tx
+          .delete(studentProgress)
+          .where(inArray(studentProgress.assignmentId, assignmentIds));
+
+        await tx
+          .delete(recordings)
+          .where(inArray(recordings.assignmentId, assignmentIds));
+
+        await tx
+          .delete(assignments)
+          .where(inArray(assignments.id, assignmentIds));
+      }
+
+      const deletedStory = await tx
+        .delete(stories)
+        .where(eq(stories.id, id))
+        .returning();
+
+      if (deletedStory.length === 0) {
+        return null;
+      }
+
+      return {
+        story: deletedStory[0],
+        removedAssignments: assignmentIds.length,
+      };
+    });
+
+    if (!result) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Story deleted successfully' });
+    return NextResponse.json({
+      message: 'Story deleted successfully',
+      removedAssignments: result.removedAssignments,
+    });
   } catch (error) {
     logError(error, 'api/admin/stories/[id]');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
