@@ -25,7 +25,7 @@ export interface TTSGenerationResult {
   contentType?: string;
 }
 
-const { TextToSpeechClient, protos } = textToSpeech;
+const { TextToSpeechClient } = textToSpeech;
 
 const DEFAULT_VOICES: TTSVoice[] = [
   {
@@ -136,13 +136,10 @@ class GoogleTtsClient {
         voice: {
           languageCode: voice.languageCode,
           name: voice.voice_id,
-          ssmlGender:
-            voice.ssmlGender === 'MALE'
-              ? protos.google.cloud.texttospeech.v1.SsmlVoiceGender.MALE
-              : protos.google.cloud.texttospeech.v1.SsmlVoiceGender.FEMALE,
+          ssmlGender: voice.ssmlGender,
         },
         audioConfig: {
-          audioEncoding: protos.google.cloud.texttospeech.v1.AudioEncoding.MP3,
+          audioEncoding: 'MP3',
           speakingRate: options.speakingRate ?? voice.speakingRate ?? 1.0,
           pitch: options.pitch ?? voice.pitch ?? 0,
         },
