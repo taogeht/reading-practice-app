@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { elevenLabsClient } from '@/lib/elevenlabs/client';
+import { googleTtsClient } from '@/lib/tts/client';
 import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate TTS audio
-    const ttsResult = await elevenLabsClient.generateSpeech({
+    const ttsResult = await googleTtsClient.generateSpeech({
       text: textToGenerate,
       voice_id: voiceId,
     });
@@ -71,13 +71,19 @@ export async function POST(request: NextRequest) {
     
     const audioKey = r2Client.generateAudioKey('tts', filename);
     
+    const buffer = Buffer.isBuffer(ttsResult.audioBuffer)
+      ? ttsResult.audioBuffer
+      : Buffer.from(ttsResult.audioBuffer);
+
+    const selectedVoiceId = voiceId || googleTtsClient.getVoices()[0]?.voice_id || 'default';
+
     const publicUrl = await r2Client.uploadFile(
       audioKey,
-      Buffer.from(ttsResult.audioBuffer),
-      'audio/mpeg',
+      buffer,
+      ttsResult.contentType || 'audio/mpeg',
       {
-        'generated-by': 'elevenlabs',
-        'voice-id': voiceId || 'default',
+        'generated-by': 'google-tts',
+        'voice-id': selectedVoiceId,
         'generated-at': new Date().toISOString(),
         'user-id': user.id,
       }
@@ -90,7 +96,7 @@ export async function POST(request: NextRequest) {
         .set({
           ttsAudioUrl: publicUrl,
           ttsGeneratedAt: new Date(),
-          elevenLabsVoiceId: voiceId,
+          elevenLabsVoiceId: selectedVoiceId,
           updatedAt: new Date(),
         })
         .where(eq(stories.id, storyId));

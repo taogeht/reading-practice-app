@@ -40,6 +40,7 @@ interface Story {
   ttsAudioDurationSeconds?: number | null;
   ttsGeneratedAt?: string | null;
   elevenLabsVoiceId?: string | null;
+  ttsVoiceId?: string | null;
   active?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -140,6 +141,8 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  const voiceId = story.ttsVoiceId ?? story.elevenLabsVoiceId ?? undefined;
 
   const creatorName = story.creatorFirstName && story.creatorLastName
     ? `${story.creatorFirstName} ${story.creatorLastName}`
@@ -349,8 +352,10 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
                         <div className="text-sm text-muted-foreground">
                           {story.ttsAudioDurationSeconds 
                             ? `Duration: ${formatDuration(story.ttsAudioDurationSeconds)}`
-                            : 'Audio available'
-                          }
+                            : 'Audio available'}
+                          {voiceId && (
+                            <span className="block">Voice: {voiceId}</span>
+                          )}
                         </div>
                       </div>
                     </div>

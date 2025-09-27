@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
         ttsAudioDurationSeconds: stories.ttsAudioDurationSeconds,
         ttsGeneratedAt: stories.ttsGeneratedAt,
         elevenLabsVoiceId: stories.elevenLabsVoiceId,
+        ttsVoiceId: stories.elevenLabsVoiceId,
         createdAt: stories.createdAt,
         updatedAt: stories.updatedAt,
         createdBy: stories.createdBy,

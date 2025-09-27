@@ -24,7 +24,7 @@ This is a reading practice homework application where students record themselves
 - **Authentication**: Custom session-based auth with bcryptjs
 - **UI**: Tailwind CSS 4, shadcn/ui components, Lucide icons
 - **Storage**: Cloudflare R2 for audio files
-- **TTS**: ElevenLabs API for generating story audio
+- **TTS**: Google Cloud Text-to-Speech for generating story audio
 - **Forms**: React Hook Form with Zod validation
 
 ## Architecture
@@ -56,7 +56,7 @@ Core entities:
 ### Story Management
 Stories support:
 - Archive/unarchive functionality (active field controls visibility)
-- TTS audio generation via ElevenLabs
+- TTS audio generation via Google Cloud Text-to-Speech
 - Reading levels and grade targeting
 - Rich text content with metadata (word count, reading time)
 
@@ -64,7 +64,7 @@ Archive system: Stories have an `active` boolean field. Archived stories (active
 
 ### Audio Processing
 - Student recordings uploaded to Cloudflare R2
-- TTS audio generated for stories via ElevenLabs API
+- TTS audio generated for stories via Google Cloud Text-to-Speech API
 - Audio playback components with controls
 - Presigned URLs for secure file access
 
@@ -80,7 +80,7 @@ Archive system: Stories have an `active` boolean field. Archived stories (active
 Required in `.env.local`:
 - `DATABASE_URL` - PostgreSQL connection string
 - `R2_*` - Cloudflare R2 storage credentials
-- `ELEVEN_LABS_API_KEY` - TTS service API key
+- `GOOGLE_TTS_PROJECT_ID`, `GOOGLE_TTS_CLIENT_EMAIL`, `GOOGLE_TTS_PRIVATE_KEY` - Google Cloud Text-to-Speech credentials
 - `BETTER_AUTH_SECRET` - Session encryption key
 
 ## API Patterns

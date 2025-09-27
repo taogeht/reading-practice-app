@@ -7,7 +7,7 @@ This guide will help you set up the Enhanced Reading Practice Platform with all 
 - Node.js 20.17.0 or higher
 - PostgreSQL database
 - Cloudflare account with R2 storage
-- ElevenLabs account with API access
+- Google Cloud project with Text-to-Speech API enabled
 
 ## Environment Variables
 
@@ -28,9 +28,10 @@ R2_SECRET_ACCESS_KEY="your-r2-secret-access-key"
 R2_BUCKET_NAME="reading-practice-audio"
 R2_PUBLIC_URL="https://your-custom-domain.com" # Optional: Custom domain for R2
 
-# ElevenLabs TTS
-ELEVEN_LABS_API_KEY="your-eleven-labs-api-key"
-ELEVEN_LABS_VOICE_ID="pNInz6obpgDQGcFmaJgB" # Optional: Default voice ID
+# Google Cloud Text-to-Speech
+GOOGLE_TTS_PROJECT_ID="your-gcp-project-id"
+GOOGLE_TTS_CLIENT_EMAIL="service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_TTS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----"
 
 # Next.js
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -94,26 +95,35 @@ GRANT ALL PRIVILEGES ON DATABASE recording_homework_app TO reading_app;
 2. Add custom domain (requires domain on Cloudflare)
 3. Use this domain as `R2_PUBLIC_URL`
 
-### 3. ElevenLabs Setup
+### 3. Google Cloud Text-to-Speech Setup
 
-#### Step 1: Create Account
-1. Sign up at [ElevenLabs](https://elevenlabs.io)
-2. Choose appropriate plan (Starter plan includes 10,000 characters/month)
+#### Step 1: Enable the API
+1. Sign in to [Google Cloud Console](https://console.cloud.google.com/)
+2. Select your project (or create a new one)
+3. Navigate to **APIs & Services → Library**
+4. Search for "Cloud Text-to-Speech API" and click **Enable**
 
-#### Step 2: Get API Key
-1. Go to Profile Settings → API Keys
-2. Create new API key
-3. Copy as `ELEVEN_LABS_API_KEY`
+#### Step 2: Create a Service Account
+1. Go to **IAM & Admin → Service Accounts**
+2. Click **Create Service Account**
+3. Name it (e.g., `reading-app-tts`)
+4. Assign the role **"Cloud Text-to-Speech Editor"** (or broader roles if required)
+5. After the account is created, open it and add a new key → **JSON**
+6. Download the JSON key.
 
-#### Step 3: Choose Voice (Optional)
-1. Go to VoiceLab → Voices
-2. Find voice ID for your preferred voice
-3. Use as `ELEVEN_LABS_VOICE_ID`
+#### Step 3: Configure Environment Variables
+1. Open the downloaded JSON key.
+2. Copy the following values into `.env.local` (or deployment secrets):
+   - `GOOGLE_TTS_PROJECT_ID` ← `project_id`
+   - `GOOGLE_TTS_CLIENT_EMAIL` ← `client_email`
+   - `GOOGLE_TTS_PRIVATE_KEY` ← `private_key` (replace actual newlines with `\n` when storing in env files)
 
-**Recommended Voices for Educational Content:**
-- `pNInz6obpgDQGcFmaJgB` - Adam (Clear, professional)
-- `21m00Tcm4TlvDq8ikWAM` - Rachel (Warm, friendly)
-- `AZnzlk1XvdvUeBnXmlld` - Domi (Clear, young adult)
+#### Step 4: Recommended Voices
+- `en-US-Neural2-F` — Warm, expressive female narrator.
+- `en-US-Neural2-D` — Confident, classroom-ready male narrator.
+- `en-GB-Neural2-A` — Friendly British-English narrator.
+
+You can customise the default list in `src/lib/tts/client.ts` if you need additional voices or languages.
 
 ### 4. Authentication Setup
 
@@ -165,8 +175,8 @@ npm run db:studio
 ### 2. R2 Storage Test
 Visit `/api/upload/presigned-url` (authenticated) to test R2 connection.
 
-### 3. ElevenLabs TTS Test
-Visit `/api/tts/voices` (authenticated) to test ElevenLabs connection.
+### 3. Google Cloud TTS Test
+Visit `/api/tts/voices` (authenticated) to confirm the Text-to-Speech credentials are working. You should see the curated list of Google voices.
 
 ### 4. Story Library Test
 Visit `/api/stories` (authenticated) to see the story API.
@@ -202,7 +212,7 @@ src/
 ├── lib/
 │   ├── auth/              # BetterAuth configuration
 │   ├── db/                # Database schema & migrations
-│   ├── elevenlabs/        # TTS integration
+│   ├── tts/               # Google Cloud Text-to-Speech integration
 │   └── storage/           # R2 storage client
 ├── components/
 │   ├── auth/              # Authentication components
@@ -241,7 +251,7 @@ src/
 - Use strong, unique secrets for production
 - Use production database URL
 - Use production R2 bucket
-- Consider separate ElevenLabs account for production usage
+- Lock down the Google Cloud Text-to-Speech service account credentials in production
 
 ## Troubleshooting
 
@@ -270,11 +280,11 @@ If you see this error:
 - Ensure API token has correct permissions
 - Test presigned URL generation in `/api/upload/presigned-url`
 
-#### ElevenLabs API Errors
-- Verify API key is valid
-- Check account has remaining character quota
-- Ensure voice ID exists (if specified)
-- Monitor rate limits and usage
+#### Google Cloud TTS Errors
+- Verify `GOOGLE_TTS_PROJECT_ID`, `GOOGLE_TTS_CLIENT_EMAIL`, and `GOOGLE_TTS_PRIVATE_KEY` are set correctly
+- Confirm the "Cloud Text-to-Speech API" is enabled for the project
+- Ensure the service account has the `Text-to-Speech Editor` (or broader) role
+- Check Cloud Logging for quota or permission errors when requests fail
 
 #### Authentication Issues
 - Ensure BETTER_AUTH_SECRET is set and secure (generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
@@ -292,7 +302,7 @@ If you see this error:
 - [ ] Enable HTTPS in production
 - [ ] Set secure CORS policies
 - [ ] Monitor R2 usage and costs
-- [ ] Monitor ElevenLabs quota usage
+- [ ] Monitor Google Cloud TTS usage and quotas
 - [ ] Regular database backups
 - [ ] Enable audit logging
 
@@ -310,16 +320,16 @@ If you see this error:
 - Pay only for storage used
 - Use lifecycle policies for old files
 
-### ElevenLabs
-- One-time generation model (no per-play costs)
-- Monitor character usage
-- Use batch generation for efficiency
-- Consider voice caching for repeated content
+### Google Cloud Text-to-Speech
+- Charges per generated character after the free tier — keep an eye on monthly totals
+- Batch generation reduces API overhead for large story sets
+- Cache generated audio in R2 (already implemented) to avoid repeated syntheses
+- Use different voices/languages judiciously to manage costs
 
 ## Monitoring & Maintenance
 
 ### Regular Tasks
-- Monitor ElevenLabs quota usage
+- Monitor Google Cloud TTS usage/quota
 - Check R2 storage usage and costs
 - Review authentication logs
 - Update dependencies

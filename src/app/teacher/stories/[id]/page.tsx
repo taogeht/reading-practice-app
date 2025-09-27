@@ -18,6 +18,7 @@ interface Story {
   ttsAudioDurationSeconds?: number | null;
   ttsGeneratedAt?: string | null;
   elevenLabsVoiceId?: string | null;
+  ttsVoiceId?: string | null;
   createdAt: string;
   updatedAt: string;
   creatorFirstName?: string | null;

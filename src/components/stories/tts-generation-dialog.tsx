@@ -27,8 +27,7 @@ import {
   CheckCircle, 
   Loader2,
   Play,
-  Pause,
-  Info
+  Pause
 } from "lucide-react";
 
 interface Story {
@@ -48,14 +47,9 @@ interface TTSGenerationDialogProps {
 interface Voice {
   voice_id: string;
   name: string;
-  category: string;
+  category?: string;
   description?: string;
-}
-
-interface QuotaInfo {
-  hasQuota: boolean;
-  remainingChars: number;
-  requiredChars: number;
+  languageCode?: string;
 }
 
 export function TTSGenerationDialog({
@@ -66,7 +60,6 @@ export function TTSGenerationDialog({
 }: TTSGenerationDialogProps) {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
-  const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   const [isLoadingVoices, setIsLoadingVoices] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -78,9 +71,6 @@ export function TTSGenerationDialog({
   useEffect(() => {
     if (open) {
       fetchVoices();
-      if (story.content) {
-        checkQuota(story.content.length);
-      }
     } else {
       // Reset state when dialog closes
       setError(null);
@@ -117,28 +107,6 @@ export function TTSGenerationDialog({
       console.error('Error fetching voices:', error);
     } finally {
       setIsLoadingVoices(false);
-    }
-  };
-
-  const checkQuota = async (textLength: number) => {
-    try {
-      const response = await fetch('/api/tts/voices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'check-quota',
-          textLength,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setQuotaInfo(data);
-      }
-    } catch (error) {
-      console.error('Error checking quota:', error);
     }
   };
 
@@ -242,7 +210,7 @@ export function TTSGenerationDialog({
   };
 
   const selectedVoice = voices.find(voice => voice.voice_id === selectedVoiceId);
-  const estimatedCost = story.content ? story.content.length : 0;
+  const estimatedCharacters = story.content ? story.content.length : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -280,7 +248,7 @@ export function TTSGenerationDialog({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Characters:</span>
-                  <span className="ml-2 font-medium">{estimatedCost.toLocaleString()}</span>
+                  <span className="ml-2 font-medium">{estimatedCharacters.toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Word Count:</span>
@@ -291,38 +259,6 @@ export function TTSGenerationDialog({
               </div>
             </CardContent>
           </Card>
-
-          {/* Quota Check */}
-          {quotaInfo && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Info className="w-4 h-4 mr-2" />
-                  ElevenLabs Quota
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Required characters:</span>
-                    <span className="font-medium">{quotaInfo.requiredChars.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Remaining characters:</span>
-                    <span className="font-medium">{quotaInfo.remainingChars.toLocaleString()}</span>
-                  </div>
-                  {!quotaInfo.hasQuota && (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Insufficient quota. You need {(quotaInfo.requiredChars - quotaInfo.remainingChars).toLocaleString()} more characters.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Voice Selection */}
           <div className="space-y-3">
@@ -344,7 +280,7 @@ export function TTSGenerationDialog({
                         <div className="flex items-center">
                           <span className="font-medium">{voice.name}</span>
                           <span className="ml-2 text-sm text-muted-foreground">
-                            ({voice.category})
+                            {voice.languageCode ? voice.languageCode : 'Voice'}
                           </span>
                         </div>
                       </SelectItem>
@@ -357,7 +293,7 @@ export function TTSGenerationDialog({
                     <div>
                       <div className="font-medium">{selectedVoice.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {selectedVoice.category}
+                        {selectedVoice.languageCode}
                         {selectedVoice.description && ` • ${selectedVoice.description}`}
                       </div>
                     </div>

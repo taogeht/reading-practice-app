@@ -25,9 +25,9 @@ The core functionality of the Enhanced Reading Practice Platform is now implemen
 - ✅ File validation and metadata handling
 
 ### **🎵 Audio & TTS System (100% Complete)**
-- ✅ ElevenLabs API integration for TTS generation
-- ✅ Single and batch TTS processing
-- ✅ Voice selection and quota management
+- ✅ Google Cloud Text-to-Speech integration for story audio
+- ✅ Single and batch synthesis workflows
+- ✅ Curated neural voice selection
 - ✅ Audio recorder component with real-time feedback
 - ✅ Direct upload to R2 storage
 - ✅ Cost-optimized one-time generation model
@@ -109,8 +109,10 @@ R2_ACCESS_KEY_ID="..."
 R2_SECRET_ACCESS_KEY="..."
 R2_BUCKET_NAME="..."
 
-# ElevenLabs
-ELEVEN_LABS_API_KEY="..."
+# Google Cloud Text-to-Speech
+GOOGLE_TTS_PROJECT_ID="..."
+GOOGLE_TTS_CLIENT_EMAIL="..."
+GOOGLE_TTS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----"
 
 # Next.js
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -119,7 +121,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ### **Setup Steps**
 1. **Database**: Set up PostgreSQL and run migrations
 2. **Cloudflare R2**: Create bucket and API tokens
-3. **ElevenLabs**: Get API key and choose voices
+3. **Google Cloud TTS**: Enable API and create service account credentials
 4. **Development**: `npm install && npm run dev`
 
 Detailed setup instructions are in `SETUP.md`.

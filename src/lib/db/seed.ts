@@ -284,13 +284,11 @@ async function seed() {
         description: 'Accuracy percentage below which students are flagged',
       },
       {
-        key: 'eleven_labs_voice_settings',
+        key: 'tts_voice_settings',
         value: {
-          voice_id: 'default',
-          stability: 0.5,
-          similarity_boost: 0.75,
+          voice_id: 'en-US-Neural2-F',
         },
-        description: 'ElevenLabs TTS voice configuration',
+        description: 'Default Text-to-Speech voice configuration',
       },
     ];
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { elevenLabsClient } from '@/lib/elevenlabs/client';
+import { googleTtsClient } from '@/lib/tts/client';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Fetch available voices from ElevenLabs
-    const voices = await elevenLabsClient.getVoices();
+    // Fetch available voices from Google Cloud configuration
+    const voices = googleTtsClient.getVoices();
 
     // Filter for voices suitable for reading content
     const suitableVoices = voices.filter(voice => {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       voices: voicesToReturn,
       total: voicesToReturn.length,
-      recommended: suitableVoices.slice(0, 5), // Top 5 recommended voices
+      recommended: suitableVoices.slice(0, Math.min(voicesToReturn.length, 5)),
     });
 
   } catch (error) {
@@ -72,13 +72,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const quotaInfo = await elevenLabsClient.checkQuota(textLength);
+      const quotaInfo = await googleTtsClient.checkQuota(textLength);
       return NextResponse.json(quotaInfo);
     }
 
     if (action === 'get-subscription') {
-      const subscription = await elevenLabsClient.getUserSubscription();
-      return NextResponse.json(subscription);
+      return NextResponse.json({
+        hasQuota: true,
+        remainingChars: Number.POSITIVE_INFINITY,
+        requiredChars: 0,
+      });
     }
 
     return NextResponse.json(

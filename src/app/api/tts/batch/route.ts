@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { elevenLabsClient } from '@/lib/elevenlabs/client';
+import { googleTtsClient } from '@/lib/tts/client';
 import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
@@ -58,23 +58,8 @@ export async function POST(request: NextRequest) {
 
     // Check quota before proceeding
     const totalCharacters = textsForTTS.reduce((sum, item) => sum + item.text.length, 0);
-    const quotaCheck = await elevenLabsClient.checkQuota(totalCharacters);
-    
-    if (!quotaCheck.hasQuota) {
-      return NextResponse.json(
-        { 
-          error: 'Insufficient ElevenLabs quota',
-          details: {
-            required: quotaCheck.requiredChars,
-            remaining: quotaCheck.remainingChars,
-          }
-        },
-        { status: 402 }
-      );
-    }
-
     // Generate TTS for all stories
-    const results = await elevenLabsClient.generateBatchSpeech(textsForTTS);
+    const results = await googleTtsClient.generateBatchSpeech(textsForTTS);
     
     const successfulUploads: string[] = [];
     const failures: Array<{ storyId: string; error: string }> = [];
@@ -86,13 +71,19 @@ export async function POST(request: NextRequest) {
           const filename = `story-${result.id}-${Date.now()}.mp3`;
           const audioKey = r2Client.generateAudioKey('tts', filename);
           
+          const buffer = Buffer.isBuffer(result.result.audioBuffer)
+            ? result.result.audioBuffer
+            : Buffer.from(result.result.audioBuffer);
+
+          const resolvedVoiceId = voiceId || googleTtsClient.getVoices()[0]?.voice_id || 'default';
+
           const publicUrl = await r2Client.uploadFile(
             audioKey,
-            Buffer.from(result.result.audioBuffer),
-            'audio/mpeg',
+            buffer,
+            result.result.contentType || 'audio/mpeg',
             {
-              'generated-by': 'elevenlabs',
-              'voice-id': voiceId || 'default',
+              'generated-by': 'google-tts',
+              'voice-id': resolvedVoiceId,
               'generated-at': new Date().toISOString(),
               'user-id': user.id,
               'story-id': result.id,
@@ -105,7 +96,7 @@ export async function POST(request: NextRequest) {
             .set({
               ttsAudioUrl: publicUrl,
               ttsGeneratedAt: new Date(),
-              elevenLabsVoiceId: voiceId,
+              elevenLabsVoiceId: resolvedVoiceId,
               updatedAt: new Date(),
             })
             .where(eq(stories.id, result.id));

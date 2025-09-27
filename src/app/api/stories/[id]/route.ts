@@ -65,6 +65,7 @@ export async function GET(
         createdAt: story.createdAt?.toISOString() || null,
         updatedAt: story.updatedAt?.toISOString() || null,
         ttsGeneratedAt: story.ttsGeneratedAt?.toISOString() || null,
+        ttsVoiceId: story.elevenLabsVoiceId,
       },
     });
 
