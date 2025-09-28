@@ -27,19 +27,23 @@ interface Story {
 interface StoryCardProps {
   story: Story;
   onSelect?: (story: Story) => void;
+  onViewStory?: (story: Story) => void;
   showFullContent?: boolean;
   isSelectable?: boolean;
   showAudioControls?: boolean;
   variant?: 'default' | 'compact' | 'detailed';
+  isNavigating?: boolean;
 }
 
 export function StoryCard({
   story,
   onSelect,
+  onViewStory,
   showFullContent = false,
   isSelectable = true,
   showAudioControls = true,
   variant = 'default',
+  isNavigating = false,
 }: StoryCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -106,10 +110,28 @@ export function StoryCard({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleCardClick = () => {
-    if (isSelectable && onSelect) {
+  const handleViewStory = () => {
+    if (isNavigating) {
+      return;
+    }
+
+    if (!isSelectable && !onViewStory && !onSelect) {
+      return;
+    }
+
+    if (onViewStory) {
+      onViewStory(story);
+      return;
+    }
+
+    if (onSelect) {
       onSelect(story);
     }
+  };
+
+  const handleCardClick = () => {
+    if (!isSelectable || isNavigating) return;
+    handleViewStory();
   };
 
   if (variant === 'compact') {
@@ -158,7 +180,13 @@ export function StoryCard({
   }
 
   return (
-    <Card className={`${isSelectable ? 'cursor-pointer hover:shadow-md' : ''} transition-shadow`}>
+    <Card className={`relative ${isSelectable ? 'cursor-pointer hover:shadow-md' : ''} transition-shadow`}> 
+      {isNavigating && (
+        <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10">
+          <div className="w-5 h-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-sm text-muted-foreground">Opening story…</span>
+        </div>
+      )}
       <CardHeader onClick={handleCardClick}>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -275,6 +303,23 @@ export function StoryCard({
               <audio ref={audioRef} src={story.ttsAudioUrl!} preload="metadata" />
             </div>
           )}
+
+          <div className="flex justify-end pt-3">
+            <Button
+              variant="secondary"
+              onClick={handleViewStory}
+              disabled={isNavigating}
+            >
+              {isNavigating ? (
+                <>
+                  <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  Opening…
+                </>
+              ) : (
+                'View & Edit Story'
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

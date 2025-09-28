@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { StoryCard } from "./story-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export function StoryLibrary({
   selectable = true,
   archivedOnly = false,
 }: StoryLibraryProps) {
+  const router = useRouter();
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +61,7 @@ export function StoryLibrary({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [navigatingStoryId, setNavigatingStoryId] = useState<string | null>(null);
 
   const readingLevels = ['Beginning', 'Intermediate', 'Advanced'];
   const grades = [1, 2, 3, 4, 5];
@@ -145,6 +148,17 @@ export function StoryLibrary({
       default:
         return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
     }
+  };
+
+  const handleOpenStory = (story: Story) => {
+    setNavigatingStoryId(story.id);
+    if (onStorySelect) {
+      onStorySelect(story);
+      return;
+    }
+
+    const basePath = archivedOnly ? '/teacher/stories' : '/teacher/stories';
+    router.push(`${basePath}/${story.id}`);
   };
 
   if (isLoading && stories.length === 0) {
@@ -337,6 +351,8 @@ export function StoryLibrary({
                 key={story.id}
                 story={story}
                 onSelect={onStorySelect}
+                onViewStory={handleOpenStory}
+                isNavigating={navigatingStoryId === story.id}
                 isSelectable={selectable}
                 variant={variant === 'compact' ? 'compact' : 'default'}
                 showAudioControls={true}

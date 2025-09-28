@@ -500,9 +500,6 @@ export default function TeacherDashboardPage() {
                   variant="compact"
                   archivedOnly={true}
                   selectable={true}
-                  onStorySelect={(story) => {
-                    window.location.href = `/teacher/stories/${story.id}`;
-                  }}
                 />
               </CardContent>
             </Card>
@@ -520,10 +517,6 @@ export default function TeacherDashboardPage() {
               <CardContent>
                 <StoryLibrary
                   variant="grid"
-                  onStorySelect={(story) => {
-                    // Navigate to story detail page for TTS management
-                    window.location.href = `/teacher/stories/${story.id}`;
-                  }}
                   showCreateButton={true}
                   selectable={true}
                   onCreateStory={() => setShowCreateStory(true)}
