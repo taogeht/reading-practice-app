@@ -4,7 +4,8 @@ import {
   PutObjectCommand, 
   GetObjectCommand, 
   DeleteObjectCommand,
-  HeadObjectCommand 
+  HeadObjectCommand,
+  ListObjectsV2Command
 } from "@aws-sdk/client-s3";
 
 class R2Client {
@@ -171,6 +172,44 @@ class R2Client {
     } catch (error) {
       return null;
     }
+  }
+
+  /**
+   * List objects in the bucket with optional prefix and pagination
+   */
+  async listObjects(options: {
+    prefix?: string;
+    continuationToken?: string;
+    maxKeys?: number;
+  }): Promise<{
+    objects: Array<{
+      key: string;
+      size: number;
+      lastModified?: Date;
+    }>;
+    nextContinuationToken?: string;
+    isTruncated?: boolean;
+  }> {
+    const command = new ListObjectsV2Command({
+      Bucket: this.bucketName,
+      Prefix: options.prefix,
+      ContinuationToken: options.continuationToken,
+      MaxKeys: options.maxKeys ?? 50,
+    });
+
+    const response = await this.client.send(command);
+
+    const objects = (response.Contents ?? []).map((item) => ({
+      key: item.Key ?? '',
+      size: Number(item.Size ?? 0),
+      lastModified: item.LastModified,
+    })).filter((item) => item.key.length > 0);
+
+    return {
+      objects,
+      nextContinuationToken: response.NextContinuationToken ?? undefined,
+      isTruncated: response.IsTruncated ?? false,
+    };
   }
 }
 

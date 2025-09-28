@@ -77,16 +77,22 @@ export async function POST(request: NextRequest) {
 
     const selectedVoiceId = voiceId || googleTtsClient.getVoices()[0]?.voice_id || 'default';
 
+    const metadata: Record<string, string> = {
+      'generated-by': 'google-tts',
+      'voice-id': selectedVoiceId,
+      'generated-at': new Date().toISOString(),
+      'user-id': user.id,
+    };
+
+    if (storyId) {
+      metadata['story-id'] = storyId;
+    }
+
     const publicUrl = await r2Client.uploadFile(
       audioKey,
       buffer,
       ttsResult.contentType || 'audio/mpeg',
-      {
-        'generated-by': 'google-tts',
-        'voice-id': selectedVoiceId,
-        'generated-at': new Date().toISOString(),
-        'user-id': user.id,
-      }
+      metadata,
     );
 
     // If this was for a story, update the story record
