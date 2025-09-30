@@ -4,7 +4,9 @@ import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio, type StoryTtsAudio } from '@/types/story';
+import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -30,14 +32,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a presigned URL
-    const presignedUrl = await r2Client.generatePresignedDownloadUrl(audioKey, 7 * 24 * 3600); // 7 days
+    const presignedUrl = await r2Client.generatePresignedDownloadUrl(audioKey, 7 * 24 * 3600);
+    const metadata = await r2Client.getFileMetadata(audioKey);
 
-    // Update the story with the new audio URL
+    const [story] = await db
+      .select({ ttsAudio: stories.ttsAudio })
+      .from(stories)
+      .where(eq(stories.id, storyId))
+      .limit(1);
+
+    const existingEntries = normalizeTtsAudio(story?.ttsAudio);
+    const existingIndex = existingEntries.findIndex((entry) => entry.storageKey === audioKey);
+
+    const newEntry: StoryTtsAudio = {
+      id: String(metadata?.metadata?.['audio-id'] || randomUUID()),
+      url: presignedUrl,
+      durationSeconds: null,
+      generatedAt: new Date().toISOString(),
+      voiceId: metadata?.metadata?.['voice-id'] ?? null,
+      label: metadata?.metadata?.['voice-label'] ?? null,
+      storageKey: audioKey,
+    };
+
+    const updatedEntries = [...existingEntries];
+    if (existingIndex >= 0) {
+      updatedEntries[existingIndex] = newEntry;
+    } else {
+      updatedEntries.push(newEntry);
+    }
+
     await db
       .update(stories)
       .set({
-        ttsAudioUrl: presignedUrl,
-        ttsGeneratedAt: new Date(),
+        ttsAudio: updatedEntries as any,
         updatedAt: new Date(),
       })
       .where(eq(stories.id, storyId));

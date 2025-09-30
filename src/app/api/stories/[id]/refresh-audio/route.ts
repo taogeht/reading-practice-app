@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -20,6 +21,8 @@ export async function POST(
     }
 
     const { id: storyId } = await params;
+    const body = await request.json().catch(() => ({}));
+    const requestedAudioId: string | undefined = body?.audioId;
 
     // Fetch the story
     const storyData = await db
@@ -34,29 +37,36 @@ export async function POST(
 
     const story = storyData[0];
 
-    if (!story.ttsAudioUrl) {
+    const audioEntries = normalizeTtsAudio(story.ttsAudio);
+    if (audioEntries.length === 0) {
       return NextResponse.json({ error: 'Story has no audio to refresh' }, { status: 400 });
     }
 
-    // Extract the key from the existing URL
-    let audioKey: string;
-    
-    console.log('Current audio URL:', story.ttsAudioUrl);
-    
+    const entryToRefresh = requestedAudioId
+      ? audioEntries.find((entry) => entry.id === requestedAudioId)
+      : audioEntries[0];
+
+    if (!entryToRefresh) {
+      return NextResponse.json({ error: 'Requested audio track not found' }, { status: 404 });
+    }
+
+    // Extract the key from the existing URL or metadata
+    let audioKey = entryToRefresh.storageKey || '';
+
     try {
-      if (story.ttsAudioUrl.includes('r2.cloudflarestorage.com')) {
-        // Old format: extract key from the end of the URL
-        const urlParts = story.ttsAudioUrl.split('/');
-        audioKey = urlParts.slice(-3).join('/'); // Get last 3 parts (audio/tts/filename)
-        console.log('Extracted key from R2 URL:', audioKey);
-      } else if (story.ttsAudioUrl.includes('amazonaws.com') || story.ttsAudioUrl.includes('r2.dev')) {
-        // Presigned URL format: extract key from the path
-        const url = new URL(story.ttsAudioUrl);
-        audioKey = decodeURIComponent(url.pathname.substring(1)); // Remove leading /
-        console.log('Extracted key from presigned URL:', audioKey);
-      } else {
-        console.error('Unknown URL format:', story.ttsAudioUrl);
-        return NextResponse.json({ error: 'Unknown audio URL format' }, { status: 400 });
+      if (!audioKey) {
+        const candidateUrl = entryToRefresh.url;
+        if (!candidateUrl) {
+          return NextResponse.json({ error: 'Audio entry has no URL to refresh' }, { status: 400 });
+        }
+
+        if (candidateUrl.includes('r2.cloudflarestorage.com')) {
+          const urlParts = candidateUrl.split('/');
+          audioKey = urlParts.slice(-3).join('/');
+        } else {
+          const parsed = new URL(candidateUrl);
+          audioKey = decodeURIComponent(parsed.pathname.substring(1));
+        }
       }
     } catch (error) {
       logError(error, 'api/stories/[id]/refresh-audio');
@@ -70,13 +80,18 @@ export async function POST(
     }
 
     // Generate a new presigned URL
-    const newAudioUrl = await r2Client.generatePresignedDownloadUrl(audioKey, 7 * 24 * 3600); // 7 days
+    const newAudioUrl = await r2Client.generatePresignedDownloadUrl(audioKey, 7 * 24 * 3600);
 
-    // Update the story with the new URL
+    const updatedEntries = audioEntries.map((entry) =>
+      entry.id === entryToRefresh.id
+        ? { ...entry, url: newAudioUrl, storageKey: audioKey }
+        : entry,
+    );
+
     await db
       .update(stories)
       .set({
-        ttsAudioUrl: newAudioUrl,
+        ttsAudio: updatedEntries as any,
         updatedAt: new Date(),
       })
       .where(eq(stories.id, storyId));

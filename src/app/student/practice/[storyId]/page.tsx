@@ -8,6 +8,7 @@ import { StoryCard } from "@/components/stories/story-card";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
 import { ArrowLeft, Play, Mic, CheckCircle, RotateCcw, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { StoryTtsAudio } from "@/types/story";
 
 interface Story {
   id: string;
@@ -19,8 +20,7 @@ interface Story {
   estimatedReadingTimeMinutes?: number | null;
   author?: string | null;
   genre?: string | null;
-  ttsAudioUrl?: string | null;
-  ttsAudioDurationSeconds?: number | null;
+  ttsAudio: StoryTtsAudio[];
   createdAt: string;
 }
 

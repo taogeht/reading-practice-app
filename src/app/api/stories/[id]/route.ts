@@ -3,7 +3,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stories, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -32,10 +33,7 @@ export async function GET(
         estimatedReadingTimeMinutes: stories.estimatedReadingTimeMinutes,
         author: stories.author,
         genre: stories.genre,
-        ttsAudioUrl: stories.ttsAudioUrl,
-        ttsAudioDurationSeconds: stories.ttsAudioDurationSeconds,
-        ttsGeneratedAt: stories.ttsGeneratedAt,
-        elevenLabsVoiceId: stories.elevenLabsVoiceId,
+        ttsAudio: stories.ttsAudio,
         active: stories.active,
         createdAt: stories.createdAt,
         updatedAt: stories.updatedAt,
@@ -64,8 +62,7 @@ export async function GET(
         ...story,
         createdAt: story.createdAt?.toISOString() || null,
         updatedAt: story.updatedAt?.toISOString() || null,
-        ttsGeneratedAt: story.ttsGeneratedAt?.toISOString() || null,
-        ttsVoiceId: story.elevenLabsVoiceId,
+        ttsAudio: normalizeTtsAudio(story.ttsAudio),
       },
     });
 
@@ -147,7 +144,7 @@ export async function PATCH(
         ...updatedStory[0],
         createdAt: updatedStory[0].createdAt?.toISOString() || null,
         updatedAt: updatedStory[0].updatedAt?.toISOString() || null,
-        ttsGeneratedAt: updatedStory[0].ttsGeneratedAt?.toISOString() || null,
+        ttsAudio: normalizeTtsAudio(updatedStory[0].ttsAudio),
       },
     });
 

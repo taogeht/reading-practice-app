@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stories, users } from '@/lib/db/schema';
-import { eq, and, asc, desc, like, inArray, sql } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { eq, and, desc, like, sql } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -64,17 +65,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (hasAudio === 'true') {
-      // Only stories with TTS audio
-      conditions.push(
-        // @ts-ignore
-        sql`${stories.ttsAudioUrl} IS NOT NULL`
-      );
+      conditions.push(sql`jsonb_array_length(${stories.ttsAudio}) > 0`);
     } else if (hasAudio === 'false') {
-      // Only stories without TTS audio
-      conditions.push(
-        // @ts-ignore
-        sql`${stories.ttsAudioUrl} IS NULL`
-      );
+      conditions.push(sql`jsonb_array_length(${stories.ttsAudio}) = 0`);
     }
 
     // Fetch stories with creator info
@@ -89,11 +82,7 @@ export async function GET(request: NextRequest) {
         estimatedReadingTimeMinutes: stories.estimatedReadingTimeMinutes,
         author: stories.author,
         genre: stories.genre,
-        ttsAudioUrl: stories.ttsAudioUrl,
-        ttsAudioDurationSeconds: stories.ttsAudioDurationSeconds,
-        ttsGeneratedAt: stories.ttsGeneratedAt,
-        elevenLabsVoiceId: stories.elevenLabsVoiceId,
-        ttsVoiceId: stories.elevenLabsVoiceId,
+        ttsAudio: stories.ttsAudio,
         createdAt: stories.createdAt,
         updatedAt: stories.updatedAt,
         createdBy: stories.createdBy,
@@ -113,8 +102,13 @@ export async function GET(request: NextRequest) {
       .from(stories)
       .where(and(...conditions));
 
+    const serializedStories = storiesData.map((story) => ({
+      ...story,
+      ttsAudio: normalizeTtsAudio(story.ttsAudio),
+    }));
+
     return NextResponse.json({
-      stories: storiesData,
+      stories: serializedStories,
       pagination: {
         page,
         limit,
@@ -196,7 +190,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      story: newStory,
+      story: {
+        ...newStory,
+        ttsAudio: normalizeTtsAudio(newStory.ttsAudio),
+      },
       message: 'Story created successfully',
     });
 

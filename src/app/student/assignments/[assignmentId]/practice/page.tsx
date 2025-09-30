@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
 import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, StopCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+
+import type { StoryTtsAudio } from "@/types/story";
 
 interface Story {
   id: string;
@@ -19,8 +22,7 @@ interface Story {
   estimatedReadingTimeMinutes?: number | null;
   author?: string | null;
   genre?: string | null;
-  ttsAudioUrl?: string | null;
-  ttsAudioDurationSeconds?: number | null;
+  ttsAudio: StoryTtsAudio[];
   createdAt: string;
 }
 
@@ -52,6 +54,7 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   const [recordingResult, setRecordingResult] = useState<any>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [storyAudio, setStoryAudio] = useState<HTMLAudioElement | null>(null);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -66,6 +69,18 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       }
     };
   }, [storyAudio]);
+
+  useEffect(() => {
+    if (!assignment?.story.ttsAudio?.length) {
+      setSelectedVoiceId(null);
+      return;
+    }
+
+    const firstVoiceId = assignment.story.ttsAudio[0]?.id ?? null;
+    if (!selectedVoiceId || !assignment.story.ttsAudio.some((entry) => entry.id === selectedVoiceId)) {
+      setSelectedVoiceId(firstVoiceId);
+    }
+  }, [assignment, selectedVoiceId]);
 
   const fetchAssignment = async () => {
     try {
@@ -93,8 +108,11 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
     router.push('/student/dashboard');
   };
 
+  const currentVoice = assignment?.story.ttsAudio.find((entry) => entry.id === selectedVoiceId)
+    ?? assignment?.story.ttsAudio[0];
+
   const handlePlayStory = () => {
-    if (!assignment?.story.ttsAudioUrl) return;
+    if (!currentVoice?.url) return;
 
     if (isPlayingStory && storyAudio) {
       storyAudio.pause();
@@ -102,7 +120,7 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
       setIsPlayingStory(false);
       setStoryAudio(null);
     } else {
-      const audio = new Audio(assignment.story.ttsAudioUrl);
+      const audio = new Audio(currentVoice.url);
       setStoryAudio(audio);
       setIsPlayingStory(true);
 
@@ -246,8 +264,28 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
             )}
           </CardHeader>
           <CardContent className="p-6">
-            {assignment.story.ttsAudioUrl && (
-              <div className="mb-6">
+            {assignment.story.ttsAudio.length > 0 && currentVoice ? (
+              <div className="mb-6 space-y-3">
+                {assignment.story.ttsAudio.length > 1 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">Choose a voice</span>
+                    <Select
+                      value={currentVoice.id}
+                      onValueChange={(value) => setSelectedVoiceId(value)}
+                    >
+                      <SelectTrigger className="sm:max-w-xs">
+                        <SelectValue placeholder="Select a voice" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {assignment.story.ttsAudio.map((voice) => (
+                          <SelectItem key={voice.id} value={voice.id}>
+                            {voice.label ?? voice.voiceId ?? 'Voice option'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <Button
                   onClick={handlePlayStory}
                   size="lg"
@@ -269,6 +307,18 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                     </>
                   )}
                 </Button>
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Voice:</span> {currentVoice.label ?? currentVoice.voiceId ?? 'Default'}
+                  {currentVoice.durationSeconds && (
+                    <span className="ml-2">
+                      • {(currentVoice.durationSeconds / 60).toFixed(1)} min
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6 text-center text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded-lg py-4">
+                Audio will appear here once your teacher generates it.
               </div>
             )}
 

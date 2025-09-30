@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Users, Volume2, VolumeX, ArrowLeft, Save } from "lucide-react";
+import type { StoryTtsAudio } from "@/types/story";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -43,7 +44,7 @@ interface Story {
   title: string;
   readingLevel?: string | null;
   gradeLevels: number[];
-  ttsAudioUrl?: string | null;
+  ttsAudio: StoryTtsAudio[];
   wordCount?: number | null;
 }
 
@@ -277,7 +278,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
                             <div className="flex items-center justify-between w-full">
                               <span>{story.title}</span>
                               <div className="flex items-center gap-1 ml-2">
-                                {story.ttsAudioUrl ? (
+                                {story.ttsAudio.length > 0 ? (
                                   <Volume2 className="w-3 h-3 text-green-600" />
                                 ) : (
                                   <VolumeX className="w-3 h-3 text-gray-400" />
@@ -298,7 +299,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
                         <div className="flex items-center gap-2 text-sm">
                           <BookOpen className="w-4 h-4" />
                           <span className="font-medium">{selectedStory.title}</span>
-                          {selectedStory.ttsAudioUrl ? (
+                          {selectedStory.ttsAudio.length > 0 ? (
                             <Badge variant="default" className="bg-green-100 text-green-800">
                               <Volume2 className="w-3 h-3 mr-1" />
                               Audio Available
@@ -315,13 +316,18 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
                             Reading Level: {selectedStory.readingLevel}
                           </p>
                         )}
-                        {selectedStory.wordCount && (
-                          <p className="text-xs text-gray-600">
-                            {selectedStory.wordCount} words
-                          </p>
-                        )}
-                      </div>
-                    )}
+                      {selectedStory.wordCount && (
+                        <p className="text-xs text-gray-600">
+                          {selectedStory.wordCount} words
+                        </p>
+                      )}
+                      {selectedStory.ttsAudio.length > 0 && (
+                        <p className="text-xs text-gray-600">
+                          {selectedStory.ttsAudio.length} voice option{selectedStory.ttsAudio.length > 1 ? 's' : ''} available
+                        </p>
+                      )}
+                    </div>
+                  )}
                     <FormMessage />
                   </FormItem>
                 )}

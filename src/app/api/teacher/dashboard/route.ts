@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
     const storiesWithoutAudioResult = await db
       .select({ count: count() })
       .from(stories)
-      .where(sql`${stories.ttsAudioUrl} IS NULL AND ${stories.active} = true`);
+      .where(sql`jsonb_array_length(${stories.ttsAudio}) = 0 AND ${stories.active} = true`);
 
     // Get recent submissions (last 10)
     const recentSubmissions = await db

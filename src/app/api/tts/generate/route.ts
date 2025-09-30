@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
+import { randomUUID } from 'crypto';
 import { googleTtsClient } from '@/lib/tts/client';
 import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -82,7 +84,11 @@ export async function POST(request: NextRequest) {
       'voice-id': selectedVoiceId,
       'generated-at': new Date().toISOString(),
       'user-id': user.id,
+      'audio-id': randomUUID(),
+      'storage-key': audioKey,
     };
+
+    const audioId = metadata['audio-id'];
 
     if (storyId) {
       metadata['story-id'] = storyId;
@@ -96,13 +102,27 @@ export async function POST(request: NextRequest) {
     );
 
     // If this was for a story, update the story record
+    let newEntry: any = null;
     if (storyToUpdate) {
+      const voiceDefinition = googleTtsClient
+        .getVoices()
+        .find((voice) => voice.voice_id === selectedVoiceId);
+
+      const existingEntries = normalizeTtsAudio(storyToUpdate.ttsAudio);
+      newEntry = {
+        id: audioId,
+        url: publicUrl,
+        durationSeconds: null,
+        generatedAt: new Date().toISOString(),
+        voiceId: selectedVoiceId,
+        label: voiceDefinition?.name ?? `Voice ${selectedVoiceId}`,
+        storageKey: audioKey,
+      };
+
       await db
         .update(stories)
         .set({
-          ttsAudioUrl: publicUrl,
-          ttsGeneratedAt: new Date(),
-          elevenLabsVoiceId: selectedVoiceId,
+          ttsAudio: [...existingEntries, newEntry] as any,
           updatedAt: new Date(),
         })
         .where(eq(stories.id, storyId));
@@ -114,6 +134,7 @@ export async function POST(request: NextRequest) {
       audioUrl: publicUrl,
       audioKey,
       storyId: storyToUpdate?.id,
+      ttsEntry: newEntry,
       message: storyToUpdate 
         ? 'TTS audio generated and story updated successfully'
         : 'TTS audio generated successfully',

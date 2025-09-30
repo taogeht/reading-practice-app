@@ -3,7 +3,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -60,7 +61,7 @@ export async function POST(
         ...archivedStory[0],
         createdAt: archivedStory[0].createdAt?.toISOString() || null,
         updatedAt: archivedStory[0].updatedAt?.toISOString() || null,
-        ttsGeneratedAt: archivedStory[0].ttsGeneratedAt?.toISOString() || null,
+        ttsAudio: normalizeTtsAudio(archivedStory[0].ttsAudio),
       },
     });
 
@@ -126,7 +127,7 @@ export async function DELETE(
         ...unarchivedStory[0],
         createdAt: unarchivedStory[0].createdAt?.toISOString() || null,
         updatedAt: unarchivedStory[0].updatedAt?.toISOString() || null,
-        ttsGeneratedAt: unarchivedStory[0].ttsGeneratedAt?.toISOString() || null,
+        ttsAudio: normalizeTtsAudio(unarchivedStory[0].ttsAudio),
       },
     });
 

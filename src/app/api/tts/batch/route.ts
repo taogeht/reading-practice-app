@@ -5,7 +5,9 @@ import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio, type StoryTtsAudio } from '@/types/story';
+import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
     const totalCharacters = textsForTTS.reduce((sum, item) => sum + item.text.length, 0);
     // Generate TTS for all stories
     const results = await googleTtsClient.generateBatchSpeech(textsForTTS);
-    
+
     const successfulUploads: string[] = [];
     const failures: Array<{ storyId: string; error: string }> = [];
 
@@ -70,33 +72,49 @@ export async function POST(request: NextRequest) {
         try {
           const filename = `story-${result.id}-${Date.now()}.mp3`;
           const audioKey = r2Client.generateAudioKey('tts', filename);
-          
+
           const buffer = Buffer.isBuffer(result.result.audioBuffer)
             ? result.result.audioBuffer
             : Buffer.from(result.result.audioBuffer);
 
           const resolvedVoiceId = voiceId || googleTtsClient.getVoices()[0]?.voice_id || 'default';
+          const voiceDefinition = googleTtsClient
+            .getVoices()
+            .find((voice) => voice.voice_id === resolvedVoiceId);
+
+          const metadata: Record<string, string> = {
+            'generated-by': 'google-tts',
+            'voice-id': resolvedVoiceId,
+            'generated-at': new Date().toISOString(),
+            'user-id': user.id,
+            'story-id': result.id,
+            'audio-id': randomUUID(),
+            'storage-key': audioKey,
+          };
 
           const publicUrl = await r2Client.uploadFile(
             audioKey,
             buffer,
             result.result.contentType || 'audio/mpeg',
-            {
-              'generated-by': 'google-tts',
-              'voice-id': resolvedVoiceId,
-              'generated-at': new Date().toISOString(),
-              'user-id': user.id,
-              'story-id': result.id,
-            }
+            metadata,
           );
 
-          // Update story record
+          const storyRecord = storiesToProcess.find((story) => story.id === result.id);
+          const existingEntries = normalizeTtsAudio(storyRecord?.ttsAudio);
+          const newEntry: StoryTtsAudio = {
+            id: metadata['audio-id'],
+            url: publicUrl,
+            durationSeconds: null,
+            generatedAt: metadata['generated-at'],
+            voiceId: resolvedVoiceId,
+            label: voiceDefinition?.name ?? `Voice ${resolvedVoiceId}`,
+            storageKey: audioKey,
+          };
+
           await db
             .update(stories)
             .set({
-              ttsAudioUrl: publicUrl,
-              ttsGeneratedAt: new Date(),
-              elevenLabsVoiceId: resolvedVoiceId,
+              ttsAudio: [...existingEntries, newEntry] as any,
               updatedAt: new Date(),
             })
             .where(eq(stories.id, result.id));

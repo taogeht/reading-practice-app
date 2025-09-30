@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ import {
   ArchiveRestore
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { StoryTtsAudio } from "@/types/story";
 
 interface Story {
   id: string;
@@ -36,11 +38,7 @@ interface Story {
   estimatedReadingTimeMinutes?: number | null;
   author?: string | null;
   genre?: string | null;
-  ttsAudioUrl?: string | null;
-  ttsAudioDurationSeconds?: number | null;
-  ttsGeneratedAt?: string | null;
-  elevenLabsVoiceId?: string | null;
-  ttsVoiceId?: string | null;
+  ttsAudio: StoryTtsAudio[];
   active?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -54,6 +52,9 @@ interface StoryDetailViewProps {
 
 export function StoryDetailView({ story }: StoryDetailViewProps) {
   const router = useRouter();
+  const [selectedAudioId, setSelectedAudioId] = useState<string | null>(
+    story.ttsAudio[0]?.id ?? null,
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTTSDialog, setShowTTSDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -61,78 +62,102 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
   const [isArchiving, setIsArchiving] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
-  const handlePlayPause = () => {
-    if (!story.ttsAudioUrl) return;
+  const hasAudio = story.ttsAudio.length > 0;
+  const currentAudio = hasAudio
+    ? story.ttsAudio.find((entry) => entry.id === selectedAudioId) ?? story.ttsAudio[0]
+    : null;
 
-    if (isPlaying) {
-      audio?.pause();
+  useEffect(() => {
+    if (!hasAudio) {
+      setSelectedAudioId(null);
+    } else if (!selectedAudioId || !story.ttsAudio.some((entry) => entry.id === selectedAudioId)) {
+      setSelectedAudioId(story.ttsAudio[0]?.id ?? null);
+    }
+  }, [hasAudio, selectedAudioId, story.ttsAudio]);
+
+  useEffect(() => {
+    if (!audio) return;
+
+    return () => {
+      audio.pause();
+    };
+  }, [audio]);
+
+  useEffect(() => {
+    if (!audio) return;
+
+    if (!currentAudio?.url || audio.src !== currentAudio.url) {
+      audio.pause();
+      setAudio(null);
       setIsPlaying(false);
-    } else {
-      if (!audio) {
-        const newAudio = new Audio(story.ttsAudioUrl);
-        newAudio.addEventListener('ended', () => setIsPlaying(false));
-        newAudio.addEventListener('pause', () => setIsPlaying(false));
-        newAudio.addEventListener('play', () => setIsPlaying(true));
-        newAudio.addEventListener('error', (e) => {
-          console.error('Audio playback error:', e);
-          setIsPlaying(false);
-        });
-        setAudio(newAudio);
-        newAudio.play().catch(error => {
-          console.error('Failed to play audio:', error);
-          setIsPlaying(false);
-        });
+    }
+  }, [currentAudio?.url, audio]);
+
+  const handlePlayPause = () => {
+    if (!currentAudio?.url) return;
+
+    if (audio && audio.src === currentAudio.url) {
+      if (isPlaying) {
+        audio.pause();
       } else {
-        audio.play().catch(error => {
+        audio.play().catch((error) => {
           console.error('Failed to play audio:', error);
           setIsPlaying(false);
         });
       }
-      setIsPlaying(true);
+      return;
     }
+
+    const newAudio = new Audio(currentAudio.url);
+
+    newAudio.addEventListener('ended', () => {
+      setIsPlaying(false);
+    });
+    newAudio.addEventListener('pause', () => {
+      setIsPlaying(false);
+    });
+    newAudio.addEventListener('play', () => {
+      setIsPlaying(true);
+    });
+    newAudio.addEventListener('error', (event) => {
+      console.error('Audio playback error:', event);
+      setIsPlaying(false);
+    });
+
+    audio?.pause();
+    setAudio(newAudio);
+
+    newAudio.play().catch((error) => {
+      console.error('Failed to play audio:', error);
+      setIsPlaying(false);
+    });
   };
 
   const handleRefreshAudio = async () => {
+    if (!currentAudio) {
+      alert('No audio version selected to refresh.');
+      return;
+    }
+
     try {
-      // Find the audio file that matches this story ID
-      const testResponse = await fetch('/api/test-r2');
-      if (testResponse.ok) {
-        const testData = await testResponse.json();
-        const matchingAudioFile = testData.audioFiles.find((file: { key: string }) =>
-          file.key.includes(story.id)
-        );
-        
-        if (matchingAudioFile) {
-          // Use the test-r2 POST endpoint to fix the story
-          const fixResponse = await fetch('/api/test-r2', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              storyId: story.id,
-              audioKey: matchingAudioFile.key
-            })
-          });
-          
-          if (fixResponse.ok) {
-            alert('Audio URL fixed! Refreshing page...');
-            window.location.reload();
-            return;
-          } else {
-            const error = await fixResponse.json();
-            console.error('Fix failed:', error);
-          }
-        } else {
-          alert('No audio file found for this story in R2 bucket.');
-          return;
-        }
+      const response = await fetch(`/api/stories/${story.id}/refresh-audio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audioId: currentAudio.id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error?.error || 'Failed to refresh audio URL');
       }
-      
-      alert('Failed to refresh audio URL. Please try regenerating the audio instead.');
+
+      alert('Audio URL refreshed. Reloading to fetch latest data.');
+      window.location.reload();
     } catch (error) {
       console.error('Error refreshing audio URL:', error);
-      alert('Failed to refresh audio URL. Please try regenerating the audio instead.');
+      alert(error instanceof Error ? error.message : 'Failed to refresh audio URL.');
     }
   };
 
@@ -141,8 +166,6 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
-
-  const voiceId = story.ttsVoiceId ?? story.elevenLabsVoiceId ?? undefined;
 
   const creatorName = story.creatorFirstName && story.creatorLastName
     ? `${story.creatorFirstName} ${story.creatorLastName}`
@@ -253,9 +276,9 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
               <Trash2 className="w-4 h-4 mr-2" />
               {isDeleting ? 'Deleting...' : 'Delete Story'}
             </Button>
-            {story.ttsAudioUrl && (
+            {currentAudio?.url && (
               <Button variant="outline" size="sm" asChild>
-                <a href={story.ttsAudioUrl} download>
+                <a href={currentAudio.url} download>
                   <Download className="w-4 h-4 mr-2" />
                   Download Audio
                 </a>
@@ -278,7 +301,7 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    {story.ttsAudioUrl ? (
+                    {hasAudio ? (
                       <Badge variant="default" className="bg-green-100 text-green-800">
                         <Volume2 className="w-3 h-3 mr-1" />
                         Has Audio
@@ -328,47 +351,101 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
             </Card>
 
             {/* Audio Controls */}
-            {story.ttsAudioUrl && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Audio Version</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Button
-                        size="lg"
-                        onClick={handlePlayPause}
-                        className="rounded-full"
-                      >
-                        {isPlaying ? (
-                          <Pause className="w-5 h-5" />
-                        ) : (
-                          <Play className="w-5 h-5" />
-                        )}
-                      </Button>
-                      <div>
-                        <div className="font-medium">Listen to &ldquo;{story.title}&rdquo;</div>
-                        <div className="text-sm text-muted-foreground">
-                          {story.ttsAudioDurationSeconds 
-                            ? `Duration: ${formatDuration(story.ttsAudioDurationSeconds)}`
-                            : 'Audio available'}
-                          {voiceId && (
-                            <span className="block">Voice: {voiceId}</span>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Audio Versions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {hasAudio && currentAudio ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <Button
+                          size="lg"
+                          onClick={handlePlayPause}
+                          className="rounded-full"
+                          disabled={!currentAudio.url}
+                        >
+                          {isPlaying ? (
+                            <Pause className="w-5 h-5" />
+                          ) : (
+                            <Play className="w-5 h-5" />
                           )}
+                        </Button>
+                        <div>
+                          <div className="font-medium">Listen to &ldquo;{story.title}&rdquo;</div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <div>
+                              Voice: {currentAudio.label ?? currentAudio.voiceId ?? 'Unknown voice'}
+                            </div>
+                            {currentAudio.durationSeconds && (
+                              <div>
+                                Duration: {formatDuration(Math.round(currentAudio.durationSeconds))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      {currentAudio.url && (
+                        <Button variant="outline" asChild>
+                          <a href={currentAudio.url} download>
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </a>
+                        </Button>
+                      )}
                     </div>
-                    <Button variant="outline" asChild>
-                      <a href={story.ttsAudioUrl} download>
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </a>
-                    </Button>
+
+                    {story.ttsAudio.length > 1 ? (
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Available Voices
+                        </div>
+                        <Select
+                          value={currentAudio.id}
+                          onValueChange={(value) => {
+                            if (value !== currentAudio.id) {
+                              setSelectedAudioId(value);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="sm:max-w-xs">
+                            <SelectValue placeholder="Select a voice" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {story.ttsAudio.map((entry) => (
+                              <SelectItem key={entry.id} value={entry.id}>
+                                {entry.label ?? entry.voiceId ?? 'Voice option'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Only one voice is available for this story. Generate a new voice to add more options.
+                      </p>
+                    )}
+
+                    {currentAudio.generatedAt && (
+                      <p className="text-xs text-muted-foreground">
+                        Generated {formatDistanceToNow(new Date(currentAudio.generatedAt), { addSuffix: true })}
+                      </p>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <VolumeX className="w-4 h-4" />
+                      <span>No audio versions yet. Generate one below.</span>
+                    </div>
+                    <div>
+                      <Button onClick={() => setShowTTSDialog(true)}>Generate Audio</Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Story Content */}
             <Card>
@@ -396,20 +473,36 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {story.ttsAudioUrl ? (
+                {hasAudio && story.ttsAudio.length > 0 ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Volume2 className="w-4 h-4 text-green-600" />
                       <span className="text-sm font-medium text-green-700">Audio Generated</span>
                     </div>
-                    
-                    {story.ttsGeneratedAt && (
-                      <p className="text-xs text-muted-foreground">
-                        Generated {formatDistanceToNow(new Date(story.ttsGeneratedAt), { addSuffix: true })}
-                      </p>
-                    )}
-
                     <div className="space-y-2">
+                      <div className="text-xs uppercase font-semibold text-muted-foreground tracking-wide">
+                        Select Voice
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {story.ttsAudio.map((entry) => (
+                          <Button
+                            key={entry.id}
+                            type="button"
+                            variant={entry.id === currentAudio?.id ? 'secondary' : 'outline'}
+                            size="sm"
+                            className="justify-between"
+                            onClick={() => setSelectedAudioId(entry.id)}
+                          >
+                            <span>{entry.label ?? entry.voiceId ?? 'Voice option'}</span>
+                            {entry.generatedAt && (
+                              <span className="text-[11px] text-muted-foreground">
+                                {formatDistanceToNow(new Date(entry.generatedAt), { addSuffix: true })}
+                              </span>
+                            )}
+                          </Button>
+                        ))}
+                      </div>
+
                       <Button
                         size="sm"
                         onClick={() => setShowTTSDialog(true)}

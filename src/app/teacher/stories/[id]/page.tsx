@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { StoryDetailView } from '@/components/stories/story-detail-view';
+import type { StoryTtsAudio } from '@/types/story';
 
 interface Story {
   id: string;
@@ -14,11 +15,7 @@ interface Story {
   estimatedReadingTimeMinutes?: number | null;
   author?: string | null;
   genre?: string | null;
-  ttsAudioUrl?: string | null;
-  ttsAudioDurationSeconds?: number | null;
-  ttsGeneratedAt?: string | null;
-  elevenLabsVoiceId?: string | null;
-  ttsVoiceId?: string | null;
+  ttsAudio: StoryTtsAudio[];
   createdAt: string;
   updatedAt: string;
   creatorFirstName?: string | null;

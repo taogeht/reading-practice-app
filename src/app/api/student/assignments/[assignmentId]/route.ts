@@ -3,7 +3,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
 import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -66,8 +67,7 @@ export async function GET(
         storyEstimatedReadingTimeMinutes: stories.estimatedReadingTimeMinutes,
         storyAuthor: stories.author,
         storyGenre: stories.genre,
-        storyTtsAudioUrl: stories.ttsAudioUrl,
-        storyTtsAudioDurationSeconds: stories.ttsAudioDurationSeconds,
+        storyTtsAudio: stories.ttsAudio,
         storyCreatedAt: stories.createdAt,
       })
       .from(assignments)
@@ -121,6 +121,8 @@ export async function GET(
       .filter(r => r.teacherFeedback && r.submittedAt)
       .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())[0];
 
+    const storyTtsAudio = normalizeTtsAudio(assignment.storyTtsAudio);
+
     const assignmentData = {
       id: assignment.id,
       title: assignment.title,
@@ -144,8 +146,7 @@ export async function GET(
         estimatedReadingTimeMinutes: assignment.storyEstimatedReadingTimeMinutes,
         author: assignment.storyAuthor,
         genre: assignment.storyGenre,
-        ttsAudioUrl: assignment.storyTtsAudioUrl,
-        ttsAudioDurationSeconds: assignment.storyTtsAudioDurationSeconds,
+        ttsAudio: storyTtsAudio,
         createdAt: assignment.storyCreatedAt?.toISOString() || new Date().toISOString(),
       },
       recordings: studentRecordings.map(recording => ({

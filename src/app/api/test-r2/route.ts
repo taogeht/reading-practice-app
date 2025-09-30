@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { r2Client } from '@/lib/storage/r2-client';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio, type StoryTtsAudio } from '@/types/story';
+import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -88,15 +90,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'storyId and audioKey required' }, { status: 400 });
     }
     
-    // Generate presigned URL
+    // Generate presigned URL and fetch metadata
     const presignedUrl = await r2Client.generatePresignedDownloadUrl(audioKey, 7 * 24 * 3600);
-    
-    // Update story in database
+    const metadata = await r2Client.getFileMetadata(audioKey);
+
+    const [story] = await db
+      .select({ ttsAudio: stories.ttsAudio })
+      .from(stories)
+      .where(eq(stories.id, storyId))
+      .limit(1);
+
+    const existingEntries = normalizeTtsAudio(story?.ttsAudio);
+
+    const audioId = metadata?.metadata?.['audio-id'] || randomUUID();
+    const newEntry: StoryTtsAudio = {
+      id: String(audioId),
+      url: presignedUrl,
+      durationSeconds: null,
+      generatedAt: new Date().toISOString(),
+      voiceId: metadata?.metadata?.['voice-id'] ?? null,
+      label: metadata?.metadata?.['voice-label'] ?? null,
+      storageKey: audioKey,
+    };
+
     await db
       .update(stories)
       .set({
-        ttsAudioUrl: presignedUrl,
-        ttsGeneratedAt: new Date(),
+        ttsAudio: [...existingEntries, newEntry] as any,
         updatedAt: new Date(),
       })
       .where(eq(stories.id, storyId));

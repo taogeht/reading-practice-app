@@ -12,7 +12,8 @@ import {
   users,
 } from '@/lib/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -48,8 +49,7 @@ export async function GET(
         storyContent: stories.content,
         storyReadingLevel: stories.readingLevel,
         storyWordCount: stories.wordCount,
-        storyTtsAudioUrl: stories.ttsAudioUrl,
-        storyTtsAudioDurationSeconds: stories.ttsAudioDurationSeconds,
+        storyTtsAudio: stories.ttsAudio,
         storyAuthor: stories.author,
         storyGenre: stories.genre,
         className: classes.name,
@@ -68,6 +68,7 @@ export async function GET(
 
     const assignmentData = assignment[0];
     console.log('Assignment data:', assignmentData);
+    const storyTtsAudio = normalizeTtsAudio(assignmentData.storyTtsAudio);
 
     // Handle student access
     if (user.role === 'student') {
@@ -132,8 +133,7 @@ export async function GET(
             content: assignmentData.storyContent,
             readingLevel: assignmentData.storyReadingLevel,
             wordCount: assignmentData.storyWordCount,
-            ttsAudioUrl: assignmentData.storyTtsAudioUrl,
-            ttsAudioDurationSeconds: assignmentData.storyTtsAudioDurationSeconds,
+            ttsAudio: storyTtsAudio,
             author: assignmentData.storyAuthor,
             genre: assignmentData.storyGenre,
           },
@@ -224,8 +224,7 @@ export async function GET(
             content: assignmentData.storyContent,
             readingLevel: assignmentData.storyReadingLevel,
             wordCount: assignmentData.storyWordCount,
-            ttsAudioUrl: assignmentData.storyTtsAudioUrl,
-            ttsAudioDurationSeconds: assignmentData.storyTtsAudioDurationSeconds,
+            ttsAudio: storyTtsAudio,
             author: assignmentData.storyAuthor,
             genre: assignmentData.storyGenre,
           },

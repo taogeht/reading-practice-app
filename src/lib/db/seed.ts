@@ -12,6 +12,7 @@ import {
   systemSettings,
 } from './schema';
 import { hash } from 'bcryptjs';
+import { randomUUID } from 'crypto';
 
 async function seed() {
   console.log('🌱 Seeding database...');
@@ -183,8 +184,16 @@ async function seed() {
         estimatedReadingTimeMinutes: 2,
         author: 'Folk Tale',
         genre: 'Fairy Tale',
-        ttsAudioUrl: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav', // Mock audio URL for demo
-        ttsAudioDurationSeconds: 120,
+        ttsAudio: [
+          {
+            id: randomUUID(),
+            url: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
+            durationSeconds: 120,
+            voiceId: 'sample-female',
+            generatedAt: new Date().toISOString(),
+            label: 'Sample Female Voice',
+          },
+        ],
         createdBy: adminUser.id,
       },
       {
@@ -196,8 +205,16 @@ async function seed() {
         estimatedReadingTimeMinutes: 3,
         author: 'Eric Carle',
         genre: 'Children\'s Fiction',
-        ttsAudioUrl: 'https://www2.cs.uic.edu/~i101/SoundFiles/CantinaBand60.wav', // Mock audio URL for demo
-        ttsAudioDurationSeconds: 180,
+        ttsAudio: [
+          {
+            id: randomUUID(),
+            url: 'https://www2.cs.uic.edu/~i101/SoundFiles/CantinaBand60.wav',
+            durationSeconds: 180,
+            voiceId: 'sample-male',
+            generatedAt: new Date().toISOString(),
+            label: 'Sample Male Voice',
+          },
+        ],
         createdBy: adminUser.id,
       },
       {
@@ -209,8 +226,16 @@ async function seed() {
         estimatedReadingTimeMinutes: 4,
         author: 'Folk Tale',
         genre: 'Fairy Tale',
-        ttsAudioUrl: 'https://www2.cs.uic.edu/~i101/SoundFiles/ImperialMarch60.wav', // Mock audio URL for demo
-        ttsAudioDurationSeconds: 240,
+        ttsAudio: [
+          {
+            id: randomUUID(),
+            url: 'https://www2.cs.uic.edu/~i101/SoundFiles/ImperialMarch60.wav',
+            durationSeconds: 240,
+            voiceId: 'sample-narrator',
+            generatedAt: new Date().toISOString(),
+            label: 'Sample Narrator',
+          },
+        ],
         createdBy: adminUser.id,
       },
     ];

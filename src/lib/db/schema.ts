@@ -14,7 +14,7 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // Enums
 export const userRoleEnum = pgEnum('user_role', ['student', 'teacher', 'admin']);
@@ -97,10 +97,7 @@ export const stories = pgTable(
     estimatedReadingTimeMinutes: integer('estimated_reading_time_minutes'),
     author: varchar('author', { length: 255 }),
     genre: varchar('genre', { length: 100 }),
-    ttsAudioUrl: text('tts_audio_url'),
-    ttsAudioDurationSeconds: integer('tts_audio_duration_seconds'),
-    ttsGeneratedAt: timestamp('tts_generated_at', { withTimezone: true }),
-    elevenLabsVoiceId: varchar('eleven_labs_voice_id', { length: 100 }),
+    ttsAudio: jsonb('tts_audio').default(sql`'[]'::jsonb`).notNull(),
     active: boolean('active').default(true),
     createdBy: uuid('created_by').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

@@ -4,6 +4,7 @@ import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
+import { normalizeTtsAudio } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -118,24 +119,34 @@ export async function DELETE(request: NextRequest) {
 
     const unlinkStoryById = async (storyId: string) => {
       const [story] = await db
-        .select({ id: stories.id, title: stories.title })
+        .select({ id: stories.id, title: stories.title, ttsAudio: stories.ttsAudio })
         .from(stories)
         .where(eq(stories.id, storyId))
         .limit(1);
 
-      if (story) {
+      if (!story) {
+        return;
+      }
+
+      const existingEntries = normalizeTtsAudio(story.ttsAudio);
+      const filteredEntries = existingEntries.filter((entry) => {
+        if (!entry) return false;
+        const matchesStorageKey = entry.storageKey === key;
+        const matchesUrl = entry.url?.includes(key);
+        return !matchesStorageKey && !matchesUrl;
+      });
+
+      if (filteredEntries.length !== existingEntries.length) {
         await db
           .update(stories)
           .set({
-            ttsAudioUrl: null,
-            ttsAudioDurationSeconds: null,
-            ttsGeneratedAt: null,
-            elevenLabsVoiceId: null,
+            ttsAudio: filteredEntries as any,
+            updatedAt: new Date(),
           })
           .where(eq(stories.id, story.id));
-
-        unlinkedStory = story;
       }
+
+      unlinkedStory = { id: story.id, title: story.title };
     };
 
     if (storyIdFromMetadata) {
@@ -143,23 +154,13 @@ export async function DELETE(request: NextRequest) {
     } else {
       const likePattern = `%${key}%`;
       const storyMatch = await db
-        .select({ id: stories.id, title: stories.title })
+        .select({ id: stories.id, title: stories.title, ttsAudio: stories.ttsAudio })
         .from(stories)
-        .where(sql`${stories.ttsAudioUrl} LIKE ${likePattern}`)
+        .where(sql`${stories.ttsAudio}::text LIKE ${likePattern}`)
         .limit(1);
 
       if (storyMatch.length > 0) {
-        await db
-          .update(stories)
-          .set({
-            ttsAudioUrl: null,
-            ttsAudioDurationSeconds: null,
-            ttsGeneratedAt: null,
-            elevenLabsVoiceId: null,
-          })
-          .where(eq(stories.id, storyMatch[0].id));
-
-        unlinkedStory = storyMatch[0];
+        await unlinkStoryById(storyMatch[0].id);
       }
     }
 

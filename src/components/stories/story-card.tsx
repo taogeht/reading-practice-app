@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Pause, Volume2, Clock, BookOpen, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import type { StoryTtsAudio } from "@/types/story";
 
 interface Story {
   id: string;
@@ -17,8 +19,7 @@ interface Story {
   estimatedReadingTimeMinutes?: number | null;
   author?: string | null;
   genre?: string | null;
-  ttsAudioUrl?: string | null;
-  ttsAudioDurationSeconds?: number | null;
+  ttsAudio: StoryTtsAudio[];
   createdAt: string;
   creatorFirstName?: string | null;
   creatorLastName?: string | null;
@@ -45,13 +46,20 @@ export function StoryCard({
   variant = 'default',
   isNavigating = false,
 }: StoryCardProps) {
+  const [selectedAudioId, setSelectedAudioId] = useState<string | null>(
+    story.ttsAudio[0]?.id ?? null,
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(story.ttsAudio[0]?.durationSeconds ?? 0);
   const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const hasAudio = !!story.ttsAudioUrl;
+  const hasAudio = story.ttsAudio.length > 0;
+  const voiceKey = story.ttsAudio.map((entry) => entry.id).join('|');
+  const currentAudio = hasAudio
+    ? story.ttsAudio.find((entry) => entry.id === selectedAudioId) ?? story.ttsAudio[0]
+    : null;
   const contentPreview = showFullContent 
     ? story.content 
     : story.content.length > 150 
@@ -86,9 +94,34 @@ export function StoryCard({
     };
   }, []);
 
+  useEffect(() => {
+    if (!hasAudio) {
+      setSelectedAudioId(null);
+      return;
+    }
+
+    if (!currentAudio || !selectedAudioId || !story.ttsAudio.some((entry) => entry.id === selectedAudioId)) {
+      setSelectedAudioId(story.ttsAudio[0]?.id ?? null);
+    }
+  }, [hasAudio, voiceKey, currentAudio, selectedAudioId, story.ttsAudio]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentAudio?.url) {
+      return;
+    }
+
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(currentAudio.durationSeconds ?? audio.duration ?? 0);
+    audio.pause();
+    audio.src = currentAudio.url;
+    audio.load();
+  }, [currentAudio?.id, currentAudio?.url, currentAudio?.durationSeconds]);
+
   const togglePlay = async () => {
     const audio = audioRef.current;
-    if (!audio || !hasAudio) return;
+    if (!audio || !hasAudio || !currentAudio?.url) return;
 
     try {
       if (isPlaying) {
@@ -173,7 +206,25 @@ export function StoryCard({
               </Button>
             )}
           </div>
-          {hasAudio && <audio ref={audioRef} src={story.ttsAudioUrl!} preload="metadata" />}
+          {hasAudio && story.ttsAudio.length > 1 && currentAudio && (
+            <div className="mt-3">
+              <Select value={currentAudio.id} onValueChange={(value) => setSelectedAudioId(value)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {story.ttsAudio.map((entry) => (
+                    <SelectItem key={entry.id} value={entry.id}>
+                      {entry.label ?? entry.voiceId ?? 'Voice option'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {hasAudio && currentAudio?.url && (
+            <audio ref={audioRef} src={currentAudio.url} preload="metadata" />
+          )}
         </CardContent>
       </Card>
     );
@@ -258,16 +309,35 @@ export function StoryCard({
                 {story.estimatedReadingTimeMinutes} min read
               </div>
             )}
-            {story.ttsAudioDurationSeconds && (
+            {currentAudio?.durationSeconds && (
               <div className="flex items-center gap-1">
                 <Volume2 className="w-3 h-3" />
-                {formatTime(story.ttsAudioDurationSeconds)}
+                {formatTime(currentAudio.durationSeconds)}
               </div>
             )}
           </div>
 
           {showAudioControls && hasAudio && (
             <div className="border-t pt-3">
+              {story.ttsAudio.length > 1 && currentAudio && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                  <span className="text-xs font-medium uppercase text-muted-foreground sm:w-24">
+                    Voice
+                  </span>
+                  <Select value={currentAudio.id} onValueChange={(value) => setSelectedAudioId(value)}>
+                    <SelectTrigger className="sm:max-w-xs">
+                      <SelectValue placeholder="Select voice" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {story.ttsAudio.map((entry) => (
+                        <SelectItem key={entry.id} value={entry.id}>
+                          {entry.label ?? entry.voiceId ?? 'Voice option'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <Button
                   size="sm"
@@ -300,7 +370,9 @@ export function StoryCard({
                   </div>
                 )}
               </div>
-              <audio ref={audioRef} src={story.ttsAudioUrl!} preload="metadata" />
+              {currentAudio?.url && (
+                <audio ref={audioRef} src={currentAudio.url} preload="metadata" />
+              )}
             </div>
           )}
 

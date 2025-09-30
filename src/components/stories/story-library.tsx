@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Plus, Volume2, VolumeX } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import type { StoryTtsAudio } from "@/types/story";
 
 interface Story {
   id: string;
@@ -20,8 +21,7 @@ interface Story {
   estimatedReadingTimeMinutes?: number | null;
   author?: string | null;
   genre?: string | null;
-  ttsAudioUrl?: string | null;
-  ttsAudioDurationSeconds?: number | null;
+  ttsAudio: StoryTtsAudio[];
   createdAt: string;
   creatorFirstName?: string | null;
   creatorLastName?: string | null;
