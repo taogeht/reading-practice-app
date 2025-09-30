@@ -195,10 +195,6 @@ export default function TeacherDashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                View Reports
-              </Button>
               <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
                 <List className="w-4 h-4 mr-2" />
                 Manage Assignments
@@ -432,14 +428,6 @@ export default function TeacherDashboardPage() {
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add New Student
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Volume2 className="w-4 h-4 mr-2" />
-                  Generate TTS Audio
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  View Class Progress
                 </Button>
                 <Button
                   variant="outline"
