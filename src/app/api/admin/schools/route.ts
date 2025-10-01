@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { schools } from '@/lib/db/schema';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { recordAuditEvent } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,6 +49,20 @@ export async function POST(request: NextRequest) {
       state: state || null,
       zipCode: zipCode || null,
     }).returning();
+
+    await recordAuditEvent({
+      userId: user.id,
+      action: 'admin.school.create',
+      resourceType: 'school',
+      resourceId: newSchool[0].id,
+      details: {
+        name,
+        district: district || null,
+        city: city || null,
+        state: state || null,
+      },
+      request,
+    });
 
     return NextResponse.json({ school: newSchool[0] }, { status: 201 });
   } catch (error) {

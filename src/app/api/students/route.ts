@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
         firstName: users.firstName,
         lastName: users.lastName,
         visualPasswordType: students.visualPasswordType,
-        visualPasswordData: students.visualPasswordData,
       })
       .from(students)
       .innerJoin(users, eq(students.id, users.id))

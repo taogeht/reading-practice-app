@@ -12,7 +12,6 @@ interface Student {
   lastName: string;
   avatarUrl?: string;
   visualPasswordType: "animal" | "object";
-  visualPasswordData: any;
 }
 
 interface ClassInfo {
@@ -93,8 +92,12 @@ export default function ClassStudentLoginPage() {
     setSelectedStudent(null);
   };
 
-  const handleLoginSuccess = async (visualPassword: string) => {
-    if (!selectedStudent) return;
+  const handlePasswordAttempt = async (
+    visualPassword: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!selectedStudent) {
+      return { success: false, error: "Select your name to continue." };
+    }
 
     try {
       const response = await fetch("/api/auth/student-login", {
@@ -109,15 +112,21 @@ export default function ClassStudentLoginPage() {
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Login failed");
+      if (response.ok) {
+        await refreshUser();
+        router.replace("/student/dashboard");
+        return { success: true };
       }
 
-      await refreshUser();
-      router.replace("/student/dashboard");
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        return { success: false, error: data.error || "That's not the right picture. Try again!" };
+      }
+
+      return { success: false, error: data.error || "Login failed. Please try again." };
     } catch (error) {
       console.error("Login error:", error);
+      return { success: false, error: "We couldn't reach the server. Please try again." };
     }
   };
 
@@ -165,7 +174,7 @@ export default function ClassStudentLoginPage() {
             <VisualPasswordInput
               student={selectedStudent}
               onBack={studentIdFromUrl ? undefined : handleBack}
-              onSuccess={handleLoginSuccess}
+              onAttempt={handlePasswordAttempt}
             />
           )}
 

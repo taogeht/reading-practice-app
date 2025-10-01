@@ -113,15 +113,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    const body = await request.clone().json().catch(() => ({}));
     logError(error, 'api/auth/student-login');
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      studentId: body?.studentId,
-      visualPassword: body?.visualPassword,
-      classId: body?.classId,
-    });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -3,7 +3,8 @@ import { db } from '@/lib/db';
 import { schools } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
+import { recordAuditEvent } from '@/lib/audit';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -60,6 +61,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
 
+    await recordAuditEvent({
+      userId: user.id,
+      action: 'admin.school.update',
+      resourceType: 'school',
+      resourceId: id,
+      details: {
+        name,
+        district: district || null,
+        city: city || null,
+        state: state || null,
+        zipCode: zipCode || null,
+      },
+      request,
+    });
+
     return NextResponse.json({ school: updatedSchool[0] });
   } catch (error) {
     logError(error, 'api/admin/schools/[id]');
@@ -83,6 +99,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (deletedSchool.length === 0) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 });
     }
+
+    await recordAuditEvent({
+      userId: user.id,
+      action: 'admin.school.delete',
+      resourceType: 'school',
+      resourceId: id,
+      details: {
+        name: deletedSchool[0].name,
+        district: deletedSchool[0].district,
+      },
+      request,
+    });
 
     return NextResponse.json({ message: 'School deleted successfully' });
   } catch (error) {

@@ -1,9 +1,8 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { AdminLayoutShell } from "@/components/layouts/admin-layout-shell";
 import { getCurrentUser } from "@/lib/auth";
 
-export default async function AdminLayout({
+export default async function TeacherLayout({
   children,
 }: {
   children: ReactNode;
@@ -14,9 +13,9 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== "teacher" && user.role !== "admin") {
     redirect("/unauthorized");
   }
 
-  return <AdminLayoutShell user={user}>{children}</AdminLayoutShell>;
+  return <>{children}</>;
 }

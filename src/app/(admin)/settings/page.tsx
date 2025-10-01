@@ -1,15 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+
+type SettingType = 'boolean' | 'number' | 'string';
 
 interface Setting {
   key: string;
-  value: any;
+  label: string;
   description: string;
+  group: string;
+  type: SettingType;
+  value: boolean | number | string;
+  defaultValue: boolean | number | string;
+  isDefault: boolean;
+  helpText?: string | null;
+  updatedAt: string | null;
+  updatedBy?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export default function SystemSettingsPage() {
@@ -27,7 +43,7 @@ export default function SystemSettingsPage() {
           throw new Error('Failed to fetch settings');
         }
         const data = await response.json();
-        setSettings(data.settings);
+        setSettings((data.settings ?? []) as Setting[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -38,9 +54,44 @@ export default function SystemSettingsPage() {
     fetchSettings();
   }, []);
 
-  const handleInputChange = (key: string, value: any) => {
-    setSettings(currentSettings =>
-      currentSettings.map(s => (s.key === key ? { ...s, value } : s))
+  const groupedSettings = useMemo(() => {
+    const groups = new Map<string, Setting[]>();
+    settings.forEach((setting) => {
+      const list = groups.get(setting.group) ?? [];
+      list.push(setting);
+      groups.set(setting.group, list);
+    });
+    return Array.from(groups.entries()).map(([groupName, items]) => ({
+      groupName,
+      items,
+    }));
+  }, [settings]);
+
+  const handleInputChange = (key: string, value: boolean | number | string) => {
+    setSettings((current) =>
+      current.map((setting) =>
+        setting.key === key
+          ? {
+              ...setting,
+              value,
+              isDefault: JSON.stringify(value) === JSON.stringify(setting.defaultValue),
+            }
+          : setting,
+      ),
+    );
+  };
+
+  const handleResetToDefault = (key: string) => {
+    setSettings((current) =>
+      current.map((setting) =>
+        setting.key === key
+          ? {
+              ...setting,
+              value: setting.defaultValue,
+              isDefault: true,
+            }
+          : setting,
+      ),
     );
   };
 
@@ -54,7 +105,12 @@ export default function SystemSettingsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ settings }),
+        body: JSON.stringify({
+          settings: settings.map((setting) => ({
+            key: setting.key,
+            value: setting.value,
+          })),
+        }),
       });
 
       if (!response.ok) {
@@ -63,10 +119,14 @@ export default function SystemSettingsPage() {
       }
 
       const data = await response.json();
-      setSaveMessage('Settings saved successfully!');
-      
-      // Update local settings with server response
-      setSettings(data.settings);
+      setSaveMessage(
+        data.invalidSettings && data.invalidSettings.length
+          ? `Saved with warnings. Invalid settings: ${data.invalidSettings.join(', ')}`
+          : 'Settings saved successfully!',
+      );
+
+      const nextSettings: Setting[] = data.settings ?? [];
+      setSettings(nextSettings);
       
       // Clear success message after 3 seconds
       setTimeout(() => setSaveMessage(null), 3000);
@@ -99,43 +159,113 @@ export default function SystemSettingsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">System Settings</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {settings.map(setting => (
-            <div key={setting.key} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <Label htmlFor={setting.key} className="md:text-right">{setting.description}</Label>
-              <div className="col-span-2">
-                <Input
-                  id={setting.key}
-                  type={typeof setting.value === 'number' ? 'number' : 'text'}
-                  value={JSON.stringify(setting.value)}
-                  onChange={(e) => handleInputChange(setting.key, e.target.value)}
-                />
-              </div>
-            </div>
-          ))}
-          
-          {saveMessage && (
-            <div className={`p-3 rounded-md ${
-              saveMessage.startsWith('Error') 
-                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100' 
-                : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100'
-            }`}>
-              {saveMessage}
-            </div>
-          )}
-          
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : 'Save Settings'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">System Settings</h1>
+          <p className="text-muted-foreground">
+            Adjust global behaviours for authentication, storage, analytics, and more.
+          </p>
+        </div>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : 'Save Changes'}
+        </Button>
+      </div>
+
+      {saveMessage && (
+        <div
+          className={`mb-6 p-3 rounded-md ${
+            saveMessage.startsWith('Error')
+              ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100'
+              : saveMessage.startsWith('Saved with warnings')
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-100'
+              : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100'
+          }`}
+        >
+          {saveMessage}
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {groupedSettings.map(({ groupName, items }) => (
+          <Card key={groupName}>
+            <CardHeader>
+              <CardTitle>{groupName}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {items.map((setting) => {
+                const inputId = `setting-${setting.key}`;
+                const lastUpdated = setting.updatedAt
+                  ? format(new Date(setting.updatedAt), 'MMM d, yyyy p')
+                  : null;
+
+                return (
+                  <div key={setting.key} className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <Label htmlFor={inputId} className="text-base">
+                          {setting.label}
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          {setting.description}
+                        </p>
+                        {setting.helpText && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {setting.helpText}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {setting.isDefault ? (
+                          <Badge variant="outline">Default</Badge>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResetToDefault(setting.key)}
+                          >
+                            Reset
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {setting.type === 'boolean' ? (
+                        <Switch
+                          id={inputId}
+                          checked={Boolean(setting.value)}
+                          onCheckedChange={(checked) => handleInputChange(setting.key, checked)}
+                        />
+                      ) : (
+                        <Input
+                          id={inputId}
+                          type={setting.type === 'number' ? 'number' : 'text'}
+                          value={String(setting.value)}
+                          onChange={(event) => {
+                            const rawValue = event.target.value;
+                            if (setting.type === 'number') {
+                              handleInputChange(setting.key, rawValue === '' ? '' : Number(rawValue));
+                            } else {
+                              handleInputChange(setting.key, rawValue);
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    {lastUpdated && (
+                      <p className="text-xs text-muted-foreground">
+                        Last updated {lastUpdated}
+                        {setting.updatedBy ? ` · ${setting.updatedBy.name}` : ''}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

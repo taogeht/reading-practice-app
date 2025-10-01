@@ -12,7 +12,6 @@ interface Student {
   lastName: string;
   avatarUrl?: string | null;
   visualPasswordType: 'animal' | 'object';
-  visualPasswordData: any;
 }
 
 interface StudentSelectorProps {

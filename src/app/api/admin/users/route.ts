@@ -5,6 +5,7 @@ import { users, schoolMemberships, schools, teachers } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { alias } from 'drizzle-orm/pg-core';
+import { recordAuditEvent } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -184,6 +185,21 @@ export async function POST(request: NextRequest) {
 
     // Remove password hash from response
     const { passwordHash: _, ...userResponse } = newUser;
+
+    await recordAuditEvent({
+      userId: user.id,
+      action: 'admin.user.create',
+      resourceType: 'user',
+      resourceId: newUser.id,
+      details: {
+        email,
+        role,
+        firstName,
+        lastName,
+        schoolId: resolvedSchoolId,
+      },
+      request,
+    });
 
     return NextResponse.json({ user: userResponse }, { status: 201 });
 

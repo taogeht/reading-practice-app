@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import UserForm from '@/components/admin/user-form';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Upload } from 'lucide-react';
 
 interface User {
   id: string;
@@ -92,6 +92,20 @@ export default function UserManagementPage() {
   const [classUpdateLoading, setClassUpdateLoading] = useState(false);
   const [classUpdateError, setClassUpdateError] = useState<string | null>(null);
   const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<null | {
+    summary: {
+      processed: number;
+      created: number;
+      updated: number;
+      skipped: Array<{ email?: string; reason: string }>;
+      generatedPasswords: Array<{ email: string; password: string }>;
+    };
+    generatedPasswords: Array<{ email: string; password: string }>;
+    skipped: Array<{ email?: string; reason: string }>;
+  }>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -328,6 +342,69 @@ export default function UserManagementPage() {
     [classGroups, unassignedStudents],
   );
 
+  const handleExportUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users/export');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to export users');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `users-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to export users');
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const template = 'email,firstName,lastName,role,active,schoolName,password\n';
+    const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'user-import-template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleImportUsers = async (file: File) => {
+    try {
+      setImporting(true);
+      setImportResult(null);
+      setImportError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/admin/users/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to import users');
+      }
+
+      const data = await response.json();
+      setImportResult(data);
+      await loadData();
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to import users');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -427,14 +504,22 @@ export default function UserManagementPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-sm text-muted-foreground">
             Manage administrators, teachers, and students across the platform.
           </p>
         </div>
-        <Button onClick={handleAddUser}>Add User</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={handleExportUsers}>
+            <Download className="w-4 h-4 mr-2" /> Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Import CSV
+          </Button>
+          <Button onClick={handleAddUser}>Add User</Button>
+        </div>
       </div>
 
       {nonStudentSections.map(({ role, title, description }) => (
@@ -687,6 +772,94 @@ export default function UserManagementPage() {
                 {classUpdateLoading ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isImportDialogOpen}
+        onOpenChange={(open) => {
+          setIsImportDialogOpen(open);
+          if (!open) {
+            setImportResult(null);
+            setImportError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Import Users from CSV</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Upload a CSV file with columns <strong>email</strong>, <strong>firstName</strong>,
+              <strong> lastName</strong>, role, active, schoolName, password. Password is optional for updates; a
+              temporary password will be generated for new users when omitted.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                Download template
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void handleImportUsers(file);
+                        event.target.value = '';
+                      }
+                    }}
+                  />
+                  Choose file…
+                </label>
+              </Button>
+            </div>
+            {importing && <p className="text-sm">Importing… please wait.</p>}
+            {importError && <p className="text-sm text-red-600">{importError}</p>}
+            {importResult && (
+              <div className="space-y-3">
+                <div className="rounded-md border p-3">
+                  <p className="text-sm font-medium">Import summary</p>
+                  <ul className="text-sm text-muted-foreground list-disc pl-4 mt-2 space-y-1">
+                    <li>Processed rows: {importResult.summary.processed}</li>
+                    <li>Created: {importResult.summary.created}</li>
+                    <li>Updated: {importResult.summary.updated}</li>
+                    <li>Skipped: {importResult.summary.skipped.length}</li>
+                  </ul>
+                </div>
+                {importResult.generatedPasswords.length > 0 && (
+                  <div className="rounded-md border p-3 bg-muted">
+                    <p className="text-sm font-medium mb-2">Generated passwords</p>
+                    <ul className="text-sm space-y-1">
+                      {importResult.generatedPasswords.map((entry) => (
+                        <li key={entry.email} className="font-mono">
+                          {entry.email}: {entry.password}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Share these temporary passwords securely with the affected users.
+                    </p>
+                  </div>
+                )}
+                {importResult.summary.skipped.length > 0 && (
+                  <div className="rounded-md border p-3">
+                    <p className="text-sm font-medium">Skipped rows</p>
+                    <ul className="text-sm text-muted-foreground list-disc pl-4 mt-2 space-y-1">
+                      {importResult.summary.skipped.map((entry, index) => (
+                        <li key={`${entry.email ?? 'row'}-${index}`}>
+                          {entry.email ? `${entry.email}: ` : ''}{entry.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

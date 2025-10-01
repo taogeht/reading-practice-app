@@ -10,6 +10,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { alias } from 'drizzle-orm/pg-core';
+import { recordAuditEvent } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -198,6 +199,24 @@ export async function PUT(
     }
 
     const { passwordHash: _, ...userResponse } = updatedUser;
+
+    await recordAuditEvent({
+      userId: currentUser.id,
+      action: 'admin.user.update',
+      resourceType: 'user',
+      resourceId: userId,
+      details: {
+        email,
+        role: nextRole,
+        firstName,
+        lastName,
+        active,
+        schoolId: resolvedSchoolId ?? null,
+        passwordChanged: Boolean(password),
+      },
+      request,
+    });
+
     return NextResponse.json({ user: userResponse });
   } catch (error) {
     logError(error, 'api/admin/users/[id]');
@@ -235,6 +254,18 @@ export async function DELETE(
     }
 
     await db.delete(users).where(eq(users.id, userId));
+
+    await recordAuditEvent({
+      userId: currentUser.id,
+      action: 'admin.user.delete',
+      resourceType: 'user',
+      resourceId: userId,
+      details: {
+        email: existingUser.email,
+        role: existingUser.role,
+      },
+      request,
+    });
 
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {

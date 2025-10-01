@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -13,56 +13,90 @@ interface Student {
   lastName: string;
   avatarUrl?: string;
   visualPasswordType: 'animal' | 'object';
-  visualPasswordData: any;
 }
 
 interface VisualPasswordInputProps {
   student: Student;
-  onBack: () => void;
-  onSuccess: (visualPassword: string) => void;
+  onBack?: () => void;
+  onAttempt: (visualPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswordInputProps) {
+export function VisualPasswordInput({ student, onBack, onAttempt }: VisualPasswordInputProps) {
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [error, setError] = useState("");
-  const [attempts, setAttempts] = useState(0);
-  const maxAttempts = 3;
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [lockCountdown, setLockCountdown] = useState(0);
+
+  const MAX_ATTEMPTS = 5;
+  const LOCK_DURATION_MS = 30_000;
 
   const options = getVisualPasswordOptions(student.visualPasswordType);
-  const correctAnswer = getCorrectAnswer(student.visualPasswordData, student.visualPasswordType);
 
-  function getCorrectAnswer(passwordData: any, type: string): string {
-    switch (type) {
-      case 'animal':
-        return passwordData.animal;
-      case 'object':
-        return passwordData.object;
-      default:
-        return '';
+  const isLocked = lockedUntil !== null && lockedUntil > Date.now();
+
+  useEffect(() => {
+    if (!lockedUntil) {
+      setLockCountdown(0);
+      return;
     }
-  }
 
-  const handleOptionSelect = (optionId: string) => {
-    if (attempts >= maxAttempts) {
+    const updateCountdown = () => {
+      const remainingMs = lockedUntil - Date.now();
+      if (remainingMs <= 0) {
+        setLockedUntil(null);
+        setLockCountdown(0);
+        setFailedAttempts(0);
+        setError("");
+      } else {
+        setLockCountdown(Math.ceil(remainingMs / 1000));
+      }
+    };
+
+    updateCountdown();
+    const intervalId = window.setInterval(updateCountdown, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [lockedUntil]);
+
+  const handleOptionSelect = async (optionId: string) => {
+    if (isLocked || isSubmitting || isSuccess) {
       return;
     }
 
     setSelectedOption(optionId);
     setError("");
+    setIsSubmitting(true);
 
-    if (optionId === correctAnswer) {
-      onSuccess(optionId);
-      return;
-    }
+    try {
+      const result = await onAttempt(optionId);
 
-    const nextAttempts = attempts + 1;
-    setAttempts(nextAttempts);
-    setSelectedOption("");
+      if (result.success) {
+        setIsSuccess(true);
+        return;
+      }
 
-    if (nextAttempts >= maxAttempts) {
-      setError(`Too many incorrect attempts. Please ask your teacher for help.`);
-    } else {
-      setError(`That's not right. Try again! (${maxAttempts - nextAttempts} attempts left)`);
+      const nextAttempts = failedAttempts + 1;
+      setFailedAttempts(nextAttempts);
+      setSelectedOption("");
+
+      if (nextAttempts >= MAX_ATTEMPTS) {
+        const lockUntil = Date.now() + LOCK_DURATION_MS;
+        setLockedUntil(lockUntil);
+        setLockCountdown(Math.ceil(LOCK_DURATION_MS / 1000));
+        setError('Let’s take a short break and try again in a moment.');
+      } else {
+        setError(
+          result.error ||
+            `That's not right. Try again! (${MAX_ATTEMPTS - nextAttempts} attempts left)`
+        );
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+      setSelectedOption("");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -77,22 +111,41 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
     }
   };
 
-  if (attempts >= maxAttempts) {
+  if (isLocked) {
     return (
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl text-red-600">
-            Too Many Attempts
+            Let's Try Again Soon
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-muted-foreground">
-            Please ask your teacher to help you log in.
+            Please wait {lockCountdown} second{lockCountdown === 1 ? '' : 's'} before trying again.
           </p>
-          <Button onClick={onBack} variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Choose Different Student
-          </Button>
+          {onBack && (
+            <Button onClick={onBack} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Choose Different Student
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isSuccess) {
+    return (
+      <Card className="w-full max-w-2xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl font-bold text-primary">
+            Nice work {student.firstName}!
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <p className="text-muted-foreground">
+            Hang tight while we log you in…
+          </p>
         </CardContent>
       </Card>
     );
@@ -123,7 +176,7 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
               variant={selectedOption === option.id ? "default" : "outline"}
               className="p-4 h-auto aspect-square hover:scale-105 transition-transform"
               onClick={() => handleOptionSelect(option.id)}
-              disabled={attempts >= maxAttempts}
+              disabled={isLocked || isSubmitting}
             >
               <div className="text-center">
                 <div className="text-4xl mb-2">
@@ -142,10 +195,12 @@ export function VisualPasswordInput({ student, onBack, onSuccess }: VisualPasswo
         )}
 
         <div className="flex justify-between">
-          <Button onClick={onBack} variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
+          {onBack && (
+            <Button onClick={onBack} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

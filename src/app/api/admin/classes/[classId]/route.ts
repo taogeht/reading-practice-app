@@ -11,6 +11,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
+import { recordAuditEvent } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -239,6 +240,19 @@ export async function PUT(
       .where(eq(classes.id, classId))
       .returning();
 
+    await recordAuditEvent({
+      userId: user.id,
+      action: 'admin.class.update',
+      resourceType: 'class',
+      resourceId: classId,
+      details: {
+        ...updateData,
+        schoolId: updateData.schoolId ?? undefined,
+        teacherId: updateData.teacherId ?? undefined,
+      },
+      request,
+    });
+
     return NextResponse.json(
       { class: updatedClass[0], message: 'Class updated successfully' },
       { status: 200 }
@@ -293,6 +307,14 @@ export async function DELETE(
     await db
       .delete(classes)
       .where(eq(classes.id, classId));
+
+    await recordAuditEvent({
+      userId: user.id,
+      action: 'admin.class.delete',
+      resourceType: 'class',
+      resourceId: classId,
+      request,
+    });
 
     return NextResponse.json(
       { message: 'Class deleted successfully (admin override)' },

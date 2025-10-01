@@ -11,6 +11,7 @@ import {
 import { alias } from 'drizzle-orm/pg-core';
 import { count, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
+import { recordAuditEvent } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -192,6 +193,21 @@ export async function POST(request: NextRequest) {
         active: Boolean(active),
       })
       .returning();
+
+    await recordAuditEvent({
+      userId: user.id,
+      action: 'admin.class.create',
+      resourceType: 'class',
+      resourceId: newClass.id,
+      details: {
+        name,
+        schoolId,
+        teacherId,
+        gradeLevel: parsedGradeLevel,
+        academicYear,
+      },
+      request,
+    });
 
     return NextResponse.json({ class: newClass }, { status: 201 });
   } catch (error) {

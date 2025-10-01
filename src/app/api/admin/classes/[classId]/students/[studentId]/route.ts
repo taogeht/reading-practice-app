@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, classEnrollments } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { logError, createRequestContext } from '@/lib/logger';
+import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 

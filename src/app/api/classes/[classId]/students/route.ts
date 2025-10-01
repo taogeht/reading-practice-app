@@ -34,7 +34,6 @@ export async function GET(
         firstName: users.firstName,
         lastName: users.lastName,
         visualPasswordType: students.visualPasswordType,
-        visualPasswordData: students.visualPasswordData,
         avatarUrl: students.avatarUrl,
       })
       .from(classEnrollments)

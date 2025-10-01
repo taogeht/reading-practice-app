@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { classes, classEnrollments, students } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
+import { recordAuditEvent } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -61,6 +62,17 @@ export async function PUT(
       }
     });
 
+    await recordAuditEvent({
+      userId: currentUser.id,
+      action: 'admin.student.reassign',
+      resourceType: 'student',
+      resourceId: studentId,
+      details: {
+        classId: targetClassId,
+      },
+      request,
+    });
+
     return NextResponse.json({
       message: targetClassId
         ? 'Student assigned to new class'
@@ -75,4 +87,3 @@ export async function PUT(
     );
   }
 }
-

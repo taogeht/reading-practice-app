@@ -16,6 +16,11 @@ interface DashboardStats {
   totalAdmins: number;
   totalTeachers: number;
   totalStudents: number;
+  totalRecordingSizeBytes: number;
+  totalRecordingDurationSeconds: number;
+  totalRecordingDurationHours: number;
+  monthlyRecordingCount: number;
+  estimatedStorageCostUsd: number;
 }
 
 type StorageFilter = 'all' | 'tts' | 'recordings';
@@ -51,7 +56,21 @@ export default function AdminDashboard() {
           throw new Error('Failed to fetch dashboard stats');
         }
         const data = await response.json();
-        setStats(data.stats);
+        const payload = data.stats ?? {};
+        setStats({
+          totalUsers: payload.totalUsers ?? 0,
+          totalSchools: payload.totalSchools ?? 0,
+          totalStories: payload.totalStories ?? 0,
+          totalRecordings: payload.totalRecordings ?? 0,
+          totalAdmins: payload.totalAdmins ?? 0,
+          totalTeachers: payload.totalTeachers ?? 0,
+          totalStudents: payload.totalStudents ?? 0,
+          totalRecordingSizeBytes: payload.totalRecordingSizeBytes ?? 0,
+          totalRecordingDurationSeconds: payload.totalRecordingDurationSeconds ?? 0,
+          totalRecordingDurationHours: payload.totalRecordingDurationHours ?? 0,
+          monthlyRecordingCount: payload.monthlyRecordingCount ?? 0,
+          estimatedStorageCostUsd: payload.estimatedStorageCostUsd ?? 0,
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -148,6 +167,26 @@ export default function AdminDashboard() {
     return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`;
   };
 
+  const formatDuration = (seconds: number): string => {
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      return '0m';
+    }
+    const totalMinutes = Math.round(seconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const parts = [] as string[];
+    if (hours > 0) {
+      parts.push(`${hours}h`);
+    }
+    if (minutes > 0) {
+      parts.push(`${minutes}m`);
+    }
+    if (parts.length === 0) {
+      parts.push('1m');
+    }
+    return parts.join(' ');
+  };
+
   const getFilterLabel = (filter: StorageFilter) => {
     switch (filter) {
       case 'tts':
@@ -158,6 +197,17 @@ export default function AdminDashboard() {
         return 'All Files';
     }
   };
+
+  const totalRecordingSizeBytes = stats?.totalRecordingSizeBytes ?? 0;
+  const totalRecordingDurationSeconds = stats?.totalRecordingDurationSeconds ?? 0;
+  const monthlyRecordingCount = stats?.monthlyRecordingCount ?? 0;
+  const estimatedStorageCostUsd = stats?.estimatedStorageCostUsd ?? 0;
+  const formattedRecordingDuration = formatDuration(totalRecordingDurationSeconds);
+  const storageItemsTotalBytes = storageItems.reduce((sum, item) => sum + (item.size || 0), 0);
+  const currentMonthLabel = new Intl.DateTimeFormat(undefined, {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
 
   if (loading) {
     return (
@@ -266,6 +316,44 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Storage Consumed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatBytes(totalRecordingSizeBytes)}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">All recording assets</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Recordings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{monthlyRecordingCount.toLocaleString()}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Submitted this month ({currentMonthLabel})</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Listening Hours</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formattedRecordingDuration}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Across all student submissions</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Storage Cost (est.)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">${estimatedStorageCostUsd.toFixed(2)}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Based on R2 $0.015/GB</p>
+          </CardContent>
+        </Card>
+      </div>
       <div className="mt-8 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Storage Files</h2>
@@ -367,7 +455,7 @@ export default function AdminDashboard() {
 
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Showing {storageItems.length} file{storageItems.length === 1 ? '' : 's'} for {getFilterLabel(storageFilter).toLowerCase()}.
+                Loaded {storageItems.length} file{storageItems.length === 1 ? '' : 's'} for {getFilterLabel(storageFilter).toLowerCase()} (≈{formatBytes(storageItemsTotalBytes)}).
               </div>
               <div className="flex items-center gap-2">
                 <Button

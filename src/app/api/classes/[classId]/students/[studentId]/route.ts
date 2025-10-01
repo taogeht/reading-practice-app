@@ -44,7 +44,6 @@ export async function GET(
         firstName: users.firstName,
         lastName: users.lastName,
         visualPasswordType: students.visualPasswordType,
-        visualPasswordData: students.visualPasswordData,
         avatarUrl: students.avatarUrl,
       })
       .from(students)
@@ -62,7 +61,6 @@ export async function GET(
         firstName: studentRecord.firstName,
         lastName: studentRecord.lastName,
         visualPasswordType: studentRecord.visualPasswordType,
-        visualPasswordData: studentRecord.visualPasswordData,
         avatarUrl: studentRecord.avatarUrl,
       },
     });
