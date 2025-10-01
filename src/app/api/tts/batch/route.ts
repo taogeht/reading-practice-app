@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
-import { normalizeTtsAudio, type StoryTtsAudio } from '@/types/story';
+import { normalizeTtsAudio, getVoiceLabel, type StoryTtsAudio } from '@/types/story';
 import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
@@ -78,10 +78,6 @@ export async function POST(request: NextRequest) {
             : Buffer.from(result.result.audioBuffer);
 
           const resolvedVoiceId = voiceId || googleTtsClient.getVoices()[0]?.voice_id || 'default';
-          const voiceDefinition = googleTtsClient
-            .getVoices()
-            .find((voice) => voice.voice_id === resolvedVoiceId);
-
           const metadata: Record<string, string> = {
             'generated-by': 'google-tts',
             'voice-id': resolvedVoiceId,
@@ -107,7 +103,7 @@ export async function POST(request: NextRequest) {
             durationSeconds: null,
             generatedAt: metadata['generated-at'],
             voiceId: resolvedVoiceId,
-            label: voiceDefinition?.name ?? `Voice ${resolvedVoiceId}`,
+            label: getVoiceLabel(resolvedVoiceId, `Voice ${resolvedVoiceId}`),
             storageKey: audioKey,
           };
 

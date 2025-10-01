@@ -30,7 +30,7 @@ const { TextToSpeechClient } = textToSpeech;
 const DEFAULT_VOICES: TTSVoice[] = [
   {
     voice_id: 'en-US-Neural2-F',
-    name: 'Warm Narrator (US Female)',
+    name: 'US Female',
     languageCode: 'en-US',
     ssmlGender: 'FEMALE',
     description: 'Clear, expressive female voice well suited for read-along stories.',
@@ -40,7 +40,7 @@ const DEFAULT_VOICES: TTSVoice[] = [
   },
   {
     voice_id: 'en-US-Neural2-D',
-    name: 'Confident Narrator (US Male)',
+    name: 'US Male',
     languageCode: 'en-US',
     ssmlGender: 'MALE',
     description: 'Calm and confident male narration voice for educational content.',

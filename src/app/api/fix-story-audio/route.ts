@@ -5,7 +5,7 @@ import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
-import { normalizeTtsAudio, type StoryTtsAudio } from '@/types/story';
+import { normalizeTtsAudio, getVoiceLabel, type StoryTtsAudio } from '@/types/story';
 import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
@@ -50,7 +50,10 @@ export async function POST(request: NextRequest) {
       durationSeconds: null,
       generatedAt: new Date().toISOString(),
       voiceId: metadata?.metadata?.['voice-id'] ?? null,
-      label: metadata?.metadata?.['voice-label'] ?? null,
+      label: getVoiceLabel(
+        metadata?.metadata?.['voice-id'] ?? null,
+        metadata?.metadata?.['voice-label'] ?? null,
+      ),
       storageKey: audioKey,
     };
 

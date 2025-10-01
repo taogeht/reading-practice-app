@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
-import { normalizeTtsAudio } from '@/types/story';
+import { normalizeTtsAudio, getVoiceLabel } from '@/types/story';
 
 export const runtime = 'nodejs';
 
@@ -104,10 +104,6 @@ export async function POST(request: NextRequest) {
     // If this was for a story, update the story record
     let newEntry: any = null;
     if (storyToUpdate) {
-      const voiceDefinition = googleTtsClient
-        .getVoices()
-        .find((voice) => voice.voice_id === selectedVoiceId);
-
       const existingEntries = normalizeTtsAudio(storyToUpdate.ttsAudio);
       newEntry = {
         id: audioId,
@@ -115,7 +111,7 @@ export async function POST(request: NextRequest) {
         durationSeconds: null,
         generatedAt: new Date().toISOString(),
         voiceId: selectedVoiceId,
-        label: voiceDefinition?.name ?? `Voice ${selectedVoiceId}`,
+        label: getVoiceLabel(selectedVoiceId, `Voice ${selectedVoiceId}`),
         storageKey: audioKey,
       };
 
