@@ -1,5 +1,5 @@
 {
-  "id": "7aedb032-c120-4f42-8ef2-ce9eb7b89015",
+  "id": "44bf3c43-2634-46a7-b61f-e0bd23e40c4e",
   "prevId": "7aedb032-c120-4f42-8ef2-ce9eb7b89015",
   "version": "7",
   "dialect": "postgresql",
@@ -1030,6 +1030,213 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.spelling_lists": {
+      "name": "spelling_lists",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "class_id": {
+          "name": "class_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_number": {
+          "name": "week_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_spelling_lists_class_id": {
+          "name": "idx_spelling_lists_class_id",
+          "columns": [
+            {
+              "expression": "class_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_spelling_lists_active": {
+          "name": "idx_spelling_lists_active",
+          "columns": [
+            {
+              "expression": "active",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "spelling_lists_class_id_classes_id_fk": {
+          "name": "spelling_lists_class_id_classes_id_fk",
+          "tableFrom": "spelling_lists",
+          "tableTo": "classes",
+          "columnsFrom": [
+            "class_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.spelling_words": {
+      "name": "spelling_words",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "spelling_list_id": {
+          "name": "spelling_list_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "word": {
+          "name": "word",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "audio_url": {
+          "name": "audio_url",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "order_index": {
+          "name": "order_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_spelling_words_list_id": {
+          "name": "idx_spelling_words_list_id",
+          "columns": [
+            {
+              "expression": "spelling_list_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_spelling_words_order": {
+          "name": "idx_spelling_words_order",
+          "columns": [
+            {
+              "expression": "spelling_list_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "order_index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "spelling_words_spelling_list_id_spelling_lists_id_fk": {
+          "name": "spelling_words_spelling_list_id_spelling_lists_id_fk",
+          "tableFrom": "spelling_words",
+          "tableTo": "spelling_lists",
+          "columnsFrom": [
+            "spelling_list_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.stories": {
       "name": "stories",
       "schema": "",
@@ -1090,29 +1297,12 @@
           "primaryKey": false,
           "notNull": false
         },
-        "tts_audio_url": {
-          "name": "tts_audio_url",
-          "type": "text",
+        "tts_audio": {
+          "name": "tts_audio",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": false
-        },
-        "tts_audio_duration_seconds": {
-          "name": "tts_audio_duration_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "tts_generated_at": {
-          "name": "tts_generated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "eleven_labs_voice_id": {
-          "name": "eleven_labs_voice_id",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "active": {
           "name": "active",

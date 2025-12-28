@@ -245,6 +245,41 @@ export const auditLogs = pgTable(
   })
 );
 
+// Spelling Lists - Weekly spelling word lists for classes
+export const spellingLists = pgTable(
+  'spelling_lists',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    weekNumber: integer('week_number'),
+    active: boolean('active').default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    classIdIdx: index('idx_spelling_lists_class_id').on(table.classId),
+    activeIdx: index('idx_spelling_lists_active').on(table.active),
+  })
+);
+
+// Spelling Words - Individual words in a spelling list with TTS audio
+export const spellingWords = pgTable(
+  'spelling_words',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    spellingListId: uuid('spelling_list_id').notNull().references(() => spellingLists.id, { onDelete: 'cascade' }),
+    word: varchar('word', { length: 100 }).notNull(),
+    audioUrl: varchar('audio_url', { length: 500 }),
+    orderIndex: integer('order_index').default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    listIdIdx: index('idx_spelling_words_list_id').on(table.spellingListId),
+    orderIdx: index('idx_spelling_words_order').on(table.spellingListId, table.orderIndex),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   student: one(students, { fields: [users.id], references: [students.id] }),
@@ -289,6 +324,7 @@ export const classesRelations = relations(classes, ({ one, many }) => ({
   school: one(schools, { fields: [classes.schoolId], references: [schools.id] }),
   enrollments: many(classEnrollments),
   assignments: many(assignments),
+  spellingLists: many(spellingLists),
 }));
 
 export const classEnrollmentsRelations = relations(classEnrollments, ({ one }) => ({
@@ -318,6 +354,15 @@ export const studentProgressRelations = relations(studentProgress, ({ one }) => 
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   user: one(users, { fields: [auditLogs.userId], references: [users.id] }),
+}));
+
+export const spellingListsRelations = relations(spellingLists, ({ one, many }) => ({
+  class: one(classes, { fields: [spellingLists.classId], references: [classes.id] }),
+  words: many(spellingWords),
+}));
+
+export const spellingWordsRelations = relations(spellingWords, ({ one }) => ({
+  spellingList: one(spellingLists, { fields: [spellingWords.spellingListId], references: [spellingLists.id] }),
 }));
 
 

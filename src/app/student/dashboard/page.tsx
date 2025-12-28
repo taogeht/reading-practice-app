@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AvatarPickerDialog } from "@/components/students/avatar-picker-dialog";
+import { StudentSpellingSection } from "@/components/spelling/student-spelling-section";
 import { AVATARS } from "@/components/auth/visual-password-options";
 import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -114,12 +115,12 @@ export default function StudentDashboardPage() {
       setDashboardData((prev) =>
         prev
           ? {
-              ...prev,
-              student: {
-                ...prev.student,
-                avatarUrl: emoji,
-              },
-            }
+            ...prev,
+            student: {
+              ...prev.student,
+              avatarUrl: emoji,
+            },
+          }
           : prev
       );
       setShowAvatarDialog(false);
@@ -216,7 +217,7 @@ export default function StudentDashboardPage() {
                   Your Assignments
                 </CardTitle>
                 <CardDescription>
-                  {pendingAssignments.length > 0 
+                  {pendingAssignments.length > 0
                     ? `${pendingAssignments.length} assignment${pendingAssignments.length !== 1 ? 's' : ''} to complete`
                     : 'All caught up! Great job! ⭐'
                   }
@@ -231,8 +232,8 @@ export default function StudentDashboardPage() {
                   </div>
                 ) : (
                   pendingAssignments.map((assignment) => (
-                    <div 
-                      key={assignment.id} 
+                    <div
+                      key={assignment.id}
                       className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
                     >
@@ -270,9 +271,8 @@ export default function StudentDashboardPage() {
                   {completedAssignments.map((assignment) => (
                     <div
                       key={assignment.id}
-                      className={`border border-green-200 bg-green-50 rounded-lg p-3 transition-colors ${
-                        assignment.hasTeacherFeedback ? '' : 'cursor-pointer hover:bg-green-100'
-                      }`}
+                      className={`border border-green-200 bg-green-50 rounded-lg p-3 transition-colors ${assignment.hasTeacherFeedback ? '' : 'cursor-pointer hover:bg-green-100'
+                        }`}
                       onClick={() => {
                         if (!assignment.hasTeacherFeedback) {
                           router.push(`/student/assignments/${assignment.id}/practice`);
@@ -340,6 +340,9 @@ export default function StudentDashboardPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Spelling Words */}
+            <StudentSpellingSection />
           </div>
 
           {/* Right Column - Story Library */}
@@ -374,8 +377,8 @@ export default function StudentDashboardPage() {
               </Card>
             </div>
           )}
+        </div>
       </div>
-    </div>
 
       <AvatarPickerDialog
         open={showAvatarDialog}
