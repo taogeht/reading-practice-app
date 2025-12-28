@@ -34,7 +34,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(lists);
     } catch (error) {
         console.error('[GET /api/spelling-lists] Error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({
+            error: 'Internal server error',
+            details: errorMessage,
+            stack: error instanceof Error ? error.stack : undefined
+        }, { status: 500 });
     }
 }
 
