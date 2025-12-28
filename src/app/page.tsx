@@ -153,18 +153,16 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Hero Image Placeholder */}
+            {/* Hero Image */}
             <div className="relative">
-              <div className="relative bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl shadow-2xl overflow-hidden aspect-[4/3]">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <div className="w-20 h-20 bg-slate-300 rounded-xl mx-auto mb-4 flex items-center justify-center">
-                      <BookOpen className="w-10 h-10 text-slate-500" />
-                    </div>
-                    <p className="text-slate-500 font-medium">Dashboard Preview</p>
-                    <p className="text-slate-400 text-sm mt-1">App screenshot coming soon</p>
-                  </div>
-                </div>
+              <div className="relative rounded-2xl shadow-2xl overflow-hidden aspect-[4/3] border border-slate-200">
+                <Image
+                  src="/screenshots/teacher-dashboard.png"
+                  alt="Teacher Dashboard"
+                  fill
+                  className="object-cover object-top"
+                  priority
+                />
                 {/* Decorative elements */}
                 <div className="absolute -top-4 -right-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl" />
                 <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl" />
@@ -256,21 +254,33 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { title: "Teacher Dashboard", desc: "Manage classes and view submissions" },
-              { title: "Student Reading View", desc: "Listen to stories and practice" },
-              { title: "Recording Interface", desc: "Simple recording with playback" },
+              {
+                title: "Teacher Dashboard",
+                desc: "Manage classes and view submissions",
+                image: "/screenshots/teacher-dashboard.png"
+              },
+              {
+                title: "Assignment Management",
+                desc: "Track student progress on assignments",
+                image: "/screenshots/assignments-list.png"
+              },
+              {
+                title: "Visual Password System",
+                desc: "Child-friendly authentication",
+                image: "/screenshots/add-student.png"
+              },
             ].map((screen) => (
               <div
                 key={screen.title}
-                className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700"
+                className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-slate-500 transition-colors"
               >
-                <div className="aspect-video bg-slate-700/50 flex items-center justify-center">
-                  <div className="text-center p-4">
-                    <div className="w-12 h-12 bg-slate-600 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                      <BookOpen className="w-6 h-6 text-slate-400" />
-                    </div>
-                    <p className="text-slate-400 text-sm">Screenshot</p>
-                  </div>
+                <div className="aspect-video relative overflow-hidden">
+                  <Image
+                    src={screen.image}
+                    alt={screen.title}
+                    fill
+                    className="object-cover object-top"
+                  />
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-white mb-1">{screen.title}</h3>
