@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
     BookA,
@@ -30,6 +29,151 @@ interface SpellingList {
         id: string;
         name: string;
     };
+}
+
+// Vibrant colors for syllables - kid-friendly and high contrast
+const SYLLABLE_COLORS = [
+    { bg: "bg-rose-100", text: "text-rose-700", border: "border-rose-300" },
+    { bg: "bg-sky-100", text: "text-sky-700", border: "border-sky-300" },
+    { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300" },
+    { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-300" },
+    { bg: "bg-violet-100", text: "text-violet-700", border: "border-violet-300" },
+    { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-300" },
+];
+
+/**
+ * Simple syllable splitting algorithm for English words.
+ * This uses common patterns - not perfect but good for educational purposes.
+ */
+function splitIntoSyllables(word: string): string[] {
+    const lower = word.toLowerCase();
+
+    // Very short words are one syllable
+    if (lower.length <= 3) {
+        return [word];
+    }
+
+    const vowels = "aeiouy";
+    const syllables: string[] = [];
+    let currentSyllable = "";
+    let prevWasVowel = false;
+
+    for (let i = 0; i < word.length; i++) {
+        const char = word[i];
+        const lowerChar = char.toLowerCase();
+        const isVowel = vowels.includes(lowerChar);
+        const nextChar = i < word.length - 1 ? word[i + 1].toLowerCase() : "";
+        const isNextVowel = vowels.includes(nextChar);
+
+        currentSyllable += char;
+
+        // Check for syllable break conditions
+        if (isVowel && !prevWasVowel) {
+            // After a vowel, if next char is consonant followed by vowel, break after consonant
+            if (i < word.length - 2 && !isNextVowel && vowels.includes(word[i + 2]?.toLowerCase() || "")) {
+                // Continue to include the consonant
+            } else if (i < word.length - 1 && !isNextVowel) {
+                // Current is vowel, next is consonant - might be end of syllable
+                // Check if there's more word after
+                if (i < word.length - 2) {
+                    // Look ahead - if pattern is VC-CV, break between consonants
+                    const afterNext = word[i + 2]?.toLowerCase() || "";
+                    if (!vowels.includes(nextChar) && !vowels.includes(afterNext)) {
+                        // Two consonants - break between them
+                        currentSyllable += word[i + 1];
+                        syllables.push(currentSyllable);
+                        currentSyllable = "";
+                        i++; // Skip the consonant we just added
+                    }
+                }
+            }
+        }
+
+        // Simple break: if we have a good chunk and hit a vowel transition
+        if (currentSyllable.length >= 2 && prevWasVowel && !isVowel && isNextVowel && i < word.length - 1) {
+            syllables.push(currentSyllable);
+            currentSyllable = "";
+        }
+
+        prevWasVowel = isVowel;
+    }
+
+    // Add remaining
+    if (currentSyllable) {
+        syllables.push(currentSyllable);
+    }
+
+    // If we ended up with just one syllable, try a simpler approach
+    if (syllables.length === 1 && word.length > 4) {
+        return simpleSyllableSplit(word);
+    }
+
+    return syllables.length > 0 ? syllables : [word];
+}
+
+/**
+ * Simpler fallback syllable split based on vowel groups
+ */
+function simpleSyllableSplit(word: string): string[] {
+    const vowels = "aeiouy";
+    const result: string[] = [];
+    let current = "";
+    let vowelCount = 0;
+
+    for (let i = 0; i < word.length; i++) {
+        const char = word[i];
+        const isVowel = vowels.includes(char.toLowerCase());
+
+        current += char;
+
+        if (isVowel) {
+            vowelCount++;
+        }
+
+        // After we have at least one vowel and hit a consonant before another vowel
+        if (vowelCount > 0 && !isVowel && i < word.length - 1) {
+            const nextIsVowel = vowels.includes(word[i + 1].toLowerCase());
+            if (nextIsVowel && current.length >= 2) {
+                result.push(current);
+                current = "";
+                vowelCount = 0;
+            }
+        }
+    }
+
+    if (current) {
+        result.push(current);
+    }
+
+    return result.length > 0 ? result : [word];
+}
+
+/**
+ * Renders a word with color-coded syllables
+ */
+function SyllableWord({ word, isPlaying }: { word: string; isPlaying: boolean }) {
+    const syllables = splitIntoSyllables(word);
+
+    return (
+        <div className="flex flex-wrap items-center gap-1">
+            {syllables.map((syllable, index) => {
+                const colors = SYLLABLE_COLORS[index % SYLLABLE_COLORS.length];
+                return (
+                    <span
+                        key={index}
+                        className={`
+              px-2 py-1 rounded-lg font-bold text-lg
+              border-2 transition-all
+              ${colors.bg} ${colors.text} ${colors.border}
+              ${isPlaying ? "scale-110 shadow-md" : ""}
+            `}
+                    >
+                        {syllable}
+                    </span>
+                );
+            })}
+        </div>
+    );
 }
 
 export function StudentSpellingSection() {
@@ -80,16 +224,16 @@ export function StudentSpellingSection() {
 
     if (loading) {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <BookA className="w-5 h-5 text-purple-600" />
+            <Card className="border-2 border-purple-200">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
+                    <CardTitle className="flex items-center gap-2 text-purple-700">
+                        <BookA className="w-6 h-6" />
                         Spelling Words
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
                     </div>
                 </CardContent>
             </Card>
@@ -97,67 +241,87 @@ export function StudentSpellingSection() {
     }
 
     if (lists.length === 0) {
-        return null; // Don't show the section if there are no spelling lists
+        return null;
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <BookA className="w-5 h-5 text-purple-600" />
-                    Spelling Words
+        <Card className="border-2 border-purple-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
+                <CardTitle className="flex items-center gap-2 text-purple-700">
+                    <BookA className="w-6 h-6" />
+                    🎯 Spelling Words
                 </CardTitle>
+                <p className="text-sm text-purple-600 mt-1">
+                    Tap the play button to hear each word! Colors show the syllables.
+                </p>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-6 space-y-8">
                 {lists.map((list) => (
-                    <div key={list.id} className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">{list.title}</h3>
+                    <div key={list.id} className="space-y-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold text-xl text-gray-800">{list.title}</h3>
                             {list.weekNumber && (
-                                <Badge variant="outline">Week {list.weekNumber}</Badge>
+                                <Badge variant="outline" className="bg-purple-50 border-purple-300 text-purple-700">
+                                    Week {list.weekNumber}
+                                </Badge>
                             )}
                             <Badge variant="secondary" className="text-xs">
                                 {list.class.name}
                             </Badge>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        <div className="space-y-3">
                             {list.words.map((word) => (
-                                <button
+                                <div
                                     key={word.id}
-                                    onClick={() => playWord(word)}
-                                    disabled={!word.audioUrl}
                                     className={`
-                    flex items-center gap-3 p-4 rounded-xl border-2 transition-all
+                    flex items-center gap-4 p-4 rounded-2xl border-2 transition-all
                     ${word.audioUrl
-                                            ? "bg-white hover:bg-purple-50 hover:border-purple-300 cursor-pointer"
+                                            ? "bg-white hover:bg-purple-50 hover:border-purple-300 cursor-pointer hover:shadow-md"
                                             : "bg-gray-50 cursor-not-allowed opacity-60"
                                         }
                     ${playingWordId === word.id
-                                            ? "border-purple-500 bg-purple-50"
+                                            ? "border-purple-500 bg-purple-50 shadow-lg ring-2 ring-purple-200"
                                             : "border-gray-200"
                                         }
                   `}
+                                    onClick={() => playWord(word)}
                                 >
-                                    <div
+                                    {/* Play Button */}
+                                    <button
+                                        disabled={!word.audioUrl}
                                         className={`
-                      w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                      w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0
+                      transition-all shadow-md
                       ${playingWordId === word.id
-                                                ? "bg-purple-500 text-white"
-                                                : "bg-purple-100 text-purple-600"
+                                                ? "bg-purple-600 text-white scale-110"
+                                                : "bg-gradient-to-br from-purple-500 to-pink-500 text-white hover:scale-105"
                                             }
+                      ${!word.audioUrl ? "opacity-50" : ""}
                     `}
                                     >
                                         {playingWordId === word.id ? (
-                                            <Pause className="w-5 h-5" />
+                                            <Pause className="w-7 h-7" />
                                         ) : (
-                                            <Play className="w-5 h-5 ml-0.5" />
+                                            <Play className="w-7 h-7 ml-1" />
                                         )}
+                                    </button>
+
+                                    {/* Word with Syllables */}
+                                    <div className="flex-1">
+                                        <SyllableWord
+                                            word={word.word}
+                                            isPlaying={playingWordId === word.id}
+                                        />
                                     </div>
-                                    <span className="font-medium text-gray-900 truncate">
-                                        {word.word}
-                                    </span>
-                                </button>
+
+                                    {/* Sound indicator when playing */}
+                                    {playingWordId === word.id && (
+                                        <div className="flex items-center gap-1">
+                                            <Volume2 className="w-5 h-5 text-purple-600 animate-pulse" />
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </div>
