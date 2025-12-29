@@ -21,23 +21,35 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'classId is required' }, { status: 400 });
         }
 
-        const lists = await db.query.spellingLists.findMany({
-            where: eq(spellingLists.classId, classId),
-            with: {
-                words: {
-                    orderBy: (words, { asc }) => [asc(words.orderIndex)],
-                },
-            },
-            orderBy: [desc(spellingLists.createdAt)],
-        });
+        // Use simple select instead of relational query to avoid LATERAL JOIN issues
+        const lists = await db
+            .select()
+            .from(spellingLists)
+            .where(eq(spellingLists.classId, classId))
+            .orderBy(desc(spellingLists.createdAt));
 
-        return NextResponse.json(lists);
+        // Fetch words for each list separately
+        const listsWithWords = await Promise.all(
+            lists.map(async (list) => {
+                const words = await db
+                    .select()
+                    .from(spellingWords)
+                    .where(eq(spellingWords.spellingListId, list.id))
+                    .orderBy(spellingWords.orderIndex);
+                return { ...list, words };
+            })
+        );
+
+        return NextResponse.json(listsWithWords);
     } catch (error) {
         console.error('[GET /api/spelling-lists] Error:', error);
         const errorMessage = error instanceof Error ? error.message : String(error);
+        // Also try to get the underlying cause if it exists
+        const cause = (error as { cause?: unknown })?.cause;
         return NextResponse.json({
             error: 'Internal server error',
             details: errorMessage,
+            cause: cause ? String(cause) : undefined,
             stack: error instanceof Error ? error.stack : undefined
         }, { status: 500 });
     }
