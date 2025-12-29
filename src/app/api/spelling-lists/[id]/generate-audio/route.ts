@@ -4,7 +4,7 @@ import { spellingLists, spellingWords } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { googleTtsClient } from '@/lib/tts/client';
-import { uploadRecordingToR2 } from '@/lib/storage/r2-client';
+import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
 
@@ -62,11 +62,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     throw new Error(ttsResult.error || 'TTS generation failed');
                 }
 
-                // Upload to R2
+                // Upload to R2 - using uploadFile which returns presigned URLs for audio
                 const audioKey = `spelling/${list.classId}/${list.id}/${word.id}.mp3`;
-                const audioUrl = await uploadRecordingToR2(
+                const buffer = Buffer.isBuffer(ttsResult.audioBuffer)
+                    ? ttsResult.audioBuffer
+                    : Buffer.from(ttsResult.audioBuffer);
+                const audioUrl = await r2Client.uploadFile(
                     audioKey,
-                    ttsResult.audioBuffer,
+                    buffer,
                     'audio/mpeg'
                 );
 
