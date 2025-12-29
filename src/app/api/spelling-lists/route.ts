@@ -93,13 +93,26 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
-        // Insert words
+        // Insert words with syllables from dictionary API
         if (words.length > 0) {
-            const wordRecords = words.map((word: string, index: number) => ({
-                spellingListId: newList.id,
-                word: word.trim(),
-                orderIndex: index,
-            }));
+            // Import and use the syllables function
+            const { getSyllablesForWords } = await import('@/lib/dictionary/syllables');
+
+            // Fetch syllables for all words in parallel
+            const syllablesMap = await getSyllablesForWords(
+                words.map((w: string) => w.trim())
+            );
+
+            const wordRecords = words.map((word: string, index: number) => {
+                const trimmedWord = word.trim();
+                const syllables = syllablesMap.get(trimmedWord.toLowerCase()) || [trimmedWord];
+                return {
+                    spellingListId: newList.id,
+                    word: trimmedWord,
+                    syllables,
+                    orderIndex: index,
+                };
+            });
 
             await db.insert(spellingWords).values(wordRecords);
         }

@@ -270,6 +270,7 @@ export const spellingWords = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     spellingListId: uuid('spelling_list_id').notNull().references(() => spellingLists.id, { onDelete: 'cascade' }),
     word: varchar('word', { length: 100 }).notNull(),
+    syllables: jsonb('syllables').$type<string[]>(), // Array of syllables: ["ba", "na", "na"]
     audioUrl: varchar('audio_url', { length: 500 }),
     orderIndex: integer('order_index').default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

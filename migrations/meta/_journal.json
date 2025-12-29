@@ -50,6 +50,13 @@
       "when": 1766913732959,
       "tag": "0006_marvelous_nightmare",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767052633865,
+      "tag": "0007_graceful_nomad",
+      "breakpoints": true
     }
   ]
 }

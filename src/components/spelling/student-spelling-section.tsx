@@ -14,6 +14,7 @@ import {
 interface SpellingWord {
     id: string;
     word: string;
+    syllables: string[] | null; // Stored syllables from dictionary API
     audioUrl: string | null;
     orderIndex: number;
 }
@@ -150,9 +151,17 @@ function simpleSyllableSplit(word: string): string[] {
 
 /**
  * Renders a word with color-coded syllables
+ * Uses stored syllables if available, falls back to algorithm
  */
-function SyllableWord({ word, isPlaying }: { word: string; isPlaying: boolean }) {
-    const syllables = splitIntoSyllables(word);
+function SyllableWord({ word, syllables: storedSyllables, isPlaying }: {
+    word: string;
+    syllables: string[] | null;
+    isPlaying: boolean;
+}) {
+    // Use stored syllables if available, otherwise use fallback algorithm
+    const syllables = (storedSyllables && storedSyllables.length > 0)
+        ? storedSyllables
+        : splitIntoSyllables(word);
 
     return (
         <div className="flex flex-wrap items-center gap-1">
@@ -311,6 +320,7 @@ export function StudentSpellingSection() {
                                     <div className="flex-1">
                                         <SyllableWord
                                             word={word.word}
+                                            syllables={word.syllables}
                                             isPlaying={playingWordId === word.id}
                                         />
                                     </div>

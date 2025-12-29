@@ -1,0 +1,1 @@
+ALTER TABLE "spelling_words" ADD COLUMN "syllables" jsonb;
