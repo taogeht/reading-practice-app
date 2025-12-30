@@ -18,11 +18,14 @@ import {
     Trash2,
     ChevronDown,
     ChevronUp,
+    Scissors,
 } from "lucide-react";
+import { SyllableEditorDialog } from "./syllable-editor-dialog";
 
 interface SpellingWord {
     id: string;
     word: string;
+    syllables: string[] | null;
     audioUrl: string | null;
     orderIndex: number;
 }
@@ -47,6 +50,7 @@ export function SpellingWordsSection({ classId }: SpellingWordsSectionProps) {
     const [expandedListId, setExpandedListId] = useState<string | null>(null);
     const [generatingAudio, setGeneratingAudio] = useState<string | null>(null);
     const [playingWordId, setPlayingWordId] = useState<string | null>(null);
+    const [editingWord, setEditingWord] = useState<SpellingWord | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Form state
@@ -193,6 +197,20 @@ export function SpellingWordsSection({ classId }: SpellingWordsSectionProps) {
         return words.filter((w) => w.audioUrl).length;
     };
 
+    const getWordsWithSyllables = (words: SpellingWord[]) => {
+        return words.filter((w) => w.syllables && w.syllables.length > 1).length;
+    };
+
+    const handleSyllablesUpdated = (syllables: string[]) => {
+        // Update local state to reflect the change
+        setLists(prevLists => prevLists.map(list => ({
+            ...list,
+            words: list.words.map(word =>
+                word.id === editingWord?.id ? { ...word, syllables } : word
+            )
+        })));
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -306,16 +324,20 @@ export function SpellingWordsSection({ classId }: SpellingWordsSectionProps) {
                                 {/* Expanded Word List */}
                                 {expandedListId === list.id && (
                                     <div className="p-4 border-t">
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                                        <p className="text-sm text-gray-600 mb-3">
+                                            Click <Scissors className="w-3 h-3 inline" /> to set syllable breaks for each word:
+                                        </p>
+                                        <div className="space-y-2">
                                             {list.words.map((word) => (
                                                 <div
                                                     key={word.id}
-                                                    className="flex items-center gap-2 p-2 bg-white border rounded hover:bg-gray-50"
+                                                    className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:bg-gray-50"
                                                 >
+                                                    {/* Play button */}
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
-                                                        className="h-8 w-8 p-0"
+                                                        className="h-8 w-8 p-0 flex-shrink-0"
                                                         onClick={() => playWord(word)}
                                                         disabled={!word.audioUrl}
                                                     >
@@ -325,10 +347,53 @@ export function SpellingWordsSection({ classId }: SpellingWordsSectionProps) {
                                                             <Play className="w-4 h-4" />
                                                         )}
                                                     </Button>
-                                                    <span className="flex-1 truncate">{word.word}</span>
-                                                    {!word.audioUrl && (
-                                                        <span className="text-xs text-gray-400">No audio</span>
-                                                    )}
+
+                                                    {/* Word display with syllables */}
+                                                    <div className="flex-1">
+                                                        {word.syllables && word.syllables.length > 1 ? (
+                                                            <div className="flex items-center gap-1 flex-wrap">
+                                                                {word.syllables.map((syl, i) => (
+                                                                    <span
+                                                                        key={i}
+                                                                        className={`px-2 py-0.5 rounded text-sm font-medium ${['bg-rose-100 text-rose-700',
+                                                                            'bg-sky-100 text-sky-700',
+                                                                            'bg-amber-100 text-amber-700',
+                                                                            'bg-emerald-100 text-emerald-700',
+                                                                            'bg-violet-100 text-violet-700',
+                                                                            'bg-orange-100 text-orange-700'][i % 6]
+                                                                            }`}
+                                                                    >
+                                                                        {syl}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="font-medium">{word.word}</span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Status badges */}
+                                                    <div className="flex items-center gap-2">
+                                                        {!word.audioUrl && (
+                                                            <span className="text-xs text-gray-400">No audio</span>
+                                                        )}
+                                                        {(!word.syllables || word.syllables.length <= 1) && (
+                                                            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                                                                Needs syllables
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Edit syllables button */}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setEditingWord(word)}
+                                                        title="Edit syllables"
+                                                    >
+                                                        <Scissors className="w-4 h-4 mr-1" />
+                                                        {word.syllables && word.syllables.length > 1 ? 'Edit' : 'Set'}
+                                                    </Button>
                                                 </div>
                                             ))}
                                         </div>
@@ -407,6 +472,18 @@ export function SpellingWordsSection({ classId }: SpellingWordsSectionProps) {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Syllable Editor Dialog */}
+            {editingWord && (
+                <SyllableEditorDialog
+                    wordId={editingWord.id}
+                    word={editingWord.word}
+                    currentSyllables={editingWord.syllables}
+                    onSave={handleSyllablesUpdated}
+                    onClose={() => setEditingWord(null)}
+                    open={true}
+                />
+            )}
         </Card>
     );
 }
