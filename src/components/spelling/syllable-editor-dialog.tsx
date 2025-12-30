@@ -187,9 +187,21 @@ export function SyllableEditorDialog({
 
                     {/* Actions */}
                     <div className="flex justify-between">
-                        <Button variant="outline" onClick={handleReset} disabled={breaks.length === 0}>
-                            Reset
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleReset} disabled={breaks.length === 0}>
+                                Reset
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setBreaks([]);
+                                    // Save immediately as single syllable
+                                }}
+                                className="text-green-600 border-green-300 hover:bg-green-50"
+                            >
+                                ✓ Single Syllable
+                            </Button>
+                        </div>
                         <div className="flex gap-2">
                             <Button variant="outline" onClick={onClose}>
                                 <X className="w-4 h-4 mr-2" />
