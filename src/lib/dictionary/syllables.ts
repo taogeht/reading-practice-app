@@ -1,26 +1,24 @@
 /**
  * Dictionary API client for fetching syllable data
- * Uses the Free Dictionary API: https://dictionaryapi.dev/
+ * 
+ * Primary: WordsAPI (via RapidAPI) - explicit syllable arrays
+ * Fallback: Algorithmic splitting when API unavailable or word not found
  */
 
-interface DictionaryResponse {
+interface WordsApiResponse {
     word: string;
-    phonetic?: string;
-    phonetics?: {
-        text?: string;
-        audio?: string;
-    }[];
-    meanings?: {
-        partOfSpeech: string;
-        definitions: {
-            definition: string;
-        }[];
-    }[];
+    syllables?: {
+        count: number;
+        list: string[];
+    };
+    pronunciation?: {
+        all?: string;
+    };
 }
 
 /**
  * Simple syllable splitting algorithm as fallback
- * Based on vowel patterns - not perfect but reasonable
+ * Based on vowel patterns - improved version
  */
 function splitSyllablesFallback(word: string): string[] {
     const lower = word.toLowerCase();
@@ -33,25 +31,39 @@ function splitSyllablesFallback(word: string): string[] {
     const vowels = "aeiouy";
     const result: string[] = [];
     let current = "";
-    let vowelCount = 0;
+    let hasVowel = false;
 
     for (let i = 0; i < word.length; i++) {
         const char = word[i];
-        const isVowel = vowels.includes(char.toLowerCase());
+        const lowerChar = char.toLowerCase();
+        const isVowel = vowels.includes(lowerChar);
 
         current += char;
 
         if (isVowel) {
-            vowelCount++;
+            hasVowel = true;
         }
 
-        // After we have at least one vowel and hit a consonant before another vowel
-        if (vowelCount > 0 && !isVowel && i < word.length - 1) {
-            const nextIsVowel = vowels.includes(word[i + 1].toLowerCase());
-            if (nextIsVowel && current.length >= 2) {
+        // Look ahead to determine syllable break
+        if (hasVowel && i < word.length - 1) {
+            const nextChar = word[i + 1].toLowerCase();
+            const isNextVowel = vowels.includes(nextChar);
+
+            // If current is consonant and next is vowel, might be syllable break
+            if (!isVowel && isNextVowel && current.length >= 2) {
                 result.push(current);
                 current = "";
-                vowelCount = 0;
+                hasVowel = false;
+            }
+            // If we have VCV pattern, break before the consonant that precedes the vowel
+            else if (isVowel && !isNextVowel && i < word.length - 2) {
+                const afterNext = word[i + 2]?.toLowerCase();
+                if (afterNext && vowels.includes(afterNext)) {
+                    // V-CV pattern: break after vowel
+                    result.push(current);
+                    current = "";
+                    hasVowel = false;
+                }
             }
         }
     }
@@ -60,170 +72,100 @@ function splitSyllablesFallback(word: string): string[] {
         result.push(current);
     }
 
-    return result.length > 0 ? result : [word];
-}
-
-/**
- * Parse phonetic notation to extract syllables
- * Phonetics often use · or ˈ or ˌ to mark syllable boundaries
- */
-function parsePhoneticToSyllables(phonetic: string, originalWord: string): string[] | null {
-    // Remove IPA brackets
-    let clean = phonetic.replace(/[\/\[\]]/g, '');
-
-    // Common syllable separators in phonetic notation
-    const separators = /[·ˈˌ.]/;
-
-    if (separators.test(clean)) {
-        // Split by separators
-        const parts = clean.split(separators).filter(p => p.length > 0);
-        if (parts.length > 1) {
-            // Try to map phonetic parts back to original word
-            // This is approximate - phonetic doesn't always match spelling
-            return approximateSyllablesFromPhonetic(parts, originalWord);
+    // Merge very short syllables
+    const merged: string[] = [];
+    for (let i = 0; i < result.length; i++) {
+        if (result[i].length === 1 && !vowels.includes(result[i].toLowerCase()) && merged.length > 0) {
+            merged[merged.length - 1] += result[i];
+        } else if (i === result.length - 1 && result[i].length === 1 && merged.length > 0) {
+            merged[merged.length - 1] += result[i];
+        } else {
+            merged.push(result[i]);
         }
     }
 
-    return null;
+    return merged.length > 0 ? merged : [word];
 }
 
 /**
- * Approximate syllable boundaries in the original word based on phonetic syllable count
+ * Fetch syllables from WordsAPI (via RapidAPI)
+ * Requires RAPIDAPI_KEY environment variable
  */
-function approximateSyllablesFromPhonetic(phoneticParts: string[], originalWord: string): string[] {
-    const syllableCount = phoneticParts.length;
+async function fetchFromWordsApi(word: string): Promise<string[] | null> {
+    const apiKey = process.env.RAPIDAPI_KEY;
 
-    if (syllableCount === 1) {
-        return [originalWord];
+    if (!apiKey) {
+        console.log('[WordsAPI] No RAPIDAPI_KEY configured, using fallback');
+        return null;
     }
 
-    // Use vowel-based splitting but aim for the target count
-    const vowels = "aeiouy";
-    const word = originalWord.toLowerCase();
-
-    // Find vowel positions
-    const vowelPositions: number[] = [];
-    for (let i = 0; i < word.length; i++) {
-        if (vowels.includes(word[i])) {
-            // Skip consecutive vowels (diphthongs)
-            if (vowelPositions.length === 0 || i - vowelPositions[vowelPositions.length - 1] > 1) {
-                vowelPositions.push(i);
-            }
-        }
-    }
-
-    // If we don't have enough vowels, fall back to even splitting
-    if (vowelPositions.length < syllableCount) {
-        return splitEvenly(originalWord, syllableCount);
-    }
-
-    // Try to split at consonants between vowels
-    const result: string[] = [];
-    let start = 0;
-
-    for (let i = 0; i < syllableCount - 1 && i < vowelPositions.length - 1; i++) {
-        // Find a good break point between this vowel and the next
-        const currentVowel = vowelPositions[i];
-        const nextVowel = vowelPositions[i + 1];
-
-        // Break after the vowel, before the consonant cluster
-        let breakPoint = currentVowel + 1;
-
-        // If there are multiple consonants between vowels, split them
-        if (nextVowel - currentVowel > 2) {
-            breakPoint = Math.floor((currentVowel + nextVowel) / 2) + 1;
-        }
-
-        result.push(originalWord.slice(start, breakPoint));
-        start = breakPoint;
-    }
-
-    // Add the remaining part
-    if (start < originalWord.length) {
-        result.push(originalWord.slice(start));
-    }
-
-    return result;
-}
-
-/**
- * Split a word into roughly even parts
- */
-function splitEvenly(word: string, parts: number): string[] {
-    const partLength = Math.ceil(word.length / parts);
-    const result: string[] = [];
-
-    for (let i = 0; i < word.length; i += partLength) {
-        result.push(word.slice(i, Math.min(i + partLength, word.length)));
-    }
-
-    return result;
-}
-
-/**
- * Fetch syllables for a word from the Free Dictionary API
- */
-export async function getSyllables(word: string): Promise<string[]> {
     try {
         const response = await fetch(
-            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`,
+            `https://wordsapiv1.p.rapidapi.com/words/${encodeURIComponent(word.toLowerCase())}`,
             {
-                headers: { 'Accept': 'application/json' },
-                // Don't wait too long
-                signal: AbortSignal.timeout(5000)
+                headers: {
+                    'X-RapidAPI-Key': apiKey,
+                    'X-RapidAPI-Host': 'wordsapiv1.p.rapidapi.com',
+                },
+                signal: AbortSignal.timeout(5000),
             }
         );
 
         if (!response.ok) {
-            console.log(`[Dictionary API] Word not found: ${word}, using fallback`);
-            return splitSyllablesFallback(word);
+            if (response.status === 404) {
+                console.log(`[WordsAPI] Word not found: ${word}`);
+                return null;
+            }
+            console.error(`[WordsAPI] Error response: ${response.status}`);
+            return null;
         }
 
-        const data: DictionaryResponse[] = await response.json();
+        const data: WordsApiResponse = await response.json();
 
-        if (data && data.length > 0) {
-            // Look for phonetic with syllable markers
-            const entry = data[0];
+        if (data.syllables?.list && data.syllables.list.length > 0) {
+            // WordsAPI returns lowercase syllables, preserve original case for first letter
+            const syllables = data.syllables.list;
 
-            // Try main phonetic first
-            if (entry.phonetic) {
-                const syllables = parsePhoneticToSyllables(entry.phonetic, word);
-                if (syllables && syllables.length > 1) {
-                    return syllables;
-                }
+            // Capitalize first syllable if original word was capitalized
+            if (word[0] === word[0].toUpperCase()) {
+                syllables[0] = syllables[0].charAt(0).toUpperCase() + syllables[0].slice(1);
             }
 
-            // Try phonetics array
-            if (entry.phonetics) {
-                for (const phonetic of entry.phonetics) {
-                    if (phonetic.text) {
-                        const syllables = parsePhoneticToSyllables(phonetic.text, word);
-                        if (syllables && syllables.length > 1) {
-                            return syllables;
-                        }
-                    }
-                }
-            }
+            return syllables;
         }
 
-        // Couldn't parse syllables from phonetics, use fallback
-        console.log(`[Dictionary API] No syllable data for: ${word}, using fallback`);
-        return splitSyllablesFallback(word);
-
+        return null;
     } catch (error) {
-        console.error(`[Dictionary API] Error fetching syllables for "${word}":`, error);
-        return splitSyllablesFallback(word);
+        console.error(`[WordsAPI] Error fetching syllables for "${word}":`, error);
+        return null;
     }
 }
 
 /**
- * Fetch syllables for multiple words in parallel
+ * Fetch syllables for a word - tries WordsAPI first, then falls back to algorithm
+ */
+export async function getSyllables(word: string): Promise<string[]> {
+    // Try WordsAPI first (if configured)
+    const apiSyllables = await fetchFromWordsApi(word);
+    if (apiSyllables) {
+        return apiSyllables;
+    }
+
+    // Fallback to algorithmic splitting
+    console.log(`[Syllables] Using fallback algorithm for: ${word}`);
+    return splitSyllablesFallback(word);
+}
+
+/**
+ * Fetch syllables for multiple words in parallel with rate limiting
  */
 export async function getSyllablesForWords(words: string[]): Promise<Map<string, string[]>> {
     const results = new Map<string, string[]>();
 
-    // Process in parallel with a concurrency limit
-    const batchSize = 5;
+    // Process in smaller batches to respect rate limits
+    const batchSize = 3;
+    const delayMs = 200; // Small delay between batches
+
     for (let i = 0; i < words.length; i += batchSize) {
         const batch = words.slice(i, i + batchSize);
         const promises = batch.map(async (word) => {
@@ -231,7 +173,19 @@ export async function getSyllablesForWords(words: string[]): Promise<Map<string,
             results.set(word.toLowerCase(), syllables);
         });
         await Promise.all(promises);
+
+        // Add small delay between batches to avoid rate limiting
+        if (i + batchSize < words.length) {
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
     }
 
     return results;
+}
+
+/**
+ * Check if WordsAPI is configured
+ */
+export function isWordsApiConfigured(): boolean {
+    return !!process.env.RAPIDAPI_KEY;
 }
