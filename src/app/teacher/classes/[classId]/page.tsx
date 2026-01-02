@@ -12,6 +12,7 @@ import { CreateStudentDialog } from "@/components/students/create-student-dialog
 import { SpellingWordsSection } from "@/components/spelling/spelling-words-section";
 import { AttendanceSection } from "@/components/attendance/attendance-section";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   Users,
   UserPlus,
@@ -63,6 +64,7 @@ export default function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
+  const [showStudentsSheet, setShowStudentsSheet] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
@@ -313,9 +315,9 @@ export default function ClassDetailPage() {
                 <QrCode className="w-4 h-4 mr-2" />
                 Class QR Code
               </Button>
-              <Button onClick={() => setShowCreateStudent(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add Student
+              <Button onClick={() => setShowStudentsSheet(true)} variant="outline">
+                <Users className="w-4 h-4 mr-2" />
+                Students ({classData.studentCount})
               </Button>
               <Button
                 variant="outline"
@@ -516,101 +518,13 @@ export default function ClassDetailPage() {
             </Card>
           </div>
 
-          {/* Right Column - Students */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="w-5 h-5" />
-                      Enrolled Students ({classData.studentCount})
-                    </CardTitle>
-                    <CardDescription>
-                      Manage students in this class
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => setShowCreateStudent(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Student
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {classData.students.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No students enrolled</h3>
-                    <p className="text-gray-600 mb-6">
-                      Start building your class by adding students
-                    </p>
-                    <Button onClick={() => setShowCreateStudent(true)}>
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Add First Student
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {classData.students.map((student) => (
-                      <div
-                        key={student.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span className="text-blue-600 font-medium">
-                                {student.firstName[0]}{student.lastName[0]}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">
-                                {student.firstName} {student.lastName}
-                              </h4>
-                              <div className="flex items-center gap-3 text-sm text-gray-600">
-                                {student.gradeLevel && (
-                                  <span>Grade {student.gradeLevel}</span>
-                                )}
-                                {student.readingLevel && (
-                                  <span>Reading Level: {student.readingLevel}</span>
-                                )}
-                                <span>Enrolled {formatDate(student.enrolledAt)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/teacher/students/${student.id}`)}
-                          >
-                            View Profile
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveStudent(student.id, `${student.firstName} ${student.lastName}`)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {/* Right Column - Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Attendance - Collapsible at top */}
+            <AttendanceSection classId={classId} className={classData.name} />
 
-            {/* Attendance */}
-            <div className="mt-6">
-              <AttendanceSection classId={classId} className={classData.name} />
-            </div>
-
-            {/* Spelling Words */}
-            <div className="mt-6">
-              <SpellingWordsSection classId={classId} />
-            </div>
+            {/* Spelling Words - Main content */}
+            <SpellingWordsSection classId={classId} />
           </div>
         </div>
       </div>
@@ -627,63 +541,46 @@ export default function ClassDetailPage() {
               Students can scan this QR code to access the login page for {classData?.name}
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4">
             {/* QR Code Display */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  {isGeneratingQR ? (
-                    <div className="flex items-center justify-center h-48">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-                  ) : qrCodeUrl ? (
-                    <div className="space-y-4">
-                      <img
-                        src={qrCodeUrl}
-                        alt={`QR Code for ${classData?.name}`}
-                        className="mx-auto border rounded-lg"
-                        width={300}
-                        height={300}
-                      />
-                      <p className="text-xs text-gray-500">
-                        Scan with any QR code reader or camera app
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-48 text-gray-400">
-                      <QrCode className="w-16 h-16" />
-                    </div>
-                  )}
+            <div className="bg-white p-4 rounded-lg border flex justify-center">
+              {isGeneratingQR ? (
+                <div className="w-48 h-48 flex items-center justify-center text-gray-400">
+                  Generating...
                 </div>
-              </CardContent>
-            </Card>
+              ) : qrCodeUrl ? (
+                <img
+                  src={qrCodeUrl}
+                  alt="Class login QR code"
+                  className="w-48 h-48"
+                  id="qr-code-image"
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-lg">
+                  Click to generate
+                </div>
+              )}
+            </div>
 
             {/* URL Display */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Direct Link</CardTitle>
-                <CardDescription className="text-xs">
-                  Share this link directly with students
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center space-x-2">
-                  <div className="flex-1 p-2 bg-gray-50 rounded text-xs font-mono break-all">
-                    {`${typeof window !== 'undefined' ? window.location.origin : ''}/student-login/${classId}`}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyToClipboard}
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Student Login URL:</p>
+              <p className="text-sm font-mono break-all text-gray-700">
+                {typeof window !== 'undefined' ? `${window.location.origin}/student-login/${classId}` : ''}
+              </p>
+            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={copyToClipboard}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copy URL
+              </Button>
               <Button
                 variant="outline"
                 className="flex-1"
@@ -729,6 +626,77 @@ export default function ClassDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Students Sheet (Slide-out Panel) */}
+      <Sheet open={showStudentsSheet} onOpenChange={setShowStudentsSheet}>
+        <SheetContent side="right" className="overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Enrolled Students ({classData.studentCount})
+            </SheetTitle>
+            <SheetDescription>
+              Manage students in {classData.name}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-4">
+            <Button onClick={() => setShowCreateStudent(true)} className="w-full">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add New Student
+            </Button>
+
+            {classData.students.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No students enrolled yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {classData.students.map((student) => (
+                  <div
+                    key={student.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span className="text-blue-600 font-medium text-sm">
+                          {student.firstName[0]}{student.lastName[0]}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 text-sm">
+                          {student.firstName} {student.lastName}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {student.gradeLevel ? `Grade ${student.gradeLevel}` : 'No grade set'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/teacher/students/${student.id}`)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleRemoveStudent(student.id, `${student.firstName} ${student.lastName}`)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Create Student Dialog */}
       <CreateStudentDialog
