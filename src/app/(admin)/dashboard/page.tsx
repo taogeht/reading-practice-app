@@ -486,6 +486,9 @@ export default function AdminDashboard() {
           <Link href="/schools">
             <Button>Manage Schools</Button>
           </Link>
+          <Link href="/admin/books">
+            <Button>Manage Books</Button>
+          </Link>
           <Link href="/settings">
             <Button>System Settings</Button>
           </Link>
