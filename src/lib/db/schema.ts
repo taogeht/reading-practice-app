@@ -281,6 +281,111 @@ export const spellingWords = pgTable(
   })
 );
 
+// Attendance Status Enum
+export const attendanceStatusEnum = pgEnum('attendance_status', [
+  'present',
+  'absent',
+  'late',
+  'excused'
+]);
+
+// Class Schedule - Which days each class meets
+export const classSchedules = pgTable(
+  'class_schedules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    dayOfWeek: integer('day_of_week').notNull(), // 0=Sunday, 1=Monday, ... 6=Saturday
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    classIdIdx: index('idx_class_schedules_class_id').on(table.classId),
+    uniqueClassDay: uniqueIndex('unique_class_day').on(table.classId, table.dayOfWeek),
+  })
+);
+
+// Attendance Records - Daily attendance per student per class
+export const attendanceRecords = pgTable(
+  'attendance_records',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    date: timestamp('date', { withTimezone: true }).notNull(),
+    status: attendanceStatusEnum('status').notNull().default('present'),
+    notes: text('notes'),
+    recordedBy: uuid('recorded_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    classIdIdx: index('idx_attendance_class_id').on(table.classId),
+    studentIdIdx: index('idx_attendance_student_id').on(table.studentId),
+    dateIdx: index('idx_attendance_date').on(table.date),
+    uniqueAttendance: uniqueIndex('unique_attendance_record').on(table.classId, table.studentId, table.date),
+  })
+);
+
+// Books - Materials managed by super admin
+export const books = pgTable(
+  'books',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: varchar('title', { length: 255 }).notNull(),
+    publisher: varchar('publisher', { length: 255 }),
+    isbn: varchar('isbn', { length: 50 }),
+    totalPages: integer('total_pages'),
+    gradeLevels: integer('grade_levels').array(), // Array of grade levels this book is for
+    subject: varchar('subject', { length: 100 }), // e.g., 'Reading', 'Phonics'
+    coverImageUrl: varchar('cover_image_url', { length: 500 }),
+    active: boolean('active').default(true),
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    activeIdx: index('idx_books_active').on(table.active),
+  })
+);
+
+// Class Books - Which books are assigned to each class
+export const classBooks = pgTable(
+  'class_books',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    bookId: uuid('book_id').notNull().references(() => books.id, { onDelete: 'cascade' }),
+    assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow(),
+    isCurrent: boolean('is_current').default(true), // Currently being used
+  },
+  (table) => ({
+    classIdIdx: index('idx_class_books_class_id').on(table.classId),
+    uniqueClassBook: uniqueIndex('unique_class_book').on(table.classId, table.bookId),
+  })
+);
+
+// Class Progress - Daily progress tracking for each class
+export const classProgress = pgTable(
+  'class_progress',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    bookId: uuid('book_id').notNull().references(() => books.id, { onDelete: 'cascade' }),
+    date: timestamp('date', { withTimezone: true }).notNull(),
+    pagesCompleted: varchar('pages_completed', { length: 100 }), // e.g., "12-15", "23, 25-27"
+    lessonNotes: text('lesson_notes'),
+    homeworkAssigned: text('homework_assigned'),
+    recordedBy: uuid('recorded_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    classIdIdx: index('idx_class_progress_class_id').on(table.classId),
+    bookIdIdx: index('idx_class_progress_book_id').on(table.bookId),
+    dateIdx: index('idx_class_progress_date').on(table.date),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   student: one(students, { fields: [users.id], references: [students.id] }),

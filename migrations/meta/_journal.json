@@ -57,6 +57,13 @@
       "when": 1767052633865,
       "tag": "0007_graceful_nomad",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1767314877713,
+      "tag": "0008_married_selene",
+      "breakpoints": true
     }
   ]
 }

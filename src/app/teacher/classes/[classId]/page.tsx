@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { SpellingWordsSection } from "@/components/spelling/spelling-words-section";
+import { AttendanceSection } from "@/components/attendance/attendance-section";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Users,
@@ -600,6 +601,11 @@ export default function ClassDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Attendance */}
+            <div className="mt-6">
+              <AttendanceSection classId={classId} className={classData.name} />
+            </div>
 
             {/* Spelling Words */}
             <div className="mt-6">
