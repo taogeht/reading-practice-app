@@ -9,6 +9,9 @@ import {
     Pause,
     Loader2,
     Volume2,
+    ChevronDown,
+    ChevronUp,
+    History,
 } from "lucide-react";
 
 interface SpellingWord {
@@ -189,6 +192,7 @@ export function StudentSpellingSection() {
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [loading, setLoading] = useState(true);
     const [playingWordId, setPlayingWordId] = useState<string | null>(null);
+    const [showPreviousLists, setShowPreviousLists] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
@@ -264,50 +268,49 @@ export function StudentSpellingSection() {
                     Tap the play button to hear each word! Colors show the syllables.
                 </p>
             </CardHeader>
-            <CardContent className="p-6 space-y-8">
-                {lists.map((list) => (
-                    <div key={list.id} className="space-y-4">
+            <CardContent className="p-6 space-y-6">
+                {/* Current List (first/most recent) */}
+                {lists.length > 0 && (
+                    <div className="space-y-4">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-xl text-gray-800">{list.title}</h3>
-                            {list.weekNumber && (
+                            <Badge className="bg-green-500 hover:bg-green-600">This Week</Badge>
+                            <h3 className="font-bold text-xl text-gray-800">{lists[0].title}</h3>
+                            {lists[0].weekNumber && (
                                 <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700">
-                                    Week {list.weekNumber}
+                                    Week {lists[0].weekNumber}
                                 </Badge>
                             )}
-                            <Badge variant="secondary" className="text-xs">
-                                {list.class.name}
-                            </Badge>
                         </div>
 
                         <div className="space-y-3">
-                            {list.words.map((word) => (
+                            {lists[0].words.map((word) => (
                                 <div
                                     key={word.id}
                                     className={`
-                    flex items-center gap-4 p-4 rounded-2xl border-2 transition-all
-                    ${word.audioUrl
+                                        flex items-center gap-4 p-4 rounded-2xl border-2 transition-all
+                                        ${word.audioUrl
                                             ? "bg-white hover:bg-blue-50 hover:border-blue-300 cursor-pointer hover:shadow-md"
                                             : "bg-gray-50 cursor-not-allowed opacity-60"
                                         }
-                    ${playingWordId === word.id
+                                        ${playingWordId === word.id
                                             ? "border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200"
                                             : "border-gray-200"
                                         }
-                  `}
+                                    `}
                                     onClick={() => playWord(word)}
                                 >
                                     {/* Play Button */}
                                     <button
                                         disabled={!word.audioUrl}
                                         className={`
-                      w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0
-                      transition-all shadow-md
-                      ${playingWordId === word.id
+                                            w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0
+                                            transition-all shadow-md
+                                            ${playingWordId === word.id
                                                 ? "bg-blue-600 text-white scale-110"
                                                 : "bg-gradient-to-br from-blue-500 to-indigo-500 text-white hover:scale-105"
                                             }
-                      ${!word.audioUrl ? "opacity-50" : ""}
-                    `}
+                                            ${!word.audioUrl ? "opacity-50" : ""}
+                                        `}
                                     >
                                         {playingWordId === word.id ? (
                                             <Pause className="w-7 h-7" />
@@ -335,7 +338,88 @@ export function StudentSpellingSection() {
                             ))}
                         </div>
                     </div>
-                ))}
+                )}
+
+                {/* Previous Lists (collapsible) */}
+                {lists.length > 1 && (
+                    <div className="border-t pt-4">
+                        <button
+                            onClick={() => setShowPreviousLists(!showPreviousLists)}
+                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors w-full justify-between p-2 rounded-lg hover:bg-gray-50"
+                        >
+                            <div className="flex items-center gap-2">
+                                <History className="w-4 h-4" />
+                                <span className="text-sm font-medium">
+                                    Previous Lists ({lists.length - 1})
+                                </span>
+                            </div>
+                            {showPreviousLists ? (
+                                <ChevronUp className="w-4 h-4" />
+                            ) : (
+                                <ChevronDown className="w-4 h-4" />
+                            )}
+                        </button>
+
+                        {showPreviousLists && (
+                            <div className="mt-4 space-y-6">
+                                {lists.slice(1).map((list) => (
+                                    <div key={list.id} className="space-y-4 p-4 bg-gray-50 rounded-xl">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h4 className="font-semibold text-lg text-gray-700">{list.title}</h4>
+                                            {list.weekNumber && (
+                                                <Badge variant="outline" className="text-xs">
+                                                    Week {list.weekNumber}
+                                                </Badge>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {list.words.map((word) => (
+                                                <div
+                                                    key={word.id}
+                                                    className={`
+                                                        flex items-center gap-3 p-3 rounded-xl border transition-all
+                                                        ${word.audioUrl
+                                                            ? "bg-white hover:bg-blue-50 cursor-pointer"
+                                                            : "bg-gray-100 cursor-not-allowed opacity-60"
+                                                        }
+                                                        ${playingWordId === word.id
+                                                            ? "border-blue-400 bg-blue-50"
+                                                            : "border-gray-200"
+                                                        }
+                                                    `}
+                                                    onClick={() => playWord(word)}
+                                                >
+                                                    <button
+                                                        disabled={!word.audioUrl}
+                                                        className={`
+                                                            w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                                                            ${playingWordId === word.id
+                                                                ? "bg-blue-500 text-white"
+                                                                : "bg-blue-100 text-blue-600"
+                                                            }
+                                                        `}
+                                                    >
+                                                        {playingWordId === word.id ? (
+                                                            <Pause className="w-5 h-5" />
+                                                        ) : (
+                                                            <Play className="w-5 h-5 ml-0.5" />
+                                                        )}
+                                                    </button>
+                                                    <SyllableWord
+                                                        word={word.word}
+                                                        syllables={word.syllables}
+                                                        isPlaying={playingWordId === word.id}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
