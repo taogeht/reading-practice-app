@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { SpellingWordsSection } from "@/components/spelling/spelling-words-section";
 import { AttendanceSection } from "@/components/attendance/attendance-section";
+import { ProgressSection } from "@/components/progress/progress-section";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
@@ -522,6 +523,9 @@ export default function ClassDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Attendance - Collapsible at top */}
             <AttendanceSection classId={classId} className={classData.name} />
+
+            {/* Class Progress - Books and daily tracking */}
+            <ProgressSection classId={classId} className={classData.name} />
 
             {/* Spelling Words - Main content */}
             <SpellingWordsSection classId={classId} />
