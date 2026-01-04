@@ -45,130 +45,31 @@ const SYLLABLE_COLORS = [
     { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-300" },
 ];
 
-/**
- * Simple syllable splitting algorithm for English words.
- * This uses common patterns - not perfect but good for educational purposes.
- */
-function splitIntoSyllables(word: string): string[] {
-    const lower = word.toLowerCase();
-
-    // Very short words are one syllable
-    if (lower.length <= 3) {
-        return [word];
-    }
-
-    const vowels = "aeiouy";
-    const syllables: string[] = [];
-    let currentSyllable = "";
-    let prevWasVowel = false;
-
-    for (let i = 0; i < word.length; i++) {
-        const char = word[i];
-        const lowerChar = char.toLowerCase();
-        const isVowel = vowels.includes(lowerChar);
-        const nextChar = i < word.length - 1 ? word[i + 1].toLowerCase() : "";
-        const isNextVowel = vowels.includes(nextChar);
-
-        currentSyllable += char;
-
-        // Check for syllable break conditions
-        if (isVowel && !prevWasVowel) {
-            // After a vowel, if next char is consonant followed by vowel, break after consonant
-            if (i < word.length - 2 && !isNextVowel && vowels.includes(word[i + 2]?.toLowerCase() || "")) {
-                // Continue to include the consonant
-            } else if (i < word.length - 1 && !isNextVowel) {
-                // Current is vowel, next is consonant - might be end of syllable
-                // Check if there's more word after
-                if (i < word.length - 2) {
-                    // Look ahead - if pattern is VC-CV, break between consonants
-                    const afterNext = word[i + 2]?.toLowerCase() || "";
-                    if (!vowels.includes(nextChar) && !vowels.includes(afterNext)) {
-                        // Two consonants - break between them
-                        currentSyllable += word[i + 1];
-                        syllables.push(currentSyllable);
-                        currentSyllable = "";
-                        i++; // Skip the consonant we just added
-                    }
-                }
-            }
-        }
-
-        // Simple break: if we have a good chunk and hit a vowel transition
-        if (currentSyllable.length >= 2 && prevWasVowel && !isVowel && isNextVowel && i < word.length - 1) {
-            syllables.push(currentSyllable);
-            currentSyllable = "";
-        }
-
-        prevWasVowel = isVowel;
-    }
-
-    // Add remaining
-    if (currentSyllable) {
-        syllables.push(currentSyllable);
-    }
-
-    // If we ended up with just one syllable, try a simpler approach
-    if (syllables.length === 1 && word.length > 4) {
-        return simpleSyllableSplit(word);
-    }
-
-    return syllables.length > 0 ? syllables : [word];
-}
-
-/**
- * Simpler fallback syllable split based on vowel groups
- */
-function simpleSyllableSplit(word: string): string[] {
-    const vowels = "aeiouy";
-    const result: string[] = [];
-    let current = "";
-    let vowelCount = 0;
-
-    for (let i = 0; i < word.length; i++) {
-        const char = word[i];
-        const isVowel = vowels.includes(char.toLowerCase());
-
-        current += char;
-
-        if (isVowel) {
-            vowelCount++;
-        }
-
-        // After we have at least one vowel and hit a consonant before another vowel
-        if (vowelCount > 0 && !isVowel && i < word.length - 1) {
-            const nextIsVowel = vowels.includes(word[i + 1].toLowerCase());
-            if (nextIsVowel && current.length >= 2) {
-                result.push(current);
-                current = "";
-                vowelCount = 0;
-            }
-        }
-    }
-
-    if (current) {
-        result.push(current);
-    }
-
-    return result.length > 0 ? result : [word];
-}
 
 /**
  * Renders a word with color-coded syllables
- * Uses stored syllables if available, falls back to algorithm
+ * Only shows syllable colors if teacher has set them explicitly
  */
 function SyllableWord({ word, syllables: storedSyllables, isPlaying }: {
     word: string;
     syllables: string[] | null;
     isPlaying: boolean;
 }) {
-    // Use stored syllables if available, otherwise use fallback algorithm
-    const syllables = (storedSyllables && storedSyllables.length > 0)
-        ? storedSyllables
-        : splitIntoSyllables(word);
+    // Only use syllables if teacher has explicitly set them (more than 1 syllable stored)
+    const hasSyllables = storedSyllables && storedSyllables.length > 1;
+
+    if (!hasSyllables) {
+        // Show plain word without syllable coloring
+        return (
+            <span className={`font-bold text-xl text-gray-800 ${isPlaying ? "scale-105" : ""}`}>
+                {word}
+            </span>
+        );
+    }
 
     return (
         <div className="flex flex-wrap items-center gap-1">
-            {syllables.map((syllable, index) => {
+            {storedSyllables.map((syllable, index) => {
                 const colors = SYLLABLE_COLORS[index % SYLLABLE_COLORS.length];
                 return (
                     <span
