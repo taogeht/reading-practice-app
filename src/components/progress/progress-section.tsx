@@ -20,7 +20,9 @@ import {
     BookMarked,
     Pencil,
     X,
+    Library,
 } from "lucide-react";
+import { AssignBooksDialog } from "./assign-books-dialog";
 
 interface AssignedBook {
     id: string;
@@ -54,6 +56,7 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [showAssignBooks, setShowAssignBooks] = useState(false);
 
     const [formData, setFormData] = useState({
         bookId: "",
@@ -204,7 +207,11 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                         <div className="text-center py-8 text-gray-500">
                             <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                             <p>No books assigned to this class yet.</p>
-                            <p className="text-sm mt-1">Ask your admin to assign books first.</p>
+                            <p className="text-sm mt-1 mb-4">Add books to start tracking progress.</p>
+                            <Button onClick={() => setShowAssignBooks(true)}>
+                                <Library className="w-4 h-4 mr-2" />
+                                Add Books
+                            </Button>
                         </div>
                     ) : (
                         <div className="space-y-4 pt-4">
@@ -300,14 +307,24 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                             )}
 
                             {!showAddForm && (
-                                <Button
-                                    onClick={() => setShowAddForm(true)}
-                                    variant="outline"
-                                    className="w-full border-dashed"
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Record Progress for Today
-                                </Button>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => setShowAddForm(true)}
+                                        variant="outline"
+                                        className="flex-1 border-dashed"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Record Progress
+                                    </Button>
+                                    <Button
+                                        onClick={() => setShowAssignBooks(true)}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        <Library className="w-4 h-4 mr-1" />
+                                        Books
+                                    </Button>
+                                </div>
                             )}
 
                             {/* Progress History */}
@@ -357,6 +374,15 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                     )}
                 </CardContent>
             )}
+
+            {/* Assign Books Dialog */}
+            <AssignBooksDialog
+                classId={classId}
+                open={showAssignBooks}
+                onOpenChange={setShowAssignBooks}
+                onBooksChanged={fetchData}
+                assignedBooks={books}
+            />
         </Card>
     );
 }
