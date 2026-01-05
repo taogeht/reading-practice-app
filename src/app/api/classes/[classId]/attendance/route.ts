@@ -10,7 +10,7 @@ interface RouteParams {
     params: Promise<{ classId: string }>;
 }
 
-// GET /api/classes/[classId]/attendance - Get attendance for a class on a specific date
+// GET /api/classes/[classId]/attendance - Get attendance for a class on a specific date or range
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
         const { classId } = await params;
@@ -22,8 +22,47 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         const { searchParams } = new URL(request.url);
         const dateParam = searchParams.get('date');
+        const daysParam = searchParams.get('days');
 
-        // Default to today
+        // If 'days' parameter is provided, fetch attendance history
+        if (daysParam) {
+            const days = parseInt(daysParam, 10) || 14;
+            const endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+            startDate.setHours(0, 0, 0, 0);
+
+            // Get all attendance records for the date range with student info
+            const records = await db
+                .select({
+                    id: attendanceRecords.id,
+                    studentId: attendanceRecords.studentId,
+                    date: attendanceRecords.date,
+                    status: attendanceRecords.status,
+                    notes: attendanceRecords.notes,
+                    studentFirstName: users.firstName,
+                    studentLastName: users.lastName,
+                })
+                .from(attendanceRecords)
+                .innerJoin(students, eq(attendanceRecords.studentId, students.id))
+                .innerJoin(users, eq(students.id, users.id))
+                .where(
+                    and(
+                        eq(attendanceRecords.classId, classId),
+                        gte(attendanceRecords.date, startDate),
+                        lte(attendanceRecords.date, endDate)
+                    )
+                );
+
+            return NextResponse.json({
+                attendance: records,
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+            });
+        }
+
+        // Default behavior: single date query
         const targetDate = dateParam ? new Date(dateParam) : new Date();
         // Set to start of day
         targetDate.setHours(0, 0, 0, 0);

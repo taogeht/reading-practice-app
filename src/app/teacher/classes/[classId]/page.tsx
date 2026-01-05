@@ -12,6 +12,7 @@ import { CreateStudentDialog } from "@/components/students/create-student-dialog
 import { SpellingWordsSection } from "@/components/spelling/spelling-words-section";
 import { AttendanceSection } from "@/components/attendance/attendance-section";
 import { ProgressSection } from "@/components/progress/progress-section";
+import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
@@ -32,6 +33,7 @@ import {
   Copy,
   Download,
   Share2,
+  ChevronDown,
 } from "lucide-react";
 
 interface Class {
@@ -488,35 +490,6 @@ export default function ClassDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Danger Zone */}
-            <Card className="border-red-200">
-              <CardHeader>
-                <CardTitle className="text-red-600 flex items-center gap-2">
-                  <Trash2 className="w-5 h-5" />
-                  Danger Zone
-                </CardTitle>
-                <CardDescription>
-                  Irreversible actions for this class
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteClass}
-                  className="w-full"
-                  disabled={classData.studentCount > 0}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Class
-                </Button>
-                {classData.studentCount > 0 && (
-                  <p className="text-sm text-gray-500 mt-2">
-                    Remove all students before deleting the class
-                  </p>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column - Main Content */}
@@ -529,6 +502,45 @@ export default function ClassDetailPage() {
 
             {/* Spelling Words - Main content */}
             <SpellingWordsSection classId={classId} />
+
+            {/* Makeup Work - Students who missed class */}
+            <MakeupWorkSection classId={classId} />
+
+            {/* Danger Zone - Collapsible at bottom */}
+            <details className="group">
+              <summary className="cursor-pointer list-none p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Settings className="w-4 h-4" />
+                    <span className="text-sm">Advanced Settings</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" />
+                </div>
+              </summary>
+              <div className="mt-2 p-4 border border-red-200 rounded-lg bg-red-50/50">
+                <h4 className="text-red-600 font-medium flex items-center gap-2 mb-2">
+                  <Trash2 className="w-4 h-4" />
+                  Danger Zone
+                </h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Irreversible actions for this class
+                </p>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteClass}
+                  size="sm"
+                  disabled={classData.studentCount > 0}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Class
+                </Button>
+                {classData.studentCount > 0 && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Remove all students first
+                  </p>
+                )}
+              </div>
+            </details>
           </div>
         </div>
       </div>
