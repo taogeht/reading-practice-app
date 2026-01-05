@@ -131,11 +131,11 @@ export default function TeacherDashboardPage() {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffInHours === 0) return "Just now";
     if (diffInHours === 1) return "1 hour ago";
     if (diffInHours < 24) return `${diffInHours} hours ago`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays === 1) return "1 day ago";
     return `${diffInDays} days ago`;
@@ -264,6 +264,46 @@ export default function TeacherDashboardPage() {
           </Card>
         </div>
 
+        {/* Class Selection - Prominent Buttons */}
+        {teacher.classes.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-700 mb-3">Your Classes</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {teacher.classes.map((classInfo) => (
+                <button
+                  key={classInfo.id}
+                  onClick={() => router.push(`/teacher/classes/${classInfo.id}`)}
+                  className="bg-white border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl p-5 text-left transition-all shadow-sm hover:shadow-md group"
+                >
+                  <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-700 truncate">
+                    {classInfo.name}
+                  </h3>
+                  <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {classInfo.studentCount} students
+                    </span>
+                    {classInfo.pendingSubmissions > 0 && (
+                      <span className="flex items-center gap-1 text-orange-600 font-medium">
+                        <Clock className="w-4 h-4" />
+                        {classInfo.pendingSubmissions} pending
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {/* Add Class Button */}
+              <button
+                onClick={() => setShowCreateClass(true)}
+                className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 rounded-xl p-5 text-left transition-all flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
+              >
+                <Plus className="w-8 h-8 mb-1" />
+                <span className="font-medium">Add Class</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Recent Activity */}
           <div className="lg:col-span-1 space-y-6">
@@ -304,12 +344,12 @@ export default function TeacherDashboardPage() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{formatTimeAgo(submission.submittedAt)}</span>
                       <span>Attempt #{submission.attemptNumber}</span>
                     </div>
-                    
+
                     {submission.flagReason && (
                       <div className="mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
                         {submission.flagReason}
@@ -317,7 +357,7 @@ export default function TeacherDashboardPage() {
                     )}
                   </div>
                 ))}
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -440,41 +480,6 @@ export default function TeacherDashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Class Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Classes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {teacher.classes.map((classInfo) => (
-                  <div key={classInfo.id} className="border rounded-lg p-4">
-                    <h4 className="font-medium">{classInfo.name}</h4>
-                    <div className="grid grid-cols-2 gap-4 mt-2 text-sm text-gray-600">
-                      <div>
-                        <span className="text-gray-500">Students:</span>
-                        <span className="ml-1 font-medium">{classInfo.studentCount}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Pending:</span>
-                        <span className="ml-1 font-medium">{classInfo.pendingSubmissions}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <ClassQRCode classId={classInfo.id} className={classInfo.name} />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => router.push(`/teacher/classes/${classInfo.id}`)}
-                      >
-                        View Class Details
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
             {/* Archived Stories Section */}
             <Card>
               <CardHeader>
@@ -539,6 +544,6 @@ export default function TeacherDashboardPage() {
         onOpenChange={setShowCreateStory}
         onSuccess={handleStoryCreated}
       />
-    </div>
+    </div >
   );
 }
