@@ -215,117 +215,113 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                         </div>
                     ) : (
                         <div className="space-y-4 pt-4">
-                            {/* Add Progress Form */}
-                            {showAddForm && (
-                                <Card className="bg-blue-50 border-blue-200">
-                                    <CardContent className="p-4 space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="font-medium text-blue-900">Record Today's Progress</h4>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setShowAddForm(false)}
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label htmlFor="book">Book</Label>
-                                                <select
-                                                    id="book"
-                                                    value={formData.bookId}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, bookId: e.target.value }))}
-                                                    className="w-full h-10 rounded-md border border-gray-300 px-3 bg-white"
-                                                >
-                                                    <option value="">Select book</option>
-                                                    {books.map((book) => (
-                                                        <option key={book.bookId} value={book.bookId}>
-                                                            {book.title}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="date">Date</Label>
-                                                <Input
-                                                    id="date"
-                                                    type="date"
-                                                    value={formData.date}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="pages">Pages Completed</Label>
-                                            <Input
-                                                id="pages"
-                                                value={formData.pagesCompleted}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, pagesCompleted: e.target.value }))}
-                                                placeholder="e.g., 15-18, 23"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="notes">Lesson Notes (optional)</Label>
-                                            <Textarea
-                                                id="notes"
-                                                value={formData.lessonNotes}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, lessonNotes: e.target.value }))}
-                                                placeholder="What was covered today..."
-                                                rows={2}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="homework">Homework Assigned (optional)</Label>
-                                            <Input
-                                                id="homework"
-                                                value={formData.homeworkAssigned}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, homeworkAssigned: e.target.value }))}
-                                                placeholder="e.g., Read pages 19-22, complete worksheet"
-                                            />
-                                        </div>
-
-                                        <Button onClick={handleSave} disabled={saving} className="w-full">
-                                            {saving ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="w-4 h-4 mr-2" />
-                                                    Save Progress
-                                                </>
-                                            )}
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {!showAddForm && (
-                                <div className="flex gap-2">
-                                    <Button
-                                        onClick={() => setShowAddForm(true)}
-                                        variant="outline"
-                                        className="flex-1 border-dashed"
-                                    >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Record Progress
-                                    </Button>
+                            {/* Book Buttons - Quick Entry */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-gray-600">Tap a book to log progress:</Label>
                                     <Button
                                         onClick={() => setShowAssignBooks(true)}
-                                        variant="outline"
+                                        variant="ghost"
                                         size="sm"
+                                        className="text-gray-500"
                                     >
                                         <Library className="w-4 h-4 mr-1" />
-                                        Books
+                                        Manage
                                     </Button>
                                 </div>
-                            )}
+
+                                <div className="grid gap-2">
+                                    {books.map((book) => {
+                                        const isSelected = formData.bookId === book.bookId;
+                                        return (
+                                            <div key={book.bookId} className="space-y-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (isSelected) {
+                                                            setFormData(prev => ({ ...prev, bookId: "" }));
+                                                        } else {
+                                                            setFormData(prev => ({ ...prev, bookId: book.bookId }));
+                                                        }
+                                                    }}
+                                                    className={`
+                                                        w-full p-3 rounded-lg border-2 text-left transition-all
+                                                        ${isSelected
+                                                            ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
+                                                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                                                        }
+                                                    `}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <BookOpen className={`w-5 h-5 ${isSelected ? "text-blue-600" : "text-gray-400"}`} />
+                                                            <span className={`font-medium ${isSelected ? "text-blue-900" : "text-gray-800"}`}>
+                                                                {book.title}
+                                                            </span>
+                                                        </div>
+                                                        {book.totalPages && (
+                                                            <span className="text-xs text-gray-400">
+                                                                {book.totalPages} pg
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </button>
+
+                                                {/* Expanded input area when selected */}
+                                                {isSelected && (
+                                                    <div className="pl-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                                        <div className="flex gap-2">
+                                                            <div className="flex-1">
+                                                                <Input
+                                                                    placeholder="Pages (e.g., 15-18)"
+                                                                    value={formData.pagesCompleted}
+                                                                    onChange={(e) => setFormData(prev => ({ ...prev, pagesCompleted: e.target.value }))}
+                                                                    className="bg-white"
+                                                                    autoFocus
+                                                                />
+                                                            </div>
+                                                            <Input
+                                                                type="date"
+                                                                value={formData.date}
+                                                                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                                                                className="w-36 bg-white"
+                                                            />
+                                                        </div>
+
+                                                        <Input
+                                                            placeholder="Homework assigned (optional)"
+                                                            value={formData.homeworkAssigned}
+                                                            onChange={(e) => setFormData(prev => ({ ...prev, homeworkAssigned: e.target.value }))}
+                                                            className="bg-white"
+                                                        />
+
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                onClick={handleSave}
+                                                                disabled={saving || !formData.pagesCompleted.trim()}
+                                                                className="flex-1"
+                                                            >
+                                                                {saving ? (
+                                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                ) : (
+                                                                    <Save className="w-4 h-4 mr-2" />
+                                                                )}
+                                                                Save
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => setFormData(prev => ({ ...prev, bookId: "" }))}
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
                             {/* Progress History */}
                             {progress.length > 0 && (
