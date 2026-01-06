@@ -34,15 +34,14 @@ interface MakeupWorkSectionProps {
 }
 
 export function MakeupWorkSection({ classId }: MakeupWorkSectionProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true); // Auto-expand on load
+    const [loading, setLoading] = useState(true); // Start loading immediately
     const [absentDays, setAbsentDays] = useState<AbsentDay[]>([]);
 
     useEffect(() => {
-        if (isExpanded) {
-            fetchMakeupData();
-        }
-    }, [isExpanded, classId]);
+        // Load data on mount
+        fetchMakeupData();
+    }, [classId]);
 
     const fetchMakeupData = async () => {
         try {

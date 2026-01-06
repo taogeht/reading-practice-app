@@ -50,7 +50,7 @@ interface ProgressSectionProps {
 }
 
 export function ProgressSection({ classId, className }: ProgressSectionProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true); // Auto-expand on load
     const [books, setBooks] = useState<AssignedBook[]>([]);
     const [progress, setProgress] = useState<ProgressEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -67,10 +67,9 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
     });
 
     useEffect(() => {
-        if (isExpanded) {
-            fetchData();
-        }
-    }, [isExpanded, classId]);
+        // Load data on mount and when classId changes
+        fetchData();
+    }, [classId]);
 
     const fetchData = async () => {
         try {
