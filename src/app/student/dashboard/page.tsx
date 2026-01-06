@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AvatarPickerDialog } from "@/components/students/avatar-picker-dialog";
 import { StudentSpellingSection } from "@/components/spelling/student-spelling-section";
+import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { AVATARS } from "@/components/auth/visual-password-options";
 import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -207,8 +208,11 @@ export default function StudentDashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Assignments */}
+          {/* Left Column - Homework & Assignments */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Homework from Teacher */}
+            <StudentHomeworkSection />
+
             {/* Pending Assignments */}
             <Card>
               <CardHeader>
