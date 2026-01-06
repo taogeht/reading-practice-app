@@ -207,9 +207,9 @@ export default function StudentDashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Left Column - Homework & Assignments */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="md:col-span-1 space-y-6">
             {/* Homework from Teacher */}
             <StudentHomeworkSection />
 
@@ -351,7 +351,7 @@ export default function StudentDashboardPage() {
 
           {/* Right Column - Story Library */}
           {showPracticeStories && (
-            <div className="lg:col-span-2">
+            <div className="md:col-span-2 lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
