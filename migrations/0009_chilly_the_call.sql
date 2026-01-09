@@ -1,0 +1,1 @@
+ALTER TABLE "session" ADD COLUMN "lastActivityAt" timestamp with time zone DEFAULT now();

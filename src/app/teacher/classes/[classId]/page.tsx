@@ -13,6 +13,7 @@ import { SpellingWordsSection } from "@/components/spelling/spelling-words-secti
 import { AttendanceSection } from "@/components/attendance/attendance-section";
 import { ProgressSection } from "@/components/progress/progress-section";
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
+import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
@@ -505,6 +506,9 @@ export default function ClassDetailPage() {
 
             {/* Makeup Work - Students who missed class */}
             <MakeupWorkSection classId={classId} />
+
+            {/* Login Activity - Track student logins */}
+            <LoginActivitySection classId={classId} />
 
             {/* Danger Zone - Collapsible at bottom */}
             <details className="group">

@@ -479,6 +479,7 @@ export const session = pgTable('session', {
   token: varchar('token', { length: 255 }).notNull().unique(),
   createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow(),
+  lastActivityAt: timestamp('lastActivityAt', { withTimezone: true }).defaultNow(),
   ipAddress: varchar('ipAddress', { length: 255 }),
   userAgent: varchar('userAgent', { length: 500 }),
   userId: uuid('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
