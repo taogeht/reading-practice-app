@@ -18,6 +18,7 @@ import {
     Save,
     ChevronDown,
     ChevronUp,
+    AlertTriangle,
 } from "lucide-react";
 
 interface StudentAttendance {
@@ -56,10 +57,34 @@ export function AttendanceSection({ classId, className }: AttendanceSectionProps
     const [saving, setSaving] = useState(false);
     const [localAttendance, setLocalAttendance] = useState<Map<string, AttendanceStatus>>(new Map());
     const [hasChanges, setHasChanges] = useState(false);
+    const [scheduleDays, setScheduleDays] = useState<number[]>([]);
+
+    useEffect(() => {
+        fetchSchedule();
+    }, [classId]);
 
     useEffect(() => {
         fetchAttendance();
     }, [classId, date]);
+
+    const fetchSchedule = async () => {
+        try {
+            const response = await fetch(`/api/classes/${classId}/schedule`);
+            if (response.ok) {
+                const data = await response.json();
+                setScheduleDays(data.days || []);
+            }
+        } catch (error) {
+            console.error("Error fetching schedule:", error);
+        }
+    };
+
+    // Check if current date is a scheduled class day
+    const isScheduledDay = () => {
+        if (scheduleDays.length === 0) return true; // No schedule set = all days valid
+        const d = new Date(date);
+        return scheduleDays.includes(d.getDay());
+    };
 
     const fetchAttendance = async () => {
         try {
@@ -279,6 +304,14 @@ export function AttendanceSection({ classId, className }: AttendanceSectionProps
                             <ChevronRight className="w-4 h-4" />
                         </Button>
                     </div>
+
+                    {/* Non-scheduled day warning */}
+                    {!isScheduledDay() && (
+                        <div className="flex items-center gap-2 px-3 py-2 mb-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+                            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                            <span>This is not a scheduled class day</span>
+                        </div>
+                    )}
 
                     {loading ? (
                         <div className="flex items-center justify-center py-8">

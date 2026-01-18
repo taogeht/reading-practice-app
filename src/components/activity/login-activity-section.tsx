@@ -1,19 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Activity,
     ChevronDown,
     ChevronUp,
     Clock,
-    UserCheck,
-    UserX,
     Loader2,
     RefreshCw,
     Calendar,
+    ArrowUpDown,
+    ChevronRight,
 } from "lucide-react";
 
 interface StudentActivity {
@@ -32,20 +40,27 @@ interface LoginActivitySectionProps {
     classId: string;
 }
 
+type SortOption = "name" | "lastLogin" | "timeOnline";
+type DateRange = "7" | "30" | "all";
+
 export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
+    const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(true);
     const [loading, setLoading] = useState(true);
     const [activity, setActivity] = useState<StudentActivity[]>([]);
     const [stats, setStats] = useState({ totalStudents: 0, studentsLoggedIn: 0 });
+    const [sortBy, setSortBy] = useState<SortOption>("lastLogin");
+    const [dateRange, setDateRange] = useState<DateRange>("7");
 
     useEffect(() => {
         fetchActivity();
-    }, [classId]);
+    }, [classId, dateRange]);
 
     const fetchActivity = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`/api/classes/${classId}/login-activity?days=7`);
+            const daysParam = dateRange === "all" ? "" : `?days=${dateRange}`;
+            const response = await fetch(`/api/classes/${classId}/login-activity${daysParam}`);
             if (response.ok) {
                 const data = await response.json();
                 setActivity(data.activity || []);
@@ -60,6 +75,29 @@ export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
             setLoading(false);
         }
     };
+
+    const sortedActivity = useMemo(() => {
+        const sorted = [...activity];
+        switch (sortBy) {
+            case "name":
+                sorted.sort((a, b) =>
+                    `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
+                );
+                break;
+            case "lastLogin":
+                sorted.sort((a, b) => {
+                    if (!a.lastLoginAt && !b.lastLoginAt) return 0;
+                    if (!a.lastLoginAt) return 1;
+                    if (!b.lastLoginAt) return -1;
+                    return new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime();
+                });
+                break;
+            case "timeOnline":
+                sorted.sort((a, b) => b.totalMinutesOnline - a.totalMinutesOnline);
+                break;
+        }
+        return sorted;
+    }, [activity, sortBy]);
 
     const formatTimeAgo = (dateStr: string | null) => {
         if (!dateStr) return "Never";
@@ -88,8 +126,20 @@ export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
         return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
     };
 
+    const handleStudentClick = (studentId: string) => {
+        router.push(`/teacher/students/${studentId}`);
+    };
+
     const onlineCount = activity.filter(s => s.isCurrentlyOnline).length;
     const neverLoggedIn = activity.filter(s => !s.lastLoginAt).length;
+
+    const getDateRangeLabel = () => {
+        switch (dateRange) {
+            case "7": return "Last 7 days";
+            case "30": return "Last 30 days";
+            case "all": return "All time";
+        }
+    };
 
     return (
         <Card className={`transition-all ${isExpanded ? '' : 'hover:bg-gray-50'}`}>
@@ -105,7 +155,7 @@ export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
                         <p className="text-sm text-gray-500">
                             {loading ? "Loading..." : (
                                 <>
-                                    {stats.studentsLoggedIn}/{stats.totalStudents} logged in this week
+                                    {stats.studentsLoggedIn}/{stats.totalStudents} logged in ({getDateRangeLabel()})
                                     {onlineCount > 0 && (
                                         <span className="text-green-600 ml-2">• {onlineCount} online now</span>
                                     )}
@@ -143,8 +193,35 @@ export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
                         </div>
                     ) : (
                         <div className="pt-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-sm text-gray-600">Last 7 days activity:</p>
+                            {/* Controls Row */}
+                            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    {/* Date Range Picker */}
+                                    <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
+                                        <SelectTrigger className="w-[130px] h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="7">Last 7 days</SelectItem>
+                                            <SelectItem value="30">Last 30 days</SelectItem>
+                                            <SelectItem value="all">All time</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    {/* Sort Dropdown */}
+                                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                                        <SelectTrigger className="w-[140px] h-8 text-xs">
+                                            <ArrowUpDown className="w-3 h-3 mr-1" />
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="lastLogin">Last Login</SelectItem>
+                                            <SelectItem value="timeOnline">Time Online</SelectItem>
+                                            <SelectItem value="name">Name</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -157,17 +234,20 @@ export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
                                 </Button>
                             </div>
 
+                            {/* Student List */}
                             <div className="space-y-2">
-                                {activity.map((student) => (
+                                {sortedActivity.map((student) => (
                                     <div
                                         key={student.studentId}
+                                        onClick={() => handleStudentClick(student.studentId)}
                                         className={`
-                                            flex items-center justify-between p-3 rounded-lg border
+                                            flex items-center justify-between p-3 rounded-lg border cursor-pointer
+                                            transition-colors group
                                             ${student.isCurrentlyOnline
-                                                ? "bg-green-50 border-green-200"
+                                                ? "bg-green-50 border-green-200 hover:bg-green-100"
                                                 : student.lastLoginAt
-                                                    ? "bg-white border-gray-200"
-                                                    : "bg-red-50 border-red-200"
+                                                    ? "bg-white border-gray-200 hover:bg-gray-50"
+                                                    : "bg-red-50 border-red-200 hover:bg-red-100"
                                             }
                                         `}
                                     >
@@ -184,7 +264,7 @@ export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
 
                                             {/* Name and Status */}
                                             <div>
-                                                <div className="font-medium text-gray-900">
+                                                <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                                                     {student.firstName} {student.lastName}
                                                 </div>
                                                 <div className="text-xs text-gray-500 flex items-center gap-2">
@@ -202,18 +282,21 @@ export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
                                             </div>
                                         </div>
 
-                                        {/* Stats */}
-                                        {student.lastLoginAt && (
-                                            <div className="text-right text-xs">
-                                                <div className="text-gray-600">
-                                                    <Clock className="w-3 h-3 inline mr-1" />
-                                                    {formatDuration(student.totalMinutesOnline)}
+                                        {/* Stats and Arrow */}
+                                        <div className="flex items-center gap-3">
+                                            {student.lastLoginAt && (
+                                                <div className="text-right text-xs">
+                                                    <div className="text-gray-600">
+                                                        <Clock className="w-3 h-3 inline mr-1" />
+                                                        {formatDuration(student.totalMinutesOnline)}
+                                                    </div>
+                                                    <div className="text-gray-400">
+                                                        {student.sessionCount} session{student.sessionCount !== 1 ? 's' : ''}
+                                                    </div>
                                                 </div>
-                                                <div className="text-gray-400">
-                                                    {student.sessionCount} session{student.sessionCount !== 1 ? 's' : ''}
-                                                </div>
-                                            </div>
-                                        )}
+                                            )}
+                                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                        </div>
                                     </div>
                                 ))}
                             </div>

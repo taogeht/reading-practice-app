@@ -8,6 +8,7 @@ import { CreateClassDialog } from "@/components/classes/create-class-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { CreateStoryDialog } from "@/components/stories/create-story-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
+import { StudentAttentionAlert } from "@/components/activity/student-attention-alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -263,6 +264,9 @@ export default function TeacherDashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Student Attention Alert */}
+        <StudentAttentionAlert classes={teacher.classes.map(c => ({ id: c.id, name: c.name }))} />
 
         {/* Class Selection - Prominent Buttons */}
         {teacher.classes.length > 0 && (

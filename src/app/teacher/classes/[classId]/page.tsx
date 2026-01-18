@@ -14,6 +14,7 @@ import { AttendanceSection } from "@/components/attendance/attendance-section";
 import { ProgressSection } from "@/components/progress/progress-section";
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
+import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
@@ -304,9 +305,12 @@ export default function ClassDetailPage() {
                     <Badge variant="secondary">Inactive</Badge>
                   )}
                 </h1>
-                <p className="text-gray-600 mt-1">
-                  Class management and student overview
-                </p>
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-gray-600">
+                    Class management and student overview
+                  </p>
+                  <ScheduleSection classId={classId} compact={true} />
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -498,6 +502,9 @@ export default function ClassDetailPage() {
             {/* Attendance - Collapsible at top */}
             <AttendanceSection classId={classId} className={classData.name} />
 
+            {/* Class Schedule - Days the class meets */}
+            <ScheduleSection classId={classId} isAdmin={false} />
+
             {/* Class Progress - Books and daily tracking */}
             <ProgressSection classId={classId} className={classData.name} />
 
@@ -553,9 +560,11 @@ export default function ClassDetailPage() {
       <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className="w-5 h-5" />
-              Student Login QR Code
+            <DialogTitle>
+              <div className="flex items-center gap-2">
+                <QrCode className="w-5 h-5" />
+                Student Login QR Code
+              </div>
             </DialogTitle>
             <DialogDescription>
               Students can scan this QR code to access the login page for {classData?.name}
