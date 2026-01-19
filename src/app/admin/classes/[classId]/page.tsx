@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
+import { ScheduleSection } from "@/components/schedule/schedule-section";
 import {
   Users,
   UserPlus,
@@ -427,6 +428,9 @@ export default function AdminClassDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Class Schedule - Admin can edit */}
+            <ScheduleSection classId={classId} isAdmin={true} />
 
             {/* Danger Zone */}
             <Card className="border-red-200">
