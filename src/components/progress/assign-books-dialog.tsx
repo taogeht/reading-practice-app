@@ -12,7 +12,10 @@ import {
     Loader2,
     Search,
     X,
-    Trash2,
+    Archive,
+    RotateCcw,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
 
 interface Book {
@@ -52,8 +55,9 @@ export function AssignBooksDialog({
     const [allBooks, setAllBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const [assigning, setAssigning] = useState<string | null>(null);
-    const [removing, setRemoving] = useState<string | null>(null);
+    const [togglingArchive, setTogglingArchive] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [showArchived, setShowArchived] = useState(false);
 
     useEffect(() => {
         if (open) {
@@ -100,23 +104,25 @@ export function AssignBooksDialog({
         }
     };
 
-    const handleRemove = async (bookId: string) => {
-        setRemoving(bookId);
+    const handleToggleArchive = async (bookId: string, currentIsCurrent: boolean) => {
+        setTogglingArchive(bookId);
         try {
-            const response = await fetch(`/api/classes/${classId}/books?bookId=${bookId}`, {
-                method: "DELETE",
+            const response = await fetch(`/api/classes/${classId}/books`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ bookId, isCurrent: !currentIsCurrent }),
             });
 
             if (response.ok) {
                 onBooksChanged();
             } else {
-                alert("Failed to remove book");
+                alert("Failed to update book status");
             }
         } catch (error) {
-            console.error("Error removing book:", error);
-            alert("Failed to remove book");
+            console.error("Error updating book status:", error);
+            alert("Failed to update book status");
         } finally {
-            setRemoving(null);
+            setTogglingArchive(null);
         }
     };
 
@@ -126,7 +132,10 @@ export function AssignBooksDialog({
     );
 
     const availableBooks = filteredBooks.filter(b => !assignedBookIds.has(b.id));
-    const currentlyAssigned = filteredBooks.filter(b => assignedBookIds.has(b.id));
+
+    // Split assigned books into current and archived
+    const currentBooks = assignedBooks.filter(b => b.isCurrent);
+    const archivedBooks = assignedBooks.filter(b => !b.isCurrent);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -134,10 +143,10 @@ export function AssignBooksDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <BookOpen className="w-5 h-5" />
-                        Assign Books to Class
+                        Manage Class Books
                     </DialogTitle>
                     <DialogDescription>
-                        Select books to use for tracking class progress
+                        Assign, archive, and restore books for this class
                     </DialogDescription>
                 </DialogHeader>
 
@@ -164,16 +173,17 @@ export function AssignBooksDialog({
                         </div>
                     ) : (
                         <>
-                            {/* Currently Assigned Books */}
-                            {currentlyAssigned.length > 0 && (
+                            {/* Current Books - Active */}
+                            {currentBooks.length > 0 && (
                                 <div className="space-y-2">
-                                    <h4 className="text-sm font-medium text-gray-700">
-                                        Assigned to this class ({currentlyAssigned.length})
+                                    <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                        <Check className="w-4 h-4 text-green-600" />
+                                        Current Books ({currentBooks.length})
                                     </h4>
                                     <div className="space-y-2">
-                                        {currentlyAssigned.map((book) => (
+                                        {currentBooks.map((book) => (
                                             <div
-                                                key={book.id}
+                                                key={book.bookId}
                                                 className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
                                             >
                                                 <div className="flex-1 min-w-0">
@@ -183,28 +193,77 @@ export function AssignBooksDialog({
                                                         {book.totalPages && <span>• {book.totalPages} pages</span>}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Badge className="bg-green-100 text-green-700 border-green-300">
-                                                        <Check className="w-3 h-3 mr-1" />
-                                                        Assigned
-                                                    </Badge>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                        onClick={() => handleRemove(book.id)}
-                                                        disabled={removing === book.id}
-                                                    >
-                                                        {removing === book.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="w-4 h-4" />
-                                                        )}
-                                                    </Button>
-                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+                                                    onClick={() => handleToggleArchive(book.bookId, true)}
+                                                    disabled={togglingArchive === book.bookId}
+                                                >
+                                                    {togglingArchive === book.bookId ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <Archive className="w-4 h-4 mr-1" />
+                                                            Archive
+                                                        </>
+                                                    )}
+                                                </Button>
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Archived Books - Collapsible */}
+                            {archivedBooks.length > 0 && (
+                                <div className="space-y-2">
+                                    <button
+                                        className="text-sm font-medium text-gray-500 flex items-center gap-2 hover:text-gray-700"
+                                        onClick={() => setShowArchived(!showArchived)}
+                                    >
+                                        <Archive className="w-4 h-4" />
+                                        Archived Books ({archivedBooks.length})
+                                        {showArchived ? (
+                                            <ChevronUp className="w-4 h-4" />
+                                        ) : (
+                                            <ChevronDown className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                    {showArchived && (
+                                        <div className="space-y-2">
+                                            {archivedBooks.map((book) => (
+                                                <div
+                                                    key={book.bookId}
+                                                    className="flex items-center justify-between p-3 bg-gray-100 border border-gray-200 rounded-lg opacity-75"
+                                                >
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-gray-600 truncate">{book.title}</p>
+                                                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                            {book.subject && <span>{book.subject}</span>}
+                                                            {book.totalPages && <span>• {book.totalPages} pages</span>}
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                                                        onClick={() => handleToggleArchive(book.bookId, false)}
+                                                        disabled={togglingArchive === book.bookId}
+                                                    >
+                                                        {togglingArchive === book.bookId ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                        ) : (
+                                                            <>
+                                                                <RotateCcw className="w-4 h-4 mr-1" />
+                                                                Restore
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

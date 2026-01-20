@@ -111,3 +111,40 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
+// PATCH /api/classes/[classId]/books - Archive or restore a book
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+    try {
+        const { classId } = await params;
+        const user = await getCurrentUser();
+
+        if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { bookId, isCurrent } = body;
+
+        if (!bookId || typeof isCurrent !== 'boolean') {
+            return NextResponse.json(
+                { error: 'bookId and isCurrent (boolean) are required' },
+                { status: 400 }
+            );
+        }
+
+        await db
+            .update(classBooks)
+            .set({ isCurrent })
+            .where(and(eq(classBooks.classId, classId), eq(classBooks.bookId, bookId)));
+
+        return NextResponse.json({
+            success: true,
+            bookId,
+            isCurrent,
+            action: isCurrent ? 'restored' : 'archived'
+        });
+    } catch (error) {
+        console.error('[PATCH /api/classes/[classId]/books] Error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
