@@ -31,6 +31,7 @@ interface ScheduleSectionProps {
     classId: string;
     isAdmin?: boolean;
     compact?: boolean;
+    defaultExpanded?: boolean;
     onScheduleChange?: (days: number[]) => void;
 }
 
@@ -77,9 +78,11 @@ export function ScheduleSection({
     classId,
     isAdmin = false,
     compact = false,
+    defaultExpanded,
     onScheduleChange,
 }: ScheduleSectionProps) {
-    const [isExpanded, setIsExpanded] = useState(!compact);
+    // Default to collapsed if compact, or use defaultExpanded prop, or default to true
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? !compact);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);

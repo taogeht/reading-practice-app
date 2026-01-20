@@ -41,9 +41,11 @@ interface SpellingList {
 
 interface SpellingWordsSectionProps {
     classId: string;
+    defaultExpanded?: boolean;
 }
 
-export function SpellingWordsSection({ classId }: SpellingWordsSectionProps) {
+export function SpellingWordsSection({ classId, defaultExpanded = true }: SpellingWordsSectionProps) {
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -211,199 +213,225 @@ export function SpellingWordsSection({ classId }: SpellingWordsSectionProps) {
         })));
     };
 
+    const activeList = lists.find(l => l.active);
+    const totalWords = lists.reduce((sum, l) => sum + l.words.length, 0);
+
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
+        <Card className={`transition-all ${isExpanded ? '' : 'hover:bg-gray-50'}`}>
+            {/* Collapsible Header */}
+            <div
+                className="flex items-center justify-between p-4 cursor-pointer"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <div className="flex items-center gap-3">
+                    <BookA className="w-5 h-5 text-blue-600" />
                     <div>
-                        <CardTitle className="flex items-center gap-2">
-                            <BookA className="w-5 h-5" />
-                            Spelling Words
-                        </CardTitle>
-                        <CardDescription>
-                            Weekly spelling word lists with audio
-                        </CardDescription>
+                        <h3 className="font-medium">Spelling Words</h3>
+                        <p className="text-sm text-gray-500">
+                            {lists.length > 0
+                                ? `${lists.length} list${lists.length > 1 ? 's' : ''} • ${totalWords} words`
+                                : "No lists yet"
+                            }
+                        </p>
                     </div>
-                    <Button onClick={() => setShowCreateDialog(true)} size="sm">
-                        <Plus className="w-4 h-4 mr-2" />
-                        New List
-                    </Button>
                 </div>
-            </CardHeader>
-            <CardContent>
-                {loading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                    </div>
-                ) : lists.length === 0 ? (
-                    <div className="text-center py-8">
-                        <BookA className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-600 mb-4">No spelling lists yet</p>
-                        <Button onClick={() => setShowCreateDialog(true)} variant="outline">
+                <div className="flex items-center gap-2">
+                    {activeList && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            Active: {activeList.title}
+                        </Badge>
+                    )}
+                    {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                </div>
+            </div>
+
+            {/* Expanded Content */}
+            {isExpanded && (
+                <CardContent className="pt-0 border-t">
+                    <div className="flex justify-end mb-4 pt-4">
+                        <Button onClick={() => setShowCreateDialog(true)} size="sm">
                             <Plus className="w-4 h-4 mr-2" />
-                            Create First List
+                            New List
                         </Button>
                     </div>
-                ) : (
-                    <div className="space-y-3">
-                        {lists.map((list) => (
-                            <div
-                                key={list.id}
-                                className="border rounded-lg overflow-hidden"
-                            >
-                                {/* List Header */}
+                    {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                        </div>
+                    ) : lists.length === 0 ? (
+                        <div className="text-center py-8">
+                            <BookA className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-600 mb-4">No spelling lists yet</p>
+                            <Button onClick={() => setShowCreateDialog(true)} variant="outline">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create First List
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {lists.map((list) => (
                                 <div
-                                    className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
-                                    onClick={() =>
-                                        setExpandedListId(expandedListId === list.id ? null : list.id)
-                                    }
+                                    key={list.id}
+                                    className="border rounded-lg overflow-hidden"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        {expandedListId === list.id ? (
-                                            <ChevronUp className="w-4 h-4 text-gray-500" />
-                                        ) : (
-                                            <ChevronDown className="w-4 h-4 text-gray-500" />
-                                        )}
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium">{list.title}</span>
-                                                {list.weekNumber && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                        Week {list.weekNumber}
+                                    {/* List Header */}
+                                    <div
+                                        className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                                        onClick={() =>
+                                            setExpandedListId(expandedListId === list.id ? null : list.id)
+                                        }
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {expandedListId === list.id ? (
+                                                <ChevronUp className="w-4 h-4 text-gray-500" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4 text-gray-500" />
+                                            )}
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium">{list.title}</span>
+                                                    {list.weekNumber && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            Week {list.weekNumber}
+                                                        </Badge>
+                                                    )}
+                                                    <Badge variant={list.active ? "default" : "secondary"}>
+                                                        {list.active ? "Active" : "Hidden"}
                                                     </Badge>
-                                                )}
-                                                <Badge variant={list.active ? "default" : "secondary"}>
-                                                    {list.active ? "Active" : "Hidden"}
-                                                </Badge>
+                                                </div>
+                                                <p className="text-sm text-gray-500">
+                                                    {list.words.length} words • {getWordsWithAudio(list.words)} with audio •{" "}
+                                                    {formatDate(list.createdAt)}
+                                                </p>
                                             </div>
-                                            <p className="text-sm text-gray-500">
-                                                {list.words.length} words • {getWordsWithAudio(list.words)} with audio •{" "}
-                                                {formatDate(list.createdAt)}
-                                            </p>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                        {getWordsWithAudio(list.words) < list.words.length && (
+                                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                            {getWordsWithAudio(list.words) < list.words.length && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleGenerateAudio(list.id)}
+                                                    disabled={generatingAudio === list.id}
+                                                >
+                                                    {generatingAudio === list.id ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                            Generating...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Volume2 className="w-4 h-4 mr-2" />
+                                                            Generate Audio
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            )}
                                             <Button
                                                 size="sm"
-                                                variant="outline"
-                                                onClick={() => handleGenerateAudio(list.id)}
-                                                disabled={generatingAudio === list.id}
+                                                variant="ghost"
+                                                onClick={() => handleToggleActive(list)}
                                             >
-                                                {generatingAudio === list.id ? (
-                                                    <>
-                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                        Generating...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Volume2 className="w-4 h-4 mr-2" />
-                                                        Generate Audio
-                                                    </>
-                                                )}
+                                                {list.active ? "Hide" : "Show"}
                                             </Button>
-                                        )}
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleToggleActive(list)}
-                                        >
-                                            {list.active ? "Hide" : "Show"}
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-red-600 hover:text-red-700"
-                                            onClick={() => handleDeleteList(list.id, list.title)}
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {/* Expanded Word List */}
-                                {expandedListId === list.id && (
-                                    <div className="p-4 border-t">
-                                        <p className="text-sm text-gray-600 mb-3">
-                                            Click <Scissors className="w-3 h-3 inline" /> to set syllable breaks for each word:
-                                        </p>
-                                        <div className="space-y-2">
-                                            {list.words.map((word) => (
-                                                <div
-                                                    key={word.id}
-                                                    className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:bg-gray-50"
-                                                >
-                                                    {/* Play button */}
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        className="h-8 w-8 p-0 flex-shrink-0"
-                                                        onClick={() => playWord(word)}
-                                                        disabled={!word.audioUrl}
-                                                    >
-                                                        {playingWordId === word.id ? (
-                                                            <Pause className="w-4 h-4" />
-                                                        ) : (
-                                                            <Play className="w-4 h-4" />
-                                                        )}
-                                                    </Button>
-
-                                                    {/* Word display with syllables */}
-                                                    <div className="flex-1">
-                                                        {word.syllables && word.syllables.length > 1 ? (
-                                                            <div className="flex items-center gap-1 flex-wrap">
-                                                                {word.syllables.map((syl, i) => (
-                                                                    <span
-                                                                        key={i}
-                                                                        className={`px-2 py-0.5 rounded text-sm font-medium ${['bg-rose-100 text-rose-700',
-                                                                            'bg-sky-100 text-sky-700',
-                                                                            'bg-amber-100 text-amber-700',
-                                                                            'bg-emerald-100 text-emerald-700',
-                                                                            'bg-violet-100 text-violet-700',
-                                                                            'bg-orange-100 text-orange-700'][i % 6]
-                                                                            }`}
-                                                                    >
-                                                                        {syl}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="font-medium">{word.word}</span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Status badges */}
-                                                    <div className="flex items-center gap-2">
-                                                        {!word.audioUrl && (
-                                                            <span className="text-xs text-gray-400">No audio</span>
-                                                        )}
-                                                        {(!word.syllables || word.syllables.length <= 1) && (
-                                                            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                                                                Needs syllables
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Edit syllables button */}
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => setEditingWord(word)}
-                                                        title="Edit syllables"
-                                                    >
-                                                        <Scissors className="w-4 h-4 mr-1" />
-                                                        {word.syllables && word.syllables.length > 1 ? 'Edit' : 'Set'}
-                                                    </Button>
-                                                </div>
-                                            ))}
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="text-red-600 hover:text-red-700"
+                                                onClick={() => handleDeleteList(list.id, list.title)}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </CardContent>
+
+                                    {/* Expanded Word List */}
+                                    {expandedListId === list.id && (
+                                        <div className="p-4 border-t">
+                                            <p className="text-sm text-gray-600 mb-3">
+                                                Click <Scissors className="w-3 h-3 inline" /> to set syllable breaks for each word:
+                                            </p>
+                                            <div className="space-y-2">
+                                                {list.words.map((word) => (
+                                                    <div
+                                                        key={word.id}
+                                                        className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:bg-gray-50"
+                                                    >
+                                                        {/* Play button */}
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 p-0 flex-shrink-0"
+                                                            onClick={() => playWord(word)}
+                                                            disabled={!word.audioUrl}
+                                                        >
+                                                            {playingWordId === word.id ? (
+                                                                <Pause className="w-4 h-4" />
+                                                            ) : (
+                                                                <Play className="w-4 h-4" />
+                                                            )}
+                                                        </Button>
+
+                                                        {/* Word display with syllables */}
+                                                        <div className="flex-1">
+                                                            {word.syllables && word.syllables.length > 1 ? (
+                                                                <div className="flex items-center gap-1 flex-wrap">
+                                                                    {word.syllables.map((syl, i) => (
+                                                                        <span
+                                                                            key={i}
+                                                                            className={`px-2 py-0.5 rounded text-sm font-medium ${['bg-rose-100 text-rose-700',
+                                                                                'bg-sky-100 text-sky-700',
+                                                                                'bg-amber-100 text-amber-700',
+                                                                                'bg-emerald-100 text-emerald-700',
+                                                                                'bg-violet-100 text-violet-700',
+                                                                                'bg-orange-100 text-orange-700'][i % 6]
+                                                                                }`}
+                                                                        >
+                                                                            {syl}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="font-medium">{word.word}</span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Status badges */}
+                                                        <div className="flex items-center gap-2">
+                                                            {!word.audioUrl && (
+                                                                <span className="text-xs text-gray-400">No audio</span>
+                                                            )}
+                                                            {(!word.syllables || word.syllables.length <= 1) && (
+                                                                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                                                                    Needs syllables
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Edit syllables button */}
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => setEditingWord(word)}
+                                                            title="Edit syllables"
+                                                        >
+                                                            <Scissors className="w-4 h-4 mr-1" />
+                                                            {word.syllables && word.syllables.length > 1 ? 'Edit' : 'Set'}
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            )}
 
             {/* Create List Dialog */}
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

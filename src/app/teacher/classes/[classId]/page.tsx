@@ -496,11 +496,14 @@ export default function ClassDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Class Progress - Books and daily tracking */}
-            <ProgressSection classId={classId} className={classData.name} />
+            {/* Spelling Words - Sidebar, starts minimized */}
+            <SpellingWordsSection classId={classId} defaultExpanded={false} />
 
-            {/* Spelling Words */}
-            <SpellingWordsSection classId={classId} />
+            {/* Class Schedule - Sidebar, starts minimized */}
+            <ScheduleSection classId={classId} isAdmin={false} defaultExpanded={false} />
+
+            {/* Login Activity - Sidebar, starts minimized */}
+            <LoginActivitySection classId={classId} defaultExpanded={false} />
           </div>
 
           {/* Right Column - Main Content */}
@@ -508,14 +511,11 @@ export default function ClassDetailPage() {
             {/* Attendance - Collapsible at top */}
             <AttendanceSection classId={classId} className={classData.name} />
 
-            {/* Class Schedule - Days the class meets */}
-            <ScheduleSection classId={classId} isAdmin={false} />
+            {/* Class Progress - Books and daily tracking */}
+            <ProgressSection classId={classId} className={classData.name} />
 
             {/* Makeup Work - Students who missed class */}
             <MakeupWorkSection classId={classId} />
-
-            {/* Login Activity - Track student logins */}
-            <LoginActivitySection classId={classId} />
 
             {/* Danger Zone - Collapsible at bottom */}
             <details className="group">

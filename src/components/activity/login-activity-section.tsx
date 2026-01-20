@@ -38,14 +38,15 @@ interface StudentActivity {
 
 interface LoginActivitySectionProps {
     classId: string;
+    defaultExpanded?: boolean;
 }
 
 type SortOption = "name" | "lastLogin" | "timeOnline";
 type DateRange = "7" | "30" | "all";
 
-export function LoginActivitySection({ classId }: LoginActivitySectionProps) {
+export function LoginActivitySection({ classId, defaultExpanded = true }: LoginActivitySectionProps) {
     const router = useRouter();
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [loading, setLoading] = useState(true);
     const [activity, setActivity] = useState<StudentActivity[]>([]);
     const [stats, setStats] = useState({ totalStudents: 0, studentsLoggedIn: 0 });
