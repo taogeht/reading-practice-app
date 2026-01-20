@@ -1,0 +1,2 @@
+ALTER TABLE "attendance_records" ADD COLUMN "makeup_completed" boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE "attendance_records" ADD COLUMN "makeup_completed_at" timestamp with time zone;

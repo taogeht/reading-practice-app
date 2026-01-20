@@ -316,6 +316,8 @@ export const attendanceRecords = pgTable(
     date: timestamp('date', { withTimezone: true }).notNull(),
     status: attendanceStatusEnum('status').notNull().default('present'),
     notes: text('notes'),
+    makeupCompleted: boolean('makeup_completed').default(false),
+    makeupCompletedAt: timestamp('makeup_completed_at', { withTimezone: true }),
     recordedBy: uuid('recorded_by').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),

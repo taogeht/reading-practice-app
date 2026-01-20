@@ -41,6 +41,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                     date: attendanceRecords.date,
                     status: attendanceRecords.status,
                     notes: attendanceRecords.notes,
+                    makeupCompleted: attendanceRecords.makeupCompleted,
+                    makeupCompletedAt: attendanceRecords.makeupCompletedAt,
                     studentFirstName: users.firstName,
                     studentLastName: users.lastName,
                 })
@@ -191,3 +193,66 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
+// PATCH /api/classes/[classId]/attendance - Toggle makeup completion status
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+    try {
+        const { classId } = await params;
+        const user = await getCurrentUser();
+
+        if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { recordId, studentId, date, makeupCompleted } = body;
+
+        // Can update by recordId directly, or by studentId + date
+        if (recordId) {
+            await db
+                .update(attendanceRecords)
+                .set({
+                    makeupCompleted: makeupCompleted,
+                    makeupCompletedAt: makeupCompleted ? new Date() : null,
+                    updatedAt: new Date(),
+                })
+                .where(eq(attendanceRecords.id, recordId));
+
+            return NextResponse.json({ success: true, recordId, makeupCompleted });
+        }
+
+        if (studentId && date) {
+            const targetDate = new Date(date);
+            targetDate.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(targetDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const result = await db
+                .update(attendanceRecords)
+                .set({
+                    makeupCompleted: makeupCompleted,
+                    makeupCompletedAt: makeupCompleted ? new Date() : null,
+                    updatedAt: new Date(),
+                })
+                .where(
+                    and(
+                        eq(attendanceRecords.classId, classId),
+                        eq(attendanceRecords.studentId, studentId),
+                        gte(attendanceRecords.date, targetDate),
+                        lte(attendanceRecords.date, endOfDay)
+                    )
+                );
+
+            return NextResponse.json({ success: true, studentId, date, makeupCompleted });
+        }
+
+        return NextResponse.json(
+            { error: 'Either recordId or (studentId + date) is required' },
+            { status: 400 }
+        );
+    } catch (error) {
+        console.error('[PATCH /api/classes/[classId]/attendance] Error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
