@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScheduleSection } from '@/components/schedule/schedule-section';
 
 interface TeacherOption {
   id: string;
@@ -295,6 +296,17 @@ export default function ClassForm({
           <Label htmlFor="class-active">Active</Label>
         </div>
       </div>
+
+      {/* Class Schedule - Only show when editing an existing class */}
+      {classItem?.id && (
+        <div className="border-t pt-4">
+          <Label className="text-base font-medium mb-2 block">Class Schedule</Label>
+          <p className="text-sm text-muted-foreground mb-3">
+            Select which days this class meets
+          </p>
+          <ScheduleSection classId={classItem.id} isAdmin={true} />
+        </div>
+      )}
 
       <div className="flex flex-col space-y-2">
         <div className="flex gap-2">
