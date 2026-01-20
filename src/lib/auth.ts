@@ -90,7 +90,6 @@ export async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
     if (!cookieStore) {
-      console.log('No cookie store available');
       return null;
     }
     const sessionId = cookieStore.get(COOKIE_NAME)?.value;
@@ -128,6 +127,12 @@ export async function getCurrentUser(): Promise<User | null> {
       lastName: user.lastName,
     };
   } catch (error) {
+    // During static generation (build time), cookies() throws an error
+    // This is expected behavior - silently return null instead of logging
+    const errorMessage = error instanceof Error ? error.message : '';
+    if (errorMessage.includes('cookies') || errorMessage.includes('Dynamic server usage')) {
+      return null;
+    }
     logError(error, 'getCurrentUser');
     return null;
   }
