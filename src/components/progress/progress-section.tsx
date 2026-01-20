@@ -144,6 +144,9 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
         });
     };
 
+    // Filter to only show current (non-archived) books
+    const currentBooks = books.filter(b => b.isCurrent);
+
     const latestProgress = progress.length > 0 ? progress[0] : null;
 
     return (
@@ -168,9 +171,9 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {books.length > 0 && (
+                    {currentBooks.length > 0 && (
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                            {books.length} {books.length === 1 ? 'book' : 'books'}
+                            {currentBooks.length} {currentBooks.length === 1 ? 'book' : 'books'}
                         </Badge>
                     )}
 
@@ -202,7 +205,7 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                         </div>
-                    ) : books.length === 0 ? (
+                    ) : currentBooks.length === 0 ? (
                         <div className="text-center py-8 text-gray-500">
                             <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                             <p>No books assigned to this class yet.</p>
@@ -230,7 +233,7 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    {books.map((book) => {
+                                    {currentBooks.map((book) => {
                                         const isSelected = formData.bookId === book.bookId;
                                         return (
                                             <div key={book.bookId} className="space-y-2">
