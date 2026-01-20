@@ -495,6 +495,12 @@ export default function ClassDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Class Progress - Books and daily tracking */}
+            <ProgressSection classId={classId} className={classData.name} />
+
+            {/* Spelling Words */}
+            <SpellingWordsSection classId={classId} />
           </div>
 
           {/* Right Column - Main Content */}
@@ -504,12 +510,6 @@ export default function ClassDetailPage() {
 
             {/* Class Schedule - Days the class meets */}
             <ScheduleSection classId={classId} isAdmin={false} />
-
-            {/* Class Progress - Books and daily tracking */}
-            <ProgressSection classId={classId} className={classData.name} />
-
-            {/* Spelling Words - Main content */}
-            <SpellingWordsSection classId={classId} />
 
             {/* Makeup Work - Students who missed class */}
             <MakeupWorkSection classId={classId} />
