@@ -296,6 +296,8 @@ export const classSchedules = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
     dayOfWeek: integer('day_of_week').notNull(), // 0=Sunday, 1=Monday, ... 6=Saturday
+    startTime: varchar('start_time', { length: 10 }), // "13:30", "14:00", etc.
+    endTime: varchar('end_time', { length: 10 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({

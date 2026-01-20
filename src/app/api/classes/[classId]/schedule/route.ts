@@ -10,7 +10,13 @@ interface RouteParams {
     params: Promise<{ classId: string }>;
 }
 
-// GET /api/classes/[classId]/schedule - Get schedule (days of week) for a class
+interface ScheduleEntry {
+    dayOfWeek: number;
+    startTime: string | null;
+    endTime: string | null;
+}
+
+// GET /api/classes/[classId]/schedule - Get schedule (days and times) for a class
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
         const { classId } = await params;
@@ -21,15 +27,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         const schedule = await db
-            .select()
+            .select({
+                dayOfWeek: classSchedules.dayOfWeek,
+                startTime: classSchedules.startTime,
+                endTime: classSchedules.endTime,
+            })
             .from(classSchedules)
             .where(eq(classSchedules.classId, classId))
             .orderBy(classSchedules.dayOfWeek);
 
-        // Return array of day numbers (0-6)
+        // Return array of day numbers (for backwards compatibility) and full schedule
         const days = schedule.map(s => s.dayOfWeek);
 
-        return NextResponse.json({ classId, days });
+        return NextResponse.json({
+            classId,
+            days,
+            schedule: schedule.map(s => ({
+                dayOfWeek: s.dayOfWeek,
+                startTime: s.startTime,
+                endTime: s.endTime,
+            })),
+        });
     } catch (error) {
         console.error('[GET /api/classes/[classId]/schedule] Error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -47,17 +65,30 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         const body = await request.json();
-        const { days } = body;
 
-        if (!days || !Array.isArray(days)) {
+        // Support both old format (days array) and new format (schedule array with times)
+        let scheduleEntries: ScheduleEntry[] = [];
+
+        if (body.schedule && Array.isArray(body.schedule)) {
+            // New format: { schedule: [{ dayOfWeek, startTime, endTime }, ...] }
+            scheduleEntries = body.schedule
+                .filter((entry: ScheduleEntry) => entry.dayOfWeek >= 0 && entry.dayOfWeek <= 6)
+                .map((entry: ScheduleEntry) => ({
+                    dayOfWeek: entry.dayOfWeek,
+                    startTime: entry.startTime || null,
+                    endTime: entry.endTime || null,
+                }));
+        } else if (body.days && Array.isArray(body.days)) {
+            // Old format: { days: [0, 1, 3] } - backwards compatible
+            scheduleEntries = body.days
+                .filter((d: number) => d >= 0 && d <= 6)
+                .map((d: number) => ({ dayOfWeek: d, startTime: null, endTime: null }));
+        } else {
             return NextResponse.json(
-                { error: 'days array is required (0-6 for Sunday-Saturday)' },
+                { error: 'Either days array or schedule array is required' },
                 { status: 400 }
             );
         }
-
-        // Validate days are 0-6
-        const validDays = days.filter((d: number) => d >= 0 && d <= 6);
 
         // Delete existing schedule
         await db
@@ -65,11 +96,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             .where(eq(classSchedules.classId, classId));
 
         // Insert new schedule
-        if (validDays.length > 0) {
+        if (scheduleEntries.length > 0) {
             await db.insert(classSchedules).values(
-                validDays.map((day: number) => ({
+                scheduleEntries.map((entry) => ({
                     classId,
-                    dayOfWeek: day,
+                    dayOfWeek: entry.dayOfWeek,
+                    startTime: entry.startTime,
+                    endTime: entry.endTime,
                 }))
             );
         }
@@ -77,7 +110,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({
             success: true,
             classId,
-            days: validDays,
+            days: scheduleEntries.map(e => e.dayOfWeek),
+            schedule: scheduleEntries,
         });
     } catch (error) {
         console.error('[PUT /api/classes/[classId]/schedule] Error:', error);
