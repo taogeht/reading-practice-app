@@ -57,6 +57,7 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
     const [saving, setSaving] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
     const [showAssignBooks, setShowAssignBooks] = useState(false);
+    const [showHistory, setShowHistory] = useState(false); // Default to minimized
 
     const [formData, setFormData] = useState({
         bookId: "",
@@ -336,46 +337,58 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                             {/* Progress History */}
                             {progress.length > 0 && (
                                 <div className="space-y-2">
-                                    <h4 className="font-medium text-gray-700 flex items-center gap-2">
-                                        <History className="w-4 h-4" />
-                                        Recent Progress
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {progress.map((entry) => (
-                                            <div
-                                                key={entry.id}
-                                                className="p-3 bg-gray-50 rounded-lg border text-sm"
-                                            >
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <Calendar className="w-3 h-3 text-gray-400" />
-                                                        <span className="font-medium">{formatDate(entry.date)}</span>
+                                    <button
+                                        className="w-full font-medium text-gray-700 flex items-center justify-between hover:text-gray-900 transition-colors"
+                                        onClick={() => setShowHistory(!showHistory)}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <History className="w-4 h-4" />
+                                            Recent Progress ({progress.length})
+                                        </span>
+                                        {showHistory ? (
+                                            <ChevronUp className="w-4 h-4 text-gray-400" />
+                                        ) : (
+                                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                                        )}
+                                    </button>
+                                    {showHistory && (
+                                        <div className="space-y-2">
+                                            {progress.map((entry) => (
+                                                <div
+                                                    key={entry.id}
+                                                    className="p-3 bg-gray-50 rounded-lg border text-sm"
+                                                >
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <Calendar className="w-3 h-3 text-gray-400" />
+                                                            <span className="font-medium">{formatDate(entry.date)}</span>
+                                                        </div>
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {entry.bookTitle}
+                                                        </Badge>
                                                     </div>
-                                                    <Badge variant="outline" className="text-xs">
-                                                        {entry.bookTitle}
-                                                    </Badge>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-gray-600">
-                                                    {entry.pagesCompleted && (
-                                                        <span className="flex items-center gap-1">
-                                                            <FileText className="w-3 h-3" />
-                                                            Pages {entry.pagesCompleted}
-                                                        </span>
+                                                    <div className="flex items-center gap-4 text-gray-600">
+                                                        {entry.pagesCompleted && (
+                                                            <span className="flex items-center gap-1">
+                                                                <FileText className="w-3 h-3" />
+                                                                Pages {entry.pagesCompleted}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {entry.lessonNotes && (
+                                                        <p className="text-gray-600 mt-1 text-xs">
+                                                            📋 Notes: {entry.lessonNotes}
+                                                        </p>
+                                                    )}
+                                                    {entry.homeworkAssigned && (
+                                                        <p className="text-blue-600 mt-1 text-xs">
+                                                            📝 HW: {entry.homeworkAssigned}
+                                                        </p>
                                                     )}
                                                 </div>
-                                                {entry.lessonNotes && (
-                                                    <p className="text-gray-600 mt-1 text-xs">
-                                                        📋 Notes: {entry.lessonNotes}
-                                                    </p>
-                                                )}
-                                                {entry.homeworkAssigned && (
-                                                    <p className="text-blue-600 mt-1 text-xs">
-                                                        📝 HW: {entry.homeworkAssigned}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
