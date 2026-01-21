@@ -25,6 +25,7 @@ import {
   LogOut,
   List
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type Teacher = {
   id: string;
@@ -196,6 +197,7 @@ export default function TeacherDashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
                 <List className="w-4 h-4 mr-2" />
                 Manage Assignments
