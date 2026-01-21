@@ -297,6 +297,14 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                                             className="bg-white"
                                                         />
 
+                                                        <Textarea
+                                                            placeholder="Class notes for today (optional)"
+                                                            value={formData.lessonNotes}
+                                                            onChange={(e) => setFormData(prev => ({ ...prev, lessonNotes: e.target.value }))}
+                                                            className="bg-white"
+                                                            rows={2}
+                                                        />
+
                                                         <div className="flex gap-2">
                                                             <Button
                                                                 onClick={handleSave}
@@ -356,7 +364,9 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                                     )}
                                                 </div>
                                                 {entry.lessonNotes && (
-                                                    <p className="text-gray-500 mt-1 text-xs">{entry.lessonNotes}</p>
+                                                    <p className="text-gray-600 mt-1 text-xs">
+                                                        📋 Notes: {entry.lessonNotes}
+                                                    </p>
                                                 )}
                                                 {entry.homeworkAssigned && (
                                                     <p className="text-blue-600 mt-1 text-xs">
