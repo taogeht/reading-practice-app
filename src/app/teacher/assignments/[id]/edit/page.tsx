@@ -26,7 +26,7 @@ import type { StoryTtsAudio } from "@/types/story";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 const assignmentSchema = z.object({
   title: z.string().min(1, "Assignment title is required"),
@@ -66,14 +66,10 @@ interface Assignment {
   classId: string;
 }
 
-interface EditAssignmentPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function EditAssignmentPage({ params }: EditAssignmentPageProps) {
+export default function EditAssignmentPage() {
   const router = useRouter();
+  const params = useParams();
+  const assignmentId = params.id as string;
   const [stories, setStories] = useState<Story[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +90,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
 
   useEffect(() => {
     loadData();
-  }, [params.id]);
+  }, [assignmentId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -102,7 +98,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
       const [storiesResponse, classesResponse, assignmentResponse] = await Promise.all([
         fetch('/api/stories'),
         fetch('/api/classes'),
-        fetch(`/api/assignments/${params.id}`),
+        fetch(`/api/assignments/${assignmentId}`),
       ]);
 
       if (storiesResponse.ok) {
@@ -144,7 +140,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
   const onSubmit = async (data: AssignmentFormData) => {
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/assignments/${params.id}`, {
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +152,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
         throw new Error('Failed to update assignment');
       }
 
-      router.push(`/teacher/assignments/${params.id}`);
+      router.push(`/teacher/assignments/${assignmentId}`);
     } catch (error) {
       console.error('Error updating assignment:', error);
       alert('Failed to update assignment. Please try again.');
@@ -196,7 +192,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/assignments/${params.id}`)}>
+            <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/assignments/${assignmentId}`)}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Assignment
             </Button>
@@ -316,18 +312,18 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
                             Reading Level: {selectedStory.readingLevel}
                           </p>
                         )}
-                      {selectedStory.wordCount && (
-                        <p className="text-xs text-gray-600">
-                          {selectedStory.wordCount} words
-                        </p>
-                      )}
-                      {selectedStory.ttsAudio.length > 0 && (
-                        <p className="text-xs text-gray-600">
-                          {selectedStory.ttsAudio.length} voice option{selectedStory.ttsAudio.length > 1 ? 's' : ''} available
-                        </p>
-                      )}
-                    </div>
-                  )}
+                        {selectedStory.wordCount && (
+                          <p className="text-xs text-gray-600">
+                            {selectedStory.wordCount} words
+                          </p>
+                        )}
+                        {selectedStory.ttsAudio.length > 0 && (
+                          <p className="text-xs text-gray-600">
+                            {selectedStory.ttsAudio.length} voice option{selectedStory.ttsAudio.length > 1 ? 's' : ''} available
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -425,7 +421,7 @@ export default function EditAssignmentPage({ params }: EditAssignmentPageProps) 
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push(`/teacher/assignments/${params.id}`)}
+                  onClick={() => router.push(`/teacher/assignments/${assignmentId}`)}
                   disabled={submitting}
                 >
                   Cancel

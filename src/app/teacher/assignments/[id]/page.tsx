@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Edit2, Trash2, Calendar, Users, BookOpen, Clock, FileText, CheckCircle, AlertCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 
 interface StudentSummary {
@@ -41,14 +41,10 @@ interface StudentProgressSummary {
   pendingStudents: StudentSummary[];
 }
 
-interface ViewAssignmentPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function ViewAssignmentPage({ params }: ViewAssignmentPageProps) {
+export default function ViewAssignmentPage() {
   const router = useRouter();
+  const params = useParams();
+  const assignmentId = params.id as string;
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [studentProgress, setStudentProgress] = useState<StudentProgressSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,12 +53,12 @@ export default function ViewAssignmentPage({ params }: ViewAssignmentPageProps) 
 
   useEffect(() => {
     fetchAssignment();
-  }, [params.id]);
+  }, [assignmentId]);
 
   const fetchAssignment = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/assignments/${params.id}`);
+      const response = await fetch(`/api/assignments/${assignmentId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -95,7 +91,7 @@ export default function ViewAssignmentPage({ params }: ViewAssignmentPageProps) 
 
     try {
       setDeleting(true);
-      const response = await fetch(`/api/assignments/${params.id}`, {
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
         method: 'DELETE',
       });
 
@@ -174,7 +170,7 @@ export default function ViewAssignmentPage({ params }: ViewAssignmentPageProps) 
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => router.push(`/teacher/assignments/${params.id}/edit`)}
+                onClick={() => router.push(`/teacher/assignments/${assignmentId}/edit`)}
               >
                 <Edit2 className="w-4 h-4 mr-2" />
                 Edit
