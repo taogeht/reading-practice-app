@@ -335,11 +335,11 @@ export default function ViewAssignmentPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-gray-600">Created:</span>
-                  <span className="ml-2">{format(new Date(assignment.createdAt), 'PPP')}</span>
+                  <span className="ml-2">{assignment.createdAt ? format(new Date(assignment.createdAt), 'PPP') : 'Unknown'}</span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">Assigned:</span>
-                  <span className="ml-2">{format(new Date(assignment.assignedAt), 'PPP')}</span>
+                  <span className="ml-2">{assignment.assignedAt ? format(new Date(assignment.assignedAt), 'PPP') : 'Unknown'}</span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">Assignment ID:</span>
