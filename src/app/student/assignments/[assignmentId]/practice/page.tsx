@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
 import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, StopCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 
 import type { StoryTtsAudio } from "@/types/story";
@@ -39,13 +39,11 @@ interface Assignment {
   hasTeacherFeedback: boolean;
 }
 
-interface AssignmentPracticePageProps {
-  params: {
-    assignmentId: string;
-  };
-}
+export default function AssignmentPracticePage() {
+  const router = useRouter();
+  const params = useParams();
+  const assignmentId = params.assignmentId as string;
 
-export default function AssignmentPracticePage({ params }: AssignmentPracticePageProps) {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
@@ -55,11 +53,12 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [storyAudio, setStoryAudio] = useState<HTMLAudioElement | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
-    fetchAssignment();
-  }, [params.assignmentId]);
+    if (assignmentId) {
+      fetchAssignment();
+    }
+  }, [assignmentId]);
 
   useEffect(() => {
     return () => {
@@ -84,7 +83,7 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
 
   const fetchAssignment = async () => {
     try {
-      const response = await fetch(`/api/student/assignments/${params.assignmentId}`);
+      const response = await fetch(`/api/student/assignments/${assignmentId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -289,11 +288,10 @@ export default function AssignmentPracticePage({ params }: AssignmentPracticePag
                 <Button
                   onClick={handlePlayStory}
                   size="lg"
-                  className={`w-full h-16 text-xl ${
-                    isPlayingStory
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
+                  className={`w-full h-16 text-xl ${isPlayingStory
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                 >
                   {isPlayingStory ? (
                     <>
