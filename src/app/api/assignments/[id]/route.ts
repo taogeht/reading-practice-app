@@ -13,7 +13,8 @@ import {
 } from '@/lib/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
-import { normalizeTtsAudio } from '@/types/story';
+import { normalizeTtsAudio, StoryTtsAudio } from '@/types/story';
+import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
 
@@ -70,7 +71,25 @@ export async function GET(
 
     const assignmentData = assignment[0];
     console.log('Assignment data:', assignmentData);
-    const storyTtsAudio = normalizeTtsAudio(assignmentData.storyTtsAudio);
+    const storyTtsAudioNormalized = normalizeTtsAudio(assignmentData.storyTtsAudio);
+
+    // Helper function to refresh presigned URLs for TTS audio
+    const refreshTtsAudioUrls = async (audioEntries: StoryTtsAudio[]): Promise<StoryTtsAudio[]> => {
+      return Promise.all(
+        audioEntries.map(async (audio) => {
+          if (audio.storageKey) {
+            try {
+              const freshUrl = await r2Client.generatePresignedDownloadUrl(audio.storageKey, 3600); // 1 hour
+              return { ...audio, url: freshUrl };
+            } catch (error) {
+              console.error('Error generating presigned URL for TTS audio:', error);
+              return audio;
+            }
+          }
+          return audio;
+        })
+      );
+    };
 
     // Handle student access
     if (user.role === 'student') {
@@ -119,6 +138,9 @@ export async function GET(
 
       const hasCompletedRecording = studentRecordings.some(r => r.status === 'reviewed');
       const canAttempt = completedAttempts < (assignmentData.maxAttempts || 3);
+
+      // Refresh TTS audio URLs for student
+      const storyTtsAudio = await refreshTtsAudioUrls(storyTtsAudioNormalized);
 
       return NextResponse.json({
         success: true,
@@ -207,6 +229,9 @@ export async function GET(
 
       const completedStudents = studentSummaries.filter((student) => student.completed);
       const pendingStudents = studentSummaries.filter((student) => !student.completed);
+
+      // Refresh TTS audio URLs for teacher/admin
+      const storyTtsAudio = await refreshTtsAudioUrls(storyTtsAudioNormalized);
 
       // Return full assignment data for teachers/admins
       return NextResponse.json({
