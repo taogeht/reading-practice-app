@@ -360,7 +360,7 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                                         key={word.id}
                                                         className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:bg-gray-50"
                                                     >
-                                                        {/* Play button */}
+                                                        {/* Play button - fixed width */}
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"
@@ -375,8 +375,8 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                                             )}
                                                         </Button>
 
-                                                        {/* Word display with syllables */}
-                                                        <div className="flex-1">
+                                                        {/* Word display with syllables - flexible but min-width */}
+                                                        <div className="flex-1 min-w-[80px]">
                                                             {word.syllables && word.syllables.length > 1 ? (
                                                                 <div className="flex items-center gap-1 flex-wrap">
                                                                     {word.syllables.map((syl, i) => (
@@ -399,24 +399,25 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                                             )}
                                                         </div>
 
-                                                        {/* Status badges */}
-                                                        <div className="flex items-center gap-2">
+                                                        {/* Status badges - fixed width container */}
+                                                        <div className="flex items-center gap-2 w-[140px] justify-end flex-shrink-0">
                                                             {!word.audioUrl && (
                                                                 <span className="text-xs text-gray-400">No audio</span>
                                                             )}
                                                             {(!word.syllables || word.syllables.length <= 1) && (
-                                                                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                                                                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 whitespace-nowrap">
                                                                     Needs syllables
                                                                 </Badge>
                                                             )}
                                                         </div>
 
-                                                        {/* Edit syllables button */}
+                                                        {/* Edit syllables button - fixed width */}
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
                                                             onClick={() => setEditingWord(word)}
                                                             title="Edit syllables"
+                                                            className="flex-shrink-0 w-[70px]"
                                                         >
                                                             <Scissors className="w-4 h-4 mr-1" />
                                                             {word.syllables && word.syllables.length > 1 ? 'Edit' : 'Set'}
