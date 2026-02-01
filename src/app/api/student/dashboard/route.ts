@@ -110,6 +110,22 @@ export async function GET(request: NextRequest) {
         .filter(r => r.teacherFeedback && r.submittedAt)
         .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())[0];
 
+      // Determine assignment status based on recording states
+      // - 'completed': At least one recording has been reviewed by teacher
+      // - 'submitted': Recording(s) submitted but none reviewed yet
+      // - 'pending': No recordings submitted
+      const hasReviewedRecording = assignmentRecordings.some(r => r.status === 'reviewed');
+      const hasSubmittedRecording = assignmentRecordings.some(r => r.status === 'submitted');
+
+      let status: 'pending' | 'submitted' | 'completed';
+      if (hasReviewedRecording) {
+        status = 'completed';
+      } else if (hasSubmittedRecording) {
+        status = 'submitted';
+      } else {
+        status = 'pending';
+      }
+
       return {
         id: assignment.id,
         title: assignment.title,
@@ -117,7 +133,7 @@ export async function GET(request: NextRequest) {
         storyId: assignment.storyId,
         storyTitle: assignment.storyTitle,
         dueAt: assignment.dueAt?.toISOString() || null,
-        status: completedRecordings.length > 0 ? 'completed' as const : 'pending' as const,
+        status,
         attempts: assignmentRecordings.length,
         maxAttempts: assignment.maxAttempts || 3,
         bestScore: bestScore ? Math.round(bestScore) : null,
@@ -131,6 +147,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate statistics
     const pendingAssignments = assignmentsWithStatus.filter(a => a.status === 'pending');
+    const submittedAssignments = assignmentsWithStatus.filter(a => a.status === 'submitted');
     const completedAssignments = assignmentsWithStatus.filter(a => a.status === 'completed');
 
     const dashboardData = {
@@ -146,12 +163,13 @@ export async function GET(request: NextRequest) {
       stats: {
         totalAssignments: assignmentsWithStatus.length,
         pendingAssignments: pendingAssignments.length,
+        submittedAssignments: submittedAssignments.length,
         completedAssignments: completedAssignments.length,
         averageScore: completedAssignments.length > 0
           ? Math.round(completedAssignments
-              .filter(a => a.bestScore)
-              .reduce((sum, a) => sum + (a.bestScore || 0), 0) /
-              completedAssignments.filter(a => a.bestScore).length)
+            .filter(a => a.bestScore)
+            .reduce((sum, a) => sum + (a.bestScore || 0), 0) /
+            completedAssignments.filter(a => a.bestScore).length)
           : null,
       },
       showPracticeStories

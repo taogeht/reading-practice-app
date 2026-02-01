@@ -10,7 +10,7 @@ import { AvatarPickerDialog } from "@/components/students/avatar-picker-dialog";
 import { StudentSpellingSection } from "@/components/spelling/student-spelling-section";
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Student = {
@@ -29,7 +29,7 @@ type Assignment = {
   storyId: string;
   storyTitle: string;
   dueAt: string | null;
-  status: 'pending' | 'completed';
+  status: 'pending' | 'submitted' | 'completed';
   attempts: number;
   maxAttempts: number;
   bestScore: number | null;
@@ -46,6 +46,7 @@ type DashboardData = {
   stats: {
     totalAssignments: number;
     pendingAssignments: number;
+    submittedAssignments: number;
     completedAssignments: number;
     averageScore: number | null;
   };
@@ -150,6 +151,7 @@ export default function StudentDashboardPage() {
 
   const { student, assignments, stats, showPracticeStories } = dashboardData;
   const pendingAssignments = assignments.filter(a => a.status === 'pending');
+  const submittedAssignments = assignments.filter(a => a.status === 'submitted');
   const completedAssignments = assignments.filter(a => a.status === 'completed');
   const avatarEmoji = student.avatarUrl || AVATARS[0].emoji;
 
@@ -259,6 +261,43 @@ export default function StudentDashboardPage() {
               </CardContent>
             </Card>
 
+            {/* Awaiting Teacher Review */}
+            {submittedAssignments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Send className="w-5 h-5 text-amber-500" />
+                    Awaiting Review
+                  </CardTitle>
+                  <CardDescription>
+                    Submitted and waiting for teacher feedback
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {submittedAssignments.map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className="border border-amber-200 bg-amber-50 rounded-lg p-3 cursor-pointer hover:bg-amber-100 transition-colors"
+                      onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h4 className="font-medium text-sm">{assignment.title}</h4>
+                          <p className="text-xs text-gray-600">{assignment.storyTitle}</p>
+                        </div>
+                        <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300">
+                          Submitted
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-amber-600">
+                        Your teacher will review this soon. Click to practice again!
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Recent Completed */}
             {completedAssignments.length > 0 && (
               <Card>
@@ -328,12 +367,18 @@ export default function StudentDashboardPage() {
             {/* Quick Stats */}
             <Card>
               <CardContent className="p-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-green-600">
                       {stats.completedAssignments}
                     </div>
                     <div className="text-xs text-gray-500">Completed</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-amber-600">
+                      {stats.submittedAssignments}
+                    </div>
+                    <div className="text-xs text-gray-500">Awaiting</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-orange-600">
