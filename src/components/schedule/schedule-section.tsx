@@ -38,20 +38,20 @@ interface ScheduleSectionProps {
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_NAMES_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-// Generate time options from 1:30 PM to 9:00 PM in 10-minute increments
+// Generate time options from 8:30 AM to 9:00 PM in 10-minute increments
 function generateTimeOptions(): { value: string; label: string }[] {
     const options: { value: string; label: string }[] = [];
 
-    // Start at 13:30 (1:30 PM), end at 21:00 (9:00 PM)
-    for (let hour = 13; hour <= 21; hour++) {
+    // Start at 08:30 (8:30 AM), end at 21:00 (9:00 PM)
+    for (let hour = 8; hour <= 21; hour++) {
         for (let minute = 0; minute < 60; minute += 10) {
-            // Start at 13:30
-            if (hour === 13 && minute < 30) continue;
+            // Start at 08:30
+            if (hour === 8 && minute < 30) continue;
             // End at 21:00
             if (hour === 21 && minute > 0) break;
 
             const value = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            const displayHour = hour > 12 ? hour - 12 : hour;
+            const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
             const ampm = hour >= 12 ? 'PM' : 'AM';
             const label = `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
 

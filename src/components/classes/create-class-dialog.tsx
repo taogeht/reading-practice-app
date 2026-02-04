@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GRADE_LEVELS_EXTENDED } from "@/lib/grade-levels";
 
 interface CreateClassDialogProps {
   open: boolean;
@@ -110,15 +111,11 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
                 <SelectValue placeholder="Select grade level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="k">Kindergarten</SelectItem>
-                <SelectItem value="1">1st Grade</SelectItem>
-                <SelectItem value="2">2nd Grade</SelectItem>
-                <SelectItem value="3">3rd Grade</SelectItem>
-                <SelectItem value="4">4th Grade</SelectItem>
-                <SelectItem value="5">5th Grade</SelectItem>
-                <SelectItem value="6">6th Grade</SelectItem>
-                <SelectItem value="7">7th Grade</SelectItem>
-                <SelectItem value="8">8th Grade</SelectItem>
+                {GRADE_LEVELS_EXTENDED.map((grade) => (
+                  <SelectItem key={grade.value} value={String(grade.value)}>
+                    {grade.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -22,6 +22,7 @@ import {
     Hash,
     FileText,
 } from "lucide-react";
+import { GRADE_LEVELS, formatGradeLevel } from "@/lib/grade-levels";
 
 interface Book {
     id: string;
@@ -36,7 +37,7 @@ interface Book {
     createdAt: string;
 }
 
-const GRADE_OPTIONS = [1, 2, 3, 4, 5, 6];
+const GRADE_OPTIONS = GRADE_LEVELS.map(g => g.value);
 const SUBJECT_OPTIONS = ["Reading", "Phonics", "Writing", "Math", "Science", "Social Studies", "Other"];
 
 export default function AdminBooksPage() {
@@ -274,7 +275,7 @@ export default function AdminBooksPage() {
                                             <div className="flex flex-wrap gap-1">
                                                 {book.gradeLevels.map((grade) => (
                                                     <Badge key={grade} variant="outline" className="text-xs">
-                                                        Grade {grade}
+                                                        {formatGradeLevel(grade)}
                                                     </Badge>
                                                 ))}
                                             </div>
@@ -390,7 +391,7 @@ export default function AdminBooksPage() {
                                         size="sm"
                                         onClick={() => toggleGradeLevel(grade)}
                                     >
-                                        Grade {grade}
+                                        {formatGradeLevel(grade)}
                                     </Button>
                                 ))}
                             </div>

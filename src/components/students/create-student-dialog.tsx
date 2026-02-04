@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VisualPasswordCreator } from "./visual-password-creator";
+import { GRADE_LEVELS_EXTENDED } from "@/lib/grade-levels";
 
 interface Class {
   id: string;
@@ -37,7 +38,7 @@ export function CreateStudentDialog({
     classId: preselectedClassId || "",
     gender: "girl" as "girl" | "boy",
   });
-  const [visualPassword, setVisualPassword] = useState<{type: string; data: any} | null>(null);
+  const [visualPassword, setVisualPassword] = useState<{ type: string; data: any } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -179,15 +180,11 @@ export function CreateStudentDialog({
                   <SelectValue placeholder="Select grade" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Kindergarten</SelectItem>
-                  <SelectItem value="1">1st Grade</SelectItem>
-                  <SelectItem value="2">2nd Grade</SelectItem>
-                  <SelectItem value="3">3rd Grade</SelectItem>
-                  <SelectItem value="4">4th Grade</SelectItem>
-                  <SelectItem value="5">5th Grade</SelectItem>
-                  <SelectItem value="6">6th Grade</SelectItem>
-                  <SelectItem value="7">7th Grade</SelectItem>
-                  <SelectItem value="8">8th Grade</SelectItem>
+                  {GRADE_LEVELS_EXTENDED.map((grade) => (
+                    <SelectItem key={grade.value} value={String(grade.value)}>
+                      {grade.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
