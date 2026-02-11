@@ -5,6 +5,7 @@ import { stories, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { normalizeTtsAudio } from '@/types/story';
+import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
 
@@ -62,7 +63,9 @@ export async function GET(
         ...story,
         createdAt: story.createdAt?.toISOString() || null,
         updatedAt: story.updatedAt?.toISOString() || null,
-        ttsAudio: normalizeTtsAudio(story.ttsAudio),
+        ttsAudio: normalizeTtsAudio(story.ttsAudio).map((audio) =>
+          audio.storageKey ? { ...audio, url: r2Client.getProxyUrl(audio.storageKey) } : audio
+        ),
       },
     });
 
@@ -144,7 +147,9 @@ export async function PATCH(
         ...updatedStory[0],
         createdAt: updatedStory[0].createdAt?.toISOString() || null,
         updatedAt: updatedStory[0].updatedAt?.toISOString() || null,
-        ttsAudio: normalizeTtsAudio(updatedStory[0].ttsAudio),
+        ttsAudio: normalizeTtsAudio(updatedStory[0].ttsAudio).map((audio) =>
+          audio.storageKey ? { ...audio, url: r2Client.getProxyUrl(audio.storageKey) } : audio
+        ),
       },
     });
 

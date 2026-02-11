@@ -1,8 +1,8 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { 
-  PutObjectCommand, 
-  GetObjectCommand, 
+import {
+  PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command
@@ -38,8 +38,8 @@ class R2Client {
    * Generate a presigned URL for uploading files directly from the client
    */
   async generatePresignedUploadUrl(
-    key: string, 
-    contentType: string, 
+    key: string,
+    contentType: string,
     expiresIn: number = 3600
   ): Promise<string> {
     const command = new PutObjectCommand({
@@ -55,7 +55,7 @@ class R2Client {
    * Generate a presigned URL for downloading files
    */
   async generatePresignedDownloadUrl(
-    key: string, 
+    key: string,
     expiresIn: number = 3600
   ): Promise<string> {
     const command = new GetObjectCommand({
@@ -70,8 +70,8 @@ class R2Client {
    * Upload a file directly from the server
    */
   async uploadFile(
-    key: string, 
-    body: Buffer | Uint8Array | string, 
+    key: string,
+    body: Buffer | Uint8Array | string,
     contentType: string,
     metadata?: Record<string, string>
   ): Promise<string> {
@@ -84,12 +84,12 @@ class R2Client {
     });
 
     await this.client.send(command);
-    
-    // For audio files, return a presigned URL that's valid for 7 days
+
+    // For audio files, return a proxy URL that never expires
     if (contentType.startsWith('audio/')) {
-      return await this.generatePresignedDownloadUrl(key, 7 * 24 * 3600); // 7 days
+      return this.getProxyUrl(key);
     }
-    
+
     return this.getPublicUrl(key);
   }
 
@@ -122,6 +122,39 @@ class R2Client {
   }
 
   /**
+   * Get the object from R2 for streaming
+   */
+  async getObject(key: string): Promise<{
+    body: ReadableStream | null;
+    contentType: string | undefined;
+    contentLength: number | undefined;
+  } | null> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      const response = await this.client.send(command);
+
+      return {
+        body: response.Body?.transformToWebStream() as ReadableStream | null ?? null,
+        contentType: response.ContentType,
+        contentLength: response.ContentLength,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Get a permanent proxy URL for an audio file (served via /api/audio/[...key])
+   */
+  getProxyUrl(key: string): string {
+    return `/api/audio/${key}`;
+  }
+
+  /**
    * Get the public URL for a file (if bucket has public read access)
    */
   getPublicUrl(key: string): string {
@@ -137,7 +170,7 @@ class R2Client {
   generateAudioKey(type: 'tts' | 'recording', filename: string, userId?: string): string {
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 15);
-    
+
     if (type === 'tts') {
       return `audio/tts/${timestamp}-${randomId}-${filename}`;
     } else {
@@ -160,9 +193,9 @@ class R2Client {
         Bucket: this.bucketName,
         Key: key,
       });
-      
+
       const response = await this.client.send(command);
-      
+
       return {
         contentType: response.ContentType,
         contentLength: response.ContentLength,

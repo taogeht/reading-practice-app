@@ -73,23 +73,11 @@ export async function GET(
     console.log('Assignment data:', assignmentData);
     const storyTtsAudioNormalized = normalizeTtsAudio(assignmentData.storyTtsAudio);
 
-    // Helper function to refresh presigned URLs for TTS audio
-    const refreshTtsAudioUrls = async (audioEntries: StoryTtsAudio[]): Promise<StoryTtsAudio[]> => {
-      return Promise.all(
-        audioEntries.map(async (audio) => {
-          if (audio.storageKey) {
-            try {
-              const freshUrl = await r2Client.generatePresignedDownloadUrl(audio.storageKey, 3600); // 1 hour
-              return { ...audio, url: freshUrl };
-            } catch (error) {
-              console.error('Error generating presigned URL for TTS audio:', error);
-              return audio;
-            }
-          }
-          return audio;
-        })
+    // Helper function to rewrite TTS audio URLs to use the permanent proxy
+    const rewriteTtsAudioUrls = (audioEntries: StoryTtsAudio[]): StoryTtsAudio[] =>
+      audioEntries.map((audio) =>
+        audio.storageKey ? { ...audio, url: r2Client.getProxyUrl(audio.storageKey) } : audio
       );
-    };
 
     // Handle student access
     if (user.role === 'student') {
@@ -140,7 +128,7 @@ export async function GET(
       const canAttempt = completedAttempts < (assignmentData.maxAttempts || 3);
 
       // Refresh TTS audio URLs for student
-      const storyTtsAudio = await refreshTtsAudioUrls(storyTtsAudioNormalized);
+      const storyTtsAudio = rewriteTtsAudioUrls(storyTtsAudioNormalized);
 
       return NextResponse.json({
         success: true,
@@ -231,7 +219,7 @@ export async function GET(
       const pendingStudents = studentSummaries.filter((student) => !student.completed);
 
       // Refresh TTS audio URLs for teacher/admin
-      const storyTtsAudio = await refreshTtsAudioUrls(storyTtsAudioNormalized);
+      const storyTtsAudio = rewriteTtsAudioUrls(storyTtsAudioNormalized);
 
       // Return full assignment data for teachers/admins
       return NextResponse.json({

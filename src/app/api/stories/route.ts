@@ -5,6 +5,7 @@ import { stories, users } from '@/lib/db/schema';
 import { eq, and, desc, like, sql } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { normalizeTtsAudio } from '@/types/story';
+import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
 
@@ -104,7 +105,9 @@ export async function GET(request: NextRequest) {
 
     const serializedStories = storiesData.map((story) => ({
       ...story,
-      ttsAudio: normalizeTtsAudio(story.ttsAudio),
+      ttsAudio: normalizeTtsAudio(story.ttsAudio).map((audio) =>
+        audio.storageKey ? { ...audio, url: r2Client.getProxyUrl(audio.storageKey) } : audio
+      ),
     }));
 
     return NextResponse.json({

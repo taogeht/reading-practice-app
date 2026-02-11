@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
 import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
-import { normalizeTtsAudio, StoryTtsAudio } from '@/types/story';
+import { normalizeTtsAudio } from '@/types/story';
 import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
@@ -124,22 +124,9 @@ export async function GET(
 
     const storyTtsAudioNormalized = normalizeTtsAudio(assignment.storyTtsAudio);
 
-    // Regenerate fresh presigned URLs for TTS audio (they expire after 7 days)
-    const storyTtsAudio: StoryTtsAudio[] = await Promise.all(
-      storyTtsAudioNormalized.map(async (audio) => {
-        // If we have a storageKey, generate a fresh presigned URL
-        if (audio.storageKey) {
-          try {
-            const freshUrl = await r2Client.generatePresignedDownloadUrl(audio.storageKey, 3600); // 1 hour
-            return { ...audio, url: freshUrl };
-          } catch (error) {
-            console.error('Error generating presigned URL for TTS audio:', error);
-            // Fall back to the stored URL
-            return audio;
-          }
-        }
-        return audio;
-      })
+    // Rewrite TTS audio URLs to use the permanent proxy
+    const storyTtsAudio = storyTtsAudioNormalized.map((audio) =>
+      audio.storageKey ? { ...audio, url: r2Client.getProxyUrl(audio.storageKey) } : audio
     );
 
     const assignmentData = {

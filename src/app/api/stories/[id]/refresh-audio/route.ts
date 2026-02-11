@@ -79,8 +79,8 @@ export async function POST(
       return NextResponse.json({ error: 'Audio file not found in storage' }, { status: 404 });
     }
 
-    // Generate a new presigned URL
-    const newAudioUrl = await r2Client.generatePresignedDownloadUrl(audioKey, 7 * 24 * 3600);
+    // Generate the permanent proxy URL
+    const newAudioUrl = r2Client.getProxyUrl(audioKey);
 
     const updatedEntries = audioEntries.map((entry) =>
       entry.id === entryToRefresh.id
