@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { AssignBooksDialog } from "./assign-books-dialog";
 import { SyllabusManager } from "./syllabus-manager";
+import { LogProgressModal, ProgressAssignment } from "./log-progress-modal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface AssignedBook {
@@ -67,6 +68,11 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
     const [syllabusWeeks, setSyllabusWeeks] = useState<any[]>([]);
     const [syllabusUrl, setSyllabusUrl] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'manual' | 'syllabus'>('syllabus');
+
+    // New Log Progress Modal state
+    const [showLogModal, setShowLogModal] = useState(false);
+    const [modalAssignments, setModalAssignments] = useState<ProgressAssignment[]>([]);
+    const [modalTitle, setModalTitle] = useState<string>("");
 
     const [formData, setFormData] = useState({
         bookId: "",
@@ -116,40 +122,41 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
         }
     };
 
-    const handleSave = async () => {
+    const handleLogWeek = (week: any) => {
+        // Prepare assignments from the week
+        const weekAssignments: ProgressAssignment[] = week.assignments
+            .map((a: any) => {
+                const book = currentBooks.find(b => b.bookId === a.bookId);
+                if (!book) return null;
+                return {
+                    bookId: book.bookId,
+                    title: book.title,
+                    pages: a.pages
+                };
+            })
+            .filter(Boolean) as ProgressAssignment[];
+
+        setModalAssignments(weekAssignments);
+        setModalTitle(week.title || `Week ${week.weekNumber}`);
+        setShowLogModal(true);
+    };
+
+    const handleLogManual = () => {
         if (!formData.bookId) {
             alert("Please select a book");
             return;
         }
 
-        setSaving(true);
-        try {
-            const response = await fetch(`/api/classes/${classId}/progress`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+        const book = currentBooks.find(b => b.bookId === formData.bookId);
+        if (!book) return;
 
-            if (response.ok) {
-                await fetchData();
-                setShowAddForm(false);
-                // Reset form but keep the book selected
-                setFormData(prev => ({
-                    ...prev,
-                    date: new Date().toISOString().split("T")[0],
-                    pagesCompleted: "",
-                    lessonNotes: "",
-                    homeworkAssigned: "",
-                }));
-            } else {
-                alert("Failed to save progress");
-            }
-        } catch (error) {
-            console.error("Error saving progress:", error);
-            alert("Failed to save progress");
-        } finally {
-            setSaving(false);
-        }
+        setModalAssignments([{
+            bookId: book.bookId,
+            title: book.title,
+            pages: formData.pagesCompleted
+        }]);
+        setModalTitle(book.title);
+        setShowLogModal(true);
     };
 
     const updateSyllabusAssignment = async (week: any, bookId: string, newPages: string | null) => {
@@ -186,33 +193,7 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
         }
     };
 
-    const handleLogWeek = async (week: any) => {
-        if (!confirm(`Record progress for all assigned books safely to ${week.title}?`)) return;
-        setSaving(true);
-        try {
-            const today = new Date().toISOString().split("T")[0];
-            const response = await fetch(`/api/classes/${classId}/progress/bulk`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    date: today,
-                    lessonNotes: `Completed ${week.title}`,
-                    assignments: week.assignments
-                }),
-            });
-
-            if (response.ok) {
-                await fetchData();
-            } else {
-                alert("Failed to save progress");
-            }
-        } catch (error) {
-            console.error("Error saving bulk progress:", error);
-            alert("Failed to save progress");
-        } finally {
-            setSaving(false);
-        }
-    };
+    // Old bulk save logic removed, logic moved to Modal.
 
     const formatDate = (dateStr: string) => {
         const d = new Date(dateStr);
@@ -473,12 +454,6 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                                                         autoFocus
                                                                     />
                                                                 </div>
-                                                                <Input
-                                                                    type="date"
-                                                                    value={formData.date}
-                                                                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                                                                    className="w-36 bg-white"
-                                                                />
                                                             </div>
 
                                                             <Input
@@ -498,16 +473,12 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
 
                                                             <div className="flex gap-2">
                                                                 <Button
-                                                                    onClick={handleSave}
-                                                                    disabled={saving || !formData.pagesCompleted.trim()}
+                                                                    onClick={handleLogManual}
+                                                                    disabled={!formData.pagesCompleted.trim()}
                                                                     className="flex-1"
                                                                 >
-                                                                    {saving ? (
-                                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                                    ) : (
-                                                                        <Save className="w-4 h-4 mr-2" />
-                                                                    )}
-                                                                    Save
+                                                                    <Save className="w-4 h-4 mr-2" />
+                                                                    Record Progress & Attendance
                                                                 </Button>
                                                                 <Button
                                                                     variant="outline"
@@ -594,6 +565,25 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                 onOpenChange={setShowAssignBooks}
                 onBooksChanged={fetchData}
                 assignedBooks={books}
+            />
+
+            {/* Log Progress Modal */}
+            <LogProgressModal
+                classId={classId}
+                open={showLogModal}
+                onOpenChange={setShowLogModal}
+                onSuccess={() => {
+                    fetchData();
+                    // Clear manual entry form if it was used
+                    setFormData(prev => ({
+                        ...prev,
+                        pagesCompleted: "",
+                        lessonNotes: "",
+                        homeworkAssigned: "",
+                    }));
+                }}
+                defaultAssignments={modalAssignments}
+                defaultTitle={modalTitle}
             />
         </Card>
     );
