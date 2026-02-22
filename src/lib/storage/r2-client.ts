@@ -180,6 +180,15 @@ class R2Client {
   }
 
   /**
+   * Generate a file key for syllabus uploads
+   */
+  generateSyllabusKey(classId: string, filename: string): string {
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 8);
+    return `docs/syllabus/${classId}/${timestamp}-${randomId}-${filename}`;
+  }
+
+  /**
    * Get file metadata
    */
   async getFileMetadata(key: string): Promise<{

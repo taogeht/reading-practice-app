@@ -119,6 +119,7 @@ export const classes = pgTable('classes', {
   academicYear: varchar('academic_year', { length: 20 }),
   active: boolean('active').default(true),
   showPracticeStories: boolean('show_practice_stories').default(false),
+  syllabusUrl: varchar('syllabus_url', { length: 500 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -390,6 +391,39 @@ export const classProgress = pgTable(
   })
 );
 
+// Syllabus Weeks - Mapping weeks to dates for a class
+export const classSyllabusWeeks = pgTable(
+  'class_syllabus_weeks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    weekNumber: integer('week_number').notNull(),
+    title: varchar('title', { length: 255 }), // e.g., "Week 1", "09/01-09/05"
+    startDate: timestamp('start_date', { withTimezone: true }),
+    endDate: timestamp('end_date', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    classIdIdx: index('idx_syllabus_weeks_class_id').on(table.classId),
+    uniqueClassWeek: uniqueIndex('unique_class_week').on(table.classId, table.weekNumber),
+  })
+);
+
+// Syllabus Assignments - Mapping books/pages to a specific week
+export const classSyllabusAssignments = pgTable(
+  'class_syllabus_assignments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    weekId: uuid('week_id').notNull().references(() => classSyllabusWeeks.id, { onDelete: 'cascade' }),
+    bookId: uuid('book_id').notNull().references(() => books.id, { onDelete: 'cascade' }),
+    pages: varchar('pages', { length: 100 }), // e.g., "4-7", "1-3, 5"
+  },
+  (table) => ({
+    weekIdIdx: index('idx_syllabus_assignments_week_id').on(table.weekId),
+    uniqueWeekBook: uniqueIndex('unique_week_book').on(table.weekId, table.bookId),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   student: one(students, { fields: [users.id], references: [students.id] }),
@@ -435,6 +469,7 @@ export const classesRelations = relations(classes, ({ one, many }) => ({
   enrollments: many(classEnrollments),
   assignments: many(assignments),
   spellingLists: many(spellingLists),
+  syllabusWeeks: many(classSyllabusWeeks),
 }));
 
 export const classEnrollmentsRelations = relations(classEnrollments, ({ one }) => ({
@@ -475,6 +510,15 @@ export const spellingWordsRelations = relations(spellingWords, ({ one }) => ({
   spellingList: one(spellingLists, { fields: [spellingWords.spellingListId], references: [spellingLists.id] }),
 }));
 
+export const classSyllabusWeeksRelations = relations(classSyllabusWeeks, ({ one, many }) => ({
+  class: one(classes, { fields: [classSyllabusWeeks.classId], references: [classes.id] }),
+  assignments: many(classSyllabusAssignments),
+}));
+
+export const classSyllabusAssignmentsRelations = relations(classSyllabusAssignments, ({ one }) => ({
+  week: one(classSyllabusWeeks, { fields: [classSyllabusAssignments.weekId], references: [classSyllabusWeeks.id] }),
+  book: one(books, { fields: [classSyllabusAssignments.bookId], references: [books.id] }),
+}));
 
 // Simple sessions table for authentication
 export const session = pgTable('session', {

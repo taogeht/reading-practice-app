@@ -23,6 +23,7 @@ import {
     Library,
 } from "lucide-react";
 import { AssignBooksDialog } from "./assign-books-dialog";
+import { SyllabusManager } from "./syllabus-manager";
 
 interface AssignedBook {
     id: string;
@@ -59,6 +60,11 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
     const [showAssignBooks, setShowAssignBooks] = useState(false);
     const [showHistory, setShowHistory] = useState(false); // Default to minimized
 
+    const [showSyllabusManager, setShowSyllabusManager] = useState(false);
+    const [syllabusWeeks, setSyllabusWeeks] = useState<any[]>([]);
+    const [syllabusUrl, setSyllabusUrl] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'manual' | 'syllabus'>('syllabus');
+
     const [formData, setFormData] = useState({
         bookId: "",
         date: new Date().toISOString().split("T")[0],
@@ -75,9 +81,10 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [booksRes, progressRes] = await Promise.all([
+            const [booksRes, progressRes, syllabusRes] = await Promise.all([
                 fetch(`/api/classes/${classId}/books`),
                 fetch(`/api/classes/${classId}/progress?limit=10`),
+                fetch(`/api/classes/${classId}/syllabus`),
             ]);
 
             if (booksRes.ok) {
@@ -92,6 +99,12 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
             if (progressRes.ok) {
                 const progressData = await progressRes.json();
                 setProgress(progressData.progress || []);
+            }
+
+            if (syllabusRes.ok) {
+                const syllabusData = await syllabusRes.json();
+                setSyllabusWeeks(syllabusData.weeks || []);
+                setSyllabusUrl(syllabusData.syllabusUrl || null);
             }
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -130,6 +143,34 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
             }
         } catch (error) {
             console.error("Error saving progress:", error);
+            alert("Failed to save progress");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleLogWeek = async (week: any) => {
+        if (!confirm(`Record progress for all assigned books safely to ${week.title}?`)) return;
+        setSaving(true);
+        try {
+            const today = new Date().toISOString().split("T")[0];
+            const response = await fetch(`/api/classes/${classId}/progress/bulk`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    date: today,
+                    lessonNotes: `Completed ${week.title}`,
+                    assignments: week.assignments
+                }),
+            });
+
+            if (response.ok) {
+                await fetchData();
+            } else {
+                alert("Failed to save progress");
+            }
+        } catch (error) {
+            console.error("Error saving bulk progress:", error);
             alert("Failed to save progress");
         } finally {
             setSaving(false);
@@ -218,121 +259,202 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                         </div>
                     ) : (
                         <div className="space-y-4 pt-4">
-                            {/* Book Buttons - Quick Entry */}
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-gray-600">Tap a book to log progress:</Label>
-                                    <Button
-                                        onClick={() => setShowAssignBooks(true)}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-gray-500"
-                                    >
-                                        <Library className="w-4 h-4 mr-1" />
-                                        Manage
-                                    </Button>
-                                </div>
+                            <div className="flex border-b mb-4">
+                                <button
+                                    className={`px-4 py-2 text-sm font-medium transition-colors ${viewMode === 'syllabus' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    onClick={() => setViewMode('syllabus')}
+                                >
+                                    Syllabus Plan View
+                                </button>
+                                <button
+                                    className={`px-4 py-2 text-sm font-medium transition-colors ${viewMode === 'manual' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    onClick={() => setViewMode('manual')}
+                                >
+                                    Manual Book Entry
+                                </button>
+                            </div>
 
-                                <div className="grid gap-2">
-                                    {currentBooks.map((book) => {
-                                        const isSelected = formData.bookId === book.bookId;
-                                        return (
-                                            <div key={book.bookId} className="space-y-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (isSelected) {
-                                                            setFormData(prev => ({ ...prev, bookId: "" }));
-                                                        } else {
-                                                            setFormData(prev => ({ ...prev, bookId: book.bookId }));
-                                                        }
-                                                    }}
-                                                    className={`
-                                                        w-full p-3 rounded-lg border-2 text-left transition-all
-                                                        ${isSelected
-                                                            ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
-                                                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                                                        }
-                                                    `}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <BookOpen className={`w-5 h-5 ${isSelected ? "text-blue-600" : "text-gray-400"}`} />
-                                                            <span className={`font-medium ${isSelected ? "text-blue-900" : "text-gray-800"}`}>
-                                                                {book.title}
-                                                            </span>
-                                                        </div>
-                                                        {book.totalPages && (
-                                                            <span className="text-xs text-gray-400">
-                                                                {book.totalPages} pg
-                                                            </span>
+                            {viewMode === 'syllabus' && (
+                                <div className="space-y-4 mb-6">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-gray-600">Record a planned week:</Label>
+                                        <Button
+                                            onClick={() => setShowSyllabusManager(!showSyllabusManager)}
+                                            variant={showSyllabusManager ? "secondary" : "ghost"}
+                                            size="sm"
+                                            className={showSyllabusManager ? "" : "text-gray-500"}
+                                        >
+                                            <FileText className="w-4 h-4 mr-2" />
+                                            {showSyllabusManager ? "Close Manager" : "Manage Syllabus"}
+                                        </Button>
+                                    </div>
+
+                                    {showSyllabusManager && (
+                                        <div className="bg-gray-50 p-4 rounded-xl border-2 border-dashed mt-2 mb-6">
+                                            <SyllabusManager classId={classId} assignedBooks={currentBooks} onSyllabusUpdated={fetchData} />
+                                        </div>
+                                    )}
+
+                                    {!showSyllabusManager && syllabusWeeks.length === 0 ? (
+                                        <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed">
+                                            <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                            <p className="text-gray-500 text-sm">No syllabus weeks have been set up yet.</p>
+                                            <Button variant="link" onClick={() => setShowSyllabusManager(true)} className="mt-1">
+                                                Set up Syllabus Weekly Plan
+                                            </Button>
+                                        </div>
+                                    ) : !showSyllabusManager && (
+                                        <div className="space-y-3">
+                                            {syllabusWeeks.map(week => (
+                                                <div key={week.id} className="border border-gray-200 bg-white rounded-lg p-3 hover:border-blue-300 transition-colors shadow-sm">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <h4 className="font-semibold text-blue-900">{week.title || `Week ${week.weekNumber}`}</h4>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleLogWeek(week)}
+                                                            disabled={saving || week.assignments.length === 0}
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                        >
+                                                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Record Quick Day/Week</span>}
+                                                        </Button>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {week.assignments.length > 0 ? week.assignments.map((a: any) => {
+                                                            const book = currentBooks.find(b => b.bookId === a.bookId);
+                                                            if (!book) return null;
+                                                            return (
+                                                                <Badge key={a.bookId} variant="secondary" className="bg-blue-50 text-blue-800 border-blue-200 font-normal">
+                                                                    <BookOpen className="w-3 h-3 mr-1" />
+                                                                    {book.title} <span className="font-semibold ml-1">Pg: {a.pages}</span>
+                                                                </Badge>
+                                                            );
+                                                        }) : (
+                                                            <span className="text-xs text-gray-400 italic">No assignments for this week.</span>
                                                         )}
                                                     </div>
-                                                </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                                                {/* Expanded input area when selected */}
-                                                {isSelected && (
-                                                    <div className="pl-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
-                                                        <div className="flex gap-2">
-                                                            <div className="flex-1">
+                            {viewMode === 'manual' && (
+                                <div className="space-y-4 mb-6 animate-in fade-in duration-300">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-gray-600">Tap a book to log progress:</Label>
+                                        <Button
+                                            onClick={() => setShowAssignBooks(true)}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-gray-500"
+                                        >
+                                            <Library className="w-4 h-4 mr-1" />
+                                            Manage
+                                        </Button>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        {currentBooks.map((book) => {
+                                            const isSelected = formData.bookId === book.bookId;
+                                            return (
+                                                <div key={book.bookId} className="space-y-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (isSelected) {
+                                                                setFormData(prev => ({ ...prev, bookId: "" }));
+                                                            } else {
+                                                                setFormData(prev => ({ ...prev, bookId: book.bookId }));
+                                                            }
+                                                        }}
+                                                        className={`
+                                                        w-full p-3 rounded-lg border-2 text-left transition-all
+                                                        ${isSelected
+                                                                ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
+                                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                                                            }
+                                                    `}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <BookOpen className={`w-5 h-5 ${isSelected ? "text-blue-600" : "text-gray-400"}`} />
+                                                                <span className={`font-medium ${isSelected ? "text-blue-900" : "text-gray-800"}`}>
+                                                                    {book.title}
+                                                                </span>
+                                                            </div>
+                                                            {book.totalPages && (
+                                                                <span className="text-xs text-gray-400">
+                                                                    {book.totalPages} pg
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </button>
+
+                                                    {/* Expanded input area when selected */}
+                                                    {isSelected && (
+                                                        <div className="pl-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                                            <div className="flex gap-2">
+                                                                <div className="flex-1">
+                                                                    <Input
+                                                                        placeholder="Pages (e.g., 15-18)"
+                                                                        value={formData.pagesCompleted}
+                                                                        onChange={(e) => setFormData(prev => ({ ...prev, pagesCompleted: e.target.value }))}
+                                                                        className="bg-white"
+                                                                        autoFocus
+                                                                    />
+                                                                </div>
                                                                 <Input
-                                                                    placeholder="Pages (e.g., 15-18)"
-                                                                    value={formData.pagesCompleted}
-                                                                    onChange={(e) => setFormData(prev => ({ ...prev, pagesCompleted: e.target.value }))}
-                                                                    className="bg-white"
-                                                                    autoFocus
+                                                                    type="date"
+                                                                    value={formData.date}
+                                                                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                                                                    className="w-36 bg-white"
                                                                 />
                                                             </div>
+
                                                             <Input
-                                                                type="date"
-                                                                value={formData.date}
-                                                                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                                                                className="w-36 bg-white"
+                                                                placeholder="Homework assigned (optional)"
+                                                                value={formData.homeworkAssigned}
+                                                                onChange={(e) => setFormData(prev => ({ ...prev, homeworkAssigned: e.target.value }))}
+                                                                className="bg-white"
                                                             />
+
+                                                            <Textarea
+                                                                placeholder="Class notes for today (optional)"
+                                                                value={formData.lessonNotes}
+                                                                onChange={(e) => setFormData(prev => ({ ...prev, lessonNotes: e.target.value }))}
+                                                                className="bg-white"
+                                                                rows={2}
+                                                            />
+
+                                                            <div className="flex gap-2">
+                                                                <Button
+                                                                    onClick={handleSave}
+                                                                    disabled={saving || !formData.pagesCompleted.trim()}
+                                                                    className="flex-1"
+                                                                >
+                                                                    {saving ? (
+                                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                    ) : (
+                                                                        <Save className="w-4 h-4 mr-2" />
+                                                                    )}
+                                                                    Save
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={() => setFormData(prev => ({ ...prev, bookId: "" }))}
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
-
-                                                        <Input
-                                                            placeholder="Homework assigned (optional)"
-                                                            value={formData.homeworkAssigned}
-                                                            onChange={(e) => setFormData(prev => ({ ...prev, homeworkAssigned: e.target.value }))}
-                                                            className="bg-white"
-                                                        />
-
-                                                        <Textarea
-                                                            placeholder="Class notes for today (optional)"
-                                                            value={formData.lessonNotes}
-                                                            onChange={(e) => setFormData(prev => ({ ...prev, lessonNotes: e.target.value }))}
-                                                            className="bg-white"
-                                                            rows={2}
-                                                        />
-
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                onClick={handleSave}
-                                                                disabled={saving || !formData.pagesCompleted.trim()}
-                                                                className="flex-1"
-                                                            >
-                                                                {saving ? (
-                                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                                ) : (
-                                                                    <Save className="w-4 h-4 mr-2" />
-                                                                )}
-                                                                Save
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                onClick={() => setFormData(prev => ({ ...prev, bookId: "" }))}
-                                                            >
-                                                                <X className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Progress History */}
                             {progress.length > 0 && (
