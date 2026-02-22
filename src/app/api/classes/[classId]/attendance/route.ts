@@ -65,11 +65,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Default behavior: single date query
-        const targetDate = dateParam ? new Date(dateParam) : new Date();
-        // Set to start of day
-        targetDate.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(targetDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        // Safely parse YYYY-MM-DD without relying on system timezone
+        let targetDate: Date;
+        let endOfDay: Date;
+
+        if (dateParam) {
+            const [year, month, day] = dateParam.split('-').map(Number);
+            targetDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+            endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+        } else {
+            const now = new Date();
+            targetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+            endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+        }
 
         // Get all students enrolled in this class
         const enrolledStudents = await db
@@ -138,8 +146,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        const targetDate = new Date(date);
-        targetDate.setHours(0, 0, 0, 0);
+        // Safely parse YYYY-MM-DD without relying on system timezone
+        const [year, month, day] = date.split('-').map(Number);
+        const targetDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
 
         // Process each attendance record
         const results = await Promise.all(
@@ -222,10 +231,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         if (studentId && date) {
-            const targetDate = new Date(date);
-            targetDate.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(targetDate);
-            endOfDay.setHours(23, 59, 59, 999);
+            // Safely parse YYYY-MM-DD without relying on system timezone
+            const [year, month, day] = date.split('-').map(Number);
+            const targetDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+            const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
 
             const result = await db
                 .update(attendanceRecords)

@@ -29,12 +29,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        const progressDate = new Date(date);
-        progressDate.setHours(0, 0, 0, 0);
+        // Safely parse YYYY-MM-DD without relying on system timezone
+        const [year, month, day] = date.split('-').map(Number);
 
-        const startOfDay = new Date(progressDate);
-        const endOfDay = new Date(progressDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        // Use UTC to avoid any server-time offset issues
+        const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+        const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+
+        // Ensure progressDate matches startOfDay for the record
+        const progressDate = new Date(startOfDay);
 
         const createdRecords = [];
 
