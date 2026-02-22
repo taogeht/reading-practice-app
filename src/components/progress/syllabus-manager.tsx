@@ -279,7 +279,7 @@ export function SyllabusManager({
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="font-medium text-lg">Weekly Schedule & Assignments</h3>
-                    {!editingWeekId && !isImportingExcel && (
+                    {!isImportingExcel && (
                         <div className="flex gap-2">
                             <Button onClick={() => setIsImportingExcel(true)} size="sm" variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
                                 <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -294,78 +294,93 @@ export function SyllabusManager({
                 </div>
 
                 <div className="space-y-4">
-                    {isImportingExcel && (
+                    {isImportingExcel ? (
                         <div className="mb-6">
                             <SyllabusExcelParser
                                 books={assignedBooks.map(b => ({ id: b.bookId, name: b.title }))}
-                                onImport={handleExcelImport}
+                                onImport={async (parsedWeeks) => {
+                                    await handleExcelImport(parsedWeeks);
+                                    if (parsedWeeks.length > 0) {
+                                        // Auto-select first week after import when we fetch the new syllabus
+                                        // This will happen in the subsequent fetchSyllabus call
+                                    }
+                                }}
                                 onCancel={() => setIsImportingExcel(false)}
                             />
                         </div>
-                    )}
-
-                    {weeks.length === 0 && !editingWeekId && !isImportingExcel && (
-                        <div className="text-center p-8 bg-gray-50 rounded-lg text-gray-500">
-                            <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p>No weeks defined yet.</p>
-                            <p className="text-sm mt-1">Add your weekly schedule to easily track class progress.</p>
-                        </div>
-                    )}
-
-                    {weeks.map(week => {
-                        if (editingWeekId === week.id) {
-                            return <WeekEditor key={week.id} form={editForm} setForm={setEditForm} onSave={saveWeek} onCancel={() => setEditingWeekId(null)} assignedBooks={assignedBooks} />;
-                        }
-
-                        return (
-                            <Card key={week.id} className="border border-gray-200">
-                                <div className="p-4 flex items-start justify-between bg-gray-50 rounded-t-lg border-b">
-                                    <div>
-                                        <h4 className="font-medium text-lg flex items-center gap-2">
-                                            {week.title || `Week ${week.weekNumber}`}
-                                        </h4>
-                                        {(week.startDate || week.endDate) && (
-                                            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                                                <Calendar className="w-3 h-3" />
-                                                {week.startDate ? new Date(week.startDate).toLocaleDateString() : '?'} -
-                                                {week.endDate ? new Date(week.endDate).toLocaleDateString() : '?'}
-                                            </p>
-                                        )}
+                    ) : (
+                        <div className="flex flex-col md:flex-row gap-6 items-start">
+                            {/* Left Sidebar: Week List */}
+                            <div className="w-full md:w-[35%] space-y-2">
+                                {weeks.length === 0 && editingWeekId !== "new" ? (
+                                    <div className="text-center p-6 bg-gray-50 rounded-lg text-gray-500 border border-dashed">
+                                        <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-sm">No weeks defined.</p>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => startEditWeek(week)}>
-                                            <Edit2 className="w-4 h-4 text-gray-500" />
-                                        </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => deleteWeek(week.id)}>
-                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                        </Button>
-                                    </div>
-                                </div>
-                                <CardContent className="p-4">
-                                    {week.assignments && week.assignments.length > 0 ? (
-                                        <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
-                                            {week.assignments.map(a => {
-                                                const book = assignedBooks.find(b => b.bookId === a.bookId);
-                                                if (!book) return null;
+                                ) : (
+                                    <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
+                                        <div className="max-h-[500px] overflow-y-auto">
+                                            {/* "New Week" Placeholder Button */}
+                                            {editingWeekId === "new" && (
+                                                <button
+                                                    className="w-full text-left p-3 border-b border-blue-200 bg-blue-50 relative"
+                                                >
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
+                                                    <span className="font-medium text-blue-900">New Week</span>
+                                                </button>
+                                            )}
+
+                                            {weeks.map(week => {
+                                                const isActive = editingWeekId === week.id;
                                                 return (
-                                                    <div key={a.bookId} className="flex items-center gap-2 bg-blue-50/50 p-2 rounded-md border border-blue-100">
-                                                        <BookOpen className="w-4 h-4 text-blue-500 shrink-0" />
-                                                        <span className="text-sm font-medium text-gray-800 truncate" title={book.title}>{book.title}</span>
-                                                        <span className="text-sm bg-white px-2 py-0.5 rounded border shadow-sm ml-auto whitespace-nowrap">Pg: {a.pages}</span>
-                                                    </div>
+                                                    <button
+                                                        key={week.id}
+                                                        onClick={() => {
+                                                            if (editingWeekId !== week.id) {
+                                                                startEditWeek(week);
+                                                            }
+                                                        }}
+                                                        className={`w-full text-left p-3 border-b last:border-b-0 relative transition-colors hover:bg-gray-50
+                                                            ${isActive ? 'bg-blue-50 hover:bg-blue-50' : 'bg-white'}`}
+                                                    >
+                                                        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />}
+                                                        <div className="font-medium text-gray-900">{week.title || `Week ${week.weekNumber}`}</div>
+                                                        {(week.startDate || week.endDate) && (
+                                                            <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                                                <Calendar className="w-3 h-3 mr-1" />
+                                                                {week.startDate ? new Date(week.startDate).toLocaleDateString() : '?'} -
+                                                                {week.endDate ? new Date(week.endDate).toLocaleDateString() : '?'}
+                                                            </div>
+                                                        )}
+                                                    </button>
                                                 );
                                             })}
                                         </div>
-                                    ) : (
-                                        <p className="text-sm text-gray-500 italic">No book pages assigned for this week.</p>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
+                                    </div>
+                                )}
+                            </div>
 
-                    {editingWeekId === "new" && (
-                        <WeekEditor form={editForm} setForm={setEditForm} onSave={saveWeek} onCancel={() => setEditingWeekId(null)} assignedBooks={assignedBooks} />
+                            {/* Right Content Area: Week Editor / Details */}
+                            <div className="w-full md:w-[65%]">
+                                {editingWeekId ? (
+                                    <div className="bg-white rounded-lg shadow-sm border animate-in fade-in zoom-in duration-200">
+                                        <WeekEditor
+                                            form={editForm}
+                                            setForm={setEditForm}
+                                            onSave={saveWeek}
+                                            onDelete={editingWeekId !== "new" ? () => deleteWeek(editingWeekId) : undefined}
+                                            onCancel={() => setEditingWeekId(null)}
+                                            assignedBooks={assignedBooks}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="hidden md:flex flex-col items-center justify-center p-12 text-center border rounded-lg bg-gray-50 text-gray-500 h-[300px]">
+                                        <BookOpen className="w-12 h-12 text-gray-300 mb-3" />
+                                        <p>Select a week from the sidebar to view and edit its reading assignments.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
@@ -377,12 +392,14 @@ function WeekEditor({
     form,
     setForm,
     onSave,
+    onDelete,
     onCancel,
     assignedBooks
 }: {
     form: Partial<SyllabusWeek>,
     setForm: (v: any) => void,
     onSave: () => void,
+    onDelete?: () => void,
     onCancel: () => void,
     assignedBooks: AssignedBook[]
 }) {
@@ -398,16 +415,25 @@ function WeekEditor({
     };
 
     return (
-        <Card className="border-2 border-blue-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <CardContent className="p-4 space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b">
-                    <h4 className="font-semibold text-blue-900">
-                        {form.id ? 'Edit Week Details' : 'New Week Details'}
-                    </h4>
-                    <Button variant="ghost" size="sm" onClick={onCancel}><X className="w-4 h-4" /></Button>
+        <div className="flex flex-col h-full space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b px-4 mt-4">
+                <h4 className="font-semibold text-blue-900 text-lg">
+                    {form.id ? 'Edit Week Details' : 'New Week Details'}
+                </h4>
+                <div className="flex gap-1">
+                    {onDelete && (
+                        <Button variant="ghost" size="icon" onClick={onDelete} title="Delete Week" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={onCancel} title="Close">
+                        <X className="w-4 h-4 text-gray-500" />
+                    </Button>
                 </div>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
+            <div className="px-4 space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-1">
                         <Label>Week Number</Label>
                         <Input
@@ -443,36 +469,38 @@ function WeekEditor({
                     </div>
                 </div>
 
-                <div className="pt-4 space-y-3">
-                    <Label className="text-gray-600 block mb-2">Assign Book Pages</Label>
-                    {assignedBooks.map(book => {
-                        const existing = form.assignments?.find(a => a.bookId === book.bookId);
-                        const pages = existing ? existing.pages : "";
+                <div className="pt-2 space-y-3 pb-4">
+                    <Label className="text-gray-600 block mb-2 font-semibold">Assign Book Pages</Label>
+                    <div className="grid gap-3 grid-cols-1 xl:grid-cols-2">
+                        {assignedBooks.map(book => {
+                            const existing = form.assignments?.find(a => a.bookId === book.bookId);
+                            const pages = existing ? existing.pages : "";
 
-                        return (
-                            <div key={book.bookId} className="flex items-center gap-3 bg-gray-50 p-2 rounded border">
-                                <BookOpen className="w-4 h-4 text-gray-400 shrink-0" />
-                                <span className="text-sm font-medium flex-1 truncate">{book.title}</span>
-                                <Input
-                                    className="w-32 h-8 bg-white"
-                                    placeholder="Pages (e.g. 4-7)"
-                                    value={pages}
-                                    onChange={(e) => handleAssignmentChange(book.bookId, e.target.value)}
-                                />
-                            </div>
-                        )
-                    })}
+                            return (
+                                <div key={book.bookId} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 bg-gray-50 p-3 rounded-lg border focus-within:ring-1 focus-within:ring-blue-500 transition-shadow">
+                                    <BookOpen className="w-4 h-4 text-blue-500 shrink-0 mt-1 sm:mt-0" />
+                                    <span className="text-sm font-medium flex-1 line-clamp-2" title={book.title}>{book.title}</span>
+                                    <Input
+                                        className="sm:w-32 h-9 bg-white"
+                                        placeholder="Pages (e.g. 4-7)"
+                                        value={pages}
+                                        onChange={(e) => handleAssignmentChange(book.bookId, e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') onSave();
+                                        }}
+                                    />
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
 
-                <div className="flex gap-2 pt-2">
-                    <Button onClick={onSave} className="flex-1">
-                        <Save className="w-4 h-4 mr-2" /> Save Week
-                    </Button>
-                    <Button variant="outline" onClick={onCancel}>
-                        Cancel
+                <div className="flex gap-3 pt-4 border-t pb-4">
+                    <Button onClick={onSave} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                        <Save className="w-4 h-4 mr-2" /> Save Changes
                     </Button>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
