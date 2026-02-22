@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2, Edit2, Upload, ExternalLink, Save, X, Calendar, BookOpen, FileText } from "lucide-react";
+import { Loader2, Plus, Trash2, Edit2, Upload, ExternalLink, Save, X, Calendar, BookOpen, FileText, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { SyllabusExcelParser, ParsedWeek } from "./syllabus-excel-parser";
 
 interface AssignedBook {
     id: string;
@@ -44,6 +45,7 @@ export function SyllabusManager({
     const [isUploading, setIsUploading] = useState(false);
     const [syllabusUrl, setSyllabusUrl] = useState<string | null>(null);
     const [weeks, setWeeks] = useState<SyllabusWeek[]>([]);
+    const [isImportingExcel, setIsImportingExcel] = useState(false);
 
     // Edit state
     const [editingWeekId, setEditingWeekId] = useState<string | null>(null);
@@ -210,6 +212,28 @@ export function SyllabusManager({
         }
     };
 
+    const handleExcelImport = async (parsedWeeks: ParsedWeek[]) => {
+        try {
+            const res = await fetch(`/api/classes/${classId}/syllabus/bulk-import`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ weeks: parsedWeeks })
+            });
+
+            if (res.ok) {
+                await fetchSyllabus();
+                setIsImportingExcel(false);
+                if (onSyllabusUpdated) onSyllabusUpdated();
+            } else {
+                const data = await res.json();
+                alert(`Failed to import weeks: ${data.details || data.error}`);
+            }
+        } catch (error) {
+            console.error("Error importing weeks:", error);
+            alert("Error importing weeks");
+        }
+    };
+
     if (loading) {
         return <div className="flex justify-center p-4"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
     }
@@ -255,16 +279,32 @@ export function SyllabusManager({
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="font-medium text-lg">Weekly Schedule & Assignments</h3>
-                    {!editingWeekId && (
-                        <Button onClick={startAddWeek} size="sm">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Week
-                        </Button>
+                    {!editingWeekId && !isImportingExcel && (
+                        <div className="flex gap-2">
+                            <Button onClick={() => setIsImportingExcel(true)} size="sm" variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
+                                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                Import from Excel
+                            </Button>
+                            <Button onClick={startAddWeek} size="sm">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Week
+                            </Button>
+                        </div>
                     )}
                 </div>
 
                 <div className="space-y-4">
-                    {weeks.length === 0 && !editingWeekId && (
+                    {isImportingExcel && (
+                        <div className="mb-6">
+                            <SyllabusExcelParser
+                                books={assignedBooks.map(b => ({ id: b.bookId, name: b.title }))}
+                                onImport={handleExcelImport}
+                                onCancel={() => setIsImportingExcel(false)}
+                            />
+                        </div>
+                    )}
+
+                    {weeks.length === 0 && !editingWeekId && !isImportingExcel && (
                         <div className="text-center p-8 bg-gray-50 rounded-lg text-gray-500">
                             <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                             <p>No weeks defined yet.</p>
