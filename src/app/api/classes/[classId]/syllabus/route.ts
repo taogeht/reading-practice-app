@@ -59,9 +59,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             syllabusUrl: classInfo.syllabusUrl,
             weeks: weeksWithAssignments
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('[GET /api/classes/[classId]/syllabus] Error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error', details: error?.message || String(error) }, { status: 500 });
     }
 }
 
@@ -107,8 +107,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('[POST /api/classes/[classId]/syllabus] Error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error', details: error?.message || String(error), stack: error?.stack }, { status: 500 });
     }
 }
