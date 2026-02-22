@@ -60,34 +60,44 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
                 setSheetData(jsonData);
 
-                // Find header rows. Assume Row 2 (index 1) has Book Names, Row 3 (index 2) has sub-headers like "Page" or "Unit"
-                if (jsonData.length < 3) {
-                    throw new Error("Spreadsheet doesn't have enough rows to identify headers.");
+                // The user's screenshot showed:
+                // Row 1 or 2 contains headers. Sometimes Row 3 has 'Unit' or 'Page'.
+                // Columns: A: Wk, B: Date, C+: Books
+
+                // Let's find the header row by looking for "Wk" or "Week" in the first column
+                let headerRowIndex = 0;
+                for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
+                    const row = jsonData[i] || [];
+                    const firstCell = row[0]?.toString().trim().toLowerCase();
+                    if (firstCell === 'wk' || firstCell === 'week') {
+                        headerRowIndex = i;
+                        break;
+                    }
                 }
 
-                const headersRow = jsonData[1] || [];
-                const subHeadersRow = jsonData[2] || [];
+                const headersRow = jsonData[headerRowIndex] || [];
+                // Sub-header might be the next row
+                const subHeadersRow = jsonData[headerRowIndex + 1] || [];
 
-                let currentBookName = "";
                 const columnsToMap: ExcelColumn[] = [];
 
+                // Books start at Column C (index 2)
                 for (let c = 2; c < Math.max(headersRow.length, subHeadersRow.length); c++) {
-                    const headerVal = headersRow[c]?.toString().trim();
-                    if (headerVal) {
-                        currentBookName = headerVal;
-                    }
+                    // Try to get the book name from the main header row
+                    let bookName = headersRow[c]?.toString().trim();
 
-                    if (!currentBookName) continue;
-
-                    const subHeaderVal = subHeadersRow[c]?.toString().trim().toLowerCase() || "";
-
-                    if (subHeaderVal === 'page' || subHeaderVal === 'pages') {
-                        columnsToMap.push({ bookName: currentBookName, colIndex: c });
-                    } else if (subHeaderVal === '') {
-                        if (!columnsToMap.find(col => col.bookName === currentBookName)) {
-                            columnsToMap.push({ bookName: currentBookName, colIndex: c });
+                    // If the header row is empty here, see if the subheader row has the name (sometimes people use two rows inconsistently)
+                    if (!bookName) {
+                        const subVal = subHeadersRow[c]?.toString().trim();
+                        // Only use sub-row if it looks like a title, not something like 'Page' or 'Unit'
+                        if (subVal && subVal.toLowerCase() !== 'page' && subVal.toLowerCase() !== 'pages' && subVal.toLowerCase() !== 'unit') {
+                            bookName = subVal;
                         }
                     }
+
+                    if (!bookName) continue;
+
+                    columnsToMap.push({ bookName, colIndex: c });
                 }
 
                 if (columnsToMap.length === 0) {
