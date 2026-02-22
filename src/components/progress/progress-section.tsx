@@ -223,14 +223,29 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
         });
     };
 
+    // Keep track of the currently selected week
+    const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
+
     // Filter to only show current (non-archived) books
     const currentBooks = books.filter(b => b.isCurrent);
 
     const latestProgress = progress.length > 0 ? progress[0] : null;
 
+    // Determine which weeks to show
+    const displayedWeeks = selectedWeekId
+        ? syllabusWeeks.filter(w => w.id === selectedWeekId)
+        : syllabusWeeks.slice(0, 1); // Default to showing the first week if none selected but weeks exist
+
+    // Auto-select the first week when syllabus weeks load
+    useEffect(() => {
+        if (syllabusWeeks.length > 0 && !selectedWeekId) {
+            setSelectedWeekId(syllabusWeeks[0].id);
+        }
+    }, [syllabusWeeks, selectedWeekId]);
+
     return (
         <Card className={`transition-all ${isExpanded ? '' : 'hover:bg-gray-50'}`}>
-            {/* Compact Header */}
+            {/* ... Compact Header (unchanged) ... */}
             <div
                 className="flex items-center justify-between p-4 cursor-pointer"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -314,7 +329,20 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                             {viewMode === 'syllabus' && (
                                 <div className="space-y-4 mb-6">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-gray-600">Record a planned week:</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-gray-600">Select Week:</Label>
+                                            {!showSyllabusManager && syllabusWeeks.length > 0 && (
+                                                <select
+                                                    className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                    value={selectedWeekId || ""}
+                                                    onChange={e => setSelectedWeekId(e.target.value)}
+                                                >
+                                                    {syllabusWeeks.map(w => (
+                                                        <option key={w.id} value={w.id}>{w.title || `Week ${w.weekNumber}`}</option>
+                                                    ))}
+                                                </select>
+                                            )}
+                                        </div>
                                         <Button
                                             onClick={() => setShowSyllabusManager(!showSyllabusManager)}
                                             variant={showSyllabusManager ? "secondary" : "ghost"}
@@ -342,7 +370,7 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                         </div>
                                     ) : !showSyllabusManager && (
                                         <div className="space-y-3">
-                                            {syllabusWeeks.map(week => (
+                                            {displayedWeeks.map(week => (
                                                 <div key={week.id} className="border border-gray-200 bg-white rounded-lg p-3 hover:border-blue-300 transition-colors shadow-sm">
                                                     <div className="flex justify-between items-center mb-2">
                                                         <h4 className="font-semibold text-blue-900">{week.title || `Week ${week.weekNumber}`}</h4>
