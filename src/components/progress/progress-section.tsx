@@ -21,9 +21,12 @@ import {
     Pencil,
     X,
     Library,
+    Trash2,
+    Check
 } from "lucide-react";
 import { AssignBooksDialog } from "./assign-books-dialog";
 import { SyllabusManager } from "./syllabus-manager";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface AssignedBook {
     id: string;
@@ -144,6 +147,40 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
         } catch (error) {
             console.error("Error saving progress:", error);
             alert("Failed to save progress");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const updateSyllabusAssignment = async (week: any, bookId: string, newPages: string | null) => {
+        try {
+            setSaving(true);
+            const newAssignments = newPages === null
+                ? week.assignments.filter((a: any) => a.bookId !== bookId)
+                : week.assignments.map((a: any) => a.bookId === bookId ? { ...a, pages: newPages } : a);
+
+            const payload = {
+                weekNumber: week.weekNumber,
+                title: week.title,
+                startDate: week.startDate,
+                endDate: week.endDate,
+                assignments: newAssignments
+            };
+
+            const res = await fetch(`/api/classes/${classId}/syllabus/weeks/${week.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                await fetchData();
+            } else {
+                alert("Failed to update assignment");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error saving assignment");
         } finally {
             setSaving(false);
         }
@@ -323,10 +360,14 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                                             const book = currentBooks.find(b => b.bookId === a.bookId);
                                                             if (!book) return null;
                                                             return (
-                                                                <Badge key={a.bookId} variant="secondary" className="bg-blue-50 text-blue-800 border-blue-200 font-normal">
-                                                                    <BookOpen className="w-3 h-3 mr-1" />
-                                                                    {book.title} <span className="font-semibold ml-1">Pg: {a.pages}</span>
-                                                                </Badge>
+                                                                <EditableAssignmentBadge
+                                                                    key={a.bookId}
+                                                                    assignment={a}
+                                                                    book={book}
+                                                                    week={week}
+                                                                    onUpdate={updateSyllabusAssignment}
+                                                                    isSaving={saving}
+                                                                />
                                                             );
                                                         }) : (
                                                             <span className="text-xs text-gray-400 italic">No assignments for this week.</span>
@@ -527,5 +568,74 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                 assignedBooks={books}
             />
         </Card>
+    );
+}
+
+function EditableAssignmentBadge({
+    assignment,
+    book,
+    week,
+    onUpdate,
+    isSaving
+}: {
+    assignment: any,
+    book: any,
+    week: any,
+    onUpdate: (week: any, bookId: string, pages: string | null) => Promise<void>,
+    isSaving: boolean
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [pages, setPages] = useState(assignment.pages);
+
+    const handleSave = async () => {
+        await onUpdate(week, book.bookId, pages);
+        setIsOpen(false);
+    };
+
+    const handleRemove = async () => {
+        if (!confirm(`Remove ${book.title} from this week?`)) return;
+        await onUpdate(week, book.bookId, null);
+        setIsOpen(false);
+    };
+
+    return (
+        <Popover open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open);
+            if (open) setPages(assignment.pages);
+        }}>
+            <PopoverTrigger asChild>
+                <Badge variant="secondary" className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-200 font-normal transition-colors select-none">
+                    <BookOpen className="w-3 h-3 mr-1" />
+                    {book.title} <span className="font-semibold ml-1">Pg: {assignment.pages}</span>
+                </Badge>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 shadow-lg border-blue-100" sideOffset={8}>
+                <div className="space-y-3">
+                    <div className="font-medium text-sm text-blue-900 border-b pb-1 truncate" title={book.title}>
+                        {book.title}
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs text-gray-500">Edit Pages</Label>
+                        <Input
+                            value={pages}
+                            onChange={e => setPages(e.target.value)}
+                            className="h-8 text-sm"
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') handleSave();
+                            }}
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                        <Button variant="ghost" size="sm" onClick={handleRemove} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2" disabled={isSaving}>
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Remove
+                        </Button>
+                        <Button size="sm" onClick={handleSave} className="h-8 px-3" disabled={isSaving || !pages.trim() || pages === assignment.pages}>
+                            <Check className="w-3.5 h-3.5 mr-1" /> Save
+                        </Button>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
     );
 }
