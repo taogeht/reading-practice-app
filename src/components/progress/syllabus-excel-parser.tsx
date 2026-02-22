@@ -51,57 +51,60 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
         reader.onload = (e) => {
             try {
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
+                // raw: false ensures dates or numbers like "4-7" don't become float math
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
 
-                // Assume first sheet
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
 
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                // Get everything as strings so page ranges "4-7" don't turn into Excel dates (e.g. 46119)
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }) as string[][];
                 setSheetData(jsonData);
 
-                // The user's screenshot showed:
-                // Row 1 or 2 contains headers. Sometimes Row 3 has 'Unit' or 'Page'.
-                // Columns: A: Wk, B: Date, C+: Books
-
-                // Let's find the header row by looking for "Wk" or "Week" in the first column
-                let headerRowIndex = 0;
-                for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
-                    const row = jsonData[i] || [];
-                    const firstCell = row[0]?.toString().trim().toLowerCase();
-                    if (firstCell === 'wk' || firstCell === 'week') {
-                        headerRowIndex = i;
-                        break;
-                    }
+                if (jsonData.length < 3) {
+                    throw new Error("Spreadsheet doesn't have enough rows to identify headers.");
                 }
 
-                const headersRow = jsonData[headerRowIndex] || [];
-                // Sub-header might be the next row
-                const subHeadersRow = jsonData[headerRowIndex + 1] || [];
+                // test.xlsx layout:
+                // Row 1 (index 0): Book Names (often with weird newlines) e.g. "F & F 1\n SB \n (U1-7)"
+                // Row 2 (index 1): "Wk", "Date"
+                // Row 3 (index 2): "Unit", "Page"
+                // Row 4+ (index 3+): Data 
 
+                const bookNamesRow = jsonData[0] || [];
+                const subHeadersRow = jsonData[2] || [];
+
+                let currentBookName = "";
                 const columnsToMap: ExcelColumn[] = [];
 
                 // Books start at Column C (index 2)
-                for (let c = 2; c < Math.max(headersRow.length, subHeadersRow.length); c++) {
-                    // Try to get the book name from the main header row
-                    let bookName = headersRow[c]?.toString().trim();
-
-                    // If the header row is empty here, see if the subheader row has the name (sometimes people use two rows inconsistently)
-                    if (!bookName) {
-                        const subVal = subHeadersRow[c]?.toString().trim();
-                        // Only use sub-row if it looks like a title, not something like 'Page' or 'Unit'
-                        if (subVal && subVal.toLowerCase() !== 'page' && subVal.toLowerCase() !== 'pages' && subVal.toLowerCase() !== 'unit') {
-                            bookName = subVal;
-                        }
+                const maxCol = Math.max(bookNamesRow.length, subHeadersRow.length, 10);
+                for (let c = 2; c < maxCol; c++) {
+                    const rawBookName = bookNamesRow[c]?.toString().trim();
+                    if (rawBookName) {
+                        // Clean up the name (remove excessive newlines/spaces)
+                        currentBookName = rawBookName.replace(/\n/g, ' ').replace(/\s+/g, ' ');
                     }
 
-                    if (!bookName) continue;
+                    if (!currentBookName) continue;
 
-                    columnsToMap.push({ bookName, colIndex: c });
+                    const subHeaderVal = subHeadersRow[c]?.toString().trim().toLowerCase() || "";
+
+                    // We only want to map columns that are actually page assignments
+                    if (subHeaderVal === 'page' || subHeaderVal === 'pages' || subHeaderVal === 'p.' || subHeaderVal === 'p') {
+                        columnsToMap.push({ bookName: currentBookName, colIndex: c });
+                    } else if (subHeaderVal === '') {
+                        // If no subheader, maybe it's just a direct assignment column like "Phonics Practice".
+                        // Only add it if we haven't already added a 'Page' sub-column for this specific book.
+                        const existingForBook = columnsToMap.find(col => col.bookName === currentBookName);
+                        if (!existingForBook) {
+                            columnsToMap.push({ bookName: currentBookName, colIndex: c });
+                        }
+                    }
                 }
 
                 if (columnsToMap.length === 0) {
-                    throw new Error("Could not detect any valid book columns starting from Column C.");
+                    throw new Error("Could not detect any valid 'Page' columns starting from Column C.");
                 }
 
                 setColumnsFound(columnsToMap);
@@ -130,18 +133,24 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
         try {
             const weeks: ParsedWeek[] = [];
 
-            // Data usually starts at row 4 (index 3)
-            for (let r = 3; r < sheetData.length; r++) {
+            // Find where the actual data starts (the first row with a number in column 0)
+            let dataStartRow = 3; // Default based on sample
+            for (let r = 0; r < sheetData.length; r++) {
+                const wkVal = sheetData[r][0]?.trim();
+                if (wkVal === '1' || wkVal === 1) {
+                    dataStartRow = r;
+                    break;
+                }
+            }
+
+            for (let r = dataStartRow; r < sheetData.length; r++) {
                 const row = sheetData[r];
                 if (!row || row.length === 0) continue;
 
                 const wkVal = row[0]?.toString().trim();
-                if (!wkVal || isNaN(parseInt(wkVal))) {
-                    // Stop or skip if no valid week number
-                    continue;
-                }
-                const weekNumber = parseInt(wkVal);
+                if (!wkVal || isNaN(parseInt(wkVal))) continue; // Skip non-week rows
 
+                const weekNumber = parseInt(wkVal);
                 const dateVal = row[1]?.toString().trim() || "";
                 let title = `Week ${weekNumber}`;
                 if (dateVal) title += ` (${dateVal})`;
@@ -153,7 +162,8 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                     const dbBookId = mappings[col.bookName];
                     if (dbBookId) {
                         const pageVal = row[col.colIndex]?.toString().trim();
-                        if (pageVal && pageVal !== "Review" && pageVal !== "Test") { // Optional filtering
+                        // Ignore empty, Review, Test, etc.
+                        if (pageVal && !['review', 'test', 'mid term'].includes(pageVal.toLowerCase())) {
                             assignments.push({ bookId: dbBookId, pages: pageVal });
                         }
                     }
