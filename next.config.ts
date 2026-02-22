@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // Reduce memory usage during production builds by excluding large binaries from tracing
   outputFileTracingExcludes: {
     '*': [
