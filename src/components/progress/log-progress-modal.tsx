@@ -170,9 +170,11 @@ export function LogProgressModal({
             <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
                 <DialogHeader>
                     <div className="px-6 py-4 border-b">
-                        <DialogTitle className="text-xl text-blue-900">
-                            {defaultTitle ? `Record Progress: ${defaultTitle}` : "Log Daily Progress & Attendance"}
-                        </DialogTitle>
+                        <div className="text-xl text-blue-900 font-semibold mb-1">
+                            <DialogTitle>
+                                {defaultTitle ? `Record Progress: ${defaultTitle}` : "Log Daily Progress & Attendance"}
+                            </DialogTitle>
+                        </div>
                         <DialogDescription>
                             Select the date, verify the completed pages, and mark student attendance.
                         </DialogDescription>
