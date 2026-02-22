@@ -329,11 +329,11 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                             {viewMode === 'syllabus' && (
                                 <div className="space-y-4 mb-6">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-gray-600">Select Week:</Label>
+                                        <div className="flex items-center gap-3">
+                                            <Label className="text-gray-600 font-medium">Select Week:</Label>
                                             {!showSyllabusManager && syllabusWeeks.length > 0 && (
                                                 <select
-                                                    className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                    className="w-56 h-12 rounded-md border border-input bg-transparent px-4 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
                                                     value={selectedWeekId || ""}
                                                     onChange={e => setSelectedWeekId(e.target.value)}
                                                 >
@@ -373,14 +373,14 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                             {displayedWeeks.map(week => (
                                                 <div key={week.id} className="border border-gray-200 bg-white rounded-lg p-3 hover:border-blue-300 transition-colors shadow-sm">
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <h4 className="font-semibold text-blue-900">{week.title || `Week ${week.weekNumber}`}</h4>
+                                                        <h4 className="font-semibold text-blue-900 text-lg">{week.title || `Week ${week.weekNumber}`}</h4>
                                                         <Button
-                                                            size="sm"
+                                                            size="lg"
                                                             onClick={() => handleLogWeek(week)}
                                                             disabled={saving || week.assignments.length === 0}
-                                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white min-h-[44px]"
                                                         >
-                                                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Record Quick Day/Week</span>}
+                                                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="text-base">Record Quick Day/Week</span>}
                                                         </Button>
                                                     </div>
                                                     <div className="flex flex-wrap gap-2">
@@ -438,22 +438,22 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                                                             }
                                                         }}
                                                         className={`
-                                                        w-full p-3 rounded-lg border-2 text-left transition-all
+                                                        w-full p-4 md:p-3 rounded-xl border-2 text-left transition-all min-h-[56px]
                                                         ${isSelected
                                                                 ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
-                                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 flex items-center"
                                                             }
                                                     `}
                                                     >
                                                         <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <BookOpen className={`w-5 h-5 ${isSelected ? "text-blue-600" : "text-gray-400"}`} />
-                                                                <span className={`font-medium ${isSelected ? "text-blue-900" : "text-gray-800"}`}>
+                                                            <div className="flex items-center gap-3">
+                                                                <BookOpen className={`w-6 h-6 md:w-5 md:h-5 ${isSelected ? "text-blue-600" : "text-gray-400"}`} />
+                                                                <span className={`font-medium text-lg md:text-base ${isSelected ? "text-blue-900" : "text-gray-800"}`}>
                                                                     {book.title}
                                                                 </span>
                                                             </div>
                                                             {book.totalPages && (
-                                                                <span className="text-xs text-gray-400">
+                                                                <span className="text-sm md:text-xs text-gray-500">
                                                                     {book.totalPages} pg
                                                                 </span>
                                                             )}
@@ -632,9 +632,9 @@ function EditableAssignmentBadge({
             if (open) setPages(assignment.pages);
         }}>
             <PopoverTrigger asChild>
-                <Badge variant="secondary" className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-200 font-normal transition-colors select-none">
-                    <BookOpen className="w-3 h-3 mr-1" />
-                    {book.title} <span className="font-semibold ml-1">Pg: {assignment.pages}</span>
+                <Badge variant="secondary" className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-200 font-normal transition-colors select-none px-4 py-2 text-sm sm:text-base min-h-[44px]">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    {book.title} <span className="font-semibold ml-2">Pg: {assignment.pages}</span>
                 </Badge>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3 shadow-lg border-blue-100" sideOffset={8}>
