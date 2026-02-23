@@ -65,24 +65,27 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                     throw new Error("Spreadsheet doesn't have enough rows to identify headers.");
                 }
 
-                // test.xlsx layout:
-                // Row 1 (index 0): Book Names (often with weird newlines) e.g. "F & F 1\n SB \n (U1-7)"
-                // Row 2 (index 1): "Wk", "Date"
-                // Row 3 (index 2): "Unit", "Page"
-                // Row 4+ (index 3+): Data 
+                // Find the header row by looking for "Wk" or "Week" in the first column
+                let headerRowIndex = 0;
+                for (let i = 0; i < Math.min(5, jsonData.length); i++) {
+                    const firstCol = jsonData[i]?.[0]?.toString().trim().toLowerCase();
+                    if (firstCol === 'wk' || firstCol === 'week' || firstCol === 'week no') {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
 
-                const bookNamesRow = jsonData[0] || [];
-                const subHeadersRow = jsonData[2] || [];
+                const bookNamesRow = jsonData[headerRowIndex] || [];
+                const subHeadersRow = jsonData[headerRowIndex + 1] || [];
 
                 let currentBookName = "";
                 const columnsToMap: ExcelColumn[] = [];
 
-                // Books start at Column C (index 2)
+                // Books usually start at Column C (index 2)
                 const maxCol = Math.max(bookNamesRow.length, subHeadersRow.length, 10);
                 for (let c = 2; c < maxCol; c++) {
                     const rawBookName = bookNamesRow[c]?.toString().trim();
                     if (rawBookName) {
-                        // Clean up the name (remove excessive newlines/spaces)
                         currentBookName = rawBookName.replace(/\n/g, ' ').replace(/\s+/g, ' ');
                     }
 
@@ -90,25 +93,32 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
 
                     const subHeaderVal = subHeadersRow[c]?.toString().trim().toLowerCase() || "";
 
-                    // We only want to map columns that are actually page assignments
-                    if (subHeaderVal === 'page' || subHeaderVal === 'pages' || subHeaderVal === 'p.' || subHeaderVal === 'p') {
+                    // Format 1: Book name is header, subheader is "Page" or "p."
+                    // Format 2: Book name is header, no subheader (flat structure)
+                    // Format 3: Book name is header, subheader is "Unit" (we skip units usually and only want pages)
+
+                    // If the subheader explicitly says page/pages/p, map it.
+                    if (['page', 'pages', 'p.', 'p'].includes(subHeaderVal)) {
                         columnsToMap.push({ bookName: currentBookName, colIndex: c });
-                    } else if (subHeaderVal === '') {
-                        // If no subheader, maybe it's just a direct assignment column like "Phonics Practice".
-                        // Only add it if we haven't already added a 'Page' sub-column for this specific book.
+                    } else {
+                        // If it's something else like "Unit", or it's empty, we need to check if we already have a page mapping for this book.
+                        // If we DON'T have a mapping for this book yet, we assume this column *is* the page column (for flater structures like the Middle Class syllabus)
                         const existingForBook = columnsToMap.find(col => col.bookName === currentBookName);
-                        if (!existingForBook) {
+
+                        // We also want to ignore columns explicitly named "Theme" or "Topic"
+                        if (!existingForBook && currentBookName.toLowerCase() !== 'theme' && currentBookName.toLowerCase() !== 'topic') {
                             columnsToMap.push({ bookName: currentBookName, colIndex: c });
                         }
                     }
                 }
 
                 if (columnsToMap.length === 0) {
-                    throw new Error("Could not detect any valid 'Page' columns starting from Column C.");
+                    throw new Error("Could not detect any valid book columns starting from Column C.");
                 }
 
                 setColumnsFound(columnsToMap);
             } catch (err: any) {
+                console.error(err);
                 setError(err.message || 'Failed to parse the Excel file.');
                 setFile(null);
                 setColumnsFound([]);
@@ -133,9 +143,9 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
         try {
             const weeks: ParsedWeek[] = [];
 
-            // Find where the actual data starts (the first row with a number in column 0)
-            let dataStartRow = 3; // Default based on sample
-            for (let r = 0; r < sheetData.length; r++) {
+            // Find where the actual data starts (the first row with a number 1 in column 0)
+            let dataStartRow = 1;
+            for (let r = 0; r < Math.min(10, sheetData.length); r++) {
                 const wkVal = sheetData[r][0]?.trim();
                 if (wkVal === '1' || wkVal === 1) {
                     dataStartRow = r;
