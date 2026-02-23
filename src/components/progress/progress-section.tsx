@@ -584,6 +584,7 @@ export function ProgressSection({ classId, className }: ProgressSectionProps) {
                 }}
                 defaultAssignments={modalAssignments}
                 defaultTitle={modalTitle}
+                assignedBooks={currentBooks}
             />
         </Card>
     );

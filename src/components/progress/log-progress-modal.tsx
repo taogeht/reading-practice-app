@@ -7,18 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, Calendar, CheckCircle2, UserCheck, UserX, UserMinus, Loader2, Save } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { BookOpen, Calendar, CheckCircle2, Loader2, Save, X, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 
-export interface StudentAttendance {
-    id: string;
-    firstName: string;
-    lastName: string;
-    status: AttendanceStatus;
-}
 
 export interface ProgressAssignment {
     bookId: string;
@@ -34,6 +26,7 @@ interface LogProgressModalProps {
     defaultAssignments: ProgressAssignment[];
     defaultTitle?: string;
     defaultDate?: string; // YYYY-MM-DD
+    assignedBooks: { bookId: string; title: string; }[];
 }
 
 export function LogProgressModal({
@@ -43,12 +36,12 @@ export function LogProgressModal({
     onSuccess,
     defaultAssignments,
     defaultTitle,
-    defaultDate
+    defaultDate,
+    assignedBooks
 }: LogProgressModalProps) {
     const [date, setDate] = useState<string>(defaultDate || new Date().toISOString().split('T')[0]);
     const [assignments, setAssignments] = useState<ProgressAssignment[]>([]);
     const [lessonNotes, setLessonNotes] = useState("");
-    const [students, setStudents] = useState<StudentAttendance[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -57,39 +50,8 @@ export function LogProgressModal({
             setDate(defaultDate || new Date().toISOString().split('T')[0]);
             setAssignments([...defaultAssignments]);
             setLessonNotes("");
-            fetchStudents(defaultDate || new Date().toISOString().split('T')[0]);
         }
     }, [open, defaultAssignments, defaultDate]);
-
-    // Refetch students when the date changes to see if they already have attendance
-    useEffect(() => {
-        if (open) {
-            fetchStudents(date);
-        }
-    }, [date, open]);
-
-    const fetchStudents = async (selectedDate: string) => {
-        try {
-            setLoading(true);
-            const res = await fetch(`/api/classes/${classId}/attendance?date=${selectedDate}`);
-            if (res.ok) {
-                const data = await res.json();
-                const formatted = data.students.map((s: any) => ({
-                    id: s.studentId,
-                    firstName: s.firstName,
-                    lastName: s.lastName,
-                    status: s.attendance ? s.attendance.status : 'present' // default to present if no record
-                }));
-                // Sort by first name
-                formatted.sort((a: any, b: any) => a.firstName.localeCompare(b.firstName));
-                setStudents(formatted);
-            }
-        } catch (e) {
-            console.error("Failed to fetch students", e);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleAssignmentChange = (bookId: string, newPages: string) => {
         setAssignments(prev => prev.map(a =>
@@ -99,12 +61,6 @@ export function LogProgressModal({
 
     const handleRemoveAssignment = (bookId: string) => {
         setAssignments(prev => prev.filter(a => a.bookId !== bookId));
-    };
-
-    const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
-        setStudents(prev => prev.map(s =>
-            s.id === studentId ? { ...s, status } : s
-        ));
     };
 
     const handleSave = async () => {
@@ -128,24 +84,6 @@ export function LogProgressModal({
                 });
             }
 
-            // 2. Save Attendance
-            if (students.length > 0) {
-                const attendancePayload = {
-                    date,
-                    records: students.map(s => ({
-                        studentId: s.id,
-                        status: s.status,
-                        notes: "" // Could add a notes field per student later if needed
-                    }))
-                };
-
-                await fetch(`/api/classes/${classId}/attendance`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(attendancePayload)
-                });
-            }
-
             onSuccess();
             onOpenChange(false);
         } catch (error) {
@@ -153,15 +91,6 @@ export function LogProgressModal({
             alert("An error occurred while saving. Please try again.");
         } finally {
             setSaving(false);
-        }
-    };
-
-    const getStatusIcon = (status: AttendanceStatus) => {
-        switch (status) {
-            case 'present': return <UserCheck className="w-5 h-5 text-green-500" />;
-            case 'absent': return <UserX className="w-5 h-5 text-red-500" />;
-            case 'late': return <UserMinus className="w-5 h-5 text-yellow-500" />;
-            case 'excused': return <UserCheck className="w-5 h-5 text-blue-500" />;
         }
     };
 
@@ -176,7 +105,7 @@ export function LogProgressModal({
                             </DialogTitle>
                         </div>
                         <DialogDescription>
-                            Select the date, verify the completed pages, and mark student attendance.
+                            Select the date and verify the completed pages for the assignment.
                         </DialogDescription>
                     </div>
                 </DialogHeader>
@@ -222,13 +151,39 @@ export function LogProgressModal({
                                                 placeholder="e.g. 5-10"
                                             />
                                             <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500 hover:bg-red-50 w-10 h-10 shrink-0" onClick={() => handleRemoveAssignment(assignment.bookId)}>
-                                                <UserX className="w-4 h-4" /> {/* Consider replacing with an X or Trash icon if preferred */}
+                                                <X className="w-4 h-4" />
                                             </Button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         )}
+
+                        {/* Add Another Book Dropdown */}
+                        <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                            <Select
+                                onValueChange={(selectedBookId) => {
+                                    if (selectedBookId) {
+                                        const book = assignedBooks.find(b => b.bookId === selectedBookId);
+                                        if (book && !assignments.some(a => a.bookId === selectedBookId)) {
+                                            setAssignments(prev => [...prev, { bookId: book.bookId, title: book.title, pages: "" }]);
+                                        }
+                                    }
+                                }}
+                                value=""
+                            >
+                                <SelectTrigger className="w-full sm:w-[280px] bg-white border-dashed border-2 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                                    <SelectValue placeholder="+ Add an extra assigned book..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {assignedBooks.filter(b => !assignments.some(a => a.bookId === b.bookId)).map(b => (
+                                        <SelectItem key={b.bookId} value={b.bookId}>
+                                            {b.title}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
                         <div className="space-y-2">
                             <Label className="text-gray-700">Class Notes (Optional)</Label>
@@ -242,61 +197,6 @@ export function LogProgressModal({
                         </div>
                     </div>
 
-                    {/* Attendance Section */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-semibold text-lg text-gray-900 flex items-center gap-2">
-                                <UserCheck className="w-5 h-5 text-green-600" /> Overall Attendance
-                            </h3>
-                            <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                                {students.filter(s => s.status === 'present').length} / {students.length} Present
-                            </div>
-                        </div>
-
-                        {loading ? (
-                            <div className="flex items-center justify-center py-8">
-                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                            </div>
-                        ) : students.length === 0 ? (
-                            <div className="text-center p-6 border rounded-lg text-gray-500 bg-gray-50">
-                                No students enrolled in this class.
-                            </div>
-                        ) : (
-                            <div className="grid sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2">
-                                {students.map((student) => {
-                                    const isAbsent = student.status === 'absent';
-                                    return (
-                                        <div
-                                            key={student.id}
-                                            className={`flex items-center justify-between p-3 border rounded-xl transition-colors cursor-pointer select-none ${isAbsent ? 'bg-red-50 border-red-200' : 'bg-white hover:bg-gray-50'}`}
-                                            onClick={() => handleAttendanceChange(student.id, isAbsent ? 'present' : 'absent')}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="shrink-0">
-                                                    {getStatusIcon(student.status)}
-                                                </div>
-                                                <span className={`font-medium ${isAbsent ? 'text-red-900' : 'text-gray-900'}`}>
-                                                    {student.firstName} {student.lastName}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <span className={`text-xs font-semibold uppercase ${isAbsent ? 'text-red-500' : 'text-green-600'}`}>
-                                                    {isAbsent ? 'Absent' : 'Present'}
-                                                </span>
-                                                <Switch
-                                                    checked={!isAbsent}
-                                                    onCheckedChange={(checked) => handleAttendanceChange(student.id, checked ? 'present' : 'absent')}
-                                                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-red-500"
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
                 </div>
 
                 <DialogFooter>
@@ -306,7 +206,7 @@ export function LogProgressModal({
                         </Button>
                         <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 h-11">
                             {saving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
-                            Save Progress & Attendance
+                            Save Progress
                         </Button>
                     </div>
                 </DialogFooter>
