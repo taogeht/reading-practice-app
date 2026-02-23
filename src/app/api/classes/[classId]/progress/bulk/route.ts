@@ -41,7 +41,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const createdRecords = [];
 
-        // Note: Using a transaction loop or individual queries. Drizzle handles raw loops fine here.
+        // 1. Fetch all existing records for this class on this date
+        const existingRecords = await db
+            .select()
+            .from(classProgress)
+            .where(
+                and(
+                    eq(classProgress.classId, classId),
+                    gte(classProgress.date, startOfDay),
+                    lte(classProgress.date, endOfDay)
+                )
+            );
+
+        // 2. Identify and delete records for books that were REMOVED from the payload
+        //    (Only consider assignments that have a bookId)
+        const validIncomingBookIds = new Set(
+            assignments.filter((a: any) => a.bookId).map((a: any) => a.bookId)
+        );
+
+        for (const record of existingRecords) {
+            if (!validIncomingBookIds.has(record.bookId)) {
+                await db
+                    .delete(classProgress)
+                    .where(eq(classProgress.id, record.id));
+            }
+        }
+
+        // 3. Process incoming assignments (Update or Insert)
         for (const assignment of assignments) {
             if (!assignment.bookId) continue;
 

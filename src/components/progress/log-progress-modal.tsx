@@ -48,10 +48,59 @@ export function LogProgressModal({
     useEffect(() => {
         if (open) {
             setDate(defaultDate || new Date().toISOString().split('T')[0]);
-            setAssignments([...defaultAssignments]);
-            setLessonNotes("");
+            // other resets are handled by the date-change effect below
         }
-    }, [open, defaultAssignments, defaultDate]);
+    }, [open, defaultDate]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        let isMounted = true;
+
+        const loadProgress = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`/api/classes/${classId}/progress?startDate=${date}&endDate=${date}`);
+                if (res.ok && isMounted) {
+                    const data = await res.json();
+
+                    if (data.progress && data.progress.length > 0) {
+                        const existingData = data.progress;
+                        setLessonNotes(existingData.find((p: any) => p.lessonNotes)?.lessonNotes || "");
+
+                        // Start with defaults, then merge existing
+                        const mergedAssignments = [...defaultAssignments];
+
+                        existingData.forEach((p: any) => {
+                            const idx = mergedAssignments.findIndex(a => a.bookId === p.bookId);
+                            if (idx >= 0) {
+                                mergedAssignments[idx].pages = p.pagesCompleted || "";
+                            } else {
+                                mergedAssignments.push({
+                                    bookId: p.bookId,
+                                    title: p.bookTitle,
+                                    pages: p.pagesCompleted || ""
+                                });
+                            }
+                        });
+                        setAssignments(mergedAssignments);
+                    } else {
+                        // Reset to defaults if no DB data
+                        setAssignments([...defaultAssignments]);
+                        setLessonNotes("");
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load existing progress", error);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        loadProgress();
+
+        return () => { isMounted = false; };
+    }, [date, classId, open, defaultAssignments]);
 
     const handleAssignmentChange = (bookId: string, newPages: string) => {
         setAssignments(prev => prev.map(a =>
