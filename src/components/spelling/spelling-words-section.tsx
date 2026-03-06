@@ -160,7 +160,12 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
     const handleImportList = async (sourceList: SpellingList & { words: SpellingWord[] }) => {
         setImporting(sourceList.id);
         try {
-            const words = sourceList.words.map((w) => w.word);
+            // Send full word objects to preserve syllables and audio
+            const words = sourceList.words.map((w) => ({
+                word: w.word,
+                syllables: w.syllables,
+                audioUrl: w.audioUrl,
+            }));
             const response = await fetch("/api/spelling-lists", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

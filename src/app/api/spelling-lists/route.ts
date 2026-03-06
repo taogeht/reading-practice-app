@@ -93,14 +93,27 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
-        // Insert words (syllables will be added by teacher manually later)
+        // Insert words - supports both plain strings and rich objects with syllables/audio
         if (words.length > 0) {
-            const wordRecords = words.map((word: string, index: number) => ({
-                spellingListId: newList.id,
-                word: word.trim(),
-                syllables: null, // Teacher will set manually
-                orderIndex: index,
-            }));
+            const wordRecords = words.map((word: string | { word: string; syllables?: string[] | null; audioUrl?: string | null }, index: number) => {
+                if (typeof word === 'string') {
+                    return {
+                        spellingListId: newList.id,
+                        word: word.trim(),
+                        syllables: null,
+                        audioUrl: null,
+                        orderIndex: index,
+                    };
+                } else {
+                    return {
+                        spellingListId: newList.id,
+                        word: word.word.trim(),
+                        syllables: word.syllables || null,
+                        audioUrl: word.audioUrl || null,
+                        orderIndex: index,
+                    };
+                }
+            });
 
             await db.insert(spellingWords).values(wordRecords);
         }
