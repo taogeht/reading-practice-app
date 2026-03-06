@@ -12,6 +12,8 @@ import {
     Frown,
     Loader2,
     Sparkles,
+    Calendar,
+    CalendarRange,
 } from "lucide-react";
 
 interface SpellingWord {
@@ -49,6 +51,7 @@ export function SnowmanGame() {
     const [wordsPlayed, setWordsPlayed] = useState<Set<string>>(new Set());
     const [streak, setStreak] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [wordPool, setWordPool] = useState<"current" | "all">("current");
 
     useEffect(() => {
         fetchSpellingLists();
@@ -76,32 +79,51 @@ export function SnowmanGame() {
         }
     };
 
-    const getAllWords = useCallback(() => {
-        const allWords: string[] = [];
-        for (const list of lists) {
-            for (const word of list.words) {
-                allWords.push(word.word.toUpperCase());
+    const getWordsForPool = useCallback((pool: "current" | "all") => {
+        const words: string[] = [];
+        if (pool === "current" && lists.length > 0) {
+            // Only the most recent (first) list
+            for (const word of lists[0].words) {
+                words.push(word.word.toUpperCase());
+            }
+        } else {
+            // All lists
+            for (const list of lists) {
+                for (const word of list.words) {
+                    words.push(word.word.toUpperCase());
+                }
             }
         }
-        return allWords;
+        return words;
     }, [lists]);
 
-    const pickNewWord = useCallback(() => {
-        const allWords = getAllWords();
+    const getAllWords = useCallback(() => {
+        return getWordsForPool(wordPool);
+    }, [getWordsForPool, wordPool]);
+
+    const pickNewWord = useCallback((overridePool?: "current" | "all") => {
+        const pool = overridePool || wordPool;
+        const allWords = getWordsForPool(pool);
         if (allWords.length === 0) return;
 
         // Try to pick a word we haven't played yet
         const unplayed = allWords.filter((w) => !wordsPlayed.has(w));
-        const pool = unplayed.length > 0 ? unplayed : allWords;
+        const wordChoices = unplayed.length > 0 ? unplayed : allWords;
 
-        const newWord = pool[Math.floor(Math.random() * pool.length)];
+        const newWord = wordChoices[Math.floor(Math.random() * wordChoices.length)];
         setCurrentWord(newWord);
         setGuessedLetters(new Set());
         setWrongGuesses(0);
         setGameState("playing");
         setWordsPlayed((prev) => new Set(prev).add(newWord));
         setShowConfetti(false);
-    }, [getAllWords, wordsPlayed]);
+    }, [getWordsForPool, wordPool, wordsPlayed]);
+
+    const handlePoolChange = (newPool: "current" | "all") => {
+        setWordPool(newPool);
+        // Pick a new word from the new pool immediately
+        pickNewWord(newPool);
+    };
 
     const handleGuess = (letter: string) => {
         if (gameState !== "playing" || guessedLetters.has(letter)) return;
@@ -216,16 +238,40 @@ export function SnowmanGame() {
                         </Badge>
                     </div>
                 </div>
-                <p className="text-sm text-sky-600 mt-1">
-                    Guess the consonants to spell the word! Vowels are given for free.
-                </p>
+                <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+                    <p className="text-sm text-sky-600">
+                        Guess the consonants to spell the word! Vowels are given for free.
+                    </p>
+                    <div className="flex items-center gap-1 bg-white/60 rounded-lg p-1 border border-sky-200">
+                        <button
+                            onClick={() => handlePoolChange("current")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${wordPool === "current"
+                                    ? "bg-sky-500 text-white shadow-sm"
+                                    : "text-sky-600 hover:bg-sky-50"
+                                }`}
+                        >
+                            <Calendar className="w-3.5 h-3.5" />
+                            This Week
+                        </button>
+                        <button
+                            onClick={() => handlePoolChange("all")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${wordPool === "all"
+                                    ? "bg-sky-500 text-white shadow-sm"
+                                    : "text-sky-600 hover:bg-sky-50"
+                                }`}
+                        >
+                            <CalendarRange className="w-3.5 h-3.5" />
+                            All Weeks
+                        </button>
+                    </div>
+                </div>
             </CardHeader>
 
             <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 items-center">
                     {/* Snowman */}
                     <div className="flex justify-center">
-                        <div className="relative w-48 h-64 md:w-56 md:h-72">
+                        <div className="relative w-40 h-56 md:w-44 md:h-60">
                             <SnowmanSVG wrongGuesses={wrongGuesses} className="w-full h-full" />
                         </div>
                     </div>
@@ -234,14 +280,14 @@ export function SnowmanGame() {
                     <div className="space-y-6">
                         {/* Word display */}
                         <div className="text-center">
-                            <div className="flex justify-center items-center gap-2 flex-wrap mb-2">
+                            <div className="flex justify-center items-center gap-1.5 flex-nowrap mb-2 overflow-x-auto">
                                 {displayWord.map((letter, i) => (
                                     <span
                                         key={i}
                                         className={`
-                                            inline-flex items-center justify-center
-                                            w-10 h-12 md:w-12 md:h-14
-                                            text-2xl md:text-3xl font-bold
+                                            inline-flex items-center justify-center flex-shrink-0
+                                            w-9 h-11 md:w-10 md:h-12
+                                            text-xl md:text-2xl font-bold
                                             rounded-lg transition-all duration-300
                                             ${letter === "_"
                                                 ? "border-b-4 border-sky-400 text-transparent"
