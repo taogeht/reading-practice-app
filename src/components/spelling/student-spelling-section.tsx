@@ -159,10 +159,10 @@ export function StudentSpellingSection() {
     }
 
     return (
-        <Card className="border-2 border-blue-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
-                <CardTitle className="flex items-center gap-2 text-blue-700">
-                    <BookA className="w-6 h-6" />
+        <Card className="border-2 border-blue-200 overflow-hidden shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-100 via-indigo-50 to-purple-100 border-b border-blue-100 py-6">
+                <CardTitle className="flex items-center gap-3 text-blue-700 text-2xl">
+                    <BookA className="w-8 h-8" />
                     🎯 Spelling Words
                 </CardTitle>
                 <p className="text-sm text-blue-600 mt-1">
@@ -172,29 +172,29 @@ export function StudentSpellingSection() {
             <CardContent className="p-6 space-y-6">
                 {/* Current List (first/most recent) */}
                 {lists.length > 0 && (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <Badge className="bg-green-500 hover:bg-green-600">This Week</Badge>
-                            <h3 className="font-bold text-xl text-gray-800">{lists[0].title}</h3>
+                    <div className="space-y-5">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <Badge className="bg-green-500 hover:bg-green-600 text-base px-3 py-1">This Week</Badge>
+                            <h3 className="font-bold text-2xl text-gray-800">{lists[0].title}</h3>
                             {lists[0].weekNumber && (
-                                <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700">
+                                <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 text-sm px-3 py-1">
                                     Week {lists[0].weekNumber}
                                 </Badge>
                             )}
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {lists[0].words.map((word) => (
                                 <div
                                     key={word.id}
                                     className={`
-                                        flex items-center gap-4 p-4 rounded-2xl border-2 transition-all
+                                        flex items-center gap-4 p-5 rounded-2xl border-2 transition-all
                                         ${word.audioUrl
-                                            ? "bg-white hover:bg-blue-50 hover:border-blue-300 cursor-pointer hover:shadow-md"
+                                            ? "bg-white hover:bg-blue-50 hover:border-blue-300 cursor-pointer hover:shadow-lg hover:-translate-y-0.5"
                                             : "bg-gray-50 cursor-not-allowed opacity-60"
                                         }
                                         ${playingWordId === word.id
-                                            ? "border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200"
+                                            ? "border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200 -translate-y-0.5"
                                             : "border-gray-200"
                                         }
                                     `}
@@ -204,7 +204,7 @@ export function StudentSpellingSection() {
                                     <button
                                         disabled={!word.audioUrl}
                                         className={`
-                                            w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0
+                                            w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0
                                             transition-all shadow-md
                                             ${playingWordId === word.id
                                                 ? "bg-blue-600 text-white scale-110"
@@ -214,14 +214,14 @@ export function StudentSpellingSection() {
                                         `}
                                     >
                                         {playingWordId === word.id ? (
-                                            <Pause className="w-7 h-7" />
+                                            <Pause className="w-8 h-8" />
                                         ) : (
-                                            <Play className="w-7 h-7 ml-1" />
+                                            <Play className="w-8 h-8 ml-1" />
                                         )}
                                     </button>
 
                                     {/* Word with Syllables */}
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                         <SyllableWord
                                             word={word.word}
                                             syllables={word.syllables}
@@ -232,7 +232,7 @@ export function StudentSpellingSection() {
                                     {/* Sound indicator when playing */}
                                     {playingWordId === word.id && (
                                         <div className="flex items-center gap-1">
-                                            <Volume2 className="w-5 h-5 text-blue-600 animate-pulse" />
+                                            <Volume2 className="w-6 h-6 text-blue-600 animate-pulse" />
                                         </div>
                                     )}
                                 </div>

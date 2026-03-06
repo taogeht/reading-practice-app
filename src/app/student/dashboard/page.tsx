@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AvatarPickerDialog } from "@/components/students/avatar-picker-dialog";
 import { StudentSpellingSection } from "@/components/spelling/student-spelling-section";
+import { SnowmanGame } from "@/components/spelling/snowman-game";
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { AVATARS } from "@/components/auth/visual-password-options";
 import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send } from "lucide-react";
@@ -208,7 +209,13 @@ export default function StudentDashboardPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Spelling Words - Prominent full-width section */}
+        <StudentSpellingSection />
+
+        {/* Snowman Spelling Game */}
+        <SnowmanGame />
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Left Column - Homework & Assignments */}
           <div className="md:col-span-1 space-y-6">
@@ -389,9 +396,6 @@ export default function StudentDashboardPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Spelling Words */}
-            <StudentSpellingSection />
           </div>
 
           {/* Right Column - Story Library */}

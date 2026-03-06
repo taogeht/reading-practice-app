@@ -1,0 +1,357 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SnowmanSVG } from "./snowman-svg";
+import {
+    Snowflake,
+    RotateCcw,
+    Trophy,
+    Frown,
+    Loader2,
+    Sparkles,
+} from "lucide-react";
+
+interface SpellingWord {
+    id: string;
+    word: string;
+    syllables: string[] | null;
+    audioUrl: string | null;
+    orderIndex: number;
+}
+
+interface SpellingList {
+    id: string;
+    title: string;
+    weekNumber: number | null;
+    active: boolean;
+    createdAt: string;
+    words: SpellingWord[];
+    class: {
+        id: string;
+        name: string;
+    };
+}
+
+const VOWELS = new Set(["A", "E", "I", "O", "U"]);
+const CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ".split("");
+const MAX_WRONG = 10;
+
+export function SnowmanGame() {
+    const [lists, setLists] = useState<SpellingList[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [currentWord, setCurrentWord] = useState<string>("");
+    const [guessedLetters, setGuessedLetters] = useState<Set<string>>(new Set());
+    const [wrongGuesses, setWrongGuesses] = useState(0);
+    const [gameState, setGameState] = useState<"playing" | "won" | "lost">("playing");
+    const [wordsPlayed, setWordsPlayed] = useState<Set<string>>(new Set());
+    const [streak, setStreak] = useState(0);
+    const [showConfetti, setShowConfetti] = useState(false);
+
+    useEffect(() => {
+        fetchSpellingLists();
+    }, []);
+
+    const fetchSpellingLists = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch("/api/student/spelling-lists");
+            if (response.ok) {
+                const data: SpellingList[] = await response.json();
+                setLists(data);
+
+                // Pick a random word from the first list if available
+                if (data.length > 0 && data[0].words.length > 0) {
+                    const words = data[0].words;
+                    const randomWord = words[Math.floor(Math.random() * words.length)];
+                    setCurrentWord(randomWord.word.toUpperCase());
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching spelling lists:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getAllWords = useCallback(() => {
+        const allWords: string[] = [];
+        for (const list of lists) {
+            for (const word of list.words) {
+                allWords.push(word.word.toUpperCase());
+            }
+        }
+        return allWords;
+    }, [lists]);
+
+    const pickNewWord = useCallback(() => {
+        const allWords = getAllWords();
+        if (allWords.length === 0) return;
+
+        // Try to pick a word we haven't played yet
+        const unplayed = allWords.filter((w) => !wordsPlayed.has(w));
+        const pool = unplayed.length > 0 ? unplayed : allWords;
+
+        const newWord = pool[Math.floor(Math.random() * pool.length)];
+        setCurrentWord(newWord);
+        setGuessedLetters(new Set());
+        setWrongGuesses(0);
+        setGameState("playing");
+        setWordsPlayed((prev) => new Set(prev).add(newWord));
+        setShowConfetti(false);
+    }, [getAllWords, wordsPlayed]);
+
+    const handleGuess = (letter: string) => {
+        if (gameState !== "playing" || guessedLetters.has(letter)) return;
+
+        const newGuessed = new Set(guessedLetters);
+        newGuessed.add(letter);
+        setGuessedLetters(newGuessed);
+
+        if (!currentWord.includes(letter)) {
+            // Wrong guess
+            const newWrong = wrongGuesses + 1;
+            setWrongGuesses(newWrong);
+            if (newWrong >= MAX_WRONG) {
+                setGameState("lost");
+                setStreak(0);
+            }
+        } else {
+            // Check if all consonants in the word are now guessed (vowels are auto-revealed)
+            const wordLetters = currentWord.split("");
+            const allRevealed = wordLetters.every(
+                (l) => VOWELS.has(l) || newGuessed.has(l) || !/[A-Z]/.test(l)
+            );
+            if (allRevealed) {
+                setGameState("won");
+                setStreak((prev) => prev + 1);
+                setShowConfetti(true);
+                setTimeout(() => setShowConfetti(false), 3000);
+            }
+        }
+    };
+
+    const getDisplayWord = () => {
+        return currentWord.split("").map((letter) => {
+            if (!/[A-Z]/.test(letter)) return letter; // non-alpha characters shown as-is
+            if (VOWELS.has(letter)) return letter; // vowels always shown
+            if (guessedLetters.has(letter)) return letter; // correctly guessed consonant
+            if (gameState === "lost") return letter; // reveal on loss
+            return "_";
+        });
+    };
+
+    if (loading) {
+        return (
+            <Card className="border-2 border-sky-200 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-sky-100 via-blue-50 to-cyan-100 border-b border-sky-100 py-5">
+                    <CardTitle className="flex items-center gap-3 text-sky-700 text-xl">
+                        <Snowflake className="w-7 h-7" />
+                        ⛄ Snowman Spelling
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (lists.length === 0 || getAllWords().length === 0) {
+        return null; // No spelling words, hide the game
+    }
+
+    // First load — need to start the game
+    if (!currentWord) {
+        pickNewWord();
+        return null;
+    }
+
+    const displayWord = getDisplayWord();
+    const isWon = gameState === "won";
+    const isLost = gameState === "lost";
+    const isGameOver = isWon || isLost;
+
+    return (
+        <Card className="border-2 border-sky-200 shadow-lg overflow-hidden relative">
+            {/* Confetti effect */}
+            {showConfetti && (
+                <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+                    {[...Array(20)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute animate-bounce"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 60}%`,
+                                animationDelay: `${Math.random() * 0.5}s`,
+                                animationDuration: `${0.8 + Math.random() * 1.2}s`,
+                                fontSize: `${14 + Math.random() * 10}px`,
+                            }}
+                        >
+                            {["⭐", "🎉", "✨", "❄️", "🌟"][Math.floor(Math.random() * 5)]}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <CardHeader className="bg-gradient-to-r from-sky-100 via-blue-50 to-cyan-100 border-b border-sky-100 py-5">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                    <CardTitle className="flex items-center gap-3 text-sky-700 text-xl">
+                        <Snowflake className="w-7 h-7" />
+                        ⛄ Snowman Spelling
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                        {streak > 0 && (
+                            <Badge className="bg-amber-500 hover:bg-amber-600 text-sm px-3 py-1">
+                                🔥 {streak} streak
+                            </Badge>
+                        )}
+                        <Badge variant="outline" className="border-sky-300 text-sky-700 text-sm px-3 py-1">
+                            {MAX_WRONG - wrongGuesses} guesses left
+                        </Badge>
+                    </div>
+                </div>
+                <p className="text-sm text-sky-600 mt-1">
+                    Guess the consonants to spell the word! Vowels are given for free.
+                </p>
+            </CardHeader>
+
+            <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    {/* Snowman */}
+                    <div className="flex justify-center">
+                        <div className="relative w-48 h-64 md:w-56 md:h-72">
+                            <SnowmanSVG wrongGuesses={wrongGuesses} className="w-full h-full" />
+                        </div>
+                    </div>
+
+                    {/* Game area */}
+                    <div className="space-y-6">
+                        {/* Word display */}
+                        <div className="text-center">
+                            <div className="flex justify-center items-center gap-2 flex-wrap mb-2">
+                                {displayWord.map((letter, i) => (
+                                    <span
+                                        key={i}
+                                        className={`
+                                            inline-flex items-center justify-center
+                                            w-10 h-12 md:w-12 md:h-14
+                                            text-2xl md:text-3xl font-bold
+                                            rounded-lg transition-all duration-300
+                                            ${letter === "_"
+                                                ? "border-b-4 border-sky-400 text-transparent"
+                                                : VOWELS.has(letter)
+                                                    ? "bg-amber-100 text-amber-700 border-2 border-amber-300"
+                                                    : "bg-sky-100 text-sky-800 border-2 border-sky-300 scale-105"
+                                            }
+                                            ${isLost && letter !== "_" && !guessedLetters.has(letter) && !VOWELS.has(letter)
+                                                ? "bg-red-100 text-red-600 border-red-300"
+                                                : ""
+                                            }
+                                        `}
+                                    >
+                                        {letter === "_" ? "\u00A0" : letter}
+                                    </span>
+                                ))}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2">
+                                <span className="inline-block w-3 h-3 bg-amber-100 border border-amber-300 rounded mr-1"></span>
+                                vowels (free)
+                                <span className="inline-block w-3 h-3 bg-sky-100 border border-sky-300 rounded mr-1 ml-3"></span>
+                                consonants (guess these!)
+                            </p>
+                        </div>
+
+                        {/* Win/Lose message */}
+                        {isGameOver && (
+                            <div
+                                className={`text-center p-4 rounded-xl border-2 ${isWon
+                                    ? "bg-green-50 border-green-300"
+                                    : "bg-red-50 border-red-300"
+                                    }`}
+                            >
+                                {isWon ? (
+                                    <div className="space-y-2">
+                                        <Trophy className="w-10 h-10 mx-auto text-yellow-500" />
+                                        <p className="font-bold text-lg text-green-700">Great job! 🎉</p>
+                                        <p className="text-sm text-green-600">
+                                            You saved the snowman!
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Frown className="w-10 h-10 mx-auto text-red-400" />
+                                        <p className="font-bold text-lg text-red-700">Oh no! The snowman melted!</p>
+                                        <p className="text-sm text-red-600">
+                                            The word was: <strong>{currentWord}</strong>
+                                        </p>
+                                    </div>
+                                )}
+                                <Button
+                                    onClick={pickNewWord}
+                                    className="mt-4 bg-sky-500 hover:bg-sky-600 text-white"
+                                >
+                                    <RotateCcw className="w-4 h-4 mr-2" />
+                                    Play Again
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Consonant keyboard */}
+                        {!isGameOver && (
+                            <div className="space-y-2">
+                                <p className="text-xs font-medium text-gray-500 text-center">Choose a consonant:</p>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {CONSONANTS.map((letter) => {
+                                        const isGuessed = guessedLetters.has(letter);
+                                        const isInWord = currentWord.includes(letter);
+                                        return (
+                                            <button
+                                                key={letter}
+                                                onClick={() => handleGuess(letter)}
+                                                disabled={isGuessed}
+                                                className={`
+                                                    w-10 h-10 md:w-11 md:h-11
+                                                    rounded-lg font-bold text-lg
+                                                    transition-all duration-200
+                                                    ${isGuessed
+                                                        ? isInWord
+                                                            ? "bg-green-200 text-green-700 border-2 border-green-300 opacity-60 cursor-not-allowed"
+                                                            : "bg-red-100 text-red-400 border-2 border-red-200 opacity-40 cursor-not-allowed line-through"
+                                                        : "bg-white text-gray-800 border-2 border-gray-300 hover:border-sky-400 hover:bg-sky-50 hover:scale-110 hover:shadow-md active:scale-95 cursor-pointer"
+                                                    }
+                                                `}
+                                            >
+                                                {letter}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* New word button (bottom, subtle) */}
+                {!isGameOver && (
+                    <div className="flex justify-center mt-6 pt-4 border-t border-gray-100">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={pickNewWord}
+                            className="text-gray-400 hover:text-gray-600"
+                        >
+                            <Sparkles className="w-4 h-4 mr-1" />
+                            Skip word
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
