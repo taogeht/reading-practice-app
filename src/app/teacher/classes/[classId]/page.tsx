@@ -17,6 +17,7 @@ import { LoginActivitySection } from "@/components/activity/login-activity-secti
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Users,
   UserPlus,
@@ -36,6 +37,7 @@ import {
   Download,
   Share2,
   ChevronDown,
+  Info,
 } from "lucide-react";
 
 interface Class {
@@ -304,12 +306,63 @@ export default function ClassDetailPage() {
                   {!classData.active && (
                     <Badge variant="secondary">Inactive</Badge>
                   )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="ml-1 text-gray-400 hover:text-blue-600 transition-colors">
+                        <Info className="w-5 h-5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-sm">Class Information</h4>
+                        {classData.description && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Description</p>
+                            <p className="text-sm text-gray-900">{classData.description}</p>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-3">
+                          {classData.gradeLevel && (
+                            <div className="flex items-center gap-1.5">
+                              <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
+                              <span className="text-sm">Grade {classData.gradeLevel}</span>
+                            </div>
+                          )}
+                          {classData.academicYear && (
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                              <span className="text-sm">{classData.academicYear}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm">{classData.studentCount} students</span>
+                          </div>
+                          <div>
+                            <Badge variant={classData.active ? "default" : "secondary"} className="text-xs">
+                              {classData.active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Practice Stories</p>
+                          <Badge variant={classData.showPracticeStories ? "default" : "secondary"} className="text-xs">
+                            {classData.showPracticeStories ? "Enabled" : "Hidden"}
+                          </Badge>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <p className="text-xs font-medium text-gray-500 mb-2">Schedule</p>
+                          <ScheduleSection classId={classId} compact={true} />
+                        </div>
+                        <p className="text-xs text-gray-400">Created {formatDate(classData.createdAt)}</p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </h1>
                 <div className="flex items-center gap-3 mt-1">
                   <p className="text-gray-600">
                     Class management and student overview
                   </p>
-                  <ScheduleSection classId={classId} compact={true} />
                 </div>
               </div>
             </div>
@@ -334,188 +387,21 @@ export default function ClassDetailPage() {
                 <FileText className="w-4 h-4 mr-2" />
                 View Assignments
               </Button>
-              {!isEditing ? (
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit Class
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button onClick={handleSaveChanges} size="sm">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save
-                  </Button>
-                  <Button variant="outline" onClick={cancelEdit} size="sm">
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                </div>
-              )}
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
+                <Edit3 className="w-4 h-4 mr-2" />
+                Edit Class
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Class Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Left Column - Secondary Items */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Class Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Class Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isEditing ? (
-                  <>
-                    <div>
-                      <Label htmlFor="className">Class Name</Label>
-                      <Input
-                        id="className"
-                        value={editForm.name}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter class name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={editForm.description}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Enter class description"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="gradeLevel">Grade Level</Label>
-                      <Input
-                        id="gradeLevel"
-                        type="number"
-                        value={editForm.gradeLevel}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, gradeLevel: e.target.value }))}
-                        placeholder="Enter grade level"
-                        min="1"
-                        max="12"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="academicYear">Academic Year</Label>
-                      <Input
-                        id="academicYear"
-                        value={editForm.academicYear}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, academicYear: e.target.value }))}
-                        placeholder="e.g., 2024-2025"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="active"
-                        checked={editForm.active}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, active: e.target.checked }))}
-                        className="rounded"
-                      />
-                      <Label htmlFor="active">Active Class</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="showPracticeStories"
-                        checked={editForm.showPracticeStories}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, showPracticeStories: e.target.checked }))}
-                        className="rounded"
-                      />
-                      <Label htmlFor="showPracticeStories">
-                        <div>
-                          <div>Show Practice Stories to Students</div>
-                          <p className="text-xs text-gray-600 font-normal">Students will see a practice stories library on their dashboard</p>
-                        </div>
-                      </Label>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Description</p>
-                      <p className="text-gray-900">{classData.description || "No description"}</p>
-                    </div>
-                    {classData.gradeLevel && (
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-900">Grade {classData.gradeLevel}</span>
-                      </div>
-                    )}
-                    {classData.academicYear && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-900">{classData.academicYear}</span>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Created</p>
-                      <p className="text-gray-900">{formatDate(classData.createdAt)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Status</p>
-                      <Badge variant={classData.active ? "default" : "secondary"}>
-                        {classData.active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Practice Stories</p>
-                      <Badge variant={classData.showPracticeStories ? "default" : "secondary"}>
-                        {classData.showPracticeStories ? "Enabled" : "Hidden"}
-                      </Badge>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {classData.showPracticeStories
-                          ? "Students can see practice stories on their dashboard"
-                          : "Practice stories are hidden from students"
-                        }
-                      </p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
-                    {classData.studentCount}
-                  </div>
-                  <p className="text-gray-600">
-                    {classData.studentCount === 1 ? 'Student' : 'Students'} Enrolled
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Spelling Words - Sidebar, starts minimized */}
-            <SpellingWordsSection classId={classId} defaultExpanded={false} />
-
-            {/* Class Schedule - Sidebar, starts minimized */}
-            <ScheduleSection classId={classId} isAdmin={false} defaultExpanded={false} />
-
-            {/* Login Activity - Sidebar, starts minimized */}
+            {/* Login Activity */}
             <LoginActivitySection classId={classId} defaultExpanded={false} />
-          </div>
-
-          {/* Right Column - Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Attendance - Collapsible at top */}
-            <AttendanceSection classId={classId} className={classData.name} />
-
-            {/* Class Progress - Books and daily tracking */}
-            <ProgressSection classId={classId} className={classData.name} />
-
-            {/* Makeup Work - Students who missed class */}
-            <MakeupWorkSection classId={classId} />
 
             {/* Danger Zone - Collapsible at bottom */}
             <details className="group">
@@ -553,8 +439,121 @@ export default function ClassDetailPage() {
               </div>
             </details>
           </div>
+
+          {/* Right Column - Main Content */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Spelling Words - Full width in main area */}
+            <SpellingWordsSection classId={classId} defaultExpanded={true} />
+
+            {/* Attendance - Collapsible */}
+            <AttendanceSection classId={classId} className={classData.name} />
+
+            {/* Class Progress - Books and daily tracking */}
+            <ProgressSection classId={classId} className={classData.name} />
+
+            {/* Makeup Work - Students who missed class */}
+            <MakeupWorkSection classId={classId} />
+
+            {/* Schedule management - full view for editing */}
+            <ScheduleSection classId={classId} isAdmin={false} defaultExpanded={false} />
+          </div>
         </div>
       </div>
+
+      {/* Edit Class Dialog */}
+      <Dialog open={isEditing} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              <span className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5" />
+                Edit Class
+              </span>
+            </DialogTitle>
+            <DialogDescription>
+              Update class settings and details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="className">Class Name</Label>
+              <Input
+                id="className"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter class name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editForm.description}
+                onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter class description"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="gradeLevel">Grade Level</Label>
+                <Input
+                  id="gradeLevel"
+                  type="number"
+                  value={editForm.gradeLevel}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, gradeLevel: e.target.value }))}
+                  placeholder="Grade"
+                  min="1"
+                  max="12"
+                />
+              </div>
+              <div>
+                <Label htmlFor="academicYear">Academic Year</Label>
+                <Input
+                  id="academicYear"
+                  value={editForm.academicYear}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, academicYear: e.target.value }))}
+                  placeholder="e.g., 2024-2025"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="active"
+                checked={editForm.active}
+                onChange={(e) => setEditForm(prev => ({ ...prev, active: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="active">Active Class</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="showPracticeStories"
+                checked={editForm.showPracticeStories}
+                onChange={(e) => setEditForm(prev => ({ ...prev, showPracticeStories: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="showPracticeStories">
+                <div>
+                  <div>Show Practice Stories to Students</div>
+                  <p className="text-xs text-gray-600 font-normal">Students will see a practice stories library on their dashboard</p>
+                </div>
+              </Label>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={cancelEdit}>
+                Cancel
+              </Button>
+              <Button onClick={() => { handleSaveChanges(); }}>
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* QR Code Dialog */}
       <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
