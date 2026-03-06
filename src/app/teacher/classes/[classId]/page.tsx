@@ -15,6 +15,7 @@ import { ProgressSection } from "@/components/progress/progress-section";
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
+import { SortableCardList } from "@/components/ui/sortable-card-list";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -440,22 +441,33 @@ export default function ClassDetailPage() {
             </details>
           </div>
 
-          {/* Right Column - Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Spelling Words - Full width in main area */}
-            <SpellingWordsSection classId={classId} defaultExpanded={true} />
-
-            {/* Attendance - Collapsible */}
-            <AttendanceSection classId={classId} className={classData.name} />
-
-            {/* Class Progress - Books and daily tracking */}
-            <ProgressSection classId={classId} className={classData.name} />
-
-            {/* Makeup Work - Students who missed class */}
-            <MakeupWorkSection classId={classId} />
-
-            {/* Schedule management - full view for editing */}
-            <ScheduleSection classId={classId} isAdmin={false} defaultExpanded={false} />
+          {/* Right Column - Main Content (drag to reorder) */}
+          <div className="lg:col-span-3">
+            <SortableCardList
+              storageKey={`class-dashboard-${classId}`}
+              cards={[
+                {
+                  id: "spelling",
+                  node: <SpellingWordsSection classId={classId} defaultExpanded={true} />,
+                },
+                {
+                  id: "attendance",
+                  node: <AttendanceSection classId={classId} className={classData.name} />,
+                },
+                {
+                  id: "progress",
+                  node: <ProgressSection classId={classId} className={classData.name} />,
+                },
+                {
+                  id: "makeup",
+                  node: <MakeupWorkSection classId={classId} />,
+                },
+                {
+                  id: "schedule",
+                  node: <ScheduleSection classId={classId} isAdmin={false} defaultExpanded={false} />,
+                },
+              ]}
+            />
           </div>
         </div>
       </div>
