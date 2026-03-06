@@ -19,6 +19,8 @@ import {
     ChevronDown,
     ChevronUp,
     Scissors,
+    Download,
+    Check,
 } from "lucide-react";
 import { SyllableEditorDialog } from "./syllable-editor-dialog";
 
@@ -37,6 +39,15 @@ interface SpellingList {
     active: boolean;
     createdAt: string;
     words: SpellingWord[];
+}
+
+interface ImportSourceClass {
+    class: {
+        id: string;
+        name: string;
+        gradeLevel: number;
+    };
+    spellingLists: (SpellingList & { words: SpellingWord[] })[];
 }
 
 interface SpellingWordsSectionProps {
@@ -60,6 +71,13 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
     const [newListWeek, setNewListWeek] = useState("");
     const [newListWords, setNewListWords] = useState("");
     const [creating, setCreating] = useState(false);
+
+    // Import state
+    const [showImportDialog, setShowImportDialog] = useState(false);
+    const [importSources, setImportSources] = useState<ImportSourceClass[]>([]);
+    const [loadingImport, setLoadingImport] = useState(false);
+    const [importing, setImporting] = useState<string | null>(null);
+    const [importedListIds, setImportedListIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         fetchSpellingLists();
@@ -115,6 +133,53 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
             console.error("Error creating spelling list:", error);
         } finally {
             setCreating(false);
+        }
+    };
+
+    const fetchImportSources = async () => {
+        setLoadingImport(true);
+        try {
+            const response = await fetch(`/api/spelling-lists/import-sources?classId=${classId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setImportSources(data);
+            }
+        } catch (error) {
+            console.error("Error fetching import sources:", error);
+        } finally {
+            setLoadingImport(false);
+        }
+    };
+
+    const handleOpenImportDialog = () => {
+        setShowImportDialog(true);
+        setImportedListIds(new Set());
+        fetchImportSources();
+    };
+
+    const handleImportList = async (sourceList: SpellingList & { words: SpellingWord[] }) => {
+        setImporting(sourceList.id);
+        try {
+            const words = sourceList.words.map((w) => w.word);
+            const response = await fetch("/api/spelling-lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    classId,
+                    title: sourceList.title,
+                    weekNumber: sourceList.weekNumber,
+                    words,
+                }),
+            });
+
+            if (response.ok) {
+                setImportedListIds((prev) => new Set(prev).add(sourceList.id));
+                await fetchSpellingLists();
+            }
+        } catch (error) {
+            console.error("Error importing spelling list:", error);
+        } finally {
+            setImporting(null);
         }
     };
 
@@ -252,7 +317,11 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
             {/* Expanded Content */}
             {isExpanded && (
                 <CardContent className="pt-0 border-t">
-                    <div className="flex justify-end mb-4 pt-4">
+                    <div className="flex justify-end gap-2 mb-4 pt-4">
+                        <Button onClick={handleOpenImportDialog} size="sm" variant="outline">
+                            <Download className="w-4 h-4 mr-2" />
+                            Import from Class
+                        </Button>
                         <Button onClick={() => setShowCreateDialog(true)} size="sm">
                             <Plus className="w-4 h-4 mr-2" />
                             New List
@@ -498,6 +567,109 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                 )}
                             </Button>
                         </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Import from Class Dialog */}
+            <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+                <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>
+                            <span className="flex items-center gap-2">
+                                <Download className="w-5 h-5" />
+                                Import Spelling Words
+                            </span>
+                        </DialogTitle>
+                        <DialogDescription>
+                            Copy spelling lists from another class at the same grade level
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        {loadingImport ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                            </div>
+                        ) : importSources.length === 0 ? (
+                            <div className="text-center py-8">
+                                <BookA className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-600 font-medium">No other classes found</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    There are no other classes at the same grade level with spelling lists.
+                                </p>
+                            </div>
+                        ) : (
+                            importSources.map((source) => (
+                                <div key={source.class.id} className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="font-semibold text-sm text-gray-700">{source.class.name}</h4>
+                                        <Badge variant="outline" className="text-xs">
+                                            Grade {source.class.gradeLevel}
+                                        </Badge>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {source.spellingLists.map((list) => {
+                                            const isImported = importedListIds.has(list.id);
+                                            const isImporting = importing === list.id;
+                                            return (
+                                                <div
+                                                    key={list.id}
+                                                    className="border rounded-lg p-3 bg-gray-50"
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium text-sm">{list.title}</span>
+                                                            {list.weekNumber && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    Week {list.weekNumber}
+                                                                </Badge>
+                                                            )}
+                                                            <span className="text-xs text-gray-500">
+                                                                {list.words.length} words
+                                                            </span>
+                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            variant={isImported ? "outline" : "default"}
+                                                            onClick={() => handleImportList(list)}
+                                                            disabled={isImporting || isImported}
+                                                            className={isImported ? "text-green-700 border-green-300" : ""}
+                                                        >
+                                                            {isImporting ? (
+                                                                <>
+                                                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                                                    Importing...
+                                                                </>
+                                                            ) : isImported ? (
+                                                                <>
+                                                                    <Check className="w-3 h-3 mr-1" />
+                                                                    Imported
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Download className="w-3 h-3 mr-1" />
+                                                                    Import
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {list.words.map((word) => (
+                                                            <span
+                                                                key={word.id}
+                                                                className="text-xs bg-white border rounded px-2 py-0.5 text-gray-600"
+                                                            >
+                                                                {word.word}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
