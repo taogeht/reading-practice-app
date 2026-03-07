@@ -9,9 +9,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AvatarPickerDialog } from "@/components/students/avatar-picker-dialog";
 import { StudentSpellingSection } from "@/components/spelling/student-spelling-section";
 import { SnowmanGame } from "@/components/spelling/snowman-game";
+import { ListenAndSpellGame } from "@/components/spelling/listen-spell-game";
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Student = {
@@ -213,8 +215,33 @@ export default function StudentDashboardPage() {
         {/* Spelling Words - Prominent full-width section */}
         <StudentSpellingSection />
 
-        {/* Snowman Spelling Game */}
-        <SnowmanGame />
+        {/* Spelling Games via Tabs */}
+        <div className="space-y-4">
+          <Tabs defaultValue="snowman" className="w-full">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Gamepad2 className="w-6 h-6 text-indigo-500" />
+                Spelling Practice
+              </h2>
+              <TabsList className="bg-white/50 border border-gray-200">
+                <TabsTrigger value="snowman" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800">
+                  ⛄ Build a Snowman
+                </TabsTrigger>
+                <TabsTrigger value="listen" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800">
+                  🎧 Listen & Spell
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="snowman" className="mt-0">
+              <SnowmanGame />
+            </TabsContent>
+
+            <TabsContent value="listen" className="mt-0">
+              <ListenAndSpellGame />
+            </TabsContent>
+          </Tabs>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Left Column - Homework & Assignments */}
