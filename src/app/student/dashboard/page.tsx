@@ -243,12 +243,9 @@ export default function StudentDashboardPage() {
           </Tabs>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Left Column - Homework & Assignments */}
-          <div className="md:col-span-1 space-y-6">
-            {/* Homework from Teacher */}
-            <StudentHomeworkSection />
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Assignments */}
+          <div className="space-y-6">
             {/* Consolidated Assignments Tabs */}
             <Card>
               <CardHeader className="pb-3">
@@ -392,9 +389,12 @@ export default function StudentDashboardPage() {
             </Card>
           </div>
 
-          {/* Right Column - Story Library */}
-          {showPracticeStories && (
-            <div className="md:col-span-2 lg:col-span-2">
+          {/* Right Column - Current Tasks & Story Library */}
+          <div className="space-y-6">
+            {/* Homework from Teacher */}
+            <StudentHomeworkSection />
+
+            {showPracticeStories && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -422,8 +422,8 @@ export default function StudentDashboardPage() {
                   />
                 </CardContent>
               </Card>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
