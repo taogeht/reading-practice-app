@@ -7,11 +7,10 @@ export const runtime = 'nodejs';
 
 export async function GET() {
     try {
-        // Temporarily disabled auth so it can be hit easily to fix the DB
-        // const user = await getCurrentUser();
-        // if (!user || user.role !== 'admin' && user.role !== 'teacher') {
-        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        // }
+        const user = await getCurrentUser();
+        if (!user || user.role !== 'admin' && user.role !== 'teacher') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         const query = sql`
             CREATE TABLE IF NOT EXISTS "spelling_game_results" (
