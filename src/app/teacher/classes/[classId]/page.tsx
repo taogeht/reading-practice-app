@@ -462,10 +462,6 @@ export default function ClassDetailPage() {
                   id: "makeup",
                   node: <MakeupWorkSection classId={classId} />,
                 },
-                {
-                  id: "schedule",
-                  node: <ScheduleSection classId={classId} isAdmin={false} defaultExpanded={false} />,
-                },
               ]}
             />
           </div>
