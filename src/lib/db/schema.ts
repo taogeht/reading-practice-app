@@ -282,6 +282,28 @@ export const spellingWords = pgTable(
   })
 );
 
+// Spelling Game Results - Tracks each snowman game round
+export const spellingGameResults = pgTable(
+  'spelling_game_results',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    spellingWordId: uuid('spelling_word_id').notNull().references(() => spellingWords.id, { onDelete: 'cascade' }),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    won: boolean('won').notNull(),
+    wrongGuesses: integer('wrong_guesses').notNull().default(0),
+    guessedLetters: jsonb('guessed_letters').$type<string[]>(),
+    timeSeconds: integer('time_seconds'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    studentIdIdx: index('idx_game_results_student_id').on(table.studentId),
+    wordIdIdx: index('idx_game_results_word_id').on(table.spellingWordId),
+    classIdIdx: index('idx_game_results_class_id').on(table.classId),
+    classWordIdx: index('idx_game_results_class_word').on(table.classId, table.spellingWordId),
+  })
+);
+
 // Attendance Status Enum
 export const attendanceStatusEnum = pgEnum('attendance_status', [
   'present',
@@ -506,8 +528,15 @@ export const spellingListsRelations = relations(spellingLists, ({ one, many }) =
   words: many(spellingWords),
 }));
 
-export const spellingWordsRelations = relations(spellingWords, ({ one }) => ({
+export const spellingWordsRelations = relations(spellingWords, ({ one, many }) => ({
   spellingList: one(spellingLists, { fields: [spellingWords.spellingListId], references: [spellingLists.id] }),
+  gameResults: many(spellingGameResults),
+}));
+
+export const spellingGameResultsRelations = relations(spellingGameResults, ({ one }) => ({
+  student: one(users, { fields: [spellingGameResults.studentId], references: [users.id] }),
+  spellingWord: one(spellingWords, { fields: [spellingGameResults.spellingWordId], references: [spellingWords.id] }),
+  class: one(classes, { fields: [spellingGameResults.classId], references: [classes.id] }),
 }));
 
 export const classSyllabusWeeksRelations = relations(classSyllabusWeeks, ({ one, many }) => ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,8 @@ export function SnowmanGame() {
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentWord, setCurrentWord] = useState<string>("");
+    const [currentWordId, setCurrentWordId] = useState<string | null>(null);
+    const [currentClassId, setCurrentClassId] = useState<string | null>(null);
     const [guessedLetters, setGuessedLetters] = useState<Set<string>>(new Set());
     const [wrongGuesses, setWrongGuesses] = useState(0);
     const [gameState, setGameState] = useState<"playing" | "won" | "lost">("playing");
@@ -52,6 +54,7 @@ export function SnowmanGame() {
     const [streak, setStreak] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
     const [wordPool, setWordPool] = useState<"current" | "all">("current");
+    const roundStartRef = useRef<number>(Date.now());
 
     useEffect(() => {
         fetchSpellingLists();
@@ -70,6 +73,9 @@ export function SnowmanGame() {
                     const words = data[0].words;
                     const randomWord = words[Math.floor(Math.random() * words.length)];
                     setCurrentWord(randomWord.word.toUpperCase());
+                    setCurrentWordId(randomWord.id);
+                    setCurrentClassId(data[0].class.id);
+                    roundStartRef.current = Date.now();
                 }
             }
         } catch (error) {
@@ -79,23 +85,25 @@ export function SnowmanGame() {
         }
     };
 
-    const getWordsForPool = useCallback((pool: "current" | "all") => {
-        const words: string[] = [];
+    const getWordObjectsForPool = useCallback((pool: "current" | "all") => {
+        const words: SpellingWord[] = [];
         if (pool === "current" && lists.length > 0) {
-            // Only the most recent (first) list
             for (const word of lists[0].words) {
-                words.push(word.word.toUpperCase());
+                words.push(word);
             }
         } else {
-            // All lists
             for (const list of lists) {
                 for (const word of list.words) {
-                    words.push(word.word.toUpperCase());
+                    words.push(word);
                 }
             }
         }
         return words;
     }, [lists]);
+
+    const getWordsForPool = useCallback((pool: "current" | "all") => {
+        return getWordObjectsForPool(pool).map(w => w.word.toUpperCase());
+    }, [getWordObjectsForPool]);
 
     const getAllWords = useCallback(() => {
         return getWordsForPool(wordPool);
@@ -103,27 +111,55 @@ export function SnowmanGame() {
 
     const pickNewWord = useCallback((overridePool?: "current" | "all") => {
         const pool = overridePool || wordPool;
-        const allWords = getWordsForPool(pool);
-        if (allWords.length === 0) return;
+        const allWordObjects = getWordObjectsForPool(pool);
+        if (allWordObjects.length === 0) return;
 
         // Try to pick a word we haven't played yet
-        const unplayed = allWords.filter((w) => !wordsPlayed.has(w));
-        const wordChoices = unplayed.length > 0 ? unplayed : allWords;
+        const unplayed = allWordObjects.filter((w) => !wordsPlayed.has(w.word.toUpperCase()));
+        const wordChoices = unplayed.length > 0 ? unplayed : allWordObjects;
 
-        const newWord = wordChoices[Math.floor(Math.random() * wordChoices.length)];
+        const chosen = wordChoices[Math.floor(Math.random() * wordChoices.length)];
+        const newWord = chosen.word.toUpperCase();
         setCurrentWord(newWord);
+        setCurrentWordId(chosen.id);
+        // Find which class this word belongs to
+        for (const list of lists) {
+            if (list.words.some(w => w.id === chosen.id)) {
+                setCurrentClassId(list.class.id);
+                break;
+            }
+        }
         setGuessedLetters(new Set());
         setWrongGuesses(0);
         setGameState("playing");
         setWordsPlayed((prev) => new Set(prev).add(newWord));
         setShowConfetti(false);
-    }, [getWordsForPool, wordPool, wordsPlayed]);
+        roundStartRef.current = Date.now();
+    }, [getWordObjectsForPool, wordPool, wordsPlayed, lists]);
 
     const handlePoolChange = (newPool: "current" | "all") => {
         setWordPool(newPool);
         // Pick a new word from the new pool immediately
         pickNewWord(newPool);
     };
+
+    // Fire-and-forget result reporting
+    const reportResult = useCallback((won: boolean, wrongCount: number, letters: string[]) => {
+        if (!currentWordId || !currentClassId) return;
+        const timeSeconds = Math.round((Date.now() - roundStartRef.current) / 1000);
+        fetch('/api/student/spelling-game/results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                spellingWordId: currentWordId,
+                classId: currentClassId,
+                won,
+                wrongGuesses: wrongCount,
+                guessedLetters: letters,
+                timeSeconds,
+            }),
+        }).catch(() => { }); // Silently ignore errors
+    }, [currentWordId, currentClassId]);
 
     const handleGuess = (letter: string) => {
         if (gameState !== "playing" || guessedLetters.has(letter)) return;
@@ -139,6 +175,7 @@ export function SnowmanGame() {
             if (newWrong >= MAX_WRONG) {
                 setGameState("lost");
                 setStreak(0);
+                reportResult(false, newWrong, Array.from(newGuessed));
             }
         } else {
             // Check if all consonants in the word are now guessed (vowels are auto-revealed)
@@ -151,6 +188,7 @@ export function SnowmanGame() {
                 setStreak((prev) => prev + 1);
                 setShowConfetti(true);
                 setTimeout(() => setShowConfetti(false), 3000);
+                reportResult(true, wrongGuesses, Array.from(newGuessed));
             }
         }
     };
@@ -246,8 +284,8 @@ export function SnowmanGame() {
                         <button
                             onClick={() => handlePoolChange("current")}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${wordPool === "current"
-                                    ? "bg-sky-500 text-white shadow-sm"
-                                    : "text-sky-600 hover:bg-sky-50"
+                                ? "bg-sky-500 text-white shadow-sm"
+                                : "text-sky-600 hover:bg-sky-50"
                                 }`}
                         >
                             <Calendar className="w-3.5 h-3.5" />
@@ -256,8 +294,8 @@ export function SnowmanGame() {
                         <button
                             onClick={() => handlePoolChange("all")}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${wordPool === "all"
-                                    ? "bg-sky-500 text-white shadow-sm"
-                                    : "text-sky-600 hover:bg-sky-50"
+                                ? "bg-sky-500 text-white shadow-sm"
+                                : "text-sky-600 hover:bg-sky-50"
                                 }`}
                         >
                             <CalendarRange className="w-3.5 h-3.5" />
@@ -339,7 +377,7 @@ export function SnowmanGame() {
                                     </div>
                                 )}
                                 <Button
-                                    onClick={pickNewWord}
+                                    onClick={() => pickNewWord()}
                                     className="mt-4 bg-sky-500 hover:bg-sky-600 text-white"
                                 >
                                     <RotateCcw className="w-4 h-4 mr-2" />
@@ -389,7 +427,7 @@ export function SnowmanGame() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={pickNewWord}
+                            onClick={() => pickNewWord()}
                             className="text-gray-400 hover:text-gray-600"
                         >
                             <Sparkles className="w-4 h-4 mr-1" />
