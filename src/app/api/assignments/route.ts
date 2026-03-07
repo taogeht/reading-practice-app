@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
         studentLastName: users.lastName,
         studentGradeLevel: students.gradeLevel,
         studentReadingLevel: students.readingLevel,
-        hasCompleted: sql<number>`CASE WHEN count(${recordings.id}) > 0 THEN 1 ELSE 0 END`,
+        hasSubmitted: sql<number>`SUM(CASE WHEN ${recordings.status} = 'submitted' THEN 1 ELSE 0 END)`,
+        hasReviewed: sql<number>`SUM(CASE WHEN ${recordings.status} = 'reviewed' THEN 1 ELSE 0 END)`,
       })
       .from(assignments)
       .innerJoin(classEnrollments, eq(assignments.classId, classEnrollments.classId))
@@ -88,8 +89,15 @@ export async function GET(request: NextRequest) {
 
     type ProgressEntry = {
       totalStudents: number;
-      completedCount: number;
-      pendingStudents: Array<{
+      reviewedCount: number;
+      needsReviewStudents: Array<{
+        id: string;
+        firstName: string;
+        lastName: string;
+        gradeLevel: number | null;
+        readingLevel: string | null;
+      }>;
+      notStartedStudents: Array<{
         id: string;
         firstName: string;
         lastName: string;
@@ -103,8 +111,9 @@ export async function GET(request: NextRequest) {
     for (const assignment of teacherAssignments) {
       progressMap.set(assignment.id, {
         totalStudents: 0,
-        completedCount: 0,
-        pendingStudents: [],
+        reviewedCount: 0,
+        needsReviewStudents: [],
+        notStartedStudents: [],
       });
     }
 
@@ -116,31 +125,37 @@ export async function GET(request: NextRequest) {
 
       entry.totalStudents += 1;
 
-      if (row.hasCompleted > 0) {
-        entry.completedCount += 1;
+      const studentData = {
+        id: row.studentId,
+        firstName: row.studentFirstName ?? 'Unknown',
+        lastName: row.studentLastName ?? '',
+        gradeLevel: row.studentGradeLevel ?? null,
+        readingLevel: row.studentReadingLevel ?? null,
+      };
+
+      if (row.hasReviewed && row.hasReviewed > 0) {
+        entry.reviewedCount += 1;
+      } else if (row.hasSubmitted && row.hasSubmitted > 0) {
+        entry.needsReviewStudents.push(studentData);
       } else {
-        entry.pendingStudents.push({
-          id: row.studentId,
-          firstName: row.studentFirstName ?? 'Unknown',
-          lastName: row.studentLastName ?? '',
-          gradeLevel: row.studentGradeLevel ?? null,
-          readingLevel: row.studentReadingLevel ?? null,
-        });
+        entry.notStartedStudents.push(studentData);
       }
     }
 
     const assignmentsWithProgress = teacherAssignments.map((assignment) => {
       const progress = progressMap.get(assignment.id) ?? {
         totalStudents: 0,
-        completedCount: 0,
-        pendingStudents: [] as ProgressEntry['pendingStudents'],
+        reviewedCount: 0,
+        needsReviewStudents: [] as ProgressEntry['needsReviewStudents'],
+        notStartedStudents: [] as ProgressEntry['notStartedStudents'],
       };
 
       return {
         ...assignment,
         totalStudents: progress.totalStudents,
-        completedCount: progress.completedCount,
-        pendingStudents: progress.pendingStudents,
+        reviewedCount: progress.reviewedCount,
+        needsReviewStudents: progress.needsReviewStudents,
+        notStartedStudents: progress.notStartedStudents,
       };
     });
 
@@ -210,8 +225,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!classRecord) {
-      return NextResponse.json({ 
-        error: 'Class not found or you do not have permission to assign to this class' 
+      return NextResponse.json({
+        error: 'Class not found or you do not have permission to assign to this class'
       }, { status: 404 });
     }
 

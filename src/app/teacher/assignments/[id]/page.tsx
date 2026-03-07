@@ -15,7 +15,8 @@ interface StudentSummary {
   gradeLevel: number | null;
   readingLevel: string | null;
   active: boolean;
-  completed: boolean;
+  hasSubmitted: boolean;
+  hasReviewed: boolean;
 }
 
 interface Assignment {
@@ -36,9 +37,10 @@ interface Assignment {
 
 interface StudentProgressSummary {
   totalStudents: number;
-  completedCount: number;
+  reviewedCount: number;
   completedStudents: StudentSummary[];
-  pendingStudents: StudentSummary[];
+  needsReviewStudents: StudentSummary[];
+  notStartedStudents: StudentSummary[];
 }
 
 export default function ViewAssignmentPage() {
@@ -247,25 +249,47 @@ export default function ViewAssignmentPage() {
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <span className="flex items-center gap-2 text-green-600 font-medium">
                     <CheckCircle className="w-4 h-4" />
-                    {studentProgress.completedCount} of {studentProgress.totalStudents} students have submitted
+                    {studentProgress.reviewedCount} of {studentProgress.totalStudents} fully reviewed
                   </span>
                   {studentProgress.totalStudents > 0 && (
                     <Badge variant="secondary">
                       Completion Rate: {studentProgress.totalStudents > 0
-                        ? Math.round((studentProgress.completedCount / studentProgress.totalStudents) * 100)
+                        ? Math.round((studentProgress.reviewedCount / studentProgress.totalStudents) * 100)
                         : 0}%
                     </Badge>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Needs Review */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                      Needs Review ({studentProgress.needsReviewStudents.length})
+                    </h4>
+                    {studentProgress.needsReviewStudents.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No submissions waiting for review.</p>
+                    ) : (
+                      <ul className="space-y-2 text-sm">
+                        {studentProgress.needsReviewStudents.map((student) => (
+                          <li key={student.id} className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 cursor-pointer hover:bg-amber-100 transition-colors" onClick={() => router.push(`/teacher/submissions`)}>
+                            <span className="text-amber-800 font-medium">
+                              {student.firstName} {student.lastName}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Fully Reviewed/Completed */}
                   <div>
                     <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      Completed ({studentProgress.completedCount})
+                      Reviewed ({studentProgress.reviewedCount})
                     </h4>
                     {studentProgress.completedStudents.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No completed submissions yet.</p>
+                      <p className="text-sm text-muted-foreground">No reviewed submissions yet.</p>
                     ) : (
                       <ul className="space-y-2 text-sm">
                         {studentProgress.completedStudents.map((student) => (
@@ -273,32 +297,27 @@ export default function ViewAssignmentPage() {
                             <span className="text-green-700 font-medium">
                               {student.firstName} {student.lastName}
                             </span>
-                            {student.readingLevel && (
-                              <span className="text-xs text-green-600">Level {student.readingLevel}</span>
-                            )}
                           </li>
                         ))}
                       </ul>
                     )}
                   </div>
 
+                  {/* Not Started */}
                   <div>
                     <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                      <AlertCircle className="w-4 h-4 text-orange-600" />
-                      Pending ({studentProgress.pendingStudents.length})
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      Not Started ({studentProgress.notStartedStudents.length})
                     </h4>
-                    {studentProgress.pendingStudents.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">All students have completed this assignment.</p>
+                    {studentProgress.notStartedStudents.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Everyone has started this assignment.</p>
                     ) : (
                       <ul className="space-y-2 text-sm">
-                        {studentProgress.pendingStudents.map((student) => (
-                          <li key={student.id} className="flex items-center justify-between gap-2 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
-                            <span className="text-orange-700 font-medium">
+                        {studentProgress.notStartedStudents.map((student) => (
+                          <li key={student.id} className="flex items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-500">
+                            <span className="font-medium">
                               {student.firstName} {student.lastName}
                             </span>
-                            {student.readingLevel && (
-                              <span className="text-xs text-orange-600">Level {student.readingLevel}</span>
-                            )}
                           </li>
                         ))}
                       </ul>

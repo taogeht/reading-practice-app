@@ -182,7 +182,8 @@ export async function GET(
           gradeLevel: students.gradeLevel,
           readingLevel: students.readingLevel,
           active: users.active,
-          hasCompleted: sql<number>`CASE WHEN count(${recordings.id}) > 0 THEN 1 ELSE 0 END`,
+          hasSubmitted: sql<number>`SUM(CASE WHEN ${recordings.status} = 'submitted' THEN 1 ELSE 0 END)`,
+          hasReviewed: sql<number>`SUM(CASE WHEN ${recordings.status} = 'reviewed' THEN 1 ELSE 0 END)`,
         })
         .from(classEnrollments)
         .innerJoin(students, eq(classEnrollments.studentId, students.id))
@@ -212,11 +213,13 @@ export async function GET(
         gradeLevel: row.gradeLevel ?? null,
         readingLevel: row.readingLevel ?? null,
         active: Boolean(row.active),
-        completed: row.hasCompleted > 0,
+        hasSubmitted: row.hasSubmitted > 0,
+        hasReviewed: row.hasReviewed > 0,
       }));
 
-      const completedStudents = studentSummaries.filter((student) => student.completed);
-      const pendingStudents = studentSummaries.filter((student) => !student.completed);
+      const completedStudents = studentSummaries.filter((student) => student.hasReviewed);
+      const needsReviewStudents = studentSummaries.filter((student) => student.hasSubmitted && !student.hasReviewed);
+      const notStartedStudents = studentSummaries.filter((student) => !student.hasSubmitted && !student.hasReviewed);
 
       // Refresh TTS audio URLs for teacher/admin
       const storyTtsAudio = rewriteTtsAudioUrls(storyTtsAudioNormalized);
@@ -251,9 +254,10 @@ export async function GET(
         },
         studentProgress: {
           totalStudents: studentSummaries.length,
-          completedCount: completedStudents.length,
+          reviewedCount: completedStudents.length,
           completedStudents,
-          pendingStudents,
+          needsReviewStudents,
+          notStartedStudents,
         },
       });
     }

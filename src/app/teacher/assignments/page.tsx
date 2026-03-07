@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
-import { ArrowLeft, Plus, Eye, Edit2, Trash2, Calendar, Users, BookOpen, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, Eye, Edit2, Trash2, Calendar, Users, BookOpen, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -31,8 +31,9 @@ interface Assignment {
   classId: string;
   className: string;
   totalStudents: number;
-  completedCount: number;
-  pendingStudents: StudentSummary[];
+  reviewedCount: number;
+  needsReviewStudents: StudentSummary[];
+  notStartedStudents: StudentSummary[];
 }
 
 export default function TeacherAssignmentsPage() {
@@ -59,8 +60,9 @@ export default function TeacherAssignmentsPage() {
       const formattedAssignments: Assignment[] = (data.assignments || []).map((assignment: any) => ({
         ...assignment,
         totalStudents: assignment.totalStudents ?? 0,
-        completedCount: assignment.completedCount ?? 0,
-        pendingStudents: assignment.pendingStudents ?? [],
+        reviewedCount: assignment.reviewedCount ?? 0,
+        needsReviewStudents: assignment.needsReviewStudents ?? [],
+        notStartedStudents: assignment.notStartedStudents ?? [],
       }));
       setAssignments(formattedAssignments);
     } catch (error) {
@@ -209,122 +211,144 @@ export default function TeacherAssignmentsPage() {
         ) : (
           <div className="grid gap-6">
             {assignments.map((assignment) => {
-              const pendingNames = assignment.pendingStudents.map((student) => `${student.firstName} ${student.lastName}`.trim());
-              const displayedPending = pendingNames.slice(0, 5);
-              const extraPending = pendingNames.length - displayedPending.length;
+              const needsReviewNames = assignment.needsReviewStudents.map((student) => `${student.firstName} ${student.lastName}`.trim());
+              const displayedNeedsReview = needsReviewNames.slice(0, 5);
+              const extraNeedsReview = needsReviewNames.length - displayedNeedsReview.length;
+
+              const notStartedNames = assignment.notStartedStudents.map((student) => `${student.firstName} ${student.lastName}`.trim());
+              const displayedNotStarted = notStartedNames.slice(0, 5);
+              const extraNotStarted = notStartedNames.length - displayedNotStarted.length;
+
               const completionRate = assignment.totalStudents > 0
-                ? Math.round((assignment.completedCount / assignment.totalStudents) * 100)
+                ? Math.round((assignment.reviewedCount / assignment.totalStudents) * 100)
                 : 0;
 
               return (
                 <Card key={assignment.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-xl">{assignment.title}</CardTitle>
-                        <Badge className={getStatusColor(assignment.status)}>
-                          {getStatusLabel(assignment.status)}
-                        </Badge>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <CardTitle className="text-xl">{assignment.title}</CardTitle>
+                          <Badge className={getStatusColor(assignment.status)}>
+                            {getStatusLabel(assignment.status)}
+                          </Badge>
+                        </div>
+                        <CardDescription className="text-base">
+                          {assignment.description || 'No description provided'}
+                        </CardDescription>
                       </div>
-                      <CardDescription className="text-base">
-                        {assignment.description || 'No description provided'}
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/teacher/assignments/${assignment.id}`)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/teacher/assignments/${assignment.id}/edit`)}
-                      >
-                        <Edit2 className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                      {assignment.status === 'published' && (
+                      <div className="flex gap-2 ml-4">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-blue-600 hover:text-blue-700"
-                          onClick={() => handleMarkAsCompleted(assignment.id, assignment.title)}
+                          onClick={() => router.push(`/teacher/assignments/${assignment.id}`)}
                         >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Mark Complete
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteAssignment(assignment.id, assignment.title)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/teacher/assignments/${assignment.id}/edit`)}
+                        >
+                          <Edit2 className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                        {assignment.status === 'published' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700"
+                            onClick={() => handleMarkAsCompleted(assignment.id, assignment.title)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Mark Complete
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDeleteAssignment(assignment.id, assignment.title)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex flex-wrap items-center gap-4 text-sm">
-                      <span className="flex items-center gap-1 text-green-600 font-medium">
-                        <CheckCircle className="w-4 h-4" />
-                        {assignment.totalStudents > 0
-                          ? `${assignment.completedCount} of ${assignment.totalStudents} completed (${completionRate}%)`
-                          : 'No students enrolled yet'}
-                      </span>
-                    </div>
-                    {assignment.totalStudents > 0 && (
-                      pendingNames.length > 0 ? (
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-orange-600">
-                          <span className="flex items-center gap-1 font-medium">
-                            <AlertCircle className="w-4 h-4" />
-                            {pendingNames.length} pending:
-                          </span>
-                          {displayedPending.map((name) => (
-                            <Badge key={name} variant="outline" className="text-orange-700 border-orange-300 bg-orange-50">
-                              {name}
-                            </Badge>
-                          ))}
-                          {extraPending > 0 && (
-                            <span className="text-xs text-orange-500">+{extraPending} more</span>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center gap-4 text-sm">
+                        <span className="flex items-center gap-1 text-green-600 font-medium">
+                          <CheckCircle className="w-4 h-4" />
+                          {assignment.totalStudents > 0
+                            ? `${assignment.reviewedCount} of ${assignment.totalStudents} fully reviewed (${completionRate}%)`
+                            : 'No students enrolled yet'}
+                        </span>
+                      </div>
+
+                      {assignment.totalStudents > 0 && (
+                        <div className="flex flex-col gap-2">
+                          {/* Needs Review Section */}
+                          {needsReviewNames.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-100">
+                              <span className="flex items-center gap-1 font-medium">
+                                <AlertCircle className="w-4 h-4" />
+                                {needsReviewNames.length} Needs Review:
+                              </span>
+                              {displayedNeedsReview.map((name) => (
+                                <Badge key={name} variant="outline" className="text-amber-700 bg-white border-amber-300">
+                                  {name}
+                                </Badge>
+                              ))}
+                              {extraNeedsReview > 0 && (
+                                <span className="text-xs text-amber-500">+{extraNeedsReview} more</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Not Started Section */}
+                          {notStartedNames.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                              <span className="flex items-center gap-1 font-medium text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {notStartedNames.length} Not Started:
+                              </span>
+                              {displayedNotStarted.map((name) => (
+                                <Badge key={name} variant="outline" className="text-gray-600 bg-gray-50 border-gray-200">
+                                  {name}
+                                </Badge>
+                              ))}
+                              {extraNotStarted > 0 && (
+                                <span className="text-xs text-gray-400">+{extraNotStarted} more</span>
+                              )}
+                            </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-sm text-green-600">
-                          <CheckCircle className="w-4 h-4" />
-                          All students have finished this assignment.
-                        </div>
-                      )
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <BookOpen className="w-4 h-4" />
-                      <span>Story: {assignment.storyTitle}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <BookOpen className="w-4 h-4" />
+                        <span>Story: {assignment.storyTitle}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Users className="w-4 h-4" />
+                        <span>Class: {assignment.className}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>Due: {formatDate(assignment.dueAt)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Users className="w-4 h-4" />
-                      <span>Class: {assignment.className}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      <span>Due: {formatDate(assignment.dueAt)}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex justify-between items-center text-sm text-gray-500 border-t pt-4">
-                    <span>Max attempts: {assignment.maxAttempts}</span>
-                    <span>Created {format(new Date(assignment.createdAt), 'MMM d, yyyy')}</span>
-                  </div>
-                </CardContent>
+                    <div className="flex justify-between items-center text-sm text-gray-500 border-t pt-4">
+                      <span>Max attempts: {assignment.maxAttempts}</span>
+                      <span>Created {format(new Date(assignment.createdAt), 'MMM d, yyyy')}</span>
+                    </div>
+                  </CardContent>
                 </Card>
               );
             })}
