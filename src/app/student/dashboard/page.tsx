@@ -246,158 +246,6 @@ export default function StudentDashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Left Column - Homework & Assignments */}
           <div className="md:col-span-1 space-y-6">
-            {/* Homework from Teacher */}
-            <StudentHomeworkSection />
-
-            {/* Pending Assignments */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-orange-500" />
-                  Your Assignments
-                </CardTitle>
-                <CardDescription>
-                  {pendingAssignments.length > 0
-                    ? `${pendingAssignments.length} assignment${pendingAssignments.length !== 1 ? 's' : ''} to complete`
-                    : 'All caught up! Great job! ⭐'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {pendingAssignments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Star className="w-12 h-12 mx-auto mb-3 text-yellow-400" />
-                    <p className="font-medium">All assignments complete!</p>
-                    <p className="text-sm">Check back later for new stories.</p>
-                  </div>
-                ) : (
-                  pendingAssignments.map((assignment) => (
-                    <div
-                      key={assignment.id}
-                      className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-medium">{assignment.title}</h3>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Story: {assignment.storyTitle}
-                      </p>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Headphones className="w-3 h-3" />
-                          Listen & Record
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Awaiting Teacher Review */}
-            {submittedAssignments.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Send className="w-5 h-5 text-amber-500" />
-                    Awaiting Review
-                  </CardTitle>
-                  <CardDescription>
-                    Submitted and waiting for teacher feedback
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {submittedAssignments.map((assignment) => (
-                    <div
-                      key={assignment.id}
-                      className="border border-amber-200 bg-amber-50 rounded-lg p-3 cursor-pointer hover:bg-amber-100 transition-colors"
-                      onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="font-medium text-sm">{assignment.title}</h4>
-                          <p className="text-xs text-gray-600">{assignment.storyTitle}</p>
-                        </div>
-                        <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300">
-                          Submitted
-                        </Badge>
-                      </div>
-                      <div className="mt-2 text-xs text-amber-600">
-                        Your teacher will review this soon. Click to practice again!
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Recent Completed */}
-            {completedAssignments.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-green-500" />
-                    Completed
-                  </CardTitle>
-                  <CardDescription>
-                    Your recent accomplishments
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {completedAssignments.map((assignment) => (
-                    <div
-                      key={assignment.id}
-                      className={`border border-green-200 bg-green-50 rounded-lg p-3 transition-colors ${assignment.hasTeacherFeedback ? '' : 'cursor-pointer hover:bg-green-100'
-                        }`}
-                      onClick={() => {
-                        if (!assignment.hasTeacherFeedback) {
-                          router.push(`/student/assignments/${assignment.id}/practice`);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="font-medium text-sm">{assignment.title}</h4>
-                          <p className="text-xs text-gray-600">{assignment.storyTitle}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {assignment.bestScore && (
-                            <Badge variant="default" className="bg-green-600">
-                              {assignment.bestScore}%
-                            </Badge>
-                          )}
-                          {assignment.hasTeacherFeedback && (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                              ✓ Reviewed
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {assignment.teacherFeedback && (
-                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                          <h5 className="text-xs font-medium text-blue-800 mb-1">Teacher Feedback:</h5>
-                          <p className="text-xs text-blue-700">{assignment.teacherFeedback}</p>
-                          {assignment.reviewedAt && (
-                            <p className="text-xs text-blue-600 mt-1 opacity-75">
-                              Reviewed on {new Date(assignment.reviewedAt).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {!assignment.hasTeacherFeedback && assignment.status === 'completed' && (
-                        <div className="mt-2 text-xs text-green-600">
-                          Click to practice again while waiting for teacher feedback
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
             {/* Quick Stats */}
             <Card>
               <CardContent className="p-4">
@@ -421,6 +269,151 @@ export default function StudentDashboardPage() {
                     <div className="text-xs text-gray-500">To Do</div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Homework from Teacher */}
+            <StudentHomeworkSection />
+
+            {/* Consolidated Assignments Tabs */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-indigo-500" />
+                  Your Assignments
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="pending" className="w-full">
+                  <TabsList className="w-full grid grid-cols-3 mb-4">
+                    <TabsTrigger value="pending" className="flex gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="hidden sm:inline">To Do</span>
+                      <Badge variant="secondary" className="ml-1 px-1.5 min-w-[1.25rem] h-5 flex items-center justify-center">
+                        {pendingAssignments.length}
+                      </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="submitted" className="flex gap-2">
+                      <Send className="w-4 h-4" />
+                      <span className="hidden sm:inline">Review</span>
+                      {submittedAssignments.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 px-1.5 min-w-[1.25rem] h-5 flex items-center justify-center bg-amber-100 text-amber-700">
+                          {submittedAssignments.length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className="flex gap-2">
+                      <Star className="w-4 h-4" />
+                      <span className="hidden sm:inline">Done</span>
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* To Do Tab */}
+                  <TabsContent value="pending" className="space-y-4">
+                    {pendingAssignments.length === 0 ? (
+                      <div className="text-center py-6 text-gray-500">
+                        <Star className="w-10 h-10 mx-auto mb-2 text-yellow-400" />
+                        <p className="font-medium">All assignments complete!</p>
+                      </div>
+                    ) : (
+                      pendingAssignments.map((assignment) => (
+                        <div
+                          key={assignment.id}
+                          className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
+                        >
+                          <div className="flex items-start justify-between mb-1">
+                            <h3 className="font-medium text-sm">{assignment.title}</h3>
+                          </div>
+                          <p className="text-xs text-gray-600 mb-2">
+                            {assignment.storyTitle}
+                          </p>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
+                              <Headphones className="w-3 h-3" />
+                              Listen & Record
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </TabsContent>
+
+                  {/* Awaiting Review Tab */}
+                  <TabsContent value="submitted" className="space-y-3">
+                    {submittedAssignments.length === 0 ? (
+                      <div className="text-center py-6 text-gray-500">
+                        <p className="font-medium text-sm">Nothing currently under review.</p>
+                      </div>
+                    ) : (
+                      submittedAssignments.map((assignment) => (
+                        <div
+                          key={assignment.id}
+                          className="border border-amber-200 bg-amber-50 rounded-lg p-3 cursor-pointer hover:bg-amber-100 transition-colors"
+                          onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <div>
+                              <h4 className="font-medium text-sm text-gray-900">{assignment.title}</h4>
+                              <p className="text-xs text-gray-600 truncate max-w-[150px]">{assignment.storyTitle}</p>
+                            </div>
+                            <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                              Submitted
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </TabsContent>
+
+                  {/* Completed Tab */}
+                  <TabsContent value="completed" className="space-y-3">
+                    {completedAssignments.length === 0 ? (
+                      <div className="text-center py-6 text-gray-500">
+                        <p className="font-medium text-sm">Completed assignments will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        {completedAssignments.map((assignment) => (
+                          <div
+                            key={assignment.id}
+                            className={`border border-green-200 bg-green-50 rounded-lg p-3 transition-colors ${assignment.hasTeacherFeedback ? '' : 'cursor-pointer hover:bg-green-100'}`}
+                            onClick={() => {
+                              if (!assignment.hasTeacherFeedback) {
+                                router.push(`/student/assignments/${assignment.id}/practice`);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div>
+                                <h4 className="font-medium text-sm text-gray-900">{assignment.title}</h4>
+                                <p className="text-xs text-gray-600 truncate max-w-[140px]">{assignment.storyTitle}</p>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {assignment.bestScore && (
+                                  <Badge variant="default" className="bg-green-600 text-[10px] px-1.5 py-0 h-5">
+                                    {assignment.bestScore}%
+                                  </Badge>
+                                )}
+                                {assignment.hasTeacherFeedback && (
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0 h-5">
+                                    ✓
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            {assignment.teacherFeedback && (
+                              <div className="mt-2 p-2 bg-blue-50/80 border border-blue-200/50 rounded-md">
+                                <p className="text-xs text-blue-800 leading-tight">"{assignment.teacherFeedback}"</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
