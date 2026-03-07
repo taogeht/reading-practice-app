@@ -24,10 +24,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Verify the spelling word exists
-        const word = await db.query.spellingWords.findFirst({
-            where: eq(spellingWords.id, spellingWordId),
-        });
+        // Verify the spelling word exists (use direct select to avoid relation issues)
+        const [word] = await db
+            .select({ id: spellingWords.id })
+            .from(spellingWords)
+            .where(eq(spellingWords.id, spellingWordId))
+            .limit(1);
 
         if (!word) {
             return NextResponse.json({ error: 'Spelling word not found' }, { status: 404 });
@@ -49,7 +51,10 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(result, { status: 201 });
     } catch (error) {
-        console.error('[POST /api/student/spelling-game/results] Error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        const stack = error instanceof Error ? error.stack : '';
+        console.error('[POST /api/student/spelling-game/results] Error:', message);
+        console.error('[POST /api/student/spelling-game/results] Stack:', stack);
+        return NextResponse.json({ error: 'Internal server error', details: message }, { status: 500 });
     }
 }
