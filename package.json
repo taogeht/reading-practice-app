@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "cross-env NEXT_DISABLE_TURBOPACK=1 next build",
+    "build": "cross-env NEXT_DISABLE_TURBOPACK=1 next build && drizzle-kit migrate",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
