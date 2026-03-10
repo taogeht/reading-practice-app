@@ -5,7 +5,8 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
-  ListObjectsV2Command
+  ListObjectsV2Command,
+  DeleteObjectsCommand
 } from "@aws-sdk/client-s3";
 
 class R2Client {
@@ -103,6 +104,27 @@ class R2Client {
     });
 
     await this.client.send(command);
+  }
+
+  /**
+   * Delete multiple files
+   */
+  async deleteFiles(keys: string[]): Promise<void> {
+    if (!keys || keys.length === 0) return;
+
+    // S3 DeleteObjectsCommand allows max 1000 keys per request
+    const CHUNK_SIZE = 1000;
+    for (let i = 0; i < keys.length; i += CHUNK_SIZE) {
+      const chunk = keys.slice(i, i + CHUNK_SIZE);
+      const command = new DeleteObjectsCommand({
+        Bucket: this.bucketName,
+        Delete: {
+          Objects: chunk.map(key => ({ Key: key })),
+          Quiet: false,
+        },
+      });
+      await this.client.send(command);
+    }
   }
 
   /**

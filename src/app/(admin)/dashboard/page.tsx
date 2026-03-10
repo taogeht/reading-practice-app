@@ -23,7 +23,7 @@ interface DashboardStats {
   estimatedStorageCostUsd: number;
 }
 
-type StorageFilter = 'all' | 'tts' | 'recordings';
+type StorageFilter = 'all' | 'tts' | 'recordings' | 'spelling';
 
 interface R2ObjectItem {
   key: string;
@@ -47,6 +47,8 @@ export default function AdminDashboard() {
   const [storageCursor, setStorageCursor] = useState<string | null>(null);
   const [storageFilter, setStorageFilter] = useState<StorageFilter>('tts');
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchStats() {
@@ -91,6 +93,7 @@ export default function AdminDashboard() {
         setStorageLoading(true);
         setStorageCursor(null);
         setStorageError(null);
+        setSelectedKeys(new Set());
       } else {
         setStorageLoading(true);
       }
@@ -100,6 +103,8 @@ export default function AdminDashboard() {
         params.set('prefix', 'audio/tts/');
       } else if (storageFilter === 'recordings') {
         params.set('prefix', 'audio/recordings/');
+      } else if (storageFilter === 'spelling') {
+        params.set('prefix', 'spelling/');
       }
       if (!reset && storageCursor) {
         params.set('cursor', storageCursor);
@@ -130,6 +135,57 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedKeys(new Set(storageItems.map(item => item.key)));
+    } else {
+      setSelectedKeys(new Set());
+    }
+  };
+
+  const handleSelectKey = (key: string, checked: boolean) => {
+    const newSelected = new Set(selectedKeys);
+    if (checked) {
+      newSelected.add(key);
+    } else {
+      newSelected.delete(key);
+    }
+    setSelectedKeys(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedKeys.size === 0) return;
+
+    if (!confirm(`Delete ${selectedKeys.size} selected files? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsBulkDeleting(true);
+      const keysArray = Array.from(selectedKeys);
+
+      const response = await fetch('/api/admin/r2/objects', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ keys: keysArray }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete files');
+      }
+
+      setStorageItems(prev => prev.filter(item => !selectedKeys.has(item.key)));
+      setSelectedKeys(new Set());
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete files');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   const handleDeleteObject = async (key: string) => {
     if (!confirm(`Delete ${key}? This action cannot be undone.`)) {
       return;
@@ -151,6 +207,13 @@ export default function AdminDashboard() {
       }
 
       setStorageItems((prev) => prev.filter((item) => item.key !== key));
+
+      // Also remove from selected keys if it was selected
+      if (selectedKeys.has(key)) {
+        const newSelected = new Set(selectedKeys);
+        newSelected.delete(key);
+        setSelectedKeys(newSelected);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete file');
     } finally {
@@ -193,6 +256,8 @@ export default function AdminDashboard() {
         return 'TTS Audio';
       case 'recordings':
         return 'Student Recordings';
+      case 'spelling':
+        return 'Spelling Words';
       default:
         return 'All Files';
     }
@@ -358,6 +423,16 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Storage Files</h2>
           <div className="flex items-center gap-2">
+            {selectedKeys.size > 0 && (
+              <Button
+                variant="destructive"
+                onClick={handleBulkDelete}
+                disabled={isBulkDeleting}
+                className="mr-2"
+              >
+                {isBulkDeleting ? 'Deleting...' : `Delete Selected (${selectedKeys.size})`}
+              </Button>
+            )}
             <Select value={storageFilter} onValueChange={(value: StorageFilter) => setStorageFilter(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by type" />
@@ -365,6 +440,7 @@ export default function AdminDashboard() {
               <SelectContent>
                 <SelectItem value="tts">TTS Audio</SelectItem>
                 <SelectItem value="recordings">Student Recordings</SelectItem>
+                <SelectItem value="spelling">Spelling Words</SelectItem>
                 <SelectItem value="all">All Files</SelectItem>
               </SelectContent>
             </Select>
@@ -396,6 +472,15 @@ export default function AdminDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 w-4 h-4 text-blue-600"
+                        checked={storageItems.length > 0 && selectedKeys.size === storageItems.length}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        disabled={storageItems.length === 0}
+                      />
+                    </TableHead>
                     <TableHead>Key</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Linked Story</TableHead>
@@ -407,6 +492,14 @@ export default function AdminDashboard() {
                 <TableBody>
                   {storageItems.map((item) => (
                     <TableRow key={item.key}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 w-4 h-4 text-blue-600"
+                          checked={selectedKeys.has(item.key)}
+                          onChange={(e) => handleSelectKey(item.key, e.target.checked)}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-xs sm:text-sm break-all">
                         {item.key}
                       </TableCell>
@@ -435,7 +528,7 @@ export default function AdminDashboard() {
                           variant="destructive"
                           size="sm"
                           onClick={() => handleDeleteObject(item.key)}
-                          disabled={deletingKey === item.key}
+                          disabled={deletingKey === item.key || isBulkDeleting}
                         >
                           {deletingKey === item.key ? 'Deleting…' : 'Delete'}
                         </Button>
