@@ -86,6 +86,7 @@ export default function LoginCardsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [origin, setOrigin] = useState<string>("");
+  const [shortUrl, setShortUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -125,17 +126,38 @@ export default function LoginCardsPage() {
     return `${base}/student-login/${classId}`;
   }, [classId, origin]);
 
+  useEffect(() => {
+    if (!loginUrl) return;
+
+    const getShortUrl = async () => {
+      try {
+        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(loginUrl)}`);
+        if (res.ok) {
+          const short = await res.text();
+          setShortUrl(short);
+        } else {
+          setShortUrl(loginUrl); // Fallback to long URL
+        }
+      } catch (error) {
+        console.error("Failed to shorten URL", error);
+        setShortUrl(loginUrl); // Fallback
+      }
+    };
+
+    getShortUrl();
+  }, [loginUrl]);
+
   const handlePrint = () => {
     if (typeof window !== "undefined") {
       window.print();
     }
   };
 
-  if (loading) {
+  if (loading || (classData && !shortUrl)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex items-center gap-2 text-gray-600">
-          <Loader2 className="w-5 h-5 animate-spin" /> Loading login cards...
+          <Loader2 className="w-5 h-5 animate-spin" /> Preparing login cards...
         </div>
       </div>
     );
@@ -188,17 +210,16 @@ export default function LoginCardsPage() {
                 >
                   <CardContent className="p-4 flex flex-col h-full justify-between">
                     <div className="space-y-3 text-center">
-                      {(() => {
-                        const studentLoginUrl = `${loginUrl}?student=${student.id}`;
-                        const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(studentLoginUrl)}`;
-                        return (
-                          <img
-                            src={qrSrc}
-                            alt={`QR code for ${student.firstName}`}
-                            className="mx-auto w-24 h-24 border border-gray-200 rounded"
-                          />
-                        );
-                      })()}
+                      <div className="flex flex-col items-center">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(shortUrl || loginUrl)}`}
+                          alt={`QR code for ${student.firstName}`}
+                          className="w-24 h-24 border border-gray-200 rounded"
+                        />
+                        <p className="mt-2 text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                          {shortUrl?.replace(/^https?:\/\//, '')}
+                        </p>
+                      </div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">
                           {student.firstName} {student.lastName}
@@ -213,11 +234,11 @@ export default function LoginCardsPage() {
                         <p className="text-sm text-blue-800 font-medium">{visual.description}</p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        Ask your teacher for help if you can't scan the code.
+                        Ask your teacher for help if you have trouble logging in.
                       </p>
                     </div>
                     <div className="mt-4 text-xs text-gray-400 text-center">
-                      Scan the QR code or visit the link above. Choose your name and tap your picture password to log in.
+                      Scan the QR code or visit the class link. Then choose your name and tap your picture password to log in.
                     </div>
                   </CardContent>
                 </Card>
