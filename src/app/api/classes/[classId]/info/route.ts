@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { classes, users } from '@/lib/db/schema';
-import { eq, like } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,7 @@ export async function GET(
 
     const condition = classId.length === 36
       ? eq(classes.id, classId)
-      : like(classes.id, `${classId}%`);
+      : sql`${classes.id}::text LIKE ${classId + '%'}`;
 
     // Get class info with teacher name (public endpoint for login)
     const classInfo = await db

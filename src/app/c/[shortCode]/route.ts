@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { classes } from "@/lib/db/schema";
-import { like } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export const runtime = 'nodejs';
 
@@ -28,7 +28,7 @@ export async function GET(
         const classRecords = await db
             .select({ id: classes.id })
             .from(classes)
-            .where(like(classes.id, `${shortCode}%`))
+            .where(sql`${classes.id}::text LIKE ${shortCode + '%'}`)
             .limit(1);
 
         if (classRecords.length > 0) {
