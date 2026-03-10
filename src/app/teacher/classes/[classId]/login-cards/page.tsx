@@ -131,10 +131,14 @@ export default function LoginCardsPage() {
 
     const getShortUrl = async () => {
       try {
-        const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(loginUrl)}`);
+        const res = await fetch('/api/teacher/shorten-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: loginUrl }),
+        });
         if (res.ok) {
-          const short = await res.text();
-          setShortUrl(short);
+          const data = await res.json();
+          setShortUrl(data.shortUrl);
         } else {
           setShortUrl(loginUrl); // Fallback to long URL
         }
