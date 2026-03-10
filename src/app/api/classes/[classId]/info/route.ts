@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { classes, users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -12,6 +12,10 @@ export async function GET(
 ) {
   try {
     const { classId } = await params;
+
+    const condition = classId.length === 36
+      ? eq(classes.id, classId)
+      : like(classes.id, `${classId}%`);
 
     // Get class info with teacher name (public endpoint for login)
     const classInfo = await db
@@ -24,7 +28,7 @@ export async function GET(
       })
       .from(classes)
       .innerJoin(users, eq(classes.teacherId, users.id))
-      .where(eq(classes.id, classId))
+      .where(condition)
       .limit(1);
 
     if (!classInfo.length) {

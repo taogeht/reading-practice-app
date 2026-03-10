@@ -86,7 +86,6 @@ export default function LoginCardsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [origin, setOrigin] = useState<string>("");
-  const [shortUrl, setShortUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -126,30 +125,11 @@ export default function LoginCardsPage() {
     return `${base}/student-login/${classId}`;
   }, [classId, origin]);
 
-  useEffect(() => {
-    if (!loginUrl) return;
-
-    const getShortUrl = async () => {
-      try {
-        const res = await fetch('/api/teacher/shorten-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: loginUrl }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setShortUrl(data.shortUrl);
-        } else {
-          setShortUrl(loginUrl); // Fallback to long URL
-        }
-      } catch (error) {
-        console.error("Failed to shorten URL", error);
-        setShortUrl(loginUrl); // Fallback
-      }
-    };
-
-    getShortUrl();
-  }, [loginUrl]);
+  const shortUrl = useMemo(() => {
+    if (!classId) return "";
+    const base = origin || (typeof window !== "undefined" ? window.location.origin : "");
+    return `${base}/c/${classId.substring(0, 8)}`;
+  }, [classId, origin]);
 
   const handlePrint = () => {
     if (typeof window !== "undefined") {
