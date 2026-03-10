@@ -318,14 +318,15 @@ export function SnowmanGame() {
                     <div className="space-y-6 lg:space-y-8 xl:space-y-10">
                         {/* Word display */}
                         <div className="text-center">
-                            <div className="flex justify-center items-center gap-1.5 lg:gap-2.5 xl:gap-3 flex-nowrap mb-2 overflow-x-auto">
+                            <div className="flex justify-center items-center gap-1 lg:gap-2 xl:gap-2.5 flex-wrap mb-2">
                                 {displayWord.map((letter, i) => (
                                     <span
                                         key={i}
                                         className={`
-                                            inline-flex items-center justify-center flex-shrink-0
-                                            w-9 h-11 md:w-10 md:h-12 lg:w-14 lg:h-16 xl:w-20 xl:h-24 2xl:w-24 2xl:h-28
-                                            text-xl md:text-2xl lg:text-3xl xl:text-5xl 2xl:text-6xl font-bold
+                                            inline-flex items-center justify-center
+                                            min-w-[2rem] max-w-[2.25rem] md:min-w-[2.25rem] md:max-w-[2.5rem] lg:min-w-[3rem] lg:max-w-[3.5rem] xl:min-w-[4.5rem] xl:max-w-[5rem] 2xl:min-w-[5.5rem] 2xl:max-w-[6rem]
+                                            aspect-[3/4]
+                                            text-lg md:text-xl lg:text-2xl xl:text-4xl 2xl:text-5xl font-bold
                                             rounded-lg transition-all duration-300
                                             ${letter === "_"
                                                 ? "border-b-4 lg:border-b-[6px] xl:border-b-8 border-sky-400 text-transparent"
