@@ -364,7 +364,7 @@ export default function ClassProgressPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                                 {weekData.books.map(book => {
                                     const syllabusPageRanges = parsePageRanges(book.syllabusPages);
                                     const bookExtraPages = extraPages.filter(ep => ep.bookId === book.bookId);
