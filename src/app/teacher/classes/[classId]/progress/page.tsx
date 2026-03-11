@@ -306,7 +306,7 @@ export default function ClassProgressPage() {
                     <div className="bg-gray-50 p-4 rounded-xl border-2 border-dashed">
                         <SyllabusManager
                             classId={classId}
-                            assignedBooks={weekData.assignedBooks.map(b => ({
+                            assignedBooks={(weekData.assignedBooks || []).map(b => ({
                                 id: `cb-${b.bookId}`,
                                 bookId: b.bookId,
                                 title: b.title,
@@ -514,11 +514,11 @@ export default function ClassProgressPage() {
                         )}
 
                         {/* Add a book from class books that isn't in this week's syllabus */}
-                        {weekData.assignedBooks.length > weekData.books.length && (
+                        {(weekData.assignedBooks || []).length > weekData.books.length && (
                             <div className="pt-2">
                                 <p className="text-sm text-gray-500 mb-2 font-medium">Add a book not yet in this week:</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {weekData.assignedBooks
+                                    {(weekData.assignedBooks || [])
                                         .filter(ab => !weekData.books.some(wb => wb.bookId === ab.bookId))
                                         .map(ab => (
                                             <button
@@ -575,7 +575,7 @@ export default function ClassProgressPage() {
                 open={showAssignBooks}
                 onOpenChange={setShowAssignBooks}
                 onBooksChanged={() => fetchWeekData(selectedWeekId || undefined)}
-                assignedBooks={weekData.assignedBooks.map(b => ({
+                assignedBooks={(weekData.assignedBooks || []).map(b => ({
                     id: `cb-${b.bookId}`,
                     bookId: b.bookId,
                     title: b.title,

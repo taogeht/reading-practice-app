@@ -8,7 +8,7 @@ import {
     classBooks,
 } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq, and, gte, lte, asc, desc, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, asc } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -37,8 +37,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             .where(eq(classSyllabusWeeks.classId, classId))
             .orderBy(asc(classSyllabusWeeks.weekNumber));
 
+        // Fetch all class-assigned books — needed even if no syllabus weeks exist
+        const assignedBooks = await db
+            .select({
+                bookId: classBooks.bookId,
+                title: books.title,
+                totalPages: books.totalPages,
+                isCurrent: classBooks.isCurrent,
+            })
+            .from(classBooks)
+            .innerJoin(books, eq(classBooks.bookId, books.id))
+            .where(and(eq(classBooks.classId, classId), eq(classBooks.isCurrent, true)));
+
         if (allWeeks.length === 0) {
-            return NextResponse.json({ week: null, books: [], allWeeks: [] });
+            return NextResponse.json({ week: null, books: [], allWeeks: [], assignedBooks });
         }
 
         // 2. Determine which week to show
@@ -130,17 +142,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             };
         });
 
-        // 6. Fetch all class-assigned books (for "add book" dropdown)
-        const assignedBooks = await db
-            .select({
-                bookId: classBooks.bookId,
-                title: books.title,
-                totalPages: books.totalPages,
-                isCurrent: classBooks.isCurrent,
-            })
-            .from(classBooks)
-            .innerJoin(books, eq(classBooks.bookId, books.id))
-            .where(and(eq(classBooks.classId, classId), eq(classBooks.isCurrent, true)));
+
 
         return NextResponse.json({
             week: {
