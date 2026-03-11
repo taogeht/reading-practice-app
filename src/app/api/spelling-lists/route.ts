@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { classId, title, weekNumber, words } = body;
+        const { classId, title, weekNumber, gradeLevel, isPublic, words } = body;
 
         if (!classId || !title || !words || !Array.isArray(words)) {
             return NextResponse.json(
@@ -89,6 +89,8 @@ export async function POST(request: NextRequest) {
                 classId,
                 title,
                 weekNumber: weekNumber || null,
+                gradeLevel: gradeLevel || null,
+                isPublic: isPublic === true,
                 active: true,
             })
             .returning();

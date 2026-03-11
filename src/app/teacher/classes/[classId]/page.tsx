@@ -12,7 +12,7 @@ import { CreateStudentDialog } from "@/components/students/create-student-dialog
 import { SpellingWordsSection } from "@/components/spelling/spelling-words-section";
 import { WordMasterySection } from "@/components/spelling/word-mastery-section";
 import { AttendanceSection } from "@/components/attendance/attendance-section";
-import { ProgressSection } from "@/components/progress/progress-section";
+
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
@@ -389,6 +389,13 @@ export default function ClassDetailPage() {
                 <FileText className="w-4 h-4 mr-2" />
                 View Assignments
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/teacher/classes/${classId}/progress`)}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Class Progress
+              </Button>
               <Button variant="outline" onClick={() => setIsEditing(true)}>
                 <Edit3 className="w-4 h-4 mr-2" />
                 Edit Class
@@ -458,10 +465,6 @@ export default function ClassDetailPage() {
                 {
                   id: "attendance",
                   node: <AttendanceSection classId={classId} className={classData.name} />,
-                },
-                {
-                  id: "progress",
-                  node: <ProgressSection classId={classId} className={classData.name} />,
                 },
                 {
                   id: "makeup",

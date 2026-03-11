@@ -254,6 +254,8 @@ export const spellingLists = pgTable(
     classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
     title: varchar('title', { length: 255 }).notNull(),
     weekNumber: integer('week_number'),
+    gradeLevel: integer('grade_level'),
+    isPublic: boolean('is_public').default(false),
     active: boolean('active').default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -261,6 +263,8 @@ export const spellingLists = pgTable(
   (table) => ({
     classIdIdx: index('idx_spelling_lists_class_id').on(table.classId),
     activeIdx: index('idx_spelling_lists_active').on(table.active),
+    isPublicIdx: index('idx_spelling_lists_is_public').on(table.isPublic),
+    gradeLevelIdx: index('idx_spelling_lists_grade_level').on(table.gradeLevel),
   })
 );
 
