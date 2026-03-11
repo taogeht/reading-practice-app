@@ -3,10 +3,11 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Upload, FileSpreadsheet, AlertCircle, X, CheckCircle2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, X, CheckCircle2, Calendar } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface ParsedWeek {
@@ -127,8 +128,22 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
         reader.readAsArrayBuffer(uploadedFile);
     };
 
+    const [week1StartDate, setWeek1StartDate] = useState<string>(''); // YYYY-MM-DD
+
     const handleMappingChange = (excelBookName: string, dbBookId: string) => {
         setMappings(prev => ({ ...prev, [excelBookName]: dbBookId === 'ignore' ? '' : dbBookId }));
+    };
+
+    // Given a YYYY-MM-DD string for Week 1's Monday, return { startDate, endDate }
+    // for any weekNumber (1-based). Handles it in UTC to avoid timezone shifts.
+    const computeWeekDates = (week1Monday: string, weekNumber: number): { startDate: string; endDate: string } => {
+        const [y, m, d] = week1Monday.split('-').map(Number);
+        const base = new Date(Date.UTC(y, m - 1, d)); // Monday of week 1
+        const offsetDays = (weekNumber - 1) * 7;
+        const monday = new Date(base.getTime() + offsetDays * 86400000);
+        const friday = new Date(monday.getTime() + 4 * 86400000);
+        const fmt = (dt: Date) => dt.toISOString().split('T')[0];
+        return { startDate: fmt(monday), endDate: fmt(friday) };
     };
 
     const handleImport = async () => {
@@ -179,11 +194,20 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                     }
                 }
 
+                // Compute dates if a start date was provided
+                let startDate: string | null = null;
+                let endDate: string | null = null;
+                if (week1StartDate) {
+                    const dates = computeWeekDates(week1StartDate, weekNumber);
+                    startDate = dates.startDate;
+                    endDate = dates.endDate;
+                }
+
                 weeks.push({
                     weekNumber,
                     title,
-                    startDate: null,
-                    endDate: null,
+                    startDate,
+                    endDate,
                     assignments
                 });
             }
@@ -194,6 +218,7 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
             setIsProcessing(false);
         }
     };
+
 
     if (!file || columnsFound.length === 0) {
         return (
@@ -258,7 +283,41 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                     </Alert>
                 )}
 
+                {/* Date anchor */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                        <Calendar className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+                        <div className="flex-1">
+                            <p className="font-medium text-blue-900 text-sm">Week 1 Start Date <span className="font-normal text-blue-600">(optional)</span></p>
+                            <p className="text-xs text-blue-700 mt-0.5">
+                                Pick the Monday that Week 1 begins and every week will get its Mon–Fri dates automatically.
+                                Leave blank to import without dates.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <Input
+                            type="date"
+                            className="w-44 h-9 text-sm bg-white"
+                            value={week1StartDate}
+                            onChange={e => setWeek1StartDate(e.target.value)}
+                        />
+                        {week1StartDate && (() => {
+                            const [y, m, d] = week1StartDate.split('-').map(Number);
+                            const mon = new Date(Date.UTC(y, m - 1, d));
+                            const fri = new Date(mon.getTime() + 4 * 86400000);
+                            const fmt = (dt: Date) => dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                            return (
+                                <span className="text-sm text-blue-800 font-medium">
+                                    Week 1: {fmt(mon)} – {fmt(fri)}
+                                </span>
+                            );
+                        })()}
+                    </div>
+                </div>
+
                 <div className="space-y-4">
+
                     <div className="grid grid-cols-2 gap-4 pb-2 border-b font-medium text-sm text-muted-foreground">
                         <div>Column Header in Excel</div>
                         <div>Database Book Match</div>
