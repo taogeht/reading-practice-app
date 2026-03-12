@@ -47,6 +47,29 @@ export async function GET() {
             CREATE INDEX IF NOT EXISTS "idx_game_results_word_id" ON "spelling_game_results" USING btree ("spelling_word_id");
             CREATE INDEX IF NOT EXISTS "idx_game_results_class_id" ON "spelling_game_results" USING btree ("class_id");
             CREATE INDEX IF NOT EXISTS "idx_game_results_class_word" ON "spelling_game_results" USING btree ("class_id","spelling_word_id");
+
+            -- Add missing columns to spelling_lists (grade_level, is_public)
+            DO $$ BEGIN
+                ALTER TABLE "spelling_lists" ADD COLUMN "grade_level" integer;
+            EXCEPTION
+                WHEN duplicate_column THEN null;
+            END $$;
+
+            DO $$ BEGIN
+                ALTER TABLE "spelling_lists" ADD COLUMN "is_public" boolean DEFAULT false;
+            EXCEPTION
+                WHEN duplicate_column THEN null;
+            END $$;
+
+            CREATE INDEX IF NOT EXISTS "idx_spelling_lists_is_public" ON "spelling_lists" USING btree ("is_public");
+            CREATE INDEX IF NOT EXISTS "idx_spelling_lists_grade_level" ON "spelling_lists" USING btree ("grade_level");
+
+            -- Add missing syllables column to spelling_words
+            DO $$ BEGIN
+                ALTER TABLE "spelling_words" ADD COLUMN "syllables" jsonb;
+            EXCEPTION
+                WHEN duplicate_column THEN null;
+            END $$;
         `;
 
         await db.execute(query);
