@@ -75,13 +75,15 @@ export default function ManageSpellingListsPage() {
       const classesRes = await fetch('/api/teacher/classes');
       if (!classesRes.ok) throw new Error('Failed to fetch classes');
       const classesData = await classesRes.json();
-      setClasses(classesData);
+      // The API returns { classes: [...] } so unwrap it; fall back to direct array for safety
+      const classesArray = Array.isArray(classesData) ? classesData : (classesData.classes ?? []);
+      setClasses(classesArray);
 
       // Fetch all spelling lists for this teacher
       const listsRes = await fetch('/api/teacher/spelling-lists');
       if (!listsRes.ok) throw new Error('Failed to fetch spelling lists');
       const listsData = await listsRes.json();
-      setLists(listsData);
+      setLists(Array.isArray(listsData) ? listsData : []);
 
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching data');

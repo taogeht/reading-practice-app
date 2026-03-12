@@ -11,14 +11,14 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
 
-    if (!user || user.role !== 'teacher') {
+    if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 401 }
       );
     }
 
-    // Get teacher's classes
+    // Get teacher's classes (admins see all classes)
     const teacherClasses = await db
       .select({
         id: classes.id,
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       })
       .from(classes)
       .innerJoin(schools, eq(classes.schoolId, schools.id))
-      .where(eq(classes.teacherId, user.id))
+      .where(user.role === 'admin' ? undefined : eq(classes.teacherId, user.id))
       .orderBy(classes.createdAt);
 
     // Get student counts for each class

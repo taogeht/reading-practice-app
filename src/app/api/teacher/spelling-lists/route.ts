@@ -10,15 +10,15 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== 'teacher') {
+        if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get all classes for this teacher
+        // Get all classes for this teacher (admins see all classes)
         const teacherClasses = await db
             .select({ id: classes.id })
             .from(classes)
-            .where(eq(classes.teacherId, user.id));
+            .where(user.role === 'admin' ? undefined : eq(classes.teacherId, user.id));
 
         if (teacherClasses.length === 0) {
             return NextResponse.json([]);
