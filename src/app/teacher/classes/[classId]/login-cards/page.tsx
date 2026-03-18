@@ -83,7 +83,7 @@ export default function LoginCardsPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
         <p className="text-red-600 mb-4">{error || "Class not found"}</p>
-        <Button onClick={() => router.push('/teacher/classes')}>
+        <Button onClick={() => router.push(`/teacher/classes/${classId}`)}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Classes
         </Button>
       </div>
@@ -103,7 +103,7 @@ export default function LoginCardsPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/teacher/classes')}>
+            <Button variant="outline" onClick={() => router.push(`/teacher/classes/${classId}`)}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Classes
             </Button>
             <Button onClick={handlePrint}>
