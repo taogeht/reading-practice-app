@@ -207,11 +207,15 @@ export default function ManageSpellingListsPage() {
     }
   };
 
-  const handleGenerateAudio = async (list: SpellingList) => {
+  const handleGenerateAudio = async (list: SpellingList, force = false) => {
+    if (force && !confirm("Regenerate all audio? This will overwrite existing audio files.")) {
+      return;
+    }
     setGeneratingAudioFor(list.id);
     try {
+      const forceParam = force ? "?force=true" : "";
       // Generate audio for the primary list
-      const response = await fetch(`/api/spelling-lists/${list.id}/generate-audio`, {
+      const response = await fetch(`/api/spelling-lists/${list.id}/generate-audio${forceParam}`, {
         method: "POST",
       });
 
@@ -227,7 +231,7 @@ export default function ManageSpellingListsPage() {
       if (otherIds.length > 0) {
         await Promise.all(
           otherIds.map(id =>
-            fetch(`/api/spelling-lists/${id}/generate-audio`, { method: "POST" })
+            fetch(`/api/spelling-lists/${id}/generate-audio${forceParam}`, { method: "POST" })
           )
         );
       }
@@ -487,9 +491,12 @@ export default function ManageSpellingListsPage() {
                       variant="ghost"
                       size="icon"
                       className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 h-9 w-9 shrink-0"
-                      onClick={() => handleGenerateAudio(list)}
+                      onClick={() => {
+                        const allHaveAudio = list.words.length > 0 && list.words.every(w => w.audioUrl);
+                        handleGenerateAudio(list, allHaveAudio);
+                      }}
                       disabled={generatingAudioFor === list.id || list.words.length === 0}
-                      title={list.words.every(w => w.audioUrl) ? "Regenerate audio (skips existing)" : "Generate audio for words"}
+                      title={list.words.every(w => w.audioUrl) ? "Regenerate all audio" : "Generate audio for words"}
                     >
                       {generatingAudioFor === list.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

@@ -23,6 +23,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const force = searchParams.get('force') === 'true';
+
         // Prefer ElevenLabs for natural-sounding voices, fall back to Google
         const ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
         const ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
@@ -54,14 +57,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         let errorCount = 0;
 
         for (const word of list.words) {
-            if (word.audioUrl) {
+            if (word.audioUrl && !force) {
                 results.push({ word: word.word, status: 'skipped', audioUrl: word.audioUrl });
                 continue;
             }
 
             try {
-                // Check if another word with the same text in the same school already has audio
-                const existingAudio = await db.execute(sql`
+                // Check if another word with the same text in the same school already has audio (skip when forcing)
+                const existingAudio = force ? { rows: [] } : await db.execute(sql`
                     SELECT sw.audio_url FROM spelling_words sw
                     JOIN spelling_lists sl ON sl.id = sw.spelling_list_id
                     JOIN classes c ON c.id = sl.class_id
