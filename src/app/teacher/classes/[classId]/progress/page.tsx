@@ -58,14 +58,27 @@ interface WeekData {
     assignedBooks: AssignedBook[];
 }
 
-// Parse a page range string into individual page ranges for display
-// e.g. "4-7, 10-12, 15" → ["4-7", "10-12", "15"]
+// Expand a page range string into individual page numbers for display
+// e.g. "4-7, 10-12, 15" → ["4", "5", "6", "7", "10", "11", "12", "15"]
+// Non-numeric values (e.g. "sh", "Review") are kept as-is
 function parsePageRanges(pages: string | null): string[] {
     if (!pages || !pages.trim()) return [];
-    return pages
-        .split(",")
-        .map(p => p.trim())
-        .filter(Boolean);
+    const result: string[] = [];
+    // Split by comma, then handle newlines within cells (Excel multi-line)
+    const segments = pages.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
+    for (const seg of segments) {
+        const rangeMatch = seg.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (rangeMatch) {
+            const start = parseInt(rangeMatch[1]);
+            const end = parseInt(rangeMatch[2]);
+            for (let i = start; i <= end; i++) {
+                result.push(String(i));
+            }
+        } else {
+            result.push(seg);
+        }
+    }
+    return result;
 }
 
 // Extra pages added by the teacher for a book (not from syllabus)
@@ -198,9 +211,12 @@ export default function ClassProgressPage() {
     const handleAddExtraPages = (bookId: string) => {
         const trimmed = newPagesInput.trim();
         if (!trimmed) return;
+        // Expand ranges into individual pages
+        const expanded = parsePageRanges(trimmed);
+        const now = Date.now();
         setExtraPages(prev => [
             ...prev,
-            { bookId, pages: trimmed, id: `${bookId}-${Date.now()}` },
+            ...expanded.map((p, i) => ({ bookId, pages: p, id: `${bookId}-${now}-${i}` })),
         ]);
         setNewPagesInput("");
         setAddingPagesForBook(null);
@@ -423,8 +439,8 @@ export default function ClassProgressPage() {
                                                                         disabled={done || isSavingThis}
                                                                         onClick={() => handleMarkDone(book.bookId, pages, book.title)}
                                                                         className={`
-                                                                            flex items-center gap-2 px-6 py-4 rounded-xl border-2 text-lg font-bold
-                                                                            transition-all duration-200 min-w-[100px] justify-center
+                                                                            flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-base font-bold
+                                                                            transition-all duration-200 min-w-[72px] justify-center
                                                                             ${done
                                                                                 ? "bg-green-50 border-green-300 text-green-700 cursor-default"
                                                                                 : "bg-white border-blue-300 text-blue-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:shadow-lg active:scale-95 cursor-pointer"
@@ -432,13 +448,13 @@ export default function ClassProgressPage() {
                                                                         `}
                                                                     >
                                                                         {isSavingThis ? (
-                                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                                            <Loader2 className="w-4 h-4 animate-spin" />
                                                                         ) : done ? (
-                                                                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                                                            <CheckCircle2 className="w-4 h-4 text-green-500" />
                                                                         ) : (
-                                                                            <Circle className="w-5 h-5 opacity-40" />
+                                                                            <Circle className="w-4 h-4 opacity-40" />
                                                                         )}
-                                                                        <span>pg {pages}</span>
+                                                                        <span>{/^\d+$/.test(pages) ? `p${pages}` : pages}</span>
                                                                     </button>
                                                                     {isExtra && (
                                                                         <button

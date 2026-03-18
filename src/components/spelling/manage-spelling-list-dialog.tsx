@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, X, Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type SpellingWordInput = {
   word: string;
@@ -32,6 +31,7 @@ type ManageSpellingListDialogProps = {
     id: string;
     title: string;
     classId: string;
+    classIds?: string[];
     gradeLevel?: number | null;
     isPublic?: boolean;
     words: SpellingWordInput[];
@@ -47,24 +47,32 @@ export function ManageSpellingListDialog({
   classes,
 }: ManageSpellingListDialogProps) {
   const [title, setTitle] = useState("");
-  const [classId, setClassId] = useState("");
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [gradeLevel, setGradeLevel] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [words, setWords] = useState<SpellingWordInput[]>([{ word: "" }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const toggleClass = (classId: string) => {
+    setSelectedClassIds(prev =>
+      prev.includes(classId)
+        ? prev.filter(id => id !== classId)
+        : [...prev, classId]
+    );
+  };
+
   useEffect(() => {
     if (open) {
       if (initialData) {
         setTitle(initialData.title);
-        setClassId(initialData.classId || "");
+        setSelectedClassIds(initialData.classIds?.length ? initialData.classIds : [initialData.classId]);
         setGradeLevel(initialData.gradeLevel ? initialData.gradeLevel.toString() : "");
         setIsPublic(initialData.isPublic || false);
         setWords(initialData.words?.length > 0 ? initialData.words : [{ word: "" }]);
       } else {
         setTitle("");
-        setClassId(classes.length === 1 ? classes[0].id : "");
+        setSelectedClassIds(classes.length === 1 ? [classes[0].id] : []);
         setGradeLevel("");
         setIsPublic(false);
         setWords([{ word: "" }, { word: "" }, { word: "" }]);
@@ -107,8 +115,8 @@ export function ManageSpellingListDialog({
       return;
     }
 
-    if (!classId) {
-      setError("Please select a class");
+    if (selectedClassIds.length === 0) {
+      setError("Please select at least one class");
       return;
     }
 
@@ -122,7 +130,7 @@ export function ManageSpellingListDialog({
       
       const payload = {
         title: title.trim(),
-        classId,
+        classIds: selectedClassIds,
         gradeLevel: gradeLevel ? parseInt(gradeLevel, 10) : null,
         isPublic,
         words: validWords,
@@ -130,14 +138,14 @@ export function ManageSpellingListDialog({
 
       let response;
       if (initialData?.id) {
-        // Edit existing list
+        // Edit existing list — update the primary list
         response = await fetch(`/api/teacher/spelling-lists/${initialData.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, classId: selectedClassIds[0] }),
         });
       } else {
-        // Create new list
+        // Create new list (API handles creating for multiple classes)
         response = await fetch("/api/spelling-lists", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -171,22 +179,30 @@ export function ManageSpellingListDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="className">Assign to Class</Label>
+            <Label>Assign to Classes</Label>
             {classes.length === 0 ? (
               <div className="text-sm text-red-500">You must create a class before creating a spelling list.</div>
             ) : (
-              <Select value={classId} onValueChange={setClassId}>
-                <SelectTrigger id="className">
-                  <SelectValue placeholder="Select a class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-2">
+                {classes.map((cls) => (
+                  <label
+                    key={cls.id}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border cursor-pointer transition-colors text-sm ${
+                      selectedClassIds.includes(cls.id)
+                        ? "bg-blue-50 border-blue-300 text-blue-700"
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={selectedClassIds.includes(cls.id)}
+                      onChange={() => toggleClass(cls.id)}
+                    />
+                    {cls.name}
+                  </label>
+                ))}
+              </div>
             )}
           </div>
 
@@ -287,7 +303,7 @@ export function ManageSpellingListDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || classes.length === 0}>
+            <Button type="submit" disabled={isSubmitting || selectedClassIds.length === 0}>
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {initialData ? 'Save Changes' : 'Create List'}
             </Button>

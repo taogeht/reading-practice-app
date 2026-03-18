@@ -1,24 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
+import { Input } from "@/components/ui/input";
+import {
+  ArrowLeft,
+  Plus,
   Download,
   BookOpen,
   Edit,
   Trash2,
   Lock,
-  Globe
+  Globe,
+  Volume2,
+  Loader2,
+  Play,
+  Square,
+  Check,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelling/manage-spelling-list-dialog";
@@ -31,6 +39,7 @@ type ClassOption = {
 };
 
 type SpellingWord = {
+  id: string;
   word: string;
   syllables: string[] | null;
   audioUrl: string | null;
@@ -40,6 +49,9 @@ type SpellingList = {
   id: string;
   classId: string;
   className: string;
+  classIds?: string[];
+  classNames?: string[];
+  allListIds?: string[];
   title: string;
   weekNumber: number | null;
   gradeLevel: number | null;
@@ -61,6 +73,80 @@ export default function ManageSpellingListsPage() {
   const [showManageDialog, setShowManageDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingList, setEditingList] = useState<SpellingList | null>(null);
+  const [generatingAudioFor, setGeneratingAudioFor] = useState<string | null>(null);
+  const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  const [playingWordId, setPlayingWordId] = useState<string | null>(null);
+  const [editingSyllablesWordId, setEditingSyllablesWordId] = useState<string | null>(null);
+  const [syllablesInput, setSyllablesInput] = useState("");
+  const [savingSyllables, setSavingSyllables] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePlayAudio = useCallback((word: SpellingWord) => {
+    if (!word.audioUrl) return;
+
+    // Stop currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    if (playingWordId === word.id) {
+      setPlayingWordId(null);
+      return;
+    }
+
+    const audio = new Audio(word.audioUrl);
+    audioRef.current = audio;
+    setPlayingWordId(word.id);
+
+    audio.onended = () => {
+      setPlayingWordId(null);
+      audioRef.current = null;
+    };
+    audio.onerror = () => {
+      setPlayingWordId(null);
+      audioRef.current = null;
+    };
+    audio.play();
+  }, [playingWordId]);
+
+  const handleStartEditSyllables = (word: SpellingWord) => {
+    setEditingSyllablesWordId(word.id);
+    setSyllablesInput(word.syllables ? word.syllables.join(" · ") : word.word);
+  };
+
+  const handleSaveSyllables = async (wordId: string) => {
+    setSavingSyllables(true);
+    try {
+      const syllables = syllablesInput
+        .split(/[·\-|,]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      const response = await fetch(`/api/spelling-words/${wordId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ syllables }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save syllables");
+
+      // Update local state
+      setLists(lists.map(list => ({
+        ...list,
+        words: list.words.map(w =>
+          w.id === wordId ? { ...w, syllables } : w
+        ),
+      })));
+
+      setEditingSyllablesWordId(null);
+    } catch (err) {
+      console.error("Error saving syllables:", err);
+      alert("Failed to save syllables. Please try again.");
+    } finally {
+      setSavingSyllables(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -93,25 +179,66 @@ export default function ManageSpellingListsPage() {
     }
   };
 
-  const handleDelete = async (listId: string) => {
-    if (!confirm("Are you sure you want to delete this spelling list? This action cannot be undone.")) {
+  const handleDelete = async (list: SpellingList) => {
+    const classCount = list.allListIds?.length || 1;
+    const message = classCount > 1
+      ? `This spelling list is shared across ${classCount} classes (${list.className}). Delete from all classes? This action cannot be undone.`
+      : "Are you sure you want to delete this spelling list? This action cannot be undone.";
+
+    if (!confirm(message)) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/teacher/spelling-lists/${listId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete list");
-      }
+      // Delete all copies of this list across classes
+      const idsToDelete = list.allListIds || [list.id];
+      await Promise.all(
+        idsToDelete.map(id =>
+          fetch(`/api/teacher/spelling-lists/${id}`, { method: "DELETE" })
+        )
+      );
 
       // Optimistic update
-      setLists(lists.filter(l => l.id !== listId));
+      const deletedSet = new Set(idsToDelete);
+      setLists(lists.filter(l => !deletedSet.has(l.id)));
     } catch (err) {
       console.error("Error deleting list:", err);
       alert("Failed to delete the spelling list. Please try again.");
+    }
+  };
+
+  const handleGenerateAudio = async (list: SpellingList) => {
+    setGeneratingAudioFor(list.id);
+    try {
+      // Generate audio for the primary list
+      const response = await fetch(`/api/spelling-lists/${list.id}/generate-audio`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to generate audio");
+      }
+
+      const result = await response.json();
+
+      // If there are duplicate lists across classes, generate for those too
+      const otherIds = (list.allListIds || []).filter(id => id !== list.id);
+      if (otherIds.length > 0) {
+        await Promise.all(
+          otherIds.map(id =>
+            fetch(`/api/spelling-lists/${id}/generate-audio`, { method: "POST" })
+          )
+        );
+      }
+
+      alert(`Audio generated: ${result.successCount} words completed, ${result.errorCount} errors`);
+      fetchData();
+    } catch (err: any) {
+      console.error("Error generating audio:", err);
+      alert(err.message || "Failed to generate audio. Please try again.");
+    } finally {
+      setGeneratingAudioFor(null);
     }
   };
 
@@ -139,9 +266,19 @@ export default function ManageSpellingListsPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Spelling Lists</h1>
-              <p className="text-gray-600 mt-1">Manage spelling lists across all your classes</p>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => router.push("/teacher/dashboard")}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Spelling Lists</h1>
+                <p className="text-gray-600 mt-1">Manage spelling lists across all your classes</p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" onClick={() => setShowImportDialog(true)}>
@@ -190,8 +327,12 @@ export default function ManageSpellingListsPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-lg line-clamp-1">{list.title}</CardTitle>
-                      <CardDescription className="mt-1 flex items-center gap-2">
-                         <span>Class: {list.className}</span>
+                      <CardDescription className="mt-1 flex items-center gap-2 flex-wrap">
+                         <span>
+                           {(list.classNames?.length || 0) > 1
+                             ? `Classes: ${list.className}`
+                             : `Class: ${list.className}`}
+                         </span>
                          {list.gradeLevel !== null && (
                             <Badge variant="outline" className="text-xs font-normal px-1.5 py-0">
                                 Grade {list.gradeLevel}
@@ -217,34 +358,150 @@ export default function ManageSpellingListsPage() {
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap gap-1.5 flex-1 content-start mb-6">
-                    {list.words.slice(0, 10).map((w, idx) => (
-                      <span key={idx} className="inline-block bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-md border border-blue-100">
-                        {w.word}
-                      </span>
-                    ))}
-                    {list.words.length > 10 && (
-                      <span className="inline-block bg-gray-50 text-gray-500 text-xs px-2 py-1 rounded-md border border-gray-200">
-                        +{list.words.length - 10} more
-                      </span>
-                    )}
-                  </div>
+                  {expandedListId === list.id ? (
+                    <div className="flex-1 mb-4">
+                      <div className="max-h-[300px] overflow-y-auto space-y-1">
+                        {list.words.map((w) => (
+                          <div
+                            key={w.id}
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 group"
+                          >
+                            <button
+                              onClick={() => handlePlayAudio(w)}
+                              disabled={!w.audioUrl}
+                              className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                                w.audioUrl
+                                  ? playingWordId === w.id
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                  : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                              }`}
+                              title={w.audioUrl ? "Play audio" : "No audio generated"}
+                            >
+                              {playingWordId === w.id ? (
+                                <Square className="w-3 h-3" />
+                              ) : (
+                                <Play className="w-3 h-3 ml-0.5" />
+                              )}
+                            </button>
+
+                            <span className="font-medium text-sm text-gray-900 min-w-[80px]">
+                              {w.word}
+                            </span>
+
+                            {editingSyllablesWordId === w.id ? (
+                              <div className="flex items-center gap-1 flex-1">
+                                <Input
+                                  value={syllablesInput}
+                                  onChange={(e) => setSyllablesInput(e.target.value)}
+                                  placeholder="sep · a · rate with dots"
+                                  className="h-7 text-xs flex-1"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSaveSyllables(w.id);
+                                    if (e.key === "Escape") setEditingSyllablesWordId(null);
+                                  }}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-green-600 hover:text-green-700"
+                                  onClick={() => handleSaveSyllables(w.id)}
+                                  disabled={savingSyllables}
+                                >
+                                  {savingSyllables ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Check className="w-3.5 h-3.5" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                                  onClick={() => setEditingSyllablesWordId(null)}
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleStartEditSyllables(w)}
+                                className="text-xs text-gray-400 hover:text-blue-600 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors flex-1 text-left"
+                                title="Click to edit syllables"
+                              >
+                                {w.syllables && w.syllables.length > 0
+                                  ? w.syllables.join(" · ")
+                                  : "add syllables..."}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 text-xs text-gray-500"
+                        onClick={() => setExpandedListId(null)}
+                      >
+                        Show less
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      className="flex flex-wrap gap-1.5 flex-1 content-start mb-6 cursor-pointer"
+                      onClick={() => setExpandedListId(list.id)}
+                      title="Click to expand words"
+                    >
+                      {list.words.slice(0, 10).map((w) => (
+                        <span
+                          key={w.id}
+                          className={`inline-block text-xs px-2 py-1 rounded-md border ${
+                            w.audioUrl
+                              ? "bg-blue-50 text-blue-700 border-blue-100"
+                              : "bg-amber-50 text-amber-700 border-amber-100"
+                          }`}
+                        >
+                          {w.word}
+                        </span>
+                      ))}
+                      {list.words.length > 10 && (
+                        <span className="inline-block bg-gray-50 text-gray-500 text-xs px-2 py-1 rounded-md border border-gray-200">
+                          +{list.words.length - 10} more
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 pt-4 mt-auto border-t">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="flex-1"
                       onClick={() => handleEditClick(list)}
                     >
                       <Edit className="w-3.5 h-3.5 mr-2" />
                       Edit
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 h-9 w-9 shrink-0"
+                      onClick={() => handleGenerateAudio(list)}
+                      disabled={generatingAudioFor === list.id || list.words.length === 0}
+                      title={list.words.every(w => w.audioUrl) ? "Regenerate audio (skips existing)" : "Generate audio for words"}
+                    >
+                      {generatingAudioFor === list.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Volume2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="text-red-500 hover:text-red-600 hover:bg-red-50 h-9 w-9 shrink-0"
-                      onClick={() => handleDelete(list.id)}
+                      onClick={() => handleDelete(list)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -264,6 +521,7 @@ export default function ManageSpellingListsPage() {
         initialData={editingList ? {
           id: editingList.id,
           classId: editingList.classId,
+          classIds: editingList.classIds,
           title: editingList.title,
           gradeLevel: editingList.gradeLevel,
           isPublic: editingList.isPublic,

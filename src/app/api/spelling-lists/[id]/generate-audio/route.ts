@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { spellingLists, spellingWords } from '@/lib/db/schema';
+import { spellingLists, spellingWords, classes } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { googleTtsClient } from '@/lib/tts/client';
+import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
@@ -22,7 +23,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        if (!googleTtsClient.isConfigured()) {
+        // Prefer ElevenLabs for natural-sounding voices, fall back to Google
+        const ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
+        const ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
+
+        if (!ttsClient.isConfigured()) {
             return NextResponse.json(
                 { error: 'Text-to-speech is not configured on this server' },
                 { status: 503 }
@@ -55,8 +60,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             }
 
             try {
+                // Check if another word with the same text in the same school already has audio
+                const existingAudio = await db.execute(sql`
+                    SELECT sw.audio_url FROM spelling_words sw
+                    JOIN spelling_lists sl ON sl.id = sw.spelling_list_id
+                    JOIN classes c ON c.id = sl.class_id
+                    WHERE LOWER(sw.word) = LOWER(${word.word})
+                      AND sw.audio_url IS NOT NULL
+                      AND c.school_id = (
+                          SELECT c2.school_id FROM classes c2
+                          JOIN spelling_lists sl2 ON sl2.class_id = c2.id
+                          WHERE sl2.id = ${list.id}
+                      )
+                    LIMIT 1
+                `);
+
+                if (existingAudio.rows.length > 0) {
+                    const audioUrl = existingAudio.rows[0].audio_url as string;
+                    await db
+                        .update(spellingWords)
+                        .set({ audioUrl })
+                        .where(eq(spellingWords.id, word.id));
+                    results.push({ word: word.word, status: 'reused', audioUrl });
+                    successCount++;
+                    continue;
+                }
+
                 // Generate TTS audio for the word
-                const ttsResult = await googleTtsClient.generateSpeech({ text: word.word });
+                const ttsResult = await ttsClient.generateSpeech({ text: word.word });
 
                 if (!ttsResult.success || !ttsResult.audioBuffer) {
                     throw new Error(ttsResult.error || 'TTS generation failed');
@@ -79,6 +110,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     .set({ audioUrl })
                     .where(eq(spellingWords.id, word.id));
 
+                // Propagate audio to matching words (same text, same school) that don't have audio yet
+                await db.execute(sql`
+                    UPDATE spelling_words sw
+                    SET audio_url = ${audioUrl}
+                    FROM spelling_lists sl
+                    JOIN classes c ON c.id = sl.class_id
+                    WHERE sw.spelling_list_id = sl.id
+                      AND c.school_id = (
+                          SELECT c2.school_id FROM classes c2
+                          JOIN spelling_lists sl2 ON sl2.class_id = c2.id
+                          WHERE sl2.id = ${list.id}
+                      )
+                      AND LOWER(sw.word) = LOWER(${word.word})
+                      AND sw.audio_url IS NULL
+                      AND sw.id != ${word.id}
+                `);
+
                 results.push({ word: word.word, status: 'success', audioUrl });
                 successCount++;
             } catch (error) {
@@ -89,7 +137,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         return NextResponse.json({
-            message: `Generated audio for ${successCount} words, ${errorCount} errors`,
+            message: `Generated audio for ${successCount} words, ${errorCount} errors (using ${ttsProvider})`,
             successCount,
             errorCount,
             results,

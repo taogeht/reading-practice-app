@@ -52,18 +52,13 @@ export async function GET(request: NextRequest) {
             return NextResponse.json([]);
         }
 
-        // Get spelling lists from those classes that are PUBLIC
+        // Get spelling lists from those classes (all lists within the same school are available for import)
         const result = [];
         for (const cls of sameLevelClasses) {
             const lists = await db
                 .select()
                 .from(spellingLists)
-                .where(
-                    and(
-                        eq(spellingLists.classId, cls.id),
-                        eq(spellingLists.isPublic, true)
-                    )
-                )
+                .where(eq(spellingLists.classId, cls.id))
                 .orderBy(desc(spellingLists.createdAt));
 
             // Fetch words for each list

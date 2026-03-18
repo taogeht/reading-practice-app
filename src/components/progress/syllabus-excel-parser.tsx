@@ -68,7 +68,7 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
 
                 // Find the header row by looking for "Wk" or "Week" in the first column
                 let headerRowIndex = 0;
-                for (let i = 0; i < Math.min(5, jsonData.length); i++) {
+                for (let i = 0; i < Math.min(10, jsonData.length); i++) {
                     const firstCol = jsonData[i]?.[0]?.toString().trim().toLowerCase();
                     if (firstCol === 'wk' || firstCol === 'week' || firstCol === 'week no') {
                         headerRowIndex = i;
@@ -83,6 +83,8 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                 const columnsToMap: ExcelColumn[] = [];
 
                 // Books usually start at Column C (index 2)
+                const isPageSubheader = (val: string) => ['page', 'pages', 'p.', 'p'].includes(val);
+                const isUnitSubheader = (val: string) => ['unit', 'units', 'u.', 'u'].includes(val);
                 const maxCol = Math.max(bookNamesRow.length, subHeadersRow.length, 10);
                 for (let c = 2; c < maxCol; c++) {
                     const rawBookName = bookNamesRow[c]?.toString().trim();
@@ -94,19 +96,27 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
 
                     const subHeaderVal = subHeadersRow[c]?.toString().trim().toLowerCase() || "";
 
-                    // Format 1: Book name is header, subheader is "Page" or "p."
-                    // Format 2: Book name is header, no subheader (flat structure)
-                    // Format 3: Book name is header, subheader is "Unit" (we skip units usually and only want pages)
-
-                    // If the subheader explicitly says page/pages/p, map it.
-                    if (['page', 'pages', 'p.', 'p'].includes(subHeaderVal)) {
-                        columnsToMap.push({ bookName: currentBookName, colIndex: c });
-                    } else {
-                        // If it's something else like "Unit", or it's empty, we need to check if we already have a page mapping for this book.
-                        // If we DON'T have a mapping for this book yet, we assume this column *is* the page column (for flater structures like the Middle Class syllabus)
+                    // If subheader explicitly says "Page", always use this column.
+                    // If a non-page column was already added for this book (e.g. "Unit"), replace it.
+                    if (isPageSubheader(subHeaderVal)) {
+                        const existingIdx = columnsToMap.findIndex(col => col.bookName === currentBookName);
+                        if (existingIdx !== -1) {
+                            // Replace the fallback (Unit) column with the explicit Page column
+                            columnsToMap[existingIdx] = { bookName: currentBookName, colIndex: c };
+                        } else {
+                            columnsToMap.push({ bookName: currentBookName, colIndex: c });
+                        }
+                    } else if (isUnitSubheader(subHeaderVal)) {
+                        // Only add Unit column if there's no mapping for this book yet.
+                        // It will be replaced if a Page column is found later.
                         const existingForBook = columnsToMap.find(col => col.bookName === currentBookName);
-
-                        // We also want to ignore columns explicitly named "Theme" or "Topic"
+                        if (!existingForBook) {
+                            columnsToMap.push({ bookName: currentBookName, colIndex: c });
+                        }
+                    } else {
+                        // No subheader or unknown subheader — use this column if no mapping exists yet.
+                        // Ignore columns explicitly named "Theme" or "Topic".
+                        const existingForBook = columnsToMap.find(col => col.bookName === currentBookName);
                         if (!existingForBook && currentBookName.toLowerCase() !== 'theme' && currentBookName.toLowerCase() !== 'topic') {
                             columnsToMap.push({ bookName: currentBookName, colIndex: c });
                         }
@@ -144,6 +154,40 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
         const friday = new Date(monday.getTime() + 4 * 86400000);
         const fmt = (dt: Date) => dt.toISOString().split('T')[0];
         return { startDate: fmt(monday), endDate: fmt(friday) };
+    };
+
+    // Parse date ranges like "02/23-02/26" or "03/30-04/02" from column B.
+    // Detects the year from header rows (e.g. "(2026/02/23 ~ 2026/06/30)") or falls back to current year.
+    const parseDateRange = (dateVal: string, data: any[][]): { startDate: string; endDate: string } | null => {
+        if (!dateVal) return null;
+        // Match patterns like "02/23-02/26", "03/30-04/02"
+        const match = dateVal.match(/^(\d{1,2})\/(\d{1,2})\s*-\s*(\d{1,2})\/(\d{1,2})$/);
+        if (!match) return null;
+
+        // Try to detect year from header rows (look for a year pattern like "2026/..." in first few rows)
+        let year = new Date().getFullYear();
+        for (let r = 0; r < Math.min(5, data.length); r++) {
+            for (let c = 0; c < (data[r]?.length || 0); c++) {
+                const cell = data[r]?.[c]?.toString() || '';
+                const yearMatch = cell.match(/\b(20\d{2})\//);
+                if (yearMatch) {
+                    year = parseInt(yearMatch[1]);
+                    break;
+                }
+            }
+            if (year !== new Date().getFullYear()) break;
+        }
+
+        const [, sm, sd, em, ed] = match.map(Number);
+        // Handle year rollover (e.g. start in Dec, end in Jan)
+        const startYear = year;
+        const endYear = em < sm ? year + 1 : year;
+        const fmt = (y: number, m: number, d: number) =>
+            `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        return {
+            startDate: fmt(startYear, sm, sd),
+            endDate: fmt(endYear, em, ed),
+        };
     };
 
     const handleImport = async () => {
@@ -194,10 +238,15 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                     }
                 }
 
-                // Compute dates if a start date was provided
+                // Parse dates: prefer actual dates from column B (e.g. "02/23-02/26"),
+                // fall back to computed dates from Week 1 start date picker
                 let startDate: string | null = null;
                 let endDate: string | null = null;
-                if (week1StartDate) {
+                const parsedDates = parseDateRange(dateVal, sheetData);
+                if (parsedDates) {
+                    startDate = parsedDates.startDate;
+                    endDate = parsedDates.endDate;
+                } else if (week1StartDate) {
                     const dates = computeWeekDates(week1StartDate, weekNumber);
                     startDate = dates.startDate;
                     endDate = dates.endDate;
@@ -288,10 +337,10 @@ export function SyllabusExcelParser({ books, onImport, onCancel }: SyllabusExcel
                     <div className="flex items-start gap-3">
                         <Calendar className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
                         <div className="flex-1">
-                            <p className="font-medium text-blue-900 text-sm">Week 1 Start Date <span className="font-normal text-blue-600">(optional)</span></p>
+                            <p className="font-medium text-blue-900 text-sm">Week 1 Start Date <span className="font-normal text-blue-600">(fallback)</span></p>
                             <p className="text-xs text-blue-700 mt-0.5">
-                                Pick the Monday that Week 1 begins and every week will get its Mon–Fri dates automatically.
-                                Leave blank to import without dates.
+                                If the spreadsheet has date ranges in column B (e.g. &quot;02/23-02/26&quot;), those will be used automatically.
+                                Otherwise, pick the Monday that Week 1 begins to compute Mon–Fri dates for each week.
                             </p>
                         </div>
                     </div>

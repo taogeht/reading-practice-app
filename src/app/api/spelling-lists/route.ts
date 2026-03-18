@@ -64,65 +64,76 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { classId, title, weekNumber, gradeLevel, isPublic, words } = body;
+        const { classId, classIds: rawClassIds, title, weekNumber, gradeLevel, isPublic, words } = body;
 
-        if (!classId || !title || !words || !Array.isArray(words)) {
+        // Support both single classId and array of classIds
+        const classIds: string[] = rawClassIds && Array.isArray(rawClassIds) && rawClassIds.length > 0
+            ? rawClassIds
+            : classId ? [classId] : [];
+
+        if (classIds.length === 0 || !title || !words || !Array.isArray(words)) {
             return NextResponse.json(
-                { error: 'classId, title, and words array are required' },
+                { error: 'At least one class, title, and words array are required' },
                 { status: 400 }
             );
         }
 
-        // Verify class exists
-        const classExists = await db.query.classes.findFirst({
-            where: eq(classes.id, classId),
-        });
-
-        if (!classExists) {
-            return NextResponse.json({ error: 'Class not found' }, { status: 404 });
-        }
-
-        // Create the spelling list
-        const [newList] = await db
-            .insert(spellingLists)
-            .values({
-                classId,
-                title,
-                weekNumber: weekNumber || null,
-                gradeLevel: gradeLevel || null,
-                isPublic: isPublic === true,
-                active: true,
-            })
-            .returning();
-
-        // Insert words - supports both plain strings and rich objects with syllables/audio
-        if (words.length > 0) {
-            const wordRecords = words.map((word: string | { word: string; syllables?: string[] | null; audioUrl?: string | null }, index: number) => {
-                if (typeof word === 'string') {
-                    return {
-                        spellingListId: newList.id,
-                        word: word.trim(),
-                        syllables: null,
-                        audioUrl: null,
-                        orderIndex: index,
-                    };
-                } else {
-                    return {
-                        spellingListId: newList.id,
-                        word: word.word.trim(),
-                        syllables: word.syllables || null,
-                        audioUrl: word.audioUrl || null,
-                        orderIndex: index,
-                    };
-                }
+        // Verify all classes exist
+        for (const cid of classIds) {
+            const classExists = await db.query.classes.findFirst({
+                where: eq(classes.id, cid),
             });
-
-            await db.insert(spellingWords).values(wordRecords);
+            if (!classExists) {
+                return NextResponse.json({ error: `Class not found: ${cid}` }, { status: 404 });
+            }
         }
 
-        // Fetch the complete list with words
+        // Create a spelling list for each selected class
+        const createdLists = [];
+        for (const cid of classIds) {
+            const [newList] = await db
+                .insert(spellingLists)
+                .values({
+                    classId: cid,
+                    title,
+                    weekNumber: weekNumber || null,
+                    gradeLevel: gradeLevel || null,
+                    isPublic: isPublic === true,
+                    active: true,
+                })
+                .returning();
+
+            // Insert words for this list
+            if (words.length > 0) {
+                const wordRecords = words.map((word: string | { word: string; syllables?: string[] | null; audioUrl?: string | null }, index: number) => {
+                    if (typeof word === 'string') {
+                        return {
+                            spellingListId: newList.id,
+                            word: word.trim(),
+                            syllables: null,
+                            audioUrl: null,
+                            orderIndex: index,
+                        };
+                    } else {
+                        return {
+                            spellingListId: newList.id,
+                            word: word.word.trim(),
+                            syllables: word.syllables || null,
+                            audioUrl: word.audioUrl || null,
+                            orderIndex: index,
+                        };
+                    }
+                });
+
+                await db.insert(spellingWords).values(wordRecords);
+            }
+
+            createdLists.push(newList);
+        }
+
+        // Fetch the first complete list with words to return
         const completeList = await db.query.spellingLists.findFirst({
-            where: eq(spellingLists.id, newList.id),
+            where: eq(spellingLists.id, createdLists[0].id),
             with: {
                 words: {
                     orderBy: (words, { asc }) => [asc(words.orderIndex)],

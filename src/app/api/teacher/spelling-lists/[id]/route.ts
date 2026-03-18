@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 // Use a dynamic route for [id]
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await getCurrentUser();
@@ -17,7 +17,7 @@ export async function PUT(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const listId = params.id;
+        const { id: listId } = await params;
         const body = await request.json();
         const { title, gradeLevel, isPublic, active, classId, words } = body;
 
@@ -87,14 +87,14 @@ export async function PUT(
 
         return NextResponse.json(completeList);
     } catch (error) {
-        console.error(`[PUT /api/teacher/spelling-lists/${params.id}] Error:`, error);
+        console.error(`[PUT /api/teacher/spelling-lists] Error:`, error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await getCurrentUser();
@@ -102,7 +102,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const listId = params.id;
+        const { id: listId } = await params;
 
         // Verify the list exists and the user has permission to delete it
         const existingList = await db.query.spellingLists.findFirst({
@@ -122,7 +122,7 @@ export async function DELETE(
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error(`[DELETE /api/teacher/spelling-lists/${params.id}] Error:`, error);
+        console.error(`[DELETE /api/teacher/spelling-lists] Error:`, error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
