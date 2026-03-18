@@ -34,11 +34,7 @@ export default function LoginCardsPage() {
   const [origin, setOrigin] = useState<string>("");
 
   useEffect(() => {
-    // Prefer NEXT_PUBLIC_APP_URL so QR codes always point to production
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-    if (appUrl) {
-      setOrigin(appUrl);
-    } else if (typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
     }
   }, []);
@@ -73,7 +69,7 @@ export default function LoginCardsPage() {
     }
   };
 
-  if (loading) {
+  if (loading || !origin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex items-center gap-2 text-gray-600">
