@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, hashPassword } from '@/lib/auth';
+import { getCurrentUser, hashPassword, generateLoginToken } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, schoolMemberships, schools, teachers } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       active: true,
+      ...(role === 'student' ? { loginToken: generateLoginToken() } : {}),
     }).returning();
 
     if (role === 'teacher') {

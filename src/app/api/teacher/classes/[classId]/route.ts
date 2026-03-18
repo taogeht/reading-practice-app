@@ -61,6 +61,7 @@ export async function GET(
         visualPasswordType: students.visualPasswordType,
         visualPasswordData: students.visualPasswordData,
         avatarUrl: students.avatarUrl,
+        loginToken: users.loginToken,
       })
       .from(classEnrollments)
       .innerJoin(students, eq(classEnrollments.studentId, students.id))

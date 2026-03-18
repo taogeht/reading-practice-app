@@ -63,6 +63,36 @@ export async function cleanupExpiredSessions(): Promise<void> {
   await db.delete(session).where(lt(session.expiresAt, new Date()));
 }
 
+export function generateLoginToken(): string {
+  const cryptoObj = typeof globalThis.crypto !== 'undefined' ? globalThis.crypto : undefined;
+  if (cryptoObj?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+  return `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`.slice(0, 32);
+}
+
+export async function loginWithToken(token: string): Promise<User | null> {
+  if (!token || token.length < 16) return null;
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.loginToken, token),
+  });
+
+  if (!user || !user.active || user.role !== 'student') {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+  };
+}
+
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),

@@ -33,6 +33,7 @@ export const users = pgTable(
     firstName: varchar('first_name', { length: 100 }).notNull(),
     lastName: varchar('last_name', { length: 100 }).notNull(),
     active: boolean('active').default(true),
+    loginToken: varchar('login_token', { length: 64 }).unique(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   }

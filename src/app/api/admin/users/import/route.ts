@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
-import { getCurrentUser, hashPassword } from '@/lib/auth';
+import { getCurrentUser, hashPassword, generateLoginToken } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   users,
@@ -255,6 +255,7 @@ export async function POST(request: NextRequest) {
               passwordHash,
               role,
               active,
+              ...(role === 'student' ? { loginToken: generateLoginToken() } : {}),
             })
             .returning();
 

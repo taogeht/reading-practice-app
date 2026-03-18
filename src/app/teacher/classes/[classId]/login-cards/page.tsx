@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ANIMALS, OBJECTS, VisualPasswordOption } from "@/components/auth/visual-password-options";
 import { ArrowLeft, Loader2, Printer } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface Student {
   id: string;
   firstName: string;
   lastName: string;
-  visualPasswordType: "animal" | "object" | null;
-  visualPasswordData: any;
+  loginToken: string | null;
 }
 
 interface ClassResponse {
@@ -21,59 +20,6 @@ interface ClassResponse {
     name: string;
     description: string | null;
     students: Student[];
-  };
-}
-
-interface VisualPasswordDisplay {
-  label: string;
-  emoji: string;
-  description: string;
-}
-
-function capitalize(value?: string | null): string {
-  if (!value) return "";
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function getOptionById(options: VisualPasswordOption[], id?: string | null) {
-  if (!id) return undefined;
-  return options.find((option) => option.id === id);
-}
-
-function getVisualPasswordDisplay(
-  type: Student["visualPasswordType"],
-  data: Student["visualPasswordData"],
-): VisualPasswordDisplay {
-  if (!type || !data) {
-    return {
-      label: "Visual Password",
-      emoji: "❔",
-      description: "Password not set",
-    };
-  }
-
-  if (type === "animal") {
-    const option = getOptionById(ANIMALS, data?.animal);
-    return {
-      label: "Animal Password",
-      emoji: option?.emoji ?? "🐾",
-      description: option?.name ?? capitalize(data?.animal),
-    };
-  }
-
-  if (type === "object") {
-    const option = getOptionById(OBJECTS, data?.object);
-    return {
-      label: "Picture Password",
-      emoji: option?.emoji ?? "🎨",
-      description: option?.name ?? capitalize(data?.object),
-    };
-  }
-
-  return {
-    label: "Visual Password",
-    emoji: "❔",
-    description: "Password not set",
   };
 }
 
@@ -119,25 +65,13 @@ export default function LoginCardsPage() {
     fetchClass();
   }, [classId]);
 
-  const loginUrl = useMemo(() => {
-    if (!classId) return "";
-    const base = origin || (typeof window !== "undefined" ? window.location.origin : "");
-    return `${base}/student-login/${classId}`;
-  }, [classId, origin]);
-
-  const shortUrl = useMemo(() => {
-    if (!classId) return "";
-    const base = origin || (typeof window !== "undefined" ? window.location.origin : "");
-    return `${base}/c/${classId.substring(0, 8)}`;
-  }, [classId, origin]);
-
   const handlePrint = () => {
     if (typeof window !== "undefined") {
       window.print();
     }
   };
 
-  if (loading || (classData && !shortUrl)) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex items-center gap-2 text-gray-600">
@@ -158,6 +92,8 @@ export default function LoginCardsPage() {
     );
   }
 
+  const base = origin || "";
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
@@ -165,7 +101,7 @@ export default function LoginCardsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Login Cards for {classData.name}</h1>
             <p className="text-gray-600">
-              Print and cut these cards. Each card includes your class QR code and the student's visual password.
+              Print and cut these cards. Each student has a unique QR code for instant login — no password needed.
             </p>
           </div>
           <div className="flex gap-2">
@@ -185,7 +121,9 @@ export default function LoginCardsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 print:grid-cols-2 print:gap-3">
             {classData.students.map((student) => {
-              const visual = getVisualPasswordDisplay(student.visualPasswordType, student.visualPasswordData);
+              const loginUrl = student.loginToken
+                ? `${base}/s/${student.loginToken}`
+                : null;
 
               return (
                 <Card
@@ -195,14 +133,18 @@ export default function LoginCardsPage() {
                   <CardContent className="p-4 flex flex-col h-full justify-between">
                     <div className="space-y-3 text-center">
                       <div className="flex flex-col items-center">
-                        <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(shortUrl || loginUrl)}`}
-                          alt={`QR code for ${student.firstName}`}
-                          className="w-24 h-24 border border-gray-200 rounded"
-                        />
-                        <p className="mt-2 text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                          {shortUrl?.replace(/^https?:\/\//, '')}
-                        </p>
+                        {loginUrl ? (
+                          <QRCodeSVG
+                            value={loginUrl}
+                            size={120}
+                            level="M"
+                            className="border border-gray-200 rounded p-1"
+                          />
+                        ) : (
+                          <div className="w-[120px] h-[120px] border border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">
+                            No token
+                          </div>
+                        )}
                       </div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">
@@ -210,19 +152,17 @@ export default function LoginCardsPage() {
                         </h2>
                         <p className="text-sm text-gray-500">{classData.name}</p>
                       </div>
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
-                          {visual.label}
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">
+                          Scan to Log In
                         </p>
-                        <div className="text-4xl mb-1">{visual.emoji}</div>
-                        <p className="text-sm text-blue-800 font-medium">{visual.description}</p>
+                        <p className="text-sm text-green-800 mt-1">
+                          Point your camera at the QR code to log in instantly.
+                        </p>
                       </div>
                       <p className="text-xs text-gray-500">
                         Ask your teacher for help if you have trouble logging in.
                       </p>
-                    </div>
-                    <div className="mt-4 text-xs text-gray-400 text-center">
-                      Scan the QR code or visit the class link. Then choose your name and tap your picture password to log in.
                     </div>
                   </CardContent>
                 </Card>
