@@ -40,6 +40,7 @@ import {
   Share2,
   ChevronDown,
   Info,
+  CreditCard,
 } from "lucide-react";
 
 interface Class {
@@ -282,125 +283,111 @@ export default function ClassDetailPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push('/teacher/dashboard')}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Dashboard
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => router.push('/teacher/classes')}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  All Classes
-                </Button>
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <BookOpen className="w-8 h-8 text-blue-600" />
-                  {classData.name}
-                  {!classData.active && (
-                    <Badge variant="secondary">Inactive</Badge>
-                  )}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="ml-1 text-gray-400 hover:text-blue-600 transition-colors">
-                        <Info className="w-5 h-5" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80" align="start">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-sm">Class Information</h4>
-                        {classData.description && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500">Description</p>
-                            <p className="text-sm text-gray-900">{classData.description}</p>
-                          </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-3">
-                          {classData.gradeLevel && (
-                            <div className="flex items-center gap-1.5">
-                              <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
-                              <span className="text-sm">Grade {classData.gradeLevel}</span>
-                            </div>
-                          )}
-                          {classData.academicYear && (
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                              <span className="text-sm">{classData.academicYear}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5 text-gray-400" />
-                            <span className="text-sm">{classData.studentCount} students</span>
-                          </div>
-                          <div>
-                            <Badge variant={classData.active ? "default" : "secondary"} className="text-xs">
-                              {classData.active ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-500 mb-1">Practice Stories</p>
-                          <Badge variant={classData.showPracticeStories ? "default" : "secondary"} className="text-xs">
-                            {classData.showPracticeStories ? "Enabled" : "Hidden"}
-                          </Badge>
-                        </div>
-                        <div className="pt-2 border-t">
-                          <p className="text-xs font-medium text-gray-500 mb-2">Schedule</p>
-                          <ScheduleSection classId={classId} compact={true} />
-                        </div>
-                        <p className="text-xs text-gray-400">Created {formatDate(classData.createdAt)}</p>
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <button
+              onClick={() => router.push('/teacher/dashboard')}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <BookOpen className="w-6 h-6 text-blue-600" />
+              {classData.name}
+              {!classData.active && (
+                <Badge variant="secondary">Inactive</Badge>
+              )}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="ml-1 text-gray-400 hover:text-blue-600 transition-colors">
+                    <Info className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="start">
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-sm">Class Information</h4>
+                    {classData.description && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">Description</p>
+                        <p className="text-sm text-gray-900">{classData.description}</p>
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                </h1>
-                <div className="flex items-center gap-3 mt-1">
-                  <p className="text-gray-600">
-                    Class management and student overview
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* QR Code for student class login */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleQRCodeClick}
-              >
-                <QrCode className="w-4 h-4 mr-2" />
-                Class QR Code
-              </Button>
-              <Button onClick={() => setShowStudentsSheet(true)} variant="outline">
-                <Users className="w-4 h-4 mr-2" />
-                Students ({classData.studentCount})
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/teacher/assignments?classId=${classId}`)}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                View Assignments
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/teacher/classes/${classId}/progress`)}
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Class Progress
-              </Button>
-              <Button variant="outline" onClick={() => setIsEditing(true)}>
-                <Edit3 className="w-4 h-4 mr-2" />
-                Edit Class
-              </Button>
-            </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      {classData.gradeLevel && (
+                        <div className="flex items-center gap-1.5">
+                          <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="text-sm">Grade {classData.gradeLevel}</span>
+                        </div>
+                      )}
+                      {classData.academicYear && (
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="text-sm">{classData.academicYear}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-sm">{classData.studentCount} students</span>
+                      </div>
+                      <div>
+                        <Badge variant={classData.active ? "default" : "secondary"} className="text-xs">
+                          {classData.active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Practice Stories</p>
+                      <Badge variant={classData.showPracticeStories ? "default" : "secondary"} className="text-xs">
+                        {classData.showPracticeStories ? "Enabled" : "Hidden"}
+                      </Badge>
+                    </div>
+                    <div className="pt-2 border-t">
+                      <p className="text-xs font-medium text-gray-500 mb-2">Schedule</p>
+                      <ScheduleSection classId={classId} compact={true} />
+                    </div>
+                    <p className="text-xs text-gray-400">Created {formatDate(classData.createdAt)}</p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button onClick={() => setShowStudentsSheet(true)} variant="outline" size="sm">
+              <Users className="w-4 h-4 mr-1.5" />
+              Students ({classData.studentCount})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/teacher/assignments?classId=${classId}`)}
+            >
+              <FileText className="w-4 h-4 mr-1.5" />
+              Assignments
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/teacher/classes/${classId}/progress`)}
+            >
+              <BookOpen className="w-4 h-4 mr-1.5" />
+              Class Progress
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleQRCodeClick}
+            >
+              <QrCode className="w-4 h-4 mr-1.5" />
+              Class QR
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/teacher/classes/${classId}/login-cards`)}
+            >
+              <CreditCard className="w-4 h-4 mr-1.5" />
+              Login Cards
+            </Button>
           </div>
         </div>
       </div>
@@ -412,7 +399,7 @@ export default function ClassDetailPage() {
             {/* Login Activity */}
             <LoginActivitySection classId={classId} defaultExpanded={false} />
 
-            {/* Danger Zone - Collapsible at bottom */}
+            {/* Advanced Settings - Collapsible */}
             <details className="group">
               <summary className="cursor-pointer list-none p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
                 <div className="flex items-center justify-between">
@@ -423,28 +410,41 @@ export default function ClassDetailPage() {
                   <ChevronDown className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" />
                 </div>
               </summary>
-              <div className="mt-2 p-4 border border-red-200 rounded-lg bg-red-50/50">
-                <h4 className="text-red-600 font-medium flex items-center gap-2 mb-2">
-                  <Trash2 className="w-4 h-4" />
-                  Danger Zone
-                </h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Irreversible actions for this class
-                </p>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteClass}
-                  size="sm"
-                  disabled={classData.studentCount > 0}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Class
-                </Button>
-                {classData.studentCount > 0 && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Remove all students first
+              <div className="mt-2 space-y-3">
+                <div className="p-4 border rounded-lg bg-white">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    Edit Class
+                  </Button>
+                </div>
+                <div className="p-4 border border-red-200 rounded-lg bg-red-50/50">
+                  <h4 className="text-red-600 font-medium flex items-center gap-2 mb-2">
+                    <Trash2 className="w-4 h-4" />
+                    Danger Zone
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Irreversible actions for this class
                   </p>
-                )}
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteClass}
+                    size="sm"
+                    disabled={classData.studentCount > 0}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Class
+                  </Button>
+                  {classData.studentCount > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Remove all students first
+                    </p>
+                  )}
+                </div>
               </div>
             </details>
           </div>

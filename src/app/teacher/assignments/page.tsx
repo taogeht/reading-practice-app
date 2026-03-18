@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
 import { ArrowLeft, Plus, Eye, Edit2, Trash2, Calendar, Users, BookOpen, CheckCircle, AlertCircle, Clock } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 
 interface StudentSummary {
@@ -38,6 +38,8 @@ interface Assignment {
 
 export default function TeacherAssignmentsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const classId = searchParams.get('classId');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,12 +168,12 @@ export default function TeacherAssignmentsPage() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => router.push('/teacher/dashboard')}>
+              <Button variant="outline" size="sm" onClick={() => router.push(classId ? `/teacher/classes/${classId}` : '/teacher/dashboard')}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
+                {classId ? 'Back to Class' : 'Back to Dashboard'}
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">My Assignments</h1>
+                <h1 className="text-3xl font-bold text-gray-900">{classId ? 'Class Assignments' : 'My Assignments'}</h1>
                 <p className="text-gray-600 mt-1">
                   Manage your reading assignments and track student progress
                 </p>
