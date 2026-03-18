@@ -1,10 +1,8 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Reduce memory usage during production builds by excluding large binaries from tracing
   outputFileTracingExcludes: {
     '*': [
       'node_modules/@swc/core-linux-x64-gnu',
@@ -15,4 +13,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-3
