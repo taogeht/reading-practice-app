@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       .values({
         name: name.trim(),
         description: description?.trim() || null,
-        gradeLevel: gradeLevel || null,
+        gradeLevel: gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== '' ? Number(gradeLevel) : null,
         academicYear: academicYear?.trim() || null,
         teacherId: user.id,
         schoolId: teacherSchool[0].schoolId,

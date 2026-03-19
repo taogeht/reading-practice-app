@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScheduleSection } from '@/components/schedule/schedule-section';
+import { GRADE_LEVELS } from '@/lib/grade-levels';
 
 interface TeacherOption {
   id: string;
@@ -269,14 +270,19 @@ export default function ClassForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="grade-level">Grade Level</Label>
-          <Input
+          <select
             id="grade-level"
-            type="number"
-            min={0}
             value={formData.gradeLevel}
             onChange={(event) => handleChange('gradeLevel', event.target.value)}
-            placeholder="Optional"
-          />
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">No grade set</option>
+            {GRADE_LEVELS.map((g) => (
+              <option key={g.value} value={g.value.toString()}>
+                {g.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <Label htmlFor="academic-year">Academic Year</Label>

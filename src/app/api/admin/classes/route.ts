@@ -172,10 +172,10 @@ export async function POST(request: NextRequest) {
 
     if (
       parsedGradeLevel !== null &&
-      (Number.isNaN(parsedGradeLevel) || parsedGradeLevel < 0)
+      (Number.isNaN(parsedGradeLevel) || parsedGradeLevel < -1 || parsedGradeLevel > 12)
     ) {
       return NextResponse.json(
-        { error: 'Grade level must be a positive number' },
+        { error: 'Grade level must be between Pre-school (-1) and 12' },
         { status: 400 },
       );
     }

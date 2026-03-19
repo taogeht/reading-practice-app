@@ -134,7 +134,7 @@ export async function PUT(
       .set({
         name: name.trim(),
         description: description?.trim() || null,
-        gradeLevel: gradeLevel || null,
+        gradeLevel: gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== '' ? Number(gradeLevel) : null,
         academicYear: academicYear?.trim() || null,
         active: active !== undefined ? active : true,
         showPracticeStories: showPracticeStories !== undefined ? showPracticeStories : false,

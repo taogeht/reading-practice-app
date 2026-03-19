@@ -19,13 +19,16 @@ export async function PUT(
 
         const { id: listId } = await params;
         const body = await request.json();
-        const { title, gradeLevel, isPublic, active, classId, words } = body;
+        const { title, gradeLevel, isPublic, active, classId, classIds, words } = body;
 
         // Verify the list exists and the user has permission to edit it
         const existingList = await db.query.spellingLists.findFirst({
             where: eq(spellingLists.id, listId),
             with: {
-                class: true
+                class: true,
+                words: {
+                    orderBy: (words, { asc }) => [asc(words.orderIndex)],
+                },
             }
         });
 
@@ -37,53 +40,122 @@ export async function PUT(
             return NextResponse.json({ error: 'Unauthorized to edit this list' }, { status: 403 });
         }
 
-        // Update basic list details
-        await db
-            .update(spellingLists)
-            .set({
-                title: title !== undefined ? title : existingList.title,
-                gradeLevel: gradeLevel !== undefined ? gradeLevel : existingList.gradeLevel,
-                isPublic: isPublic !== undefined ? isPublic : existingList.isPublic,
-                active: active !== undefined ? active : existingList.active,
-                classId: classId !== undefined ? classId : existingList.classId,
-                updatedAt: new Date()
-            })
-            .where(eq(spellingLists.id, listId));
+        // Resolve target class IDs
+        const targetClassIds: string[] = classIds && Array.isArray(classIds) && classIds.length > 0
+            ? classIds
+            : classId ? [classId] : [existingList.classId];
 
-        // If words are provided, update them
-        if (words && Array.isArray(words)) {
-            // Simplest approach: delete all existing words and insert new ones
-            // This maintains the correct order and handles additions/deletions easily
-            await db.delete(spellingWords).where(eq(spellingWords.spellingListId, listId));
+        // Find all sibling lists (same title + teacher, representing shared copies)
+        const allTeacherLists = await db
+            .select({ id: spellingLists.id, classId: spellingLists.classId })
+            .from(spellingLists)
+            .innerJoin(classes, eq(classes.id, spellingLists.classId))
+            .where(
+                and(
+                    eq(spellingLists.title, existingList.title),
+                    eq(classes.teacherId, existingList.class.teacherId)
+                )
+            );
 
-            if (words.length > 0) {
-                const wordRecords = words.map((word: any, index: number) => {
-                    const wordString = typeof word === 'string' ? word : word.word;
-                    const syllables = typeof word === 'string' ? null : (word.syllables || null);
-                    const audioUrl = typeof word === 'string' ? null : (word.audioUrl || null);
+        const existingClassIds = allTeacherLists.map(l => l.classId);
+        const existingListMap = new Map(allTeacherLists.map(l => [l.classId, l.id]));
 
-                    return {
-                        spellingListId: listId,
-                        word: wordString.trim(),
-                        syllables,
-                        audioUrl,
-                        orderIndex: index,
-                    };
-                });
+        // Determine which classes to add/remove/keep
+        const classesToAdd = targetClassIds.filter(cid => !existingClassIds.includes(cid));
+        const classesToRemove = existingClassIds.filter(cid => !targetClassIds.includes(cid));
+        const classesToKeep = existingClassIds.filter(cid => targetClassIds.includes(cid));
 
-                await db.insert(spellingWords).values(wordRecords);
+        // Prepare word data (use provided words or keep existing)
+        const wordData = words && Array.isArray(words) ? words : existingList.words;
+
+        // Update all kept lists (including the primary one)
+        for (const cid of classesToKeep) {
+            const keepListId = existingListMap.get(cid)!;
+            await db
+                .update(spellingLists)
+                .set({
+                    title: title !== undefined ? title : existingList.title,
+                    gradeLevel: gradeLevel !== undefined ? gradeLevel : existingList.gradeLevel,
+                    isPublic: isPublic !== undefined ? isPublic : existingList.isPublic,
+                    active: active !== undefined ? active : existingList.active,
+                    updatedAt: new Date()
+                })
+                .where(eq(spellingLists.id, keepListId));
+
+            // Update words if provided
+            if (words && Array.isArray(words)) {
+                await db.delete(spellingWords).where(eq(spellingWords.spellingListId, keepListId));
+                if (words.length > 0) {
+                    const wordRecords = words.map((word: any, index: number) => {
+                        const wordString = typeof word === 'string' ? word : word.word;
+                        const syllables = typeof word === 'string' ? null : (word.syllables || null);
+                        const audioUrl = typeof word === 'string' ? null : (word.audioUrl || null);
+                        return {
+                            spellingListId: keepListId,
+                            word: wordString.trim(),
+                            syllables,
+                            audioUrl,
+                            orderIndex: index,
+                        };
+                    });
+                    await db.insert(spellingWords).values(wordRecords);
+                }
             }
         }
 
-        // Fetch updated complete list
-        const completeList = await db.query.spellingLists.findFirst({
-            where: eq(spellingLists.id, listId),
-            with: {
-                words: {
-                    orderBy: (words, { asc }) => [asc(words.orderIndex)],
+        // Remove lists for deselected classes
+        for (const cid of classesToRemove) {
+            const removeListId = existingListMap.get(cid)!;
+            await db.delete(spellingLists).where(eq(spellingLists.id, removeListId));
+        }
+
+        // Create lists for newly selected classes
+        for (const cid of classesToAdd) {
+            const [newList] = await db
+                .insert(spellingLists)
+                .values({
+                    classId: cid,
+                    title: title !== undefined ? title : existingList.title,
+                    weekNumber: existingList.weekNumber,
+                    gradeLevel: gradeLevel !== undefined ? gradeLevel : existingList.gradeLevel,
+                    isPublic: isPublic !== undefined ? isPublic : existingList.isPublic,
+                    active: active !== undefined ? active : existingList.active,
+                })
+                .returning();
+
+            // Copy words to the new list
+            const wordsToInsert = wordData.map((word: any, index: number) => {
+                const wordString = typeof word === 'string' ? word : word.word;
+                const syllables = typeof word === 'string' ? null : (word.syllables || null);
+                const audioUrl = typeof word === 'string' ? null : (word.audioUrl || null);
+                return {
+                    spellingListId: newList.id,
+                    word: wordString.trim(),
+                    syllables,
+                    audioUrl,
+                    orderIndex: index,
+                };
+            });
+            if (wordsToInsert.length > 0) {
+                await db.insert(spellingWords).values(wordsToInsert);
+            }
+        }
+
+        // Fetch updated complete list (use primary list if it still exists, otherwise first kept/added)
+        const returnListId = targetClassIds.includes(existingList.classId)
+            ? listId
+            : (classesToKeep.length > 0 ? existingListMap.get(classesToKeep[0])! : undefined);
+
+        const completeList = returnListId
+            ? await db.query.spellingLists.findFirst({
+                where: eq(spellingLists.id, returnListId),
+                with: {
+                    words: {
+                        orderBy: (words, { asc }) => [asc(words.orderIndex)],
+                    },
                 },
-            },
-        });
+            })
+            : { success: true };
 
         return NextResponse.json(completeList);
     } catch (error) {

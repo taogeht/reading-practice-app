@@ -26,11 +26,13 @@ import {
   Play,
   Square,
   Check,
-  X
+  X,
+  Scissors
 } from "lucide-react";
 import { format } from "date-fns";
 import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelling/manage-spelling-list-dialog";
 import { ImportSpellingListDialog } from "@/components/spelling/import-spelling-list-dialog";
+import { SyllableEditorDialog } from "@/components/spelling/syllable-editor-dialog";
 
 type ClassOption = {
   id: string;
@@ -76,9 +78,7 @@ export default function ManageSpellingListsPage() {
   const [generatingAudioFor, setGeneratingAudioFor] = useState<string | null>(null);
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [playingWordId, setPlayingWordId] = useState<string | null>(null);
-  const [editingSyllablesWordId, setEditingSyllablesWordId] = useState<string | null>(null);
-  const [syllablesInput, setSyllablesInput] = useState("");
-  const [savingSyllables, setSavingSyllables] = useState(false);
+  const [editingSyllablesWord, setEditingSyllablesWord] = useState<SpellingWord | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePlayAudio = useCallback((word: SpellingWord) => {
@@ -110,42 +110,13 @@ export default function ManageSpellingListsPage() {
     audio.play();
   }, [playingWordId]);
 
-  const handleStartEditSyllables = (word: SpellingWord) => {
-    setEditingSyllablesWordId(word.id);
-    setSyllablesInput(word.syllables ? word.syllables.join(" · ") : word.word);
-  };
-
-  const handleSaveSyllables = async (wordId: string) => {
-    setSavingSyllables(true);
-    try {
-      const syllables = syllablesInput
-        .split(/[·\-|,]/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-
-      const response = await fetch(`/api/spelling-words/${wordId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ syllables }),
-      });
-
-      if (!response.ok) throw new Error("Failed to save syllables");
-
-      // Update local state
-      setLists(lists.map(list => ({
-        ...list,
-        words: list.words.map(w =>
-          w.id === wordId ? { ...w, syllables } : w
-        ),
-      })));
-
-      setEditingSyllablesWordId(null);
-    } catch (err) {
-      console.error("Error saving syllables:", err);
-      alert("Failed to save syllables. Please try again.");
-    } finally {
-      setSavingSyllables(false);
-    }
+  const handleSyllablesSaved = (wordId: string, syllables: string[]) => {
+    setLists(lists.map(list => ({
+      ...list,
+      words: list.words.map(w =>
+        w.id === wordId ? { ...w, syllables } : w
+      ),
+    })));
   };
 
   useEffect(() => {
@@ -393,52 +364,16 @@ export default function ManageSpellingListsPage() {
                               {w.word}
                             </span>
 
-                            {editingSyllablesWordId === w.id ? (
-                              <div className="flex items-center gap-1 flex-1">
-                                <Input
-                                  value={syllablesInput}
-                                  onChange={(e) => setSyllablesInput(e.target.value)}
-                                  placeholder="sep · a · rate with dots"
-                                  className="h-7 text-xs flex-1"
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleSaveSyllables(w.id);
-                                    if (e.key === "Escape") setEditingSyllablesWordId(null);
-                                  }}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-green-600 hover:text-green-700"
-                                  onClick={() => handleSaveSyllables(w.id)}
-                                  disabled={savingSyllables}
-                                >
-                                  {savingSyllables ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Check className="w-3.5 h-3.5" />
-                                  )}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-gray-400 hover:text-gray-600"
-                                  onClick={() => setEditingSyllablesWordId(null)}
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleStartEditSyllables(w)}
-                                className="text-xs text-gray-400 hover:text-blue-600 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors flex-1 text-left"
-                                title="Click to edit syllables"
-                              >
-                                {w.syllables && w.syllables.length > 0
-                                  ? w.syllables.join(" · ")
-                                  : "add syllables..."}
-                              </button>
-                            )}
+                            <button
+                              onClick={() => setEditingSyllablesWord(w)}
+                              className="text-xs text-gray-400 hover:text-blue-600 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors flex-1 text-left flex items-center gap-1"
+                              title="Click to edit syllables"
+                            >
+                              <Scissors className="w-3 h-3 shrink-0" />
+                              {w.syllables && w.syllables.length > 0
+                                ? w.syllables.join(" · ")
+                                : "add syllables..."}
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -542,6 +477,17 @@ export default function ManageSpellingListsPage() {
         onSuccess={fetchData}
         classes={classes}
       />
+
+      {editingSyllablesWord && (
+        <SyllableEditorDialog
+          wordId={editingSyllablesWord.id}
+          word={editingSyllablesWord.word}
+          currentSyllables={editingSyllablesWord.syllables}
+          onSave={(syllables) => handleSyllablesSaved(editingSyllablesWord.id, syllables)}
+          onClose={() => setEditingSyllablesWord(null)}
+          open={true}
+        />
+      )}
     </div>
   );
 }

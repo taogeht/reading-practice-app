@@ -17,6 +17,7 @@ import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
+import { GRADE_LEVELS } from "@/lib/grade-levels";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -78,6 +79,8 @@ export default function ClassDetailPage() {
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
+  const hasSpelling = classData?.gradeLevel !== null && classData?.gradeLevel !== undefined && classData.gradeLevel >= 1;
+
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -454,14 +457,16 @@ export default function ClassDetailPage() {
             <SortableCardList
               storageKey={`class-dashboard-${classId}`}
               cards={[
-                {
-                  id: "spelling",
-                  node: <SpellingWordsSection classId={classId} defaultExpanded={true} />,
-                },
-                {
-                  id: "word-mastery",
-                  node: <WordMasterySection classId={classId} defaultExpanded={false} />,
-                },
+                ...(hasSpelling ? [
+                  {
+                    id: "spelling",
+                    node: <SpellingWordsSection classId={classId} defaultExpanded={true} />,
+                  },
+                  {
+                    id: "word-mastery",
+                    node: <WordMasterySection classId={classId} defaultExpanded={false} />,
+                  },
+                ] : []),
                 {
                   id: "attendance",
                   node: <AttendanceSection classId={classId} className={classData.name} />,
@@ -513,15 +518,19 @@ export default function ClassDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="gradeLevel">Grade Level</Label>
-                <Input
+                <select
                   id="gradeLevel"
-                  type="number"
                   value={editForm.gradeLevel}
                   onChange={(e) => setEditForm(prev => ({ ...prev, gradeLevel: e.target.value }))}
-                  placeholder="Grade"
-                  min="1"
-                  max="12"
-                />
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">No grade set</option>
+                  {GRADE_LEVELS.map((g) => (
+                    <option key={g.value} value={g.value.toString()}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <Label htmlFor="academicYear">Academic Year</Label>
