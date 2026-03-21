@@ -91,6 +91,11 @@ class R2Client {
       return this.getProxyUrl(key);
     }
 
+    // For image files, return a proxy URL
+    if (contentType.startsWith('image/')) {
+      return `/api/images/${key}`;
+    }
+
     return this.getPublicUrl(key);
   }
 
@@ -208,6 +213,13 @@ class R2Client {
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 8);
     return `docs/syllabus/${classId}/${timestamp}-${randomId}-${filename}`;
+  }
+
+  /**
+   * Generate a file key for spelling word images
+   */
+  generateImageKey(classId: string, listId: string, wordId: string): string {
+    return `spelling-images/${classId}/${listId}/${wordId}.png`;
   }
 
   /**

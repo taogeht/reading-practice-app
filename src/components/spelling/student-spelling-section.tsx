@@ -12,6 +12,9 @@ import {
     ChevronDown,
     ChevronUp,
     History,
+    X,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
 
 interface SpellingWord {
@@ -19,6 +22,7 @@ interface SpellingWord {
     word: string;
     syllables: string[] | null; // Stored syllables from dictionary API
     audioUrl: string | null;
+    imageUrl: string | null;
     orderIndex: number;
 }
 
@@ -50,32 +54,32 @@ const SYLLABLE_COLORS = [
  * Renders a word with color-coded syllables
  * Only shows syllable colors if teacher has set them explicitly
  */
-function SyllableWord({ word, syllables: storedSyllables, isPlaying }: {
+function SyllableWord({ word, syllables: storedSyllables, isPlaying, large }: {
     word: string;
     syllables: string[] | null;
     isPlaying: boolean;
+    large?: boolean;
 }) {
     // Only use syllables if teacher has explicitly set them (more than 1 syllable stored)
     const hasSyllables = storedSyllables && storedSyllables.length > 1;
 
     if (!hasSyllables) {
-        // Show plain word without syllable coloring
         return (
-            <span className={`font-bold text-xl text-gray-800 ${isPlaying ? "scale-105" : ""}`}>
+            <span className={`font-bold ${large ? "text-4xl" : "text-xl"} text-gray-800 ${isPlaying ? "scale-105" : ""}`}>
                 {word}
             </span>
         );
     }
 
     return (
-        <div className="flex flex-wrap items-center gap-1">
+        <div className={`flex flex-wrap items-center ${large ? "gap-2 justify-center" : "gap-1"}`}>
             {storedSyllables.map((syllable, index) => {
                 const colors = SYLLABLE_COLORS[index % SYLLABLE_COLORS.length];
                 return (
                     <span
                         key={index}
                         className={`
-              px-2 py-1 rounded-lg font-bold text-lg
+              ${large ? "px-4 py-2 text-3xl" : "px-2 py-1 text-lg"} rounded-lg font-bold
               border-2 transition-all
               ${colors.bg} ${colors.text} ${colors.border}
               ${isPlaying ? "scale-110 shadow-md" : ""}
@@ -94,7 +98,22 @@ export function StudentSpellingSection() {
     const [loading, setLoading] = useState(true);
     const [playingWordId, setPlayingWordId] = useState<string | null>(null);
     const [showPreviousLists, setShowPreviousLists] = useState(false);
+    const [expandedWord, setExpandedWord] = useState<{ word: SpellingWord; words: SpellingWord[] } | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const openExpandedWord = (word: SpellingWord, words: SpellingWord[]) => {
+        setExpandedWord({ word, words });
+    };
+
+    const navigateExpandedWord = (direction: -1 | 1) => {
+        if (!expandedWord) return;
+        const { word, words } = expandedWord;
+        const currentIndex = words.findIndex(w => w.id === word.id);
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < words.length) {
+            setExpandedWord({ word: words[newIndex], words });
+        }
+    };
 
     useEffect(() => {
         fetchSpellingLists();
@@ -188,23 +207,21 @@ export function StudentSpellingSection() {
                                 <div
                                     key={word.id}
                                     className={`
-                                        flex items-center gap-4 p-5 rounded-2xl border-2 transition-all
-                                        ${word.audioUrl
-                                            ? "bg-white hover:bg-blue-50 hover:border-blue-300 cursor-pointer hover:shadow-lg hover:-translate-y-0.5"
-                                            : "bg-gray-50 cursor-not-allowed opacity-60"
-                                        }
+                                        flex items-center gap-4 p-5 rounded-2xl border-2 transition-all cursor-pointer
+                                        bg-white hover:bg-blue-50 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5
                                         ${playingWordId === word.id
                                             ? "border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200 -translate-y-0.5"
                                             : "border-gray-200"
                                         }
                                     `}
-                                    onClick={() => playWord(word)}
+                                    onClick={() => openExpandedWord(word, lists[0].words)}
                                 >
                                     {/* Play Button */}
                                     <button
+                                        onClick={(e) => { e.stopPropagation(); playWord(word); }}
                                         disabled={!word.audioUrl}
                                         className={`
-                                            w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0
+                                            w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0
                                             transition-all shadow-md
                                             ${playingWordId === word.id
                                                 ? "bg-blue-600 text-white scale-110"
@@ -214,11 +231,20 @@ export function StudentSpellingSection() {
                                         `}
                                     >
                                         {playingWordId === word.id ? (
-                                            <Pause className="w-8 h-8" />
+                                            <Pause className="w-7 h-7" />
                                         ) : (
-                                            <Play className="w-8 h-8 ml-1" />
+                                            <Play className="w-7 h-7 ml-0.5" />
                                         )}
                                     </button>
+
+                                    {/* Word image */}
+                                    {word.imageUrl && (
+                                        <img
+                                            src={word.imageUrl}
+                                            alt={`Illustration of ${word.word}`}
+                                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border-2 border-gray-100"
+                                        />
+                                    )}
 
                                     {/* Word with Syllables */}
                                     <div className="flex-1 min-w-0">
@@ -279,19 +305,17 @@ export function StudentSpellingSection() {
                                                 <div
                                                     key={word.id}
                                                     className={`
-                                                        flex items-center gap-3 p-3 rounded-xl border transition-all
-                                                        ${word.audioUrl
-                                                            ? "bg-white hover:bg-blue-50 cursor-pointer"
-                                                            : "bg-gray-100 cursor-not-allowed opacity-60"
-                                                        }
+                                                        flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer
+                                                        bg-white hover:bg-blue-50
                                                         ${playingWordId === word.id
                                                             ? "border-blue-400 bg-blue-50"
                                                             : "border-gray-200"
                                                         }
                                                     `}
-                                                    onClick={() => playWord(word)}
+                                                    onClick={() => openExpandedWord(word, list.words)}
                                                 >
                                                     <button
+                                                        onClick={(e) => { e.stopPropagation(); playWord(word); }}
                                                         disabled={!word.audioUrl}
                                                         className={`
                                                             w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
@@ -299,6 +323,7 @@ export function StudentSpellingSection() {
                                                                 ? "bg-blue-500 text-white"
                                                                 : "bg-blue-100 text-blue-600"
                                                             }
+                                                            ${!word.audioUrl ? "opacity-50" : ""}
                                                         `}
                                                     >
                                                         {playingWordId === word.id ? (
@@ -307,6 +332,13 @@ export function StudentSpellingSection() {
                                                             <Play className="w-5 h-5 ml-0.5" />
                                                         )}
                                                     </button>
+                                                    {word.imageUrl && (
+                                                        <img
+                                                            src={word.imageUrl}
+                                                            alt={`Illustration of ${word.word}`}
+                                                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                                        />
+                                                    )}
                                                     <SyllableWord
                                                         word={word.word}
                                                         syllables={word.syllables}
@@ -322,6 +354,120 @@ export function StudentSpellingSection() {
                     </div>
                 )}
             </CardContent>
+
+            {/* Expanded Word Modal */}
+            {expandedWord && (() => {
+                const { word: currentWord, words: wordList } = expandedWord;
+                const currentIndex = wordList.findIndex(w => w.id === currentWord.id);
+                const hasPrev = currentIndex > 0;
+                const hasNext = currentIndex < wordList.length - 1;
+
+                return (
+                    <div
+                        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                        onClick={() => setExpandedWord(null)}
+                    >
+                        {/* Left arrow */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); navigateExpandedWord(-1); }}
+                            disabled={!hasPrev}
+                            className={`
+                                absolute left-2 sm:left-6 z-10 w-14 h-14 rounded-full flex items-center justify-center
+                                transition-all shadow-lg
+                                ${hasPrev
+                                    ? "bg-white text-gray-700 hover:bg-gray-100 active:scale-95"
+                                    : "bg-white/30 text-gray-300 cursor-not-allowed"
+                                }
+                            `}
+                        >
+                            <ChevronLeft className="w-8 h-8" />
+                        </button>
+
+                        <div
+                            className="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Close button + word counter */}
+                            <div className="flex items-center justify-between p-3 pb-0">
+                                <span className="text-sm text-gray-400 font-medium pl-2">
+                                    {currentIndex + 1} / {wordList.length}
+                                </span>
+                                <button
+                                    onClick={() => setExpandedWord(null)}
+                                    className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="flex flex-col items-center px-8 pb-8 gap-5">
+                                {/* Large image */}
+                                {currentWord.imageUrl && (
+                                    <img
+                                        src={currentWord.imageUrl}
+                                        alt={`Illustration of ${currentWord.word}`}
+                                        className="w-48 h-48 rounded-2xl object-cover border-4 border-gray-100 shadow-lg"
+                                    />
+                                )}
+
+                                {/* Word with syllables - larger */}
+                                <div className="text-center">
+                                    <SyllableWord
+                                        word={currentWord.word}
+                                        syllables={currentWord.syllables}
+                                        isPlaying={playingWordId === currentWord.id}
+                                        large
+                                    />
+                                </div>
+
+                                {/* Large play button */}
+                                {currentWord.audioUrl && (
+                                    <button
+                                        onClick={() => playWord(currentWord)}
+                                        className={`
+                                            w-24 h-24 rounded-full flex items-center justify-center
+                                            transition-all shadow-lg active:scale-95
+                                            ${playingWordId === currentWord.id
+                                                ? "bg-blue-600 text-white scale-105"
+                                                : "bg-gradient-to-br from-blue-500 to-indigo-500 text-white hover:scale-105"
+                                            }
+                                        `}
+                                    >
+                                        {playingWordId === currentWord.id ? (
+                                            <Pause className="w-12 h-12" />
+                                        ) : (
+                                            <Play className="w-12 h-12 ml-1" />
+                                        )}
+                                    </button>
+                                )}
+
+                                {playingWordId === currentWord.id && (
+                                    <div className="flex items-center gap-2 text-blue-600">
+                                        <Volume2 className="w-5 h-5 animate-pulse" />
+                                        <span className="text-sm font-medium">Playing...</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right arrow */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); navigateExpandedWord(1); }}
+                            disabled={!hasNext}
+                            className={`
+                                absolute right-2 sm:right-6 z-10 w-14 h-14 rounded-full flex items-center justify-center
+                                transition-all shadow-lg
+                                ${hasNext
+                                    ? "bg-white text-gray-700 hover:bg-gray-100 active:scale-95"
+                                    : "bg-white/30 text-gray-300 cursor-not-allowed"
+                                }
+                            `}
+                        >
+                            <ChevronRight className="w-8 h-8" />
+                        </button>
+                    </div>
+                );
+            })()}
         </Card>
     );
 }

@@ -278,6 +278,7 @@ export const spellingWords = pgTable(
     word: varchar('word', { length: 100 }).notNull(),
     syllables: jsonb('syllables').$type<string[]>(), // Array of syllables: ["ba", "na", "na"]
     audioUrl: varchar('audio_url', { length: 500 }),
+    imageUrl: varchar('image_url', { length: 500 }),
     orderIndex: integer('order_index').default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
@@ -298,6 +299,7 @@ export const spellingGameResults = pgTable(
     won: boolean('won').notNull(),
     wrongGuesses: integer('wrong_guesses').notNull().default(0),
     guessedLetters: jsonb('guessed_letters').$type<string[]>(),
+    activityType: varchar('activity_type', { length: 30 }).default('snowman'),
     timeSeconds: integer('time_seconds'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
@@ -536,6 +538,24 @@ export const spellingListsRelations = relations(spellingLists, ({ one, many }) =
 export const spellingWordsRelations = relations(spellingWords, ({ one, many }) => ({
   spellingList: one(spellingLists, { fields: [spellingWords.spellingListId], references: [spellingLists.id] }),
   gameResults: many(spellingGameResults),
+  sentences: many(spellingWordSentences),
+}));
+
+// Spelling Word Sentences - Cached generated sentences for fill-in-the-blank activities
+export const spellingWordSentences = pgTable('spelling_word_sentences', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    spellingWordId: uuid('spelling_word_id').references(() => spellingWords.id, { onDelete: 'cascade' }).notNull(),
+    gradeLevel: integer('grade_level').notNull(),
+    sentence: text('sentence').notNull(),
+    answer: varchar('answer', { length: 100 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const spellingWordSentencesRelations = relations(spellingWordSentences, ({ one }) => ({
+    word: one(spellingWords, {
+        fields: [spellingWordSentences.spellingWordId],
+        references: [spellingWords.id],
+    }),
 }));
 
 export const spellingGameResultsRelations = relations(spellingGameResults, ({ one }) => ({

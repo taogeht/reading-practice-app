@@ -157,6 +157,7 @@ export function SnowmanGame() {
                 wrongGuesses: wrongCount,
                 guessedLetters: letters,
                 timeSeconds,
+                activityType: 'snowman',
             }),
         }).catch(() => { }); // Silently ignore errors
     }, [currentWordId, currentClassId]);

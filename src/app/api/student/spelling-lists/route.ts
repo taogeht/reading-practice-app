@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
                         columns: {
                             id: true,
                             name: true,
+                            gradeLevel: true,
                         },
                     },
                 },

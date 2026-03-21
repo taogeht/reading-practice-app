@@ -27,7 +27,8 @@ import {
   Square,
   Check,
   X,
-  Scissors
+  Scissors,
+  ImageIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelling/manage-spelling-list-dialog";
@@ -45,6 +46,7 @@ type SpellingWord = {
   word: string;
   syllables: string[] | null;
   audioUrl: string | null;
+  imageUrl: string | null;
 };
 
 type SpellingList = {
@@ -76,6 +78,7 @@ export default function ManageSpellingListsPage() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingList, setEditingList] = useState<SpellingList | null>(null);
   const [generatingAudioFor, setGeneratingAudioFor] = useState<string | null>(null);
+  const [generatingImagesFor, setGeneratingImagesFor] = useState<string | null>(null);
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [playingWordId, setPlayingWordId] = useState<string | null>(null);
   const [editingSyllablesWord, setEditingSyllablesWord] = useState<SpellingWord | null>(null);
@@ -214,6 +217,44 @@ export default function ManageSpellingListsPage() {
       alert(err.message || "Failed to generate audio. Please try again.");
     } finally {
       setGeneratingAudioFor(null);
+    }
+  };
+
+  const handleGenerateImages = async (list: SpellingList, force = false) => {
+    if (force && !confirm("Regenerate all images? This will overwrite existing images.")) {
+      return;
+    }
+    setGeneratingImagesFor(list.id);
+    try {
+      const forceParam = force ? "?force=true" : "";
+      const response = await fetch(`/api/spelling-lists/${list.id}/generate-images${forceParam}`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to generate images");
+      }
+
+      const result = await response.json();
+
+      // If there are duplicate lists across classes, generate for those too
+      const otherIds = (list.allListIds || []).filter(id => id !== list.id);
+      if (otherIds.length > 0) {
+        await Promise.all(
+          otherIds.map(id =>
+            fetch(`/api/spelling-lists/${id}/generate-images${forceParam}`, { method: "POST" })
+          )
+        );
+      }
+
+      alert(`Images generated: ${result.successCount} words completed, ${result.errorCount} errors`);
+      fetchData();
+    } catch (err: any) {
+      console.error("Error generating images:", err);
+      alert(err.message || "Failed to generate images. Please try again.");
+    } finally {
+      setGeneratingImagesFor(null);
     }
   };
 
@@ -360,6 +401,14 @@ export default function ManageSpellingListsPage() {
                               )}
                             </button>
 
+                            {w.imageUrl && (
+                              <img
+                                src={w.imageUrl}
+                                alt={`Illustration of ${w.word}`}
+                                className="w-7 h-7 rounded object-cover shrink-0"
+                              />
+                            )}
+
                             <span className="font-medium text-sm text-gray-900 min-w-[80px]">
                               {w.word}
                             </span>
@@ -437,6 +486,23 @@ export default function ManageSpellingListsPage() {
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Volume2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-purple-500 hover:text-purple-600 hover:bg-purple-50 h-9 w-9 shrink-0"
+                      onClick={() => {
+                        const allHaveImages = list.words.length > 0 && list.words.every(w => w.imageUrl);
+                        handleGenerateImages(list, allHaveImages);
+                      }}
+                      disabled={generatingImagesFor === list.id || list.words.length === 0}
+                      title={list.words.every(w => w.imageUrl) ? "Regenerate all images" : "Generate images for words"}
+                    >
+                      {generatingImagesFor === list.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-4 h-4" />
                       )}
                     </Button>
                     <Button

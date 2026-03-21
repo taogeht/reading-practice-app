@@ -150,7 +150,8 @@ export function ListenAndSpellGame() {
                     won,
                     wrongGuesses: mistakes,
                     guessedLetters: guessedWords, // Storing what strings they tried instead of letters
-                    timeSeconds
+                    timeSeconds,
+                    activityType: 'listen-spell',
                 })
             });
         } catch (error) {

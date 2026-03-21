@@ -21,6 +21,7 @@ import {
     Scissors,
     Download,
     Check,
+    ImageIcon,
 } from "lucide-react";
 import { SyllableEditorDialog } from "./syllable-editor-dialog";
 
@@ -29,6 +30,7 @@ interface SpellingWord {
     word: string;
     syllables: string[] | null;
     audioUrl: string | null;
+    imageUrl: string | null;
     orderIndex: number;
 }
 
@@ -62,6 +64,7 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [expandedListId, setExpandedListId] = useState<string | null>(null);
     const [generatingAudio, setGeneratingAudio] = useState<string | null>(null);
+    const [generatingImages, setGeneratingImages] = useState<string | null>(null);
     const [playingWordId, setPlayingWordId] = useState<string | null>(null);
     const [editingWord, setEditingWord] = useState<SpellingWord | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -165,6 +168,7 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                 word: w.word,
                 syllables: w.syllables,
                 audioUrl: w.audioUrl,
+                imageUrl: w.imageUrl,
             }));
             const response = await fetch("/api/spelling-lists", {
                 method: "POST",
@@ -265,8 +269,32 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
         return new Date(dateString).toLocaleDateString();
     };
 
+    const handleGenerateImages = async (listId: string) => {
+        setGeneratingImages(listId);
+        try {
+            const response = await fetch(`/api/spelling-lists/${listId}/generate-images`, {
+                method: "POST",
+            });
+
+            if (response.ok) {
+                await fetchSpellingLists();
+            } else {
+                const data = await response.json();
+                alert(data.error || "Failed to generate images");
+            }
+        } catch (error) {
+            console.error("Error generating images:", error);
+        } finally {
+            setGeneratingImages(null);
+        }
+    };
+
     const getWordsWithAudio = (words: SpellingWord[]) => {
         return words.filter((w) => w.audioUrl).length;
+    };
+
+    const getWordsWithImages = (words: SpellingWord[]) => {
+        return words.filter((w) => w.imageUrl).length;
     };
 
     const getWordsWithSyllables = (words: SpellingWord[]) => {
@@ -404,6 +432,26 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                                     )}
                                                 </Button>
                                             )}
+                                            {getWordsWithImages(list.words) < list.words.length && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleGenerateImages(list.id)}
+                                                    disabled={generatingImages === list.id}
+                                                >
+                                                    {generatingImages === list.id ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                            Generating...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ImageIcon className="w-4 h-4 mr-2" />
+                                                            Generate Images
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            )}
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -434,6 +482,15 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                                         key={word.id}
                                                         className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:bg-gray-50"
                                                     >
+                                                        {/* Image thumbnail */}
+                                                        {word.imageUrl && (
+                                                            <img
+                                                                src={word.imageUrl}
+                                                                alt={`Illustration of ${word.word}`}
+                                                                className="w-10 h-10 rounded object-cover flex-shrink-0"
+                                                            />
+                                                        )}
+
                                                         {/* Play button - fixed width */}
                                                         <Button
                                                             size="sm"

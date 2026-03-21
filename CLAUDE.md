@@ -81,6 +81,7 @@ Required in `.env.local`:
 - `DATABASE_URL` - PostgreSQL connection string
 - `R2_*` - Cloudflare R2 storage credentials
 - `GOOGLE_TTS_PROJECT_ID`, `GOOGLE_TTS_CLIENT_EMAIL`, `GOOGLE_TTS_PRIVATE_KEY` - Google Cloud Text-to-Speech credentials
+- `GEMINI_API_KEY` - Google Gemini API key for spelling word image generation
 - `BETTER_AUTH_SECRET` - Session encryption key
 
 ## API Patterns

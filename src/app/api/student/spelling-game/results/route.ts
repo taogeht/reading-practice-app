@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { spellingWordId, classId, won, wrongGuesses, guessedLetters, timeSeconds } = body;
+        const { spellingWordId, classId, won, wrongGuesses, guessedLetters, timeSeconds, activityType } = body;
 
         if (!spellingWordId || !classId || won === undefined || wrongGuesses === undefined) {
             return NextResponse.json(
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
                 won,
                 wrongGuesses,
                 guessedLetters: guessedLetters || [],
+                activityType: activityType || 'snowman',
                 timeSeconds: timeSeconds || null,
             })
             .returning();

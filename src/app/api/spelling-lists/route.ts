@@ -105,13 +105,14 @@ export async function POST(request: NextRequest) {
 
             // Insert words for this list
             if (words.length > 0) {
-                const wordRecords = words.map((word: string | { word: string; syllables?: string[] | null; audioUrl?: string | null }, index: number) => {
+                const wordRecords = words.map((word: string | { word: string; syllables?: string[] | null; audioUrl?: string | null; imageUrl?: string | null }, index: number) => {
                     if (typeof word === 'string') {
                         return {
                             spellingListId: newList.id,
                             word: word.trim(),
                             syllables: null,
                             audioUrl: null,
+                            imageUrl: null,
                             orderIndex: index,
                         };
                     } else {
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest) {
                             word: word.word.trim(),
                             syllables: word.syllables || null,
                             audioUrl: word.audioUrl || null,
+                            imageUrl: word.imageUrl || null,
                             orderIndex: index,
                         };
                     }
