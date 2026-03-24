@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
 import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useHeartbeat } from "@/hooks/use-heartbeat";
 
 type Student = {
   id: string;
@@ -66,6 +67,9 @@ export default function StudentDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
+
+  // Track student activity with periodic heartbeats
+  useHeartbeat();
 
   useEffect(() => {
     fetchDashboardData();

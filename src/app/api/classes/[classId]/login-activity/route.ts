@@ -6,6 +6,9 @@ import { eq, and, desc, gte, sql } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
+// A student is considered "online" if their last heartbeat was within this window
+const ONLINE_THRESHOLD_MS = 3 * 60 * 1000; // 3 minutes
+
 interface RouteParams {
     params: Promise<{ classId: string }>;
 }
@@ -29,6 +32,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         startDate.setDate(startDate.getDate() - days);
         startDate.setHours(0, 0, 0, 0);
 
+        const now = new Date();
+        const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
+
         // Get all students enrolled in this class with their session data
         const enrolledStudents = await db
             .select({
@@ -45,7 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         // Get session data for each student
         const studentActivity = await Promise.all(
             enrolledStudents.map(async (student) => {
-                // Get most recent session
+                // Get recent sessions within the date range
                 const recentSessions = await db
                     .select({
                         id: session.id,
@@ -61,9 +67,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                         )
                     )
                     .orderBy(desc(session.createdAt))
-                    .limit(10);
+                    .limit(50);
 
-                // Calculate total session time (approximate)
+                // Calculate total active time from heartbeat-tracked sessions
                 let totalMinutes = 0;
                 for (const s of recentSessions) {
                     const start = new Date(s.createdAt!);
@@ -75,6 +81,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
                 const lastSession = recentSessions[0];
 
+                // Student is online if their most recent session had activity within the threshold
+                const isCurrentlyOnline = lastSession?.lastActivityAt
+                    ? new Date(lastSession.lastActivityAt) > onlineThreshold
+                    : false;
+
                 return {
                     studentId: student.studentId,
                     firstName: student.firstName,
@@ -84,9 +95,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                     lastActivityAt: lastSession?.lastActivityAt || null,
                     sessionCount: recentSessions.length,
                     totalMinutesOnline: Math.round(totalMinutes),
-                    isCurrentlyOnline: lastSession?.expiresAt
-                        ? new Date(lastSession.expiresAt) > new Date()
-                        : false,
+                    isCurrentlyOnline,
                 };
             })
         );

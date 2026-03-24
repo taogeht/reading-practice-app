@@ -6,6 +6,61 @@ import { eq, and, inArray } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
+// GET /api/teacher/spelling-lists/[id] - Get a single spelling list
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const user = await getCurrentUser();
+        if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { id: listId } = await params;
+
+        const list = await db.query.spellingLists.findFirst({
+            where: eq(spellingLists.id, listId),
+            with: {
+                class: true,
+                words: {
+                    orderBy: (words, { asc }) => [asc(words.orderIndex)],
+                },
+            },
+        });
+
+        if (!list) {
+            return NextResponse.json({ error: 'List not found' }, { status: 404 });
+        }
+
+        if (list.class.teacherId !== user.id && user.role !== 'admin') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
+        return NextResponse.json({
+            id: list.id,
+            classId: list.classId,
+            className: list.class.name,
+            title: list.title,
+            weekNumber: list.weekNumber,
+            gradeLevel: list.gradeLevel,
+            isPublic: list.isPublic,
+            active: list.active,
+            words: list.words.map(w => ({
+                id: w.id,
+                word: w.word,
+                syllables: w.syllables,
+                audioUrl: w.audioUrl,
+                imageUrl: w.imageUrl,
+            })),
+            createdAt: list.createdAt,
+        });
+    } catch (error) {
+        console.error(`[GET /api/teacher/spelling-lists/[id]] Error:`, error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
 // Use a dynamic route for [id]
 export async function PUT(
     request: NextRequest,
