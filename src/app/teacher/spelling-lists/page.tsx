@@ -28,12 +28,24 @@ import {
   Check,
   X,
   Scissors,
-  ImageIcon
+  ImageIcon,
+  Gamepad2
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelling/manage-spelling-list-dialog";
 import { ImportSpellingListDialog } from "@/components/spelling/import-spelling-list-dialog";
 import { SyllableEditorDialog } from "@/components/spelling/syllable-editor-dialog";
+import { SnowmanGame } from "@/components/spelling/snowman-game";
+import { ListenAndSpellGame } from "@/components/spelling/listen-spell-game";
+import { UnscrambleGame } from "@/components/spelling/unscramble-game";
+import { MissingLettersGame } from "@/components/spelling/missing-letters-game";
 
 type ClassOption = {
   id: string;
@@ -82,6 +94,7 @@ export default function ManageSpellingListsPage() {
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [playingWordId, setPlayingWordId] = useState<string | null>(null);
   const [editingSyllablesWord, setEditingSyllablesWord] = useState<SpellingWord | null>(null);
+  const [previewGameList, setPreviewGameList] = useState<SpellingList | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePlayAudio = useCallback((word: SpellingWord) => {
@@ -474,6 +487,16 @@ export default function ManageSpellingListsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 h-9 w-9 shrink-0"
+                      onClick={() => setPreviewGameList(list)}
+                      disabled={list.words.length === 0}
+                      title="Play spelling games with this list"
+                    >
+                      <Gamepad2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 h-9 w-9 shrink-0"
                       onClick={() => {
                         const allHaveAudio = list.words.length > 0 && list.words.every(w => w.audioUrl);
@@ -554,6 +577,89 @@ export default function ManageSpellingListsPage() {
           open={true}
         />
       )}
+
+      {/* Preview Games Dialog */}
+      <Dialog open={!!previewGameList} onOpenChange={(open) => !open && setPreviewGameList(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gamepad2 className="w-5 h-5 text-indigo-500" />
+              Preview Games: {previewGameList?.title}
+            </DialogTitle>
+          </DialogHeader>
+          {previewGameList && (
+            <Tabs defaultValue="snowman" className="w-full">
+              <TabsList className="w-full grid grid-cols-4 mb-4">
+                <TabsTrigger value="snowman" className="text-xs">
+                  ⛄ Snowman
+                </TabsTrigger>
+                <TabsTrigger value="listen" className="text-xs">
+                  🎧 Listen & Spell
+                </TabsTrigger>
+                <TabsTrigger value="unscramble" className="text-xs">
+                  🔀 Unscramble
+                </TabsTrigger>
+                <TabsTrigger value="missing" className="text-xs">
+                  ✏️ Missing Letters
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="snowman">
+                <SnowmanGame
+                  initialLists={[{
+                    id: previewGameList.id,
+                    title: previewGameList.title,
+                    weekNumber: previewGameList.weekNumber,
+                    active: previewGameList.active,
+                    createdAt: previewGameList.createdAt,
+                    words: previewGameList.words.map((w, i) => ({ ...w, orderIndex: i })),
+                    class: { id: previewGameList.classId, name: previewGameList.className },
+                  }]}
+                  skipTracking
+                />
+              </TabsContent>
+              <TabsContent value="listen">
+                <ListenAndSpellGame
+                  initialLists={[{
+                    id: previewGameList.id,
+                    title: previewGameList.title,
+                    class: { id: previewGameList.classId, name: previewGameList.className },
+                    words: previewGameList.words.map((w, i) => ({ ...w, orderIndex: i })),
+                  }]}
+                  skipTracking
+                />
+              </TabsContent>
+              <TabsContent value="unscramble">
+                <UnscrambleGame
+                  initialLists={[{
+                    id: previewGameList.id,
+                    title: previewGameList.title,
+                    weekNumber: previewGameList.weekNumber,
+                    active: previewGameList.active,
+                    createdAt: previewGameList.createdAt,
+                    words: previewGameList.words.map((w, i) => ({ ...w, orderIndex: i })),
+                    class: { id: previewGameList.classId, name: previewGameList.className },
+                  }]}
+                  skipTracking
+                />
+              </TabsContent>
+              <TabsContent value="missing">
+                <MissingLettersGame
+                  initialLists={[{
+                    id: previewGameList.id,
+                    title: previewGameList.title,
+                    weekNumber: previewGameList.weekNumber,
+                    active: previewGameList.active,
+                    createdAt: previewGameList.createdAt,
+                    words: previewGameList.words.map((w, i) => ({ ...w, orderIndex: i })),
+                    class: { id: previewGameList.classId, name: previewGameList.className },
+                  }]}
+                  skipTracking
+                />
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

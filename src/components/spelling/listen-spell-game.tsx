@@ -24,7 +24,12 @@ type SpellingList = {
     words: SpellingWord[];
 };
 
-export function ListenAndSpellGame() {
+interface ListenAndSpellGameProps {
+    initialLists?: SpellingList[];
+    skipTracking?: boolean;
+}
+
+export function ListenAndSpellGame({ initialLists, skipTracking }: ListenAndSpellGameProps = {}) {
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [currentWord, setCurrentWord] = useState<SpellingWord | null>(null);
     const [currentClassId, setCurrentClassId] = useState<string | null>(null);
@@ -44,7 +49,15 @@ export function ListenAndSpellGame() {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        fetchSpellingLists();
+        if (initialLists) {
+            setLists(initialLists);
+            setLoading(false);
+            if (initialLists.length > 0 && initialLists[0].words.length > 0) {
+                pickRandomWord(initialLists, "current");
+            }
+        } else {
+            fetchSpellingLists();
+        }
     }, []);
 
     const fetchSpellingLists = async () => {
@@ -136,6 +149,7 @@ export function ListenAndSpellGame() {
     };
 
     const reportResult = async (won: boolean, mistakes: number, guessedWords: string[]) => {
+        if (skipTracking) return;
         if (!currentWord || !currentClassId) return;
 
         const timeSeconds = Math.floor((Date.now() - roundStartRef.current) / 1000);

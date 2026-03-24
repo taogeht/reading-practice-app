@@ -9,9 +9,21 @@ export interface StoryTtsAudio {
 }
 
 const VOICE_LABEL_MAP: Record<string, string> = {
-  'en-US-Neural2-F': 'US Female',
-  'en-US-Neural2-D': 'US Male',
-  'en-GB-Neural2-A': 'UK Female',
+  // Google Journey
+  'en-US-Journey-F': 'Journey (Female)',
+  'en-US-Journey-D': 'Journey (Male)',
+  'en-US-Journey-O': 'Journey (Child)',
+  // Google Studio
+  'en-US-Studio-O': 'Studio (Female)',
+  'en-US-Studio-Q': 'Studio (Male)',
+  // Google Neural2
+  'en-US-Neural2-F': 'Neural2 (Female)',
+  'en-US-Neural2-D': 'Neural2 (Male)',
+  'en-GB-Neural2-A': 'UK Narrator (Female)',
+  // ElevenLabs
+  'EXAVITQu4vr4xnSDxMaL': 'Sarah - Confident',
+  'Xb7hH8MSUJpSbSDYk0k2': 'Alice - Educator',
+  'JBFqnCBsd6RMkjVDRZzb': 'George - Storyteller',
 };
 
 const resolveVoiceLabel = (voiceId?: string | null, fallback?: string | null) => {

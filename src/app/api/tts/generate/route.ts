@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { randomUUID } from 'crypto';
 import { googleTtsClient } from '@/lib/tts/client';
+import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
@@ -53,10 +54,29 @@ export async function POST(request: NextRequest) {
       textToGenerate = storyToUpdate.content;
     }
 
+    // Determine which TTS client and voice to use based on provider:voiceId format
+    let ttsClient: typeof googleTtsClient | typeof elevenLabsTtsClient = googleTtsClient;
+    let ttsProvider = 'google';
+    let resolvedVoiceId: string | undefined;
+
+    if (voiceId && voiceId.includes(':')) {
+      const [provider, ...rest] = voiceId.split(':');
+      resolvedVoiceId = rest.join(':');
+      if (provider === 'elevenlabs' && elevenLabsTtsClient.isConfigured()) {
+        ttsClient = elevenLabsTtsClient;
+        ttsProvider = 'elevenlabs';
+      } else if (provider === 'google' && googleTtsClient.isConfigured()) {
+        ttsClient = googleTtsClient;
+        ttsProvider = 'google';
+      }
+    } else {
+      resolvedVoiceId = voiceId;
+    }
+
     // Generate TTS audio
-    const ttsResult = await googleTtsClient.generateSpeech({
+    const ttsResult = await ttsClient.generateSpeech({
       text: textToGenerate,
-      voice_id: voiceId,
+      voice_id: resolvedVoiceId,
     });
 
     if (!ttsResult.success || !ttsResult.audioBuffer) {
@@ -67,20 +87,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate filename and upload to R2
-    const filename = storyId 
+    const filename = storyId
       ? `story-${storyId}-${Date.now()}.mp3`
       : `tts-${Date.now()}.mp3`;
-    
+
     const audioKey = r2Client.generateAudioKey('tts', filename);
-    
+
     const buffer = Buffer.isBuffer(ttsResult.audioBuffer)
       ? ttsResult.audioBuffer
       : Buffer.from(ttsResult.audioBuffer);
 
-    const selectedVoiceId = voiceId || googleTtsClient.getVoices()[0]?.voice_id || 'default';
+    const selectedVoiceId = resolvedVoiceId || googleTtsClient.getVoices()[0]?.voice_id || 'default';
 
     const metadata: Record<string, string> = {
-      'generated-by': 'google-tts',
+      'generated-by': ttsProvider,
       'voice-id': selectedVoiceId,
       'generated-at': new Date().toISOString(),
       'user-id': user.id,

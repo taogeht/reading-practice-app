@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     BookA,
     Plus,
@@ -67,6 +68,8 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
     const [generatingImages, setGeneratingImages] = useState<string | null>(null);
     const [playingWordId, setPlayingWordId] = useState<string | null>(null);
     const [editingWord, setEditingWord] = useState<SpellingWord | null>(null);
+    const [selectedVoice, setSelectedVoice] = useState<string>("");
+    const [availableVoices, setAvailableVoices] = useState<Array<{ voice_id: string; name: string; provider: string; description?: string }>>([]);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Form state
@@ -84,7 +87,23 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
 
     useEffect(() => {
         fetchSpellingLists();
+        fetchVoices();
     }, [classId]);
+
+    const fetchVoices = async () => {
+        try {
+            const response = await fetch("/api/tts/voices");
+            if (response.ok) {
+                const data = await response.json();
+                setAvailableVoices(data.voices || []);
+                if (data.voices?.length > 0) {
+                    setSelectedVoice(data.voices[0].voice_id);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching voices:", error);
+        }
+    };
 
     const fetchSpellingLists = async () => {
         try {
@@ -195,7 +214,13 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
     const handleGenerateAudio = async (listId: string) => {
         setGeneratingAudio(listId);
         try {
-            const response = await fetch(`/api/spelling-lists/${listId}/generate-audio`, {
+            const list = lists.find(l => l.id === listId);
+            const allHaveAudio = list ? getWordsWithAudio(list.words) >= list.words.length : false;
+            const queryParams = new URLSearchParams();
+            if (selectedVoice) queryParams.set("voiceId", selectedVoice);
+            if (allHaveAudio) queryParams.set("force", "true");
+            const qs = queryParams.toString();
+            const response = await fetch(`/api/spelling-lists/${listId}/generate-audio${qs ? `?${qs}` : ""}`, {
                 method: "POST",
             });
 
@@ -412,26 +437,41 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                            {getWordsWithAudio(list.words) < list.words.length && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleGenerateAudio(list.id)}
-                                                    disabled={generatingAudio === list.id}
-                                                >
-                                                    {generatingAudio === list.id ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                            Generating...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Volume2 className="w-4 h-4 mr-2" />
-                                                            Generate Audio
-                                                        </>
-                                                    )}
-                                                </Button>
+                                            {availableVoices.length > 0 && (
+                                                <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                                                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                                                        <SelectValue placeholder="Select voice" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {availableVoices.map((voice) => (
+                                                            <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${voice.provider === 'elevenlabs' ? 'bg-violet-500' : 'bg-blue-500'}`} />
+                                                                    {voice.name}
+                                                                </span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             )}
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleGenerateAudio(list.id)}
+                                                disabled={generatingAudio === list.id}
+                                            >
+                                                {generatingAudio === list.id ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Generating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Volume2 className="w-4 h-4 mr-2" />
+                                                        {getWordsWithAudio(list.words) >= list.words.length ? "Regenerate Audio" : "Generate Audio"}
+                                                    </>
+                                                )}
+                                            </Button>
                                             {getWordsWithImages(list.words) < list.words.length && (
                                                 <Button
                                                     size="sm"

@@ -25,10 +25,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const { searchParams } = new URL(request.url);
         const force = searchParams.get('force') === 'true';
+        const voiceParam = searchParams.get('voiceId'); // e.g. "elevenlabs:EXAVITQu4vr4xnSDxMaL" or "google:en-US-Journey-F"
 
-        // Prefer ElevenLabs for natural-sounding voices, fall back to Google
-        const ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
-        const ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
+        // Determine which TTS client and voice to use
+        let ttsClient: typeof googleTtsClient | typeof elevenLabsTtsClient;
+        let ttsProvider: string;
+        let voiceId: string | undefined;
+
+        if (voiceParam) {
+            const [provider, ...rest] = voiceParam.split(':');
+            voiceId = rest.join(':');
+            if (provider === 'elevenlabs' && elevenLabsTtsClient.isConfigured()) {
+                ttsClient = elevenLabsTtsClient;
+                ttsProvider = 'elevenlabs';
+            } else if (provider === 'google' && googleTtsClient.isConfigured()) {
+                ttsClient = googleTtsClient;
+                ttsProvider = 'google';
+            } else {
+                // Fallback
+                ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
+                ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
+                voiceId = undefined;
+            }
+        } else {
+            // Default: prefer ElevenLabs, fall back to Google
+            ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
+            ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
+        }
 
         if (!ttsClient.isConfigured()) {
             return NextResponse.json(
@@ -90,7 +113,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 }
 
                 // Generate TTS audio for the word
-                const ttsResult = await ttsClient.generateSpeech({ text: word.word });
+                const ttsResult = await ttsClient.generateSpeech({ text: word.word, voice_id: voiceId });
 
                 if (!ttsResult.success || !ttsResult.audioBuffer) {
                     throw new Error(ttsResult.error || 'TTS generation failed');

@@ -41,6 +41,7 @@ export default function TeacherSubmissionsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'flagged'>('all');
   const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState<string>('');
+  const [selectedRating, setSelectedRating] = useState<string | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
 
   useEffect(() => {
@@ -142,10 +143,14 @@ export default function TeacherSubmissionsPage() {
   };
 
   const submitFeedback = async (recordingId: string) => {
-    if (!feedbackText.trim()) {
-      alert('Please enter feedback before submitting.');
+    if (!feedbackText.trim() && !selectedRating) {
+      alert('Please select a rating or enter feedback before submitting.');
       return;
     }
+
+    const finalFeedback = selectedRating
+      ? `${selectedRating} ${feedbackText.trim()}`
+      : feedbackText.trim();
 
     try {
       setSubmittingFeedback(true);
@@ -156,7 +161,7 @@ export default function TeacherSubmissionsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          teacherFeedback: feedbackText.trim(),
+          teacherFeedback: finalFeedback,
           status: 'reviewed',
         }),
       });
@@ -169,7 +174,7 @@ export default function TeacherSubmissionsPage() {
       setRecordings(prev =>
         prev.map(recording =>
           recording.id === recordingId
-            ? { ...recording, teacherFeedback: feedbackText.trim(), status: 'reviewed' as const }
+            ? { ...recording, teacherFeedback: finalFeedback, status: 'reviewed' as const }
             : recording
         )
       );
@@ -177,6 +182,7 @@ export default function TeacherSubmissionsPage() {
       // Reset feedback form
       setFeedbackMode(null);
       setFeedbackText('');
+      setSelectedRating(null);
 
     } catch (error) {
       alert('Failed to submit feedback. Please try again.');
@@ -185,14 +191,29 @@ export default function TeacherSubmissionsPage() {
     }
   };
 
+  const QUICK_RATINGS = [
+    { emoji: '🌟', label: 'Excellent', message: 'Excellent work! Your reading was amazing!' },
+    { emoji: '👏', label: 'Great', message: 'Great job! You read really well!' },
+    { emoji: '👍', label: 'Good', message: 'Good effort! Keep practicing and you\'ll get even better!' },
+    { emoji: '💪', label: 'Keep Trying', message: 'Nice try! Let\'s keep practicing together.' },
+    { emoji: '🔄', label: 'Try Again', message: 'Let\'s try this one again. You can do it!' },
+  ];
+
+  const selectRating = (rating: typeof QUICK_RATINGS[0]) => {
+    setSelectedRating(rating.emoji);
+    setFeedbackText(rating.message);
+  };
+
   const startFeedback = (recordingId: string, existingFeedback?: string) => {
     setFeedbackMode(recordingId);
     setFeedbackText(existingFeedback || '');
+    setSelectedRating(null);
   };
 
   const cancelFeedback = () => {
     setFeedbackMode(null);
     setFeedbackText('');
+    setSelectedRating(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -549,20 +570,43 @@ export default function TeacherSubmissionsPage() {
                         </div>
 
                         {feedbackMode === recording.id && (
-                          <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
-                            <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-2">
-                              Teacher Feedback
+                          <div className="mt-4 p-4 bg-gray-50 border rounded-lg space-y-3">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Quick Rating
                             </label>
-                            <Textarea
-                              id={`feedback-${recording.id}`}
-                              value={feedbackText}
-                              onChange={(e) => setFeedbackText(e.target.value)}
-                              placeholder="Enter your feedback for this recording..."
-                              rows={4}
-                              disabled={submittingFeedback}
-                              className="w-full"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
+                            <div className="flex gap-2 flex-wrap">
+                              {QUICK_RATINGS.map((rating) => (
+                                <button
+                                  key={rating.emoji}
+                                  type="button"
+                                  onClick={() => selectRating(rating)}
+                                  disabled={submittingFeedback}
+                                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                                    selectedRating === rating.emoji
+                                      ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200'
+                                      : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-700'
+                                  }`}
+                                >
+                                  <span className="text-lg">{rating.emoji}</span>
+                                  {rating.label}
+                                </button>
+                              ))}
+                            </div>
+                            <div>
+                              <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-1">
+                                Message <span className="font-normal text-gray-400">(edit or write your own)</span>
+                              </label>
+                              <Textarea
+                                id={`feedback-${recording.id}`}
+                                value={feedbackText}
+                                onChange={(e) => setFeedbackText(e.target.value)}
+                                placeholder="Pick a rating above or type your own feedback..."
+                                rows={3}
+                                disabled={submittingFeedback}
+                                className="w-full"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500">
                               This feedback will be visible to the student and will mark the recording as reviewed.
                             </p>
                           </div>

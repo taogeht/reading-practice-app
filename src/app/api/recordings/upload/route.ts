@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       audioUrl: audioUrl,
       fileSizeBytes: buffer.length,
       audioDurationSeconds: null, // TODO: Calculate duration from audio file
-      status: 'pending',
+      status: 'submitted',
       submittedAt: new Date(),
     }).returning();
 

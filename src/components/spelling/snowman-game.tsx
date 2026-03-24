@@ -41,7 +41,12 @@ const VOWELS = new Set(["A", "E", "I", "O", "U"]);
 const CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ".split("");
 const MAX_WRONG = 10;
 
-export function SnowmanGame() {
+interface SnowmanGameProps {
+    initialLists?: SpellingList[];
+    skipTracking?: boolean;
+}
+
+export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {}) {
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentWord, setCurrentWord] = useState<string>("");
@@ -57,7 +62,20 @@ export function SnowmanGame() {
     const roundStartRef = useRef<number>(Date.now());
 
     useEffect(() => {
-        fetchSpellingLists();
+        if (initialLists) {
+            setLists(initialLists);
+            setLoading(false);
+            if (initialLists.length > 0 && initialLists[0].words.length > 0) {
+                const words = initialLists[0].words;
+                const randomWord = words[Math.floor(Math.random() * words.length)];
+                setCurrentWord(randomWord.word.toUpperCase());
+                setCurrentWordId(randomWord.id);
+                setCurrentClassId(initialLists[0].class.id);
+                roundStartRef.current = Date.now();
+            }
+        } else {
+            fetchSpellingLists();
+        }
     }, []);
 
     const fetchSpellingLists = async () => {
@@ -145,6 +163,7 @@ export function SnowmanGame() {
 
     // Fire-and-forget result reporting
     const reportResult = useCallback((won: boolean, wrongCount: number, letters: string[]) => {
+        if (skipTracking) return;
         if (!currentWordId || !currentClassId) return;
         const timeSeconds = Math.round((Date.now() - roundStartRef.current) / 1000);
         fetch('/api/student/spelling-game/results', {

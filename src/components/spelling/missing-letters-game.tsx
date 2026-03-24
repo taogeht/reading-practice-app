@@ -120,7 +120,12 @@ function generateBlanks(word: string): LetterSlot[] {
     }));
 }
 
-export function MissingLettersGame() {
+interface MissingLettersGameProps {
+    initialLists?: SpellingList[];
+    skipTracking?: boolean;
+}
+
+export function MissingLettersGame({ initialLists, skipTracking }: MissingLettersGameProps = {}) {
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentWordObj, setCurrentWordObj] = useState<SpellingWord | null>(null);
@@ -143,7 +148,17 @@ export function MissingLettersGame() {
     const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
     useEffect(() => {
-        fetchSpellingLists();
+        if (initialLists) {
+            setLists(initialLists);
+            setLoading(false);
+            if (initialLists.length > 0 && initialLists[0].words.length > 0) {
+                const words = initialLists[0].words;
+                const randomWord = words[Math.floor(Math.random() * words.length)];
+                initializeWord(randomWord, initialLists[0].class.id);
+            }
+        } else {
+            fetchSpellingLists();
+        }
     }, []);
 
     const fetchSpellingLists = async () => {
@@ -228,6 +243,7 @@ export function MissingLettersGame() {
     };
 
     const reportResult = useCallback((won: boolean, wrongCount: number) => {
+        if (skipTracking) return;
         if (!currentWordObj || !currentClassId) return;
         const timeSeconds = Math.round((Date.now() - roundStartRef.current) / 1000);
         fetch('/api/student/spelling-game/results', {

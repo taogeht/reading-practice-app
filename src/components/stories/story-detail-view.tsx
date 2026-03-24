@@ -83,54 +83,59 @@ export function StoryDetailView({ story }: StoryDetailViewProps) {
     };
   }, [audio]);
 
+  // Clean up audio when switching to a different audio version
+  const currentAudioUrl = currentAudio?.url;
   useEffect(() => {
-    if (!audio) return;
+    return () => {
+      // Cleanup on unmount or when currentAudioUrl changes
+      if (audio) {
+        audio.pause();
+      }
+    };
+  }, [currentAudioUrl]);
 
-    if (!currentAudio?.url || audio.src !== currentAudio.url) {
-      audio.pause();
-      setAudio(null);
-      setIsPlaying(false);
-    }
-  }, [currentAudio?.url, audio]);
-
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     if (!currentAudio?.url) return;
 
-    if (audio && audio.src === currentAudio.url) {
-      if (isPlaying) {
-        audio.pause();
-      } else {
-        audio.play().catch((error) => {
-          console.error('Failed to play audio:', error);
-          setIsPlaying(false);
-        });
+    // Toggle pause/play on existing audio for same URL
+    if (audio && isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    if (audio && !isPlaying && audio.src === currentAudio.url) {
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Failed to play audio:', error);
+        setIsPlaying(false);
       }
       return;
     }
 
+    // Stop old audio if any
+    if (audio) {
+      audio.pause();
+    }
+
     const newAudio = new Audio(currentAudio.url);
 
-    newAudio.addEventListener('ended', () => {
-      setIsPlaying(false);
-    });
-    newAudio.addEventListener('pause', () => {
-      setIsPlaying(false);
-    });
-    newAudio.addEventListener('play', () => {
-      setIsPlaying(true);
-    });
+    newAudio.addEventListener('ended', () => setIsPlaying(false));
     newAudio.addEventListener('error', (event) => {
       console.error('Audio playback error:', event);
       setIsPlaying(false);
     });
 
-    audio?.pause();
-    setAudio(newAudio);
-
-    newAudio.play().catch((error) => {
+    try {
+      await newAudio.play();
+      setAudio(newAudio);
+      setIsPlaying(true);
+    } catch (error) {
       console.error('Failed to play audio:', error);
       setIsPlaying(false);
-    });
+    }
   };
 
   const handleRefreshAudio = async () => {

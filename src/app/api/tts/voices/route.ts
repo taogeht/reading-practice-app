@@ -1,45 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { googleTtsClient } from '@/lib/tts/client';
-import { logError, createRequestContext } from '@/lib/logger';
+import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
+import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate the request - only teachers and admins can view voices
     const user = await getCurrentUser();
 
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Fetch available voices from Google Cloud configuration
-    const voices = googleTtsClient.getVoices();
+    const allVoices: Array<{
+      voice_id: string;
+      name: string;
+      provider: 'google' | 'elevenlabs';
+      description?: string;
+    }> = [];
 
-    // Filter for voices suitable for reading content
-    const suitableVoices = voices.filter(voice => {
-      const name = voice.name.toLowerCase();
-      const category = voice.category?.toLowerCase() || '';
-      
-      // Prefer clear, professional voices for educational content
-      return (
-        category === 'professional' ||
-        category === 'narration' ||
-        name.includes('narrative') ||
-        name.includes('professional') ||
-        name.includes('clear') ||
-        name.includes('educational')
-      );
-    });
+    // Add ElevenLabs voices first (higher quality)
+    if (elevenLabsTtsClient.isConfigured()) {
+      for (const v of elevenLabsTtsClient.getVoices()) {
+        allVoices.push({
+          voice_id: `elevenlabs:${v.voice_id}`,
+          name: v.name,
+          provider: 'elevenlabs',
+          description: v.description,
+        });
+      }
+    }
 
-    // If no suitable voices found, return all voices
-    const voicesToReturn = suitableVoices.length > 0 ? suitableVoices : voices;
+    // Add Google voices
+    if (googleTtsClient.isConfigured()) {
+      for (const v of googleTtsClient.getVoices()) {
+        allVoices.push({
+          voice_id: `google:${v.voice_id}`,
+          name: v.name,
+          provider: 'google',
+          description: v.description,
+        });
+      }
+    }
 
     return NextResponse.json({
-      voices: voicesToReturn,
-      total: voicesToReturn.length,
-      recommended: suitableVoices.slice(0, Math.min(voicesToReturn.length, 5)),
+      voices: allVoices,
+      total: allVoices.length,
     });
 
   } catch (error) {

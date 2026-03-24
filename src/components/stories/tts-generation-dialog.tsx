@@ -47,6 +47,7 @@ interface TTSGenerationDialogProps {
 interface Voice {
   voice_id: string;
   name: string;
+  provider?: 'google' | 'elevenlabs';
   category?: string;
   description?: string;
   languageCode?: string;
@@ -95,11 +96,9 @@ export function TTSGenerationDialog({
       }
       const data = await response.json();
       setVoices(data.voices || []);
-      
-      // Auto-select first recommended voice if available
-      if (data.recommended && data.recommended.length > 0) {
-        setSelectedVoiceId(data.recommended[0].voice_id);
-      } else if (data.voices && data.voices.length > 0) {
+
+      // Auto-select first voice
+      if (data.voices && data.voices.length > 0) {
         setSelectedVoiceId(data.voices[0].voice_id);
       }
     } catch (error) {
@@ -277,11 +276,14 @@ export function TTSGenerationDialog({
                   <SelectContent>
                     {voices.map((voice) => (
                       <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${voice.provider === 'elevenlabs' ? 'bg-violet-500' : 'bg-blue-500'}`} />
                           <span className="font-medium">{voice.name}</span>
-                          <span className="ml-2 text-sm text-muted-foreground">
-                            {voice.languageCode ? voice.languageCode : 'Voice'}
-                          </span>
+                          {voice.description && (
+                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                              {voice.description}
+                            </span>
+                          )}
                         </div>
                       </SelectItem>
                     ))}
@@ -291,11 +293,18 @@ export function TTSGenerationDialog({
                 {selectedVoice && (
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
-                      <div className="font-medium">{selectedVoice.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {selectedVoice.languageCode}
-                        {selectedVoice.description && ` • ${selectedVoice.description}`}
+                      <div className="flex items-center gap-2 font-medium">
+                        <span className={`inline-block w-2 h-2 rounded-full ${selectedVoice.provider === 'elevenlabs' ? 'bg-violet-500' : 'bg-blue-500'}`} />
+                        {selectedVoice.name}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {selectedVoice.provider === 'elevenlabs' ? 'ElevenLabs' : 'Google Cloud'}
+                        </span>
                       </div>
+                      {selectedVoice.description && (
+                        <div className="text-sm text-muted-foreground mt-0.5">
+                          {selectedVoice.description}
+                        </div>
+                      )}
                     </div>
                     <Button
                       variant="outline"

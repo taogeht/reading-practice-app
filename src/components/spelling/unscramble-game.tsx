@@ -55,6 +55,33 @@ const TILE_COLORS = [
 const MIN_WORD_LENGTH = 3;
 
 /**
+ * Returns responsive tile size classes based on word length.
+ * Longer words get smaller tiles so they stay on one line.
+ */
+function getTileSizeClasses(wordLength: number) {
+    if (wordLength <= 6) {
+        return {
+            tile: "w-12 h-14 md:w-14 md:h-16 lg:w-16 lg:h-[4.5rem] xl:w-20 xl:h-24 2xl:w-24 2xl:h-28",
+            text: "text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl",
+            gap: "gap-2 lg:gap-3 xl:gap-4",
+        };
+    }
+    if (wordLength <= 8) {
+        return {
+            tile: "w-10 h-12 md:w-12 md:h-14 lg:w-14 lg:h-16 xl:w-16 xl:h-[4.5rem] 2xl:w-20 2xl:h-24",
+            text: "text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl",
+            gap: "gap-1.5 lg:gap-2 xl:gap-3",
+        };
+    }
+    // 9+ letters
+    return {
+        tile: "w-8 h-10 md:w-10 md:h-12 lg:w-12 lg:h-14 xl:w-14 xl:h-16 2xl:w-16 2xl:h-[4.5rem]",
+        text: "text-base md:text-lg lg:text-xl xl:text-2xl 2xl:text-3xl",
+        gap: "gap-1 lg:gap-1.5 xl:gap-2",
+    };
+}
+
+/**
  * Shuffles an array using Fisher-Yates and ensures the result
  * differs from the original order (for arrays of length >= 2).
  */
@@ -107,7 +134,12 @@ function triggerConfetti() {
     })();
 }
 
-export function UnscrambleGame() {
+interface UnscrambleGameProps {
+    initialLists?: SpellingList[];
+    skipTracking?: boolean;
+}
+
+export function UnscrambleGame({ initialLists, skipTracking }: UnscrambleGameProps = {}) {
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -136,7 +168,19 @@ export function UnscrambleGame() {
     const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        fetchSpellingLists();
+        if (initialLists) {
+            setLists(initialLists);
+            setLoading(false);
+            if (initialLists.length > 0 && initialLists[0].words.length > 0) {
+                const eligible = initialLists[0].words.filter((w) => w.word.length >= MIN_WORD_LENGTH);
+                if (eligible.length > 0) {
+                    const chosen = eligible[Math.floor(Math.random() * eligible.length)];
+                    initializeWord(chosen, initialLists[0].class.id);
+                }
+            }
+        } else {
+            fetchSpellingLists();
+        }
         return () => {
             if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
         };
@@ -255,6 +299,7 @@ export function UnscrambleGame() {
     // Fire-and-forget result reporting
     const reportResult = useCallback(
         (won: boolean, wrongCount: number) => {
+            if (skipTracking) return;
             if (!currentWordObj || !currentClassId) return;
             const timeSeconds = Math.round((Date.now() - roundStartRef.current) / 1000);
             fetch("/api/student/spelling-game/results", {
@@ -400,6 +445,7 @@ export function UnscrambleGame() {
 
     const builtTiles = getBuiltWord();
     const isWon = gameState === "won";
+    const tileSize = getTileSizeClasses(currentWord.length);
 
     return (
         <Card className="border-2 border-purple-200 shadow-lg overflow-hidden relative">
@@ -504,12 +550,12 @@ export function UnscrambleGame() {
 
                     {/* Answer Slots */}
                     {!isWon && (
-                        <div className="w-full max-w-lg">
+                        <div className="w-full max-w-2xl">
                             <p className="text-xs lg:text-sm xl:text-base 2xl:text-lg font-medium text-gray-500 text-center mb-3">
                                 Your answer:
                             </p>
                             <div
-                                className="flex justify-center items-center gap-2 lg:gap-3 xl:gap-4 flex-wrap"
+                                className={`flex justify-center items-center ${tileSize.gap}`}
                                 style={
                                     shakeAnswer
                                         ? { animation: "unscramble-shake 0.5s ease-in-out" }
@@ -522,8 +568,8 @@ export function UnscrambleGame() {
                                         onClick={() => removeTile(idx)}
                                         disabled={gameState !== "playing" || tile === null}
                                         className={`
-                                            w-12 h-14 md:w-14 md:h-16 lg:w-16 lg:h-[4.5rem] xl:w-20 xl:h-24 2xl:w-24 2xl:h-28
-                                            rounded-xl font-bold text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl
+                                            ${tileSize.tile}
+                                            rounded-xl font-bold ${tileSize.text}
                                             transition-all duration-200 border-2 lg:border-3 xl:border-4
                                             flex items-center justify-center
                                             ${
@@ -548,11 +594,11 @@ export function UnscrambleGame() {
 
                     {/* Shuffled Letter Tiles */}
                     {!isWon && (
-                        <div className="w-full max-w-lg">
+                        <div className="w-full max-w-2xl">
                             <p className="text-xs lg:text-sm xl:text-base 2xl:text-lg font-medium text-gray-500 text-center mb-3">
                                 Tap a letter:
                             </p>
-                            <div className="flex justify-center items-center gap-2 lg:gap-3 xl:gap-4 flex-wrap">
+                            <div className={`flex justify-center items-center ${tileSize.gap}`}>
                                 {shuffledTiles.map((tile) => {
                                     const isAvailable = availableTileIds.has(tile.id);
                                     return (
@@ -561,8 +607,8 @@ export function UnscrambleGame() {
                                             onClick={() => isAvailable && placeTile(tile.id)}
                                             disabled={!isAvailable || gameState !== "playing"}
                                             className={`
-                                                w-12 h-14 md:w-14 md:h-16 lg:w-16 lg:h-[4.5rem] xl:w-20 xl:h-24 2xl:w-24 2xl:h-28
-                                                rounded-xl font-bold text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl
+                                                ${tileSize.tile}
+                                                rounded-xl font-bold ${tileSize.text}
                                                 transition-all duration-200 border-2 lg:border-3 xl:border-4
                                                 flex items-center justify-center
                                                 ${
