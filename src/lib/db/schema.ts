@@ -73,6 +73,8 @@ export const students = pgTable('students', {
   visualPasswordData: jsonb('visual_password_data'),
   parentEmail: varchar('parent_email', { length: 255 }),
   readingLevel: varchar('reading_level', { length: 50 }),
+  oupEmail: varchar('oup_email', { length: 255 }),
+  oupPassword: varchar('oup_password', { length: 255 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

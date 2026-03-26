@@ -16,7 +16,7 @@ import { MissingLettersGame } from "@/components/spelling/missing-letters-game";
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 
@@ -27,6 +27,8 @@ type Student = {
   gradeLevel: number | null;
   readingLevel: string | null;
   avatarUrl?: string | null;
+  oupEmail?: string | null;
+  oupPassword?: string | null;
 };
 
 type Assignment = {
@@ -67,6 +69,8 @@ export default function StudentDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showOupPanel, setShowOupPanel] = useState(false);
 
   // Track student activity with periodic heartbeats
   useHeartbeat();
@@ -219,6 +223,94 @@ export default function StudentDashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Online Practice Login */}
+        {student.oupEmail && student.oupPassword && (
+          <>
+            {!showOupPanel ? (
+              <Button
+                onClick={() => setShowOupPanel(true)}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg py-6 text-lg rounded-xl"
+                size="lg"
+              >
+                <ExternalLink className="w-5 h-5 mr-2" />
+                Login to Online Practice
+              </Button>
+            ) : (
+              <Card className="border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
+                <CardContent className="p-6 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-blue-800">Online Practice Login</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setShowOupPanel(false)} className="text-gray-400">
+                      Close
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Email */}
+                    <div className="bg-white rounded-xl border-2 border-blue-200 p-4 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Email</p>
+                        <p className="text-lg font-mono font-bold text-gray-900 break-all">{student.oupEmail}</p>
+                      </div>
+                      <Button
+                        size="lg"
+                        className={`shrink-0 px-5 ${copiedField === 'email' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
+                        onClick={() => {
+                          navigator.clipboard.writeText(student.oupEmail!);
+                          setCopiedField('email');
+                          setTimeout(() => setCopiedField(f => f === 'email' ? null : f), 2000);
+                        }}
+                      >
+                        {copiedField === 'email' ? (
+                          <><Check className="w-5 h-5 mr-1" /> Copied!</>
+                        ) : (
+                          <><Copy className="w-5 h-5 mr-1" /> Copy</>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Password */}
+                    <div className="bg-white rounded-xl border-2 border-blue-200 p-4 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Password</p>
+                        <p className="text-2xl font-mono font-bold text-gray-900 tracking-wider">{student.oupPassword}</p>
+                      </div>
+                      <Button
+                        size="lg"
+                        className={`shrink-0 px-5 ${copiedField === 'password' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
+                        onClick={() => {
+                          navigator.clipboard.writeText(student.oupPassword!);
+                          setCopiedField('password');
+                          setTimeout(() => setCopiedField(f => f === 'password' ? null : f), 2000);
+                        }}
+                      >
+                        {copiedField === 'password' ? (
+                          <><Check className="w-5 h-5 mr-1" /> Copied!</>
+                        ) : (
+                          <><Copy className="w-5 h-5 mr-1" /> Copy</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-5 text-lg rounded-xl"
+                    size="lg"
+                    onClick={() => window.open('https://afaf2e.ouponlinepractice.com/auth/index', '_blank')}
+                  >
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    Open Online Practice
+                  </Button>
+
+                  <p className="text-xs text-center text-blue-600">
+                    Copy your email, open the site, paste it in. Then come back and copy your password.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
         {/* Pending Recording Assignments - Prominent at top */}
         {pendingAssignments.length > 0 && (
           <Card className="border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-amber-50 shadow-lg">

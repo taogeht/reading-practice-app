@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building, ExternalLink, Save } from "lucide-react";
 
 interface StudentClass {
   id: string;
@@ -27,6 +29,8 @@ interface StudentProfile {
   visualPasswordType: string | null;
   visualPasswordData: any;
   avatarUrl?: string | null;
+  oupEmail?: string | null;
+  oupPassword?: string | null;
   classes: StudentClass[];
 }
 
@@ -38,6 +42,10 @@ export default function TeacherStudentProfilePage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [oupEmail, setOupEmail] = useState("");
+  const [oupPassword, setOupPassword] = useState("");
+  const [oupSaving, setOupSaving] = useState(false);
+  const [oupSaved, setOupSaved] = useState(false);
 
   useEffect(() => {
     if (!studentId) return;
@@ -52,6 +60,8 @@ export default function TeacherStudentProfilePage() {
         }
         const data = await response.json();
         setProfile(data.student);
+        setOupEmail(data.student.oupEmail || "");
+        setOupPassword(data.student.oupPassword || "");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load student profile");
       } finally {
@@ -142,6 +152,77 @@ export default function TeacherStudentProfilePage() {
                   </div>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* OUP Online Practice Credentials */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ExternalLink className="w-5 h-5 text-blue-600" />
+              Online Practice Login
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Set the student's credentials for Oxford Online Practice. They'll see a "Login to Online Practice" button on their dashboard.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="oupEmail">Email</Label>
+                <Input
+                  id="oupEmail"
+                  type="text"
+                  placeholder="student@school.com.tw"
+                  value={oupEmail}
+                  onChange={(e) => { setOupEmail(e.target.value); setOupSaved(false); }}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="oupPassword">Password</Label>
+                <Input
+                  id="oupPassword"
+                  type="text"
+                  placeholder="1060614"
+                  value={oupPassword}
+                  onChange={(e) => { setOupPassword(e.target.value); setOupSaved(false); }}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={async () => {
+                  setOupSaving(true);
+                  try {
+                    const res = await fetch(`/api/teacher/students/${studentId}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ oupEmail, oupPassword }),
+                    });
+                    if (res.ok) {
+                      setOupSaved(true);
+                      setTimeout(() => setOupSaved(false), 3000);
+                    }
+                  } catch (err) {
+                    console.error("Failed to save OUP credentials:", err);
+                  } finally {
+                    setOupSaving(false);
+                  }
+                }}
+                disabled={oupSaving}
+                size="sm"
+              >
+                {oupSaving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Save
+              </Button>
+              {oupSaved && (
+                <span className="text-sm text-green-600 font-medium">Saved!</span>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -31,6 +31,8 @@ export async function GET(
         visualPasswordType: students.visualPasswordType,
         visualPasswordData: students.visualPasswordData,
         avatarUrl: students.avatarUrl,
+        oupEmail: students.oupEmail,
+        oupPassword: students.oupPassword,
         classId: classes.id,
         className: classes.name,
         classDescription: classes.description,
@@ -69,11 +71,57 @@ export async function GET(
         visualPasswordType: base.visualPasswordType,
         visualPasswordData: base.visualPasswordData,
         avatarUrl: base.avatarUrl,
+        oupEmail: base.oupEmail,
+        oupPassword: base.oupPassword,
         classes: classList,
       },
     });
   } catch (error) {
     logError(error, 'api/teacher/students/[studentId]');
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ studentId: string }> }
+) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user || user.role !== 'teacher') {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
+
+    const { studentId } = await params;
+
+    // Verify teacher has access to this student
+    const enrollment = await db
+      .select({ studentId: classEnrollments.studentId })
+      .from(classEnrollments)
+      .innerJoin(classes, eq(classEnrollments.classId, classes.id))
+      .where(and(eq(classEnrollments.studentId, studentId), eq(classes.teacherId, user.id)))
+      .limit(1);
+
+    if (!enrollment.length) {
+      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const { oupEmail, oupPassword } = body;
+
+    await db
+      .update(students)
+      .set({
+        oupEmail: oupEmail?.trim() || null,
+        oupPassword: oupPassword?.trim() || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(students.id, studentId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    logError(error, 'api/teacher/students/[studentId] PUT');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
