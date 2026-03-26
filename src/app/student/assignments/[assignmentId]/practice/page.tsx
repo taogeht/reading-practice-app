@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
-import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, StopCircle, FileText, Loader2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, StopCircle } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 
@@ -53,9 +53,6 @@ export default function AssignmentPracticePage() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [storyAudio, setStoryAudio] = useState<HTMLAudioElement | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState<string | null>(null);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
 
   useEffect(() => {
     if (assignmentId) {
@@ -147,26 +144,6 @@ export default function AssignmentPracticePage() {
 
   const handleRecordingComplete = async (result: any) => {
     setRecordingResult(result);
-
-    // Trigger transcription after successful upload
-    if (result.success && result.key) {
-      setIsTranscribing(true);
-      try {
-        const response = await fetch(`/api/recordings/${result.key}/transcribe`, {
-          method: 'POST',
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.transcript) {
-            setTranscript(data.transcript);
-          }
-        }
-      } catch (error) {
-        console.error('Transcription error:', error);
-      } finally {
-        setIsTranscribing(false);
-      }
-    }
   };
 
   const handleStartOver = () => {
@@ -174,9 +151,6 @@ export default function AssignmentPracticePage() {
     setHasRecording(false);
     setRecordingResult(null);
     setAudioBlob(null);
-    setTranscript(null);
-    setIsTranscribing(false);
-    setShowTranscript(false);
   };
 
   if (isLoading) {
@@ -210,7 +184,7 @@ export default function AssignmentPracticePage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-100">
         <div className="bg-white shadow-sm border-b">
-          <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
               <Button variant="outline" size="sm" onClick={handleBackToDashboard}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -223,95 +197,33 @@ export default function AssignmentPracticePage() {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-          {/* Success message */}
+        <div className="max-w-2xl mx-auto px-4 py-8">
           <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-8 text-center">
-              <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
-              <h2 className="text-2xl font-bold mb-2 text-green-800">
+            <CardContent className="p-12 text-center">
+              <CheckCircle className="w-24 h-24 mx-auto mb-6 text-green-600" />
+              <h2 className="text-3xl font-bold mb-4 text-green-800">
                 Great Job! 🎉
               </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Your recording has been submitted! Your teacher will review it.
+              <p className="text-xl text-gray-600 mb-8">
+                You've successfully submitted your recording! Your teacher will review it and provide feedback.
               </p>
 
-              <div className="flex gap-4 justify-center flex-wrap">
-                <Button onClick={handleBackToDashboard} size="lg">
+              <div className="space-y-4">
+                <Button onClick={handleBackToDashboard} className="w-full" size="lg">
                   Back to Dashboard
                 </Button>
-                <Button variant="outline" onClick={handleStartOver} size="lg">
+                <Button
+                  variant="outline"
+                  onClick={handleStartOver}
+                  className="w-full"
+                  size="lg"
+                >
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Record Again
                 </Button>
-                {(transcript || isTranscribing) && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() => setShowTranscript(!showTranscript)}
-                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                  >
-                    {showTranscript ? (
-                      <><EyeOff className="w-4 h-4 mr-2" />Hide What I Said</>
-                    ) : (
-                      <><Eye className="w-4 h-4 mr-2" />See What I Said</>
-                    )}
-                  </Button>
-                )}
-                {isTranscribing && (
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Listening to your recording...
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
-
-          {/* Side-by-side transcript view */}
-          {showTranscript && (transcript || isTranscribing) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Original story text */}
-              <Card className="border-2 border-blue-200">
-                <CardHeader className="bg-blue-50 py-4">
-                  <CardTitle className="text-lg flex items-center gap-2 text-blue-700">
-                    <BookOpen className="w-5 h-5" />
-                    The Story
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-5">
-                  <p className="text-base leading-relaxed whitespace-pre-wrap text-gray-800">
-                    {assignment.story.content}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Student's transcript */}
-              <Card className="border-2 border-purple-200">
-                <CardHeader className="bg-purple-50 py-4">
-                  <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
-                    <FileText className="w-5 h-5" />
-                    What You Said
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-5">
-                  {isTranscribing ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                      <Loader2 className="w-8 h-8 animate-spin mb-3" />
-                      <p className="text-sm">Turning your recording into text...</p>
-                    </div>
-                  ) : transcript ? (
-                    <p className="text-base leading-relaxed whitespace-pre-wrap text-gray-800">
-                      {transcript}
-                    </p>
-                  ) : (
-                    <p className="text-gray-400 italic py-12 text-center">
-                      No transcript available
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
     );

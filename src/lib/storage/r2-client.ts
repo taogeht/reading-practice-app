@@ -175,32 +175,6 @@ class R2Client {
   }
 
   /**
-   * Get the object from R2 as a Buffer (for server-side processing like transcription)
-   */
-  async getObjectBuffer(key: string): Promise<{
-    buffer: Buffer;
-    contentType: string;
-  } | null> {
-    try {
-      const command = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-      });
-
-      const response = await this.client.send(command);
-      if (!response.Body) return null;
-
-      const bytes = await response.Body.transformToByteArray();
-      return {
-        buffer: Buffer.from(bytes),
-        contentType: response.ContentType || 'audio/webm',
-      };
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
    * Get a permanent proxy URL for an audio file (served via /api/audio/[...key])
    */
   getProxyUrl(key: string): string {

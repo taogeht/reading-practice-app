@@ -71,7 +71,7 @@ export function AudioRecorder({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
+          sampleRate: 44100,
         }
       });
 
@@ -105,11 +105,9 @@ export function AudioRecorder({
       };
 
       mediaRecorder.onstop = () => {
-        console.log(`[AudioRecorder] chunks: ${chunksRef.current.length}, sizes: ${chunksRef.current.map(c => c.size).join(', ')}`);
         const blob = new Blob(chunksRef.current, {
           type: mediaRecorder.mimeType
         });
-        console.log(`[AudioRecorder] final blob: ${blob.size} bytes, type: ${blob.type}`);
         setAudioBlob(blob);
 
         // Create audio URL for playback

@@ -88,7 +88,6 @@ export default function ClassDetailPage() {
     academicYear: "",
     active: true,
     showPracticeStories: false,
-    sttProvider: "assemblyai",
   });
 
   useEffect(() => {
@@ -112,7 +111,6 @@ export default function ClassDetailPage() {
           academicYear: data.class.academicYear || "",
           active: data.class.active,
           showPracticeStories: data.class.showPracticeStories || false,
-          sttProvider: data.class.sttProvider || "assemblyai",
         });
       } else {
         console.error('Failed to fetch class data');
@@ -140,7 +138,6 @@ export default function ClassDetailPage() {
           academicYear: editForm.academicYear || null,
           active: editForm.active,
           showPracticeStories: editForm.showPracticeStories,
-          sttProvider: editForm.sttProvider,
         }),
       });
 
@@ -569,19 +566,6 @@ export default function ClassDetailPage() {
                   <p className="text-xs text-gray-600 font-normal">Students will see a practice stories library on their dashboard</p>
                 </div>
               </Label>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="sttProvider">Speech-to-Text Provider</Label>
-              <select
-                id="sttProvider"
-                value={editForm.sttProvider}
-                onChange={(e) => setEditForm(prev => ({ ...prev, sttProvider: e.target.value }))}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="assemblyai">AssemblyAI</option>
-                <option value="google">Google Cloud Speech-to-Text</option>
-              </select>
-              <p className="text-xs text-gray-600">Used to transcribe student recording submissions</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={cancelEdit}>
