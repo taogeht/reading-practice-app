@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SnowmanSVG } from "./snowman-svg";
+import { HangmanSVG } from "./hangman-svg";
+import { BombSVG } from "./bomb-svg";
+import { BalloonsSVG } from "./balloons-svg";
 import {
     Snowflake,
     RotateCcw,
@@ -15,6 +18,60 @@ import {
     Calendar,
     CalendarRange,
 } from "lucide-react";
+
+type GameVariant = "snowman" | "hangman" | "bomb" | "balloons";
+
+const VARIANT_CONFIG: Record<GameVariant, {
+    label: string;
+    emoji: string;
+    title: string;
+    headerGradient: string;
+    borderColor: string;
+    accentColor: string;
+    winMessage: string;
+    loseMessage: string;
+}> = {
+    snowman: {
+        label: "Snowman",
+        emoji: "⛄",
+        title: "Snowman Spelling",
+        headerGradient: "from-sky-100 via-blue-50 to-cyan-100",
+        borderColor: "border-sky-200",
+        accentColor: "sky",
+        winMessage: "You saved the snowman!",
+        loseMessage: "Oh no! The snowman melted!",
+    },
+    hangman: {
+        label: "Hangman",
+        emoji: "🪢",
+        title: "Hangman Spelling",
+        headerGradient: "from-amber-100 via-orange-50 to-yellow-100",
+        borderColor: "border-amber-200",
+        accentColor: "amber",
+        winMessage: "You solved it!",
+        loseMessage: "Oh no! Game over!",
+    },
+    bomb: {
+        label: "Bomb",
+        emoji: "💣",
+        title: "Bomb Spelling",
+        headerGradient: "from-red-100 via-orange-50 to-amber-100",
+        borderColor: "border-red-200",
+        accentColor: "red",
+        winMessage: "You defused the bomb!",
+        loseMessage: "BOOM! The bomb exploded!",
+    },
+    balloons: {
+        label: "Balloons",
+        emoji: "🎈",
+        title: "Balloon Spelling",
+        headerGradient: "from-pink-100 via-purple-50 to-fuchsia-100",
+        borderColor: "border-pink-200",
+        accentColor: "pink",
+        winMessage: "You saved the balloons!",
+        loseMessage: "All the balloons popped!",
+    },
+};
 
 interface SpellingWord {
     id: string;
@@ -44,9 +101,10 @@ const MAX_WRONG = 10;
 interface SnowmanGameProps {
     initialLists?: SpellingList[];
     skipTracking?: boolean;
+    initialVariant?: GameVariant;
 }
 
-export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {}) {
+export function SnowmanGame({ initialLists, skipTracking, initialVariant = "snowman" }: SnowmanGameProps = {}) {
     const [lists, setLists] = useState<SpellingList[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentWord, setCurrentWord] = useState<string>("");
@@ -59,7 +117,10 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
     const [streak, setStreak] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
     const [wordPool, setWordPool] = useState<"current" | "all">("current");
+    const [variant, setVariant] = useState<GameVariant>(initialVariant);
     const roundStartRef = useRef<number>(Date.now());
+
+    const config = VARIANT_CONFIG[variant];
 
     useEffect(() => {
         if (initialLists) {
@@ -176,7 +237,7 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
                 wrongGuesses: wrongCount,
                 guessedLetters: letters,
                 timeSeconds,
-                activityType: 'snowman',
+                activityType: variant,
             }),
         }).catch(() => { }); // Silently ignore errors
     }, [currentWordId, currentClassId]);
@@ -225,11 +286,10 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
 
     if (loading) {
         return (
-            <Card className="border-2 border-sky-200 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-sky-100 via-blue-50 to-cyan-100 border-b border-sky-100 py-5 lg:py-6 xl:py-8">
-                    <CardTitle className="flex items-center gap-3 text-sky-700 text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
-                        <Snowflake className="w-7 h-7 lg:w-9 lg:h-9 xl:w-12 xl:h-12" />
-                        ⛄ Snowman Spelling
+            <Card className={`border-2 ${config.borderColor} shadow-lg`}>
+                <CardHeader className={`bg-gradient-to-r ${config.headerGradient} border-b border-sky-100 py-5 lg:py-6 xl:py-8`}>
+                    <CardTitle className="flex items-center gap-3 text-gray-700 text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
+                        {config.emoji} {config.title}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -256,8 +316,23 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
     const isLost = gameState === "lost";
     const isGameOver = isWon || isLost;
 
+    const renderVisual = () => {
+        const sizeClass = "w-full h-full";
+        switch (variant) {
+            case "hangman":
+                return <HangmanSVG wrongGuesses={wrongGuesses} className={sizeClass} />;
+            case "bomb":
+                return <BombSVG wrongGuesses={wrongGuesses} className={sizeClass} />;
+            case "balloons":
+                return <BalloonsSVG wrongGuesses={wrongGuesses} className={sizeClass} />;
+            case "snowman":
+            default:
+                return <SnowmanSVG wrongGuesses={wrongGuesses} className={sizeClass} />;
+        }
+    };
+
     return (
-        <Card className="border-2 border-sky-200 shadow-lg overflow-hidden relative">
+        <Card className={`border-2 ${config.borderColor} shadow-lg overflow-hidden relative`}>
             {/* Confetti effect */}
             {showConfetti && (
                 <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
@@ -279,11 +354,10 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
                 </div>
             )}
 
-            <CardHeader className="bg-gradient-to-r from-sky-100 via-blue-50 to-cyan-100 border-b border-sky-100 py-5 lg:py-6 xl:py-8">
+            <CardHeader className={`bg-gradient-to-r ${config.headerGradient} border-b border-gray-100 py-5 lg:py-6 xl:py-8`}>
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                    <CardTitle className="flex items-center gap-3 text-sky-700 text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
-                        <Snowflake className="w-7 h-7 lg:w-9 lg:h-9 xl:w-12 xl:h-12" />
-                        ⛄ Snowman Spelling
+                    <CardTitle className="flex items-center gap-3 text-gray-700 text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
+                        {config.emoji} {config.title}
                     </CardTitle>
                     <div className="flex items-center gap-2">
                         {streak > 0 && (
@@ -291,21 +365,21 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
                                 🔥 {streak} streak
                             </Badge>
                         )}
-                        <Badge variant="outline" className="border-sky-300 text-sky-700 text-sm lg:text-base xl:text-lg 2xl:text-xl px-3 py-1 lg:px-4 lg:py-1.5 xl:px-5 xl:py-2">
+                        <Badge variant="outline" className="border-gray-300 text-gray-700 text-sm lg:text-base xl:text-lg 2xl:text-xl px-3 py-1 lg:px-4 lg:py-1.5 xl:px-5 xl:py-2">
                             {MAX_WRONG - wrongGuesses} guesses left
                         </Badge>
                     </div>
                 </div>
                 <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
-                    <p className="text-sm lg:text-base xl:text-lg 2xl:text-xl text-sky-600">
+                    <p className="text-sm lg:text-base xl:text-lg 2xl:text-xl text-gray-600">
                         Guess the consonants to spell the word! Vowels are given for free.
                     </p>
-                    <div className="flex items-center gap-1 bg-white/60 rounded-lg p-1 border border-sky-200">
+                    <div className="flex items-center gap-1 bg-white/60 rounded-lg p-1 border border-gray-200">
                         <button
                             onClick={() => handlePoolChange("current")}
                             className={`flex items-center gap-1.5 px-3 py-1.5 lg:px-4 lg:py-2 xl:px-5 xl:py-2.5 rounded-md text-sm lg:text-base xl:text-lg font-medium transition-all ${wordPool === "current"
-                                ? "bg-sky-500 text-white shadow-sm"
-                                : "text-sky-600 hover:bg-sky-50"
+                                ? "bg-gray-700 text-white shadow-sm"
+                                : "text-gray-600 hover:bg-gray-50"
                                 }`}
                         >
                             <Calendar className="w-3.5 h-3.5 lg:w-5 lg:h-5 xl:w-6 xl:h-6" />
@@ -314,8 +388,8 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
                         <button
                             onClick={() => handlePoolChange("all")}
                             className={`flex items-center gap-1.5 px-3 py-1.5 lg:px-4 lg:py-2 xl:px-5 xl:py-2.5 rounded-md text-sm lg:text-base xl:text-lg font-medium transition-all ${wordPool === "all"
-                                ? "bg-sky-500 text-white shadow-sm"
-                                : "text-sky-600 hover:bg-sky-50"
+                                ? "bg-gray-700 text-white shadow-sm"
+                                : "text-gray-600 hover:bg-gray-50"
                                 }`}
                         >
                             <CalendarRange className="w-3.5 h-3.5 lg:w-5 lg:h-5 xl:w-6 xl:h-6" />
@@ -323,14 +397,31 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
                         </button>
                     </div>
                 </div>
+
+                {/* Game style selector */}
+                <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+                    <span className="text-xs lg:text-sm text-gray-500 mr-1">Style:</span>
+                    {(Object.keys(VARIANT_CONFIG) as GameVariant[]).map((v) => (
+                        <button
+                            key={v}
+                            onClick={() => setVariant(v)}
+                            className={`px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-full text-xs lg:text-sm font-medium transition-all ${variant === v
+                                ? "bg-white shadow-sm border border-gray-300 text-gray-800"
+                                : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+                                }`}
+                        >
+                            {VARIANT_CONFIG[v].emoji} {VARIANT_CONFIG[v].label}
+                        </button>
+                    ))}
+                </div>
             </CardHeader>
 
             <CardContent className="p-6 lg:p-8 xl:p-12">
                 <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 lg:gap-8 xl:gap-12 items-center">
-                    {/* Snowman */}
+                    {/* Game visual */}
                     <div className="flex justify-center">
                         <div className="relative w-40 h-56 md:w-44 md:h-60 lg:w-72 lg:h-96 xl:w-96 xl:h-[28rem] 2xl:w-[28rem] 2xl:h-[32rem]">
-                            <SnowmanSVG wrongGuesses={wrongGuesses} className="w-full h-full" />
+                            {renderVisual()}
                         </div>
                     </div>
 
@@ -385,13 +476,13 @@ export function SnowmanGame({ initialLists, skipTracking }: SnowmanGameProps = {
                                         <Trophy className="w-10 h-10 lg:w-14 lg:h-14 xl:w-20 xl:h-20 mx-auto text-yellow-500" />
                                         <p className="font-bold text-lg lg:text-2xl xl:text-3xl 2xl:text-4xl text-green-700">Great job! 🎉</p>
                                         <p className="text-sm lg:text-base xl:text-xl 2xl:text-2xl text-green-600">
-                                            You saved the snowman!
+                                            {config.winMessage}
                                         </p>
                                     </div>
                                 ) : (
                                     <div className="space-y-2 lg:space-y-3">
                                         <Frown className="w-10 h-10 lg:w-14 lg:h-14 xl:w-20 xl:h-20 mx-auto text-red-400" />
-                                        <p className="font-bold text-lg lg:text-2xl xl:text-3xl 2xl:text-4xl text-red-700">Oh no! The snowman melted!</p>
+                                        <p className="font-bold text-lg lg:text-2xl xl:text-3xl 2xl:text-4xl text-red-700">{config.loseMessage}</p>
                                         <p className="text-sm lg:text-base xl:text-xl 2xl:text-2xl text-red-600">
                                             The word was: <strong>{currentWord}</strong>
                                         </p>
