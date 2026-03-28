@@ -52,6 +52,7 @@ export async function GET(
                 syllables: w.syllables,
                 audioUrl: w.audioUrl,
                 imageUrl: w.imageUrl,
+                mandarinTranslation: w.mandarinTranslation,
             })),
             createdAt: list.createdAt,
         });
@@ -145,11 +146,13 @@ export async function PUT(
                         const wordString = typeof word === 'string' ? word : word.word;
                         const syllables = typeof word === 'string' ? null : (word.syllables || null);
                         const audioUrl = typeof word === 'string' ? null : (word.audioUrl || null);
+                        const mandarinTranslation = typeof word === 'string' ? null : (word.mandarinTranslation || null);
                         return {
                             spellingListId: keepListId,
                             word: wordString.trim(),
                             syllables,
                             audioUrl,
+                            mandarinTranslation,
                             orderIndex: index,
                         };
                     });
@@ -183,11 +186,13 @@ export async function PUT(
                 const wordString = typeof word === 'string' ? word : word.word;
                 const syllables = typeof word === 'string' ? null : (word.syllables || null);
                 const audioUrl = typeof word === 'string' ? null : (word.audioUrl || null);
+                const mandarinTranslation = typeof word === 'string' ? null : (word.mandarinTranslation || null);
                 return {
                     spellingListId: newList.id,
                     word: wordString.trim(),
                     syllables,
                     audioUrl,
+                    mandarinTranslation,
                     orderIndex: index,
                 };
             });

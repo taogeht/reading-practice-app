@@ -16,6 +16,7 @@ import { Plus, X, Loader2 } from "lucide-react";
 
 export type SpellingWordInput = {
   word: string;
+  mandarinTranslation: string;
 };
 
 type ClassOption = {
@@ -50,7 +51,7 @@ export function ManageSpellingListDialog({
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [gradeLevel, setGradeLevel] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [words, setWords] = useState<SpellingWordInput[]>([{ word: "" }]);
+  const [words, setWords] = useState<SpellingWordInput[]>([{ word: "", mandarinTranslation: "" }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -69,26 +70,26 @@ export function ManageSpellingListDialog({
         setSelectedClassIds(initialData.classIds?.length ? initialData.classIds : [initialData.classId]);
         setGradeLevel(initialData.gradeLevel ? initialData.gradeLevel.toString() : "");
         setIsPublic(initialData.isPublic || false);
-        setWords(initialData.words?.length > 0 ? initialData.words : [{ word: "" }]);
+        setWords(initialData.words?.length > 0 ? initialData.words.map(w => ({ word: w.word, mandarinTranslation: w.mandarinTranslation || "" })) : [{ word: "", mandarinTranslation: "" }]);
       } else {
         setTitle("");
         setSelectedClassIds(classes.length === 1 ? [classes[0].id] : []);
         setGradeLevel("");
         setIsPublic(false);
-        setWords([{ word: "" }, { word: "" }, { word: "" }]);
+        setWords([{ word: "", mandarinTranslation: "" }, { word: "", mandarinTranslation: "" }, { word: "", mandarinTranslation: "" }]);
         setError(null);
       }
     }
   }, [open, initialData, classes]);
 
-  const handleWordChange = (index: number, value: string) => {
+  const handleWordChange = (index: number, field: 'word' | 'mandarinTranslation', value: string) => {
     const newWords = [...words];
-    newWords[index].word = value;
+    newWords[index][field] = value;
     setWords(newWords);
   };
 
   const addWord = () => {
-    setWords([...words, { word: "" }]);
+    setWords([...words, { word: "", mandarinTranslation: "" }]);
   };
 
   const removeWord = (index: number) => {
@@ -105,10 +106,9 @@ export function ManageSpellingListDialog({
 
     // Filter out empty words and ensure uniqueness (case-insensitive)
     const validWords = words
-      .map(w => w.word.trim())
-      .filter(w => w.length > 0);
+      .filter(w => w.word.trim().length > 0);
 
-    const uniqueWords = [...new Set(validWords.map(w => w.toLowerCase()))];
+    const uniqueWords = [...new Set(validWords.map(w => w.word.trim().toLowerCase()))];
 
     if (!title.trim()) {
       setError("Please enter a list title");
@@ -133,7 +133,10 @@ export function ManageSpellingListDialog({
         classIds: selectedClassIds,
         gradeLevel: gradeLevel ? parseInt(gradeLevel, 10) : null,
         isPublic,
-        words: validWords,
+        words: validWords.map(w => ({
+          word: w.word.trim(),
+          mandarinTranslation: w.mandarinTranslation.trim() || null,
+        })),
       };
 
       let response;
@@ -169,7 +172,7 @@ export function ManageSpellingListDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Spelling List' : 'Create Spelling List'}</DialogTitle>
           <DialogDescription>
@@ -254,6 +257,11 @@ export function ManageSpellingListDialog({
               <span className="text-xs text-gray-500">{words.length} words</span>
             </div>
 
+            <div className="flex items-center gap-2 text-xs text-gray-400 mb-1 pl-8">
+              <span className="flex-1">English</span>
+              <span className="flex-1">中文 (Optional)</span>
+              <span className="w-9" />
+            </div>
             <div className="max-h-[250px] overflow-y-auto space-y-2 pr-1">
               {words.map((word, index) => (
                 <div key={index} className="flex items-center gap-2">
@@ -263,7 +271,13 @@ export function ManageSpellingListDialog({
                   <Input
                     placeholder={`Word ${index + 1}`}
                     value={word.word}
-                    onChange={(e) => handleWordChange(index, e.target.value)}
+                    onChange={(e) => handleWordChange(index, 'word', e.target.value)}
+                    className="flex-1"
+                  />
+                  <Input
+                    placeholder="中文翻譯"
+                    value={word.mandarinTranslation}
+                    onChange={(e) => handleWordChange(index, 'mandarinTranslation', e.target.value)}
                     className="flex-1"
                   />
                   <Button

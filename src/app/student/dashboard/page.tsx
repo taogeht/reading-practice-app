@@ -12,6 +12,7 @@ import { SnowmanGame } from "@/components/spelling/snowman-game";
 import { ListenAndSpellGame } from "@/components/spelling/listen-spell-game";
 import { UnscrambleGame } from "@/components/spelling/unscramble-game";
 import { MissingLettersGame } from "@/components/spelling/missing-letters-game";
+import { FlashcardGame } from "@/components/spelling/flashcard-game";
 
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -484,6 +485,9 @@ export default function StudentDashboardPage() {
                 <TabsTrigger value="missing" className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 text-xs sm:text-sm">
                   ✏️ Missing Letters
                 </TabsTrigger>
+                <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs sm:text-sm">
+                  🃏 Flashcards
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -501,6 +505,10 @@ export default function StudentDashboardPage() {
 
             <TabsContent value="missing" className="mt-0">
               <MissingLettersGame />
+            </TabsContent>
+
+            <TabsContent value="flashcards" className="mt-0">
+              <FlashcardGame />
             </TabsContent>
 
           </Tabs>

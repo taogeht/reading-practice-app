@@ -281,6 +281,7 @@ export const spellingWords = pgTable(
     syllables: jsonb('syllables').$type<string[]>(), // Array of syllables: ["ba", "na", "na"]
     audioUrl: varchar('audio_url', { length: 500 }),
     imageUrl: varchar('image_url', { length: 500 }),
+    mandarinTranslation: varchar('mandarin_translation', { length: 100 }),
     orderIndex: integer('order_index').default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },

@@ -84,6 +84,7 @@ export default function TeacherDashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showActiveAssignments, setShowActiveAssignments] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -232,7 +233,10 @@ export default function TeacherDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:border-green-400 hover:shadow-md transition-all"
+            onClick={() => setShowActiveAssignments(!showActiveAssignments)}
+          >
             <CardContent className="p-6">
               <div className="flex items-center">
                 <BookOpen className="w-8 h-8 text-green-600" />
@@ -268,6 +272,76 @@ export default function TeacherDashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Active Assignments Expanded View */}
+        {showActiveAssignments && (
+          <Card className="mb-8 border-green-200">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Active Assignments</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/teacher/assignments')}
+                >
+                  View All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {assignmentsSummary.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No active assignments yet. Create one to get started.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {assignmentsSummary.map((assignment) => {
+                    const completionRate = assignment.totalStudents > 0
+                      ? Math.round((assignment.completedStudents / assignment.totalStudents) * 100)
+                      : 0;
+
+                    return (
+                      <div
+                        key={assignment.id}
+                        className="border rounded-lg p-4 hover:bg-gray-50 hover:border-green-300 transition-all cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/teacher/assignments/${assignment.id}`);
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h4 className="font-medium text-sm text-gray-900 line-clamp-2">
+                            {assignment.title}
+                          </h4>
+                          <Badge variant="secondary" className="shrink-0">
+                            {assignment.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">
+                          {assignment.className || 'No class'}
+                        </p>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-2 bg-green-500"
+                            style={{ width: `${Math.min(100, completionRate)}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+                          <span>{assignment.completedStudents}/{assignment.totalStudents} complete</span>
+                          {assignment.dueAt ? (
+                            <span>Due {format(new Date(assignment.dueAt), 'MMM d')}</span>
+                          ) : (
+                            <span>No due date</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Student Attention Alert */}
         <StudentAttentionAlert classes={teacher.classes.map(c => ({ id: c.id, name: c.name }))} />

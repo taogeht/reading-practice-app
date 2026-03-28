@@ -48,6 +48,7 @@ type SpellingWord = {
   syllables: string[] | null;
   audioUrl: string | null;
   imageUrl: string | null;
+  mandarinTranslation: string | null;
 };
 
 type SpellingList = {
@@ -412,6 +413,9 @@ export default function ManageSpellingListsPage() {
 
                             <span className="font-medium text-sm text-gray-900 min-w-[80px]">
                               {w.word}
+                              {w.mandarinTranslation && (
+                                <span className="text-gray-400 font-normal ml-1.5">{w.mandarinTranslation}</span>
+                              )}
                             </span>
 
                             <button
@@ -544,7 +548,7 @@ export default function ManageSpellingListsPage() {
           title: editingList.title,
           gradeLevel: editingList.gradeLevel,
           isPublic: editingList.isPublic,
-          words: editingList.words.map(w => ({ word: w.word }))
+          words: editingList.words.map(w => ({ word: w.word, mandarinTranslation: w.mandarinTranslation || "" }))
         } : null}
       />
 

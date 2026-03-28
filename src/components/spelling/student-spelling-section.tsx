@@ -23,6 +23,7 @@ interface SpellingWord {
     syllables: string[] | null; // Stored syllables from dictionary API
     audioUrl: string | null;
     imageUrl: string | null;
+    mandarinTranslation: string | null;
     orderIndex: number;
 }
 
@@ -253,6 +254,9 @@ export function StudentSpellingSection() {
                                             syllables={word.syllables}
                                             isPlaying={playingWordId === word.id}
                                         />
+                                        {word.mandarinTranslation && (
+                                            <p className="text-sm text-gray-500 mt-1">{word.mandarinTranslation}</p>
+                                        )}
                                     </div>
 
                                     {/* Sound indicator when playing */}
@@ -339,11 +343,16 @@ export function StudentSpellingSection() {
                                                             className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                                                         />
                                                     )}
-                                                    <SyllableWord
-                                                        word={word.word}
-                                                        syllables={word.syllables}
-                                                        isPlaying={playingWordId === word.id}
-                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <SyllableWord
+                                                            word={word.word}
+                                                            syllables={word.syllables}
+                                                            isPlaying={playingWordId === word.id}
+                                                        />
+                                                        {word.mandarinTranslation && (
+                                                            <p className="text-sm text-gray-500 mt-0.5">{word.mandarinTranslation}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -418,6 +427,9 @@ export function StudentSpellingSection() {
                                         isPlaying={playingWordId === currentWord.id}
                                         large
                                     />
+                                    {currentWord.mandarinTranslation && (
+                                        <p className="text-xl text-gray-500 mt-2">{currentWord.mandarinTranslation}</p>
+                                    )}
                                 </div>
 
                                 {/* Large play button */}
