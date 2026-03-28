@@ -548,7 +548,7 @@ export default function ManageSpellingListsPage() {
           title: editingList.title,
           gradeLevel: editingList.gradeLevel,
           isPublic: editingList.isPublic,
-          words: editingList.words.map(w => ({ word: w.word, mandarinTranslation: w.mandarinTranslation || "" }))
+          words: editingList.words.map(w => ({ word: w.word, mandarinTranslation: w.mandarinTranslation || "", syllables: w.syllables, audioUrl: w.audioUrl, imageUrl: w.imageUrl }))
         } : null}
       />
 

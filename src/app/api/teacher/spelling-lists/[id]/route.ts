@@ -146,12 +146,14 @@ export async function PUT(
                         const wordString = typeof word === 'string' ? word : word.word;
                         const syllables = typeof word === 'string' ? null : (word.syllables || null);
                         const audioUrl = typeof word === 'string' ? null : (word.audioUrl || null);
+                        const imageUrl = typeof word === 'string' ? null : (word.imageUrl || null);
                         const mandarinTranslation = typeof word === 'string' ? null : (word.mandarinTranslation || null);
                         return {
                             spellingListId: keepListId,
                             word: wordString.trim(),
                             syllables,
                             audioUrl,
+                            imageUrl,
                             mandarinTranslation,
                             orderIndex: index,
                         };
@@ -186,12 +188,14 @@ export async function PUT(
                 const wordString = typeof word === 'string' ? word : word.word;
                 const syllables = typeof word === 'string' ? null : (word.syllables || null);
                 const audioUrl = typeof word === 'string' ? null : (word.audioUrl || null);
+                const imageUrl = typeof word === 'string' ? null : (word.imageUrl || null);
                 const mandarinTranslation = typeof word === 'string' ? null : (word.mandarinTranslation || null);
                 return {
                     spellingListId: newList.id,
                     word: wordString.trim(),
                     syllables,
                     audioUrl,
+                    imageUrl,
                     mandarinTranslation,
                     orderIndex: index,
                 };

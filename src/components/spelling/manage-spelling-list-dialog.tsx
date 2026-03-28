@@ -17,6 +17,10 @@ import { Plus, X, Loader2 } from "lucide-react";
 export type SpellingWordInput = {
   word: string;
   mandarinTranslation: string;
+  // Preserved from existing data on edit so we don't wipe them
+  syllables?: string[] | null;
+  audioUrl?: string | null;
+  imageUrl?: string | null;
 };
 
 type ClassOption = {
@@ -70,7 +74,7 @@ export function ManageSpellingListDialog({
         setSelectedClassIds(initialData.classIds?.length ? initialData.classIds : [initialData.classId]);
         setGradeLevel(initialData.gradeLevel ? initialData.gradeLevel.toString() : "");
         setIsPublic(initialData.isPublic || false);
-        setWords(initialData.words?.length > 0 ? initialData.words.map(w => ({ word: w.word, mandarinTranslation: w.mandarinTranslation || "" })) : [{ word: "", mandarinTranslation: "" }]);
+        setWords(initialData.words?.length > 0 ? initialData.words.map(w => ({ word: w.word, mandarinTranslation: w.mandarinTranslation || "", syllables: w.syllables, audioUrl: w.audioUrl, imageUrl: w.imageUrl })) : [{ word: "", mandarinTranslation: "" }]);
       } else {
         setTitle("");
         setSelectedClassIds(classes.length === 1 ? [classes[0].id] : []);
@@ -136,6 +140,9 @@ export function ManageSpellingListDialog({
         words: validWords.map(w => ({
           word: w.word.trim(),
           mandarinTranslation: w.mandarinTranslation.trim() || null,
+          syllables: w.syllables || null,
+          audioUrl: w.audioUrl || null,
+          imageUrl: w.imageUrl || null,
         })),
       };
 
