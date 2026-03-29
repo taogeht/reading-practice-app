@@ -245,13 +245,19 @@ export function FlashcardGame() {
                 }, 300);
             }, 200);
         } else {
-            // Hide card, swap content, then show the new card face-down
+            // Step 1: hide card instantly
             setIsTransitioning(true);
+            // Step 2: swap content while hidden
             setTimeout(() => {
                 remaining[0].cardStartTime = Date.now();
                 setDeck(remaining);
                 setIsFlipped(false);
-                setIsTransitioning(false);
+                // Step 3: show new card on next frame, after browser has painted face-down
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setIsTransitioning(false);
+                    });
+                });
             }, 50);
         }
     };
@@ -270,13 +276,19 @@ export function FlashcardGame() {
         const insertPos = minPos + Math.floor(Math.random() * (remaining.length - minPos + 1));
         remaining.splice(insertPos, 0, current);
 
-        // Hide card, swap content, then show the new card face-down
+        // Step 1: hide card instantly
         setIsTransitioning(true);
+        // Step 2: swap content while hidden
         setTimeout(() => {
             remaining[0].cardStartTime = Date.now();
             setDeck(remaining);
             setIsFlipped(false);
-            setIsTransitioning(false);
+            // Step 3: show new card on next frame, after browser has painted face-down
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setIsTransitioning(false);
+                });
+            });
         }, 50);
     };
 
@@ -425,7 +437,7 @@ export function FlashcardGame() {
                         className={`
                             relative w-full max-w-sm mx-auto aspect-[3/4] cursor-pointer
                             [perspective:1000px]
-                            ${isTransitioning ? "opacity-0" : "opacity-100"}
+                            ${isTransitioning ? "invisible" : "visible"}
                         `}
                         onClick={!isFlipped ? flipCard : undefined}
                     >
