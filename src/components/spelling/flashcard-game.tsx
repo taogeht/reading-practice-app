@@ -113,6 +113,7 @@ export function FlashcardGame() {
     // Game state
     const [deck, setDeck] = useState<DeckCard[]>([]);
     const [isFlipped, setIsFlipped] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [knownCount, setKnownCount] = useState(0);
     const [totalCards, setTotalCards] = useState(0);
     const [gameComplete, setGameComplete] = useState(false);
@@ -244,9 +245,14 @@ export function FlashcardGame() {
                 }, 300);
             }, 200);
         } else {
-            remaining[0].cardStartTime = Date.now();
-            setDeck(remaining);
-            setIsFlipped(false);
+            // Hide card, swap content, then show the new card face-down
+            setIsTransitioning(true);
+            setTimeout(() => {
+                remaining[0].cardStartTime = Date.now();
+                setDeck(remaining);
+                setIsFlipped(false);
+                setIsTransitioning(false);
+            }, 50);
         }
     };
 
@@ -264,9 +270,14 @@ export function FlashcardGame() {
         const insertPos = minPos + Math.floor(Math.random() * (remaining.length - minPos + 1));
         remaining.splice(insertPos, 0, current);
 
-        remaining[0].cardStartTime = Date.now();
-        setDeck(remaining);
-        setIsFlipped(false);
+        // Hide card, swap content, then show the new card face-down
+        setIsTransitioning(true);
+        setTimeout(() => {
+            remaining[0].cardStartTime = Date.now();
+            setDeck(remaining);
+            setIsFlipped(false);
+            setIsTransitioning(false);
+        }, 50);
     };
 
     const resetGame = () => {
@@ -414,13 +425,15 @@ export function FlashcardGame() {
                         className={`
                             relative w-full max-w-sm mx-auto aspect-[3/4] cursor-pointer
                             [perspective:1000px]
+                            ${isTransitioning ? "opacity-0" : "opacity-100"}
                         `}
                         onClick={!isFlipped ? flipCard : undefined}
                     >
                         <div
                             className={`
-                                relative w-full h-full transition-transform duration-500
+                                relative w-full h-full
                                 [transform-style:preserve-3d]
+                                ${isTransitioning ? "" : "transition-transform duration-500"}
                                 ${isFlipped ? "[transform:rotateY(180deg)]" : ""}
                             `}
                         >

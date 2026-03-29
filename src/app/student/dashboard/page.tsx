@@ -467,12 +467,12 @@ export default function StudentDashboardPage() {
         {/* Spelling Games via Tabs */}
         <div className="space-y-4">
           <Tabs defaultValue="snowman" className="w-full">
-            <div className="flex items-center justify-between mb-2">
+            <div className="space-y-2 mb-2">
               <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <Gamepad2 className="w-6 h-6 text-indigo-500" />
                 Spelling Practice
               </h2>
-              <TabsList className="bg-white/50 border border-gray-200 flex-wrap h-auto gap-1 p-1">
+              <TabsList className="bg-white/50 border border-gray-200 flex-wrap h-auto gap-1 p-1 w-full justify-start">
                 <TabsTrigger value="snowman" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
                   ⛄ Snowman
                 </TabsTrigger>
