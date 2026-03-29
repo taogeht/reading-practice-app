@@ -472,20 +472,20 @@ export default function StudentDashboardPage() {
                 <Gamepad2 className="w-6 h-6 text-indigo-500" />
                 Spelling Practice
               </h2>
-              <TabsList className="bg-white/50 border border-gray-200 flex-wrap h-auto gap-1 p-1 w-full justify-start">
-                <TabsTrigger value="snowman" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
+              <TabsList className="bg-white/50 border border-gray-200 h-auto gap-1 p-1 w-full justify-start overflow-x-auto flex-nowrap">
+                <TabsTrigger value="snowman" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm shrink-0">
                   ⛄ Snowman
                 </TabsTrigger>
-                <TabsTrigger value="listen" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
+                <TabsTrigger value="listen" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm shrink-0">
                   🎧 Listen & Spell
                 </TabsTrigger>
-                <TabsTrigger value="unscramble" className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800 text-xs sm:text-sm">
+                <TabsTrigger value="unscramble" className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800 text-xs sm:text-sm shrink-0">
                   🔀 Unscramble
                 </TabsTrigger>
-                <TabsTrigger value="missing" className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 text-xs sm:text-sm">
+                <TabsTrigger value="missing" className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 text-xs sm:text-sm shrink-0">
                   ✏️ Missing Letters
                 </TabsTrigger>
-                <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs sm:text-sm">
+                <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs sm:text-sm shrink-0">
                   🃏 Flashcards
                 </TabsTrigger>
               </TabsList>
