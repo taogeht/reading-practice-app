@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building, ExternalLink, Save } from "lucide-react";
+import { TeacherMediaSection } from "@/components/student-media/teacher-media-section";
 
 interface StudentClass {
   id: string;
@@ -226,6 +227,8 @@ export default function TeacherStudentProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {studentId && <TeacherMediaSection studentId={studentId} />}
 
         <Card>
           <CardHeader>

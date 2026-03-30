@@ -15,6 +15,7 @@ import { MissingLettersGame } from "@/components/spelling/missing-letters-game";
 import { FlashcardGame } from "@/components/spelling/flashcard-game";
 
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
+import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
 import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check } from "lucide-react";
@@ -460,6 +461,9 @@ export default function StudentDashboardPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Student Media Gallery - only shows if teacher has uploaded media */}
+        <StudentMediaGallery studentId={student.id} />
 
         {/* Spelling Words - Prominent full-width section */}
         <StudentSpellingSection />

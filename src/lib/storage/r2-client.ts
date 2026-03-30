@@ -216,6 +216,16 @@ class R2Client {
   }
 
   /**
+   * Generate a file key for student media uploads (video, photo, audio)
+   */
+  generateMediaKey(studentId: string, mediaType: 'video' | 'photo' | 'audio', filename: string): string {
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 8);
+    const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    return `media/${studentId}/${mediaType}/${timestamp}-${randomId}-${sanitized}`;
+  }
+
+  /**
    * Generate a file key for spelling word images
    */
   generateImageKey(classId: string, listId: string, wordId: string): string {

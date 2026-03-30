@@ -21,6 +21,7 @@ export const userRoleEnum = pgEnum('user_role', ['student', 'teacher', 'admin'])
 export const assignmentStatusEnum = pgEnum('assignment_status', ['draft', 'published', 'archived']);
 export const recordingStatusEnum = pgEnum('recording_status', ['pending', 'submitted', 'reviewed', 'flagged']);
 export const visualPasswordTypeEnum = pgEnum('visual_password_type', ['animal', 'object']);
+export const mediaTypeEnum = pgEnum('media_type', ['video', 'photo', 'audio']);
 
 // Core tables
 export const users = pgTable(
@@ -363,6 +364,32 @@ export const attendanceRecords = pgTable(
   })
 );
 
+// Student Media - Videos, photos, and audio uploaded by teachers/admins to student accounts
+export const studentMedia = pgTable(
+  'student_media',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    uploadedById: uuid('uploaded_by_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    mediaType: mediaTypeEnum('media_type').notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    fileKey: varchar('file_key', { length: 500 }).notNull(),
+    fileUrl: varchar('file_url', { length: 500 }).notNull(),
+    fileSizeBytes: bigint('file_size_bytes', { mode: 'number' }).notNull(),
+    mimeType: varchar('mime_type', { length: 100 }).notNull(),
+    thumbnailKey: varchar('thumbnail_key', { length: 500 }),
+    durationSeconds: integer('duration_seconds'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    studentIdIdx: index('idx_student_media_student_id').on(table.studentId),
+    uploadedByIdx: index('idx_student_media_uploaded_by').on(table.uploadedById),
+    createdAtIdx: index('idx_student_media_created_at').on(table.createdAt),
+  })
+);
+
 // Books - Materials managed by super admin
 export const books = pgTable(
   'books',
@@ -481,6 +508,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   enrollments: many(classEnrollments),
   recordings: many(recordings),
   progress: many(studentProgress),
+  media: many(studentMedia),
 }));
 
 export const teachersRelations = relations(teachers, ({ one, many }) => ({
@@ -531,6 +559,11 @@ export const studentProgressRelations = relations(studentProgress, ({ one }) => 
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   user: one(users, { fields: [auditLogs.userId], references: [users.id] }),
+}));
+
+export const studentMediaRelations = relations(studentMedia, ({ one }) => ({
+  student: one(students, { fields: [studentMedia.studentId], references: [students.id] }),
+  uploadedBy: one(users, { fields: [studentMedia.uploadedById], references: [users.id] }),
 }));
 
 export const spellingListsRelations = relations(spellingLists, ({ one, many }) => ({
