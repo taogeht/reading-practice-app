@@ -3,6 +3,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '200mb',
+    },
+  },
   outputFileTracingExcludes: {
     '*': [
       'node_modules/@swc/core-linux-x64-gnu',

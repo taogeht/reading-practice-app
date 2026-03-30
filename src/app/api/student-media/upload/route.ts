@@ -8,6 +8,7 @@ import { detectMediaType, validateMediaFile } from '@/lib/storage/media-validati
 import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logError(error, 'api/student-media/upload');
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
