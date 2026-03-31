@@ -113,14 +113,28 @@ export function TeacherMediaSection({ studentId }: { studentId: string }) {
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('studentId', studentId);
-      formData.append('title', title.trim());
-      if (description.trim()) {
-        formData.append('description', description.trim());
+      // Step 1: Get presigned upload URL from server
+      const prepareRes = await fetch('/api/student-media/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId,
+          title: title.trim(),
+          description: description.trim() || null,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        }),
+      });
+
+      if (!prepareRes.ok) {
+        const data = await prepareRes.json();
+        throw new Error(data.error || 'Failed to prepare upload');
       }
 
+      const { presignedUrl, media } = await prepareRes.json();
+
+      // Step 2: Upload file directly to R2 via presigned URL
       const xhr = new XMLHttpRequest();
 
       await new Promise<void>((resolve, reject) => {
@@ -134,14 +148,14 @@ export function TeacherMediaSection({ studentId }: { studentId: string }) {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            const data = JSON.parse(xhr.responseText);
-            reject(new Error(data.error || 'Upload failed'));
+            reject(new Error(`Upload to storage failed with status ${xhr.status}`));
           }
         });
 
-        xhr.addEventListener('error', () => reject(new Error('Network error')));
-        xhr.open('POST', '/api/student-media/upload');
-        xhr.send(formData);
+        xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+        xhr.open('PUT', presignedUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
       });
 
       // Reset form and refresh list

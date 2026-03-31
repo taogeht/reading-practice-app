@@ -4,12 +4,14 @@ import { db } from '@/lib/db';
 import { studentMedia, students, classEnrollments, classes } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
-import { detectMediaType, validateMediaFile } from '@/lib/storage/media-validation';
+import { detectMediaType, MEDIA_LIMITS } from '@/lib/storage/media-validation';
 import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+// Step 1: Validate and return a presigned upload URL
+// Client then uploads directly to R2, bypassing Next.js body size limits
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -17,25 +19,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const studentId = formData.get('studentId') as string;
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string | null;
+    const body = await request.json();
+    const { studentId, title, description, fileName, fileSize, mimeType } = body;
 
-    if (!file || !studentId || !title) {
+    if (!studentId || !title || !fileName || !fileSize || !mimeType) {
       return NextResponse.json(
-        { error: 'File, studentId, and title are required' },
+        { error: 'studentId, title, fileName, fileSize, and mimeType are required' },
         { status: 400 }
       );
     }
 
-    // Validate file
-    const validation = validateMediaFile(file);
-    if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
+    // Validate media type
+    const mediaType = detectMediaType(mimeType);
+    if (!mediaType) {
+      return NextResponse.json(
+        { error: `File type "${mimeType}" is not supported.` },
+        { status: 400 }
+      );
     }
-    const mediaType = validation.detectedType!;
+
+    // Validate file size
+    const limits = MEDIA_LIMITS[mediaType];
+    if (fileSize > limits.maxSize) {
+      const maxMB = limits.maxSize / (1024 * 1024);
+      return NextResponse.json(
+        { error: `File is too large. Maximum size for ${mediaType} is ${maxMB}MB.` },
+        { status: 400 }
+      );
+    }
 
     // Verify student exists
     const student = await db.query.students.findFirst({
@@ -62,27 +73,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Upload file to R2
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const fileKey = r2Client.generateMediaKey(studentId, mediaType, file.name);
+    // Generate R2 key and presigned upload URL
+    const fileKey = r2Client.generateMediaKey(studentId, mediaType, fileName);
+    const presignedUrl = await r2Client.generatePresignedUploadUrl(fileKey, mimeType, 600);
 
-    await r2Client.uploadFile(fileKey, buffer, file.type, {
-      'artifact-type': 'student-media',
-    });
-
-    // For photos and audio, use proxy URL. For video, we'll use presigned URLs on demand.
+    // Determine the file URL for serving
     let fileUrl: string;
-    if (mediaType === 'photo') {
-      fileUrl = `/api/media/${fileKey}`;
-    } else if (mediaType === 'audio') {
-      fileUrl = `/api/media/${fileKey}`;
+    if (mediaType === 'video') {
+      fileUrl = fileKey; // Videos use presigned download URLs on demand
     } else {
-      // Video: store fileKey, generate presigned URLs on demand
-      fileUrl = fileKey;
+      fileUrl = `/api/media/${fileKey}`;
     }
 
-    // Insert into database
+    // Create DB record now (upload happens client-side next)
     const [newMedia] = await db.insert(studentMedia).values({
       studentId,
       uploadedById: user.id,
@@ -91,13 +94,14 @@ export async function POST(request: NextRequest) {
       description: description?.trim() || null,
       fileKey,
       fileUrl,
-      fileSizeBytes: buffer.length,
-      mimeType: file.type,
+      fileSizeBytes: fileSize,
+      mimeType,
     }).returning();
 
     return NextResponse.json({
       success: true,
       media: newMedia,
+      presignedUrl,
     });
   } catch (error) {
     logError(error, 'api/student-media/upload');
