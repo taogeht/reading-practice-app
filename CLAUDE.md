@@ -4,102 +4,93 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a reading practice homework application where students record themselves reading stories aloud. Teachers can create stories with TTS audio, assign them to students, and review recorded submissions.
+Reading-practice homework app. Students record themselves reading teacher-created stories; teachers create stories (with TTS audio), assign them to classes, run spelling activities, take attendance, track syllabus progress, and review submissions.
 
 ## Development Commands
 
-- `npm run dev` - Start development server with Turbopack (http://localhost:3000)
-- `npm run build` - Build for production with Turbopack
-- `npm run lint` - Run ESLint (warnings disabled for deployment)
-- `npm run db:studio` - Open Drizzle Studio for database management
-- `npm run db:push` - Push schema changes to database
-- `npm run db:migrate` - Run database migrations
-- `npm run db:generate` - Generate migration files
-- `npm run db:seed` - Seed database with sample data
+- `npm run dev` — Next.js dev server with Turbopack at http://localhost:3000
+- `npm run build` — Production build. Turbopack is **disabled** here via `cross-env NEXT_DISABLE_TURBOPACK=1`; some features aren't compatible yet, so don't re-enable it without checking.
+- `npm run lint` — ESLint. Most rules are turned off in `eslint.config.mjs` (it's effectively advisory) and `next.config.mjs` sets `typescript.ignoreBuildErrors: true`, so lint/type errors will **not** block a build. Verify changes by running the dev server, not by trusting a clean build.
+- `npm run db:studio` — Drizzle Studio UI for the DB
+- `npm run db:generate` / `db:migrate` / `db:push` — Drizzle Kit migration workflow (edit `src/lib/db/schema.ts` → `db:generate` → `db:push` for dev or `db:migrate` for prod)
+- `npm run db:seed` — Seed sample data via `tsx src/lib/db/seed.ts`
+
+No test runner is configured.
 
 ## Technology Stack
 
-- **Frontend**: Next.js 15.5.3 with App Router, React 19, TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Custom session-based auth with bcryptjs
-- **UI**: Tailwind CSS 4, shadcn/ui components, Lucide icons
-- **Storage**: Cloudflare R2 for audio files
-- **TTS**: Google Cloud Text-to-Speech for generating story audio
-- **Forms**: React Hook Form with Zod validation
+- Next.js 16 (App Router) + React 19 + TypeScript, Tailwind v4, shadcn/ui (Radix), Lucide icons
+- PostgreSQL via `pg` Pool + Drizzle ORM (`src/lib/db/index.ts` — 20-client pool)
+- Custom cookie-session auth (bcryptjs). **No Better Auth** despite the `BETTER_AUTH_SECRET` env var name.
+- Cloudflare R2 (S3-compatible) for audio, images, documents, and student media
+- Google Cloud Text-to-Speech for story + spelling-word audio; Google Gemini for spelling-word images
 
 ## Architecture
 
-### User Roles & Authentication
-- **Students**: Record themselves reading stories (password-less login via visual passwords)
-- **Teachers**: Create stories, manage classes, review recordings
-- **Admin**: Manage schools, users, and system settings
+### Auth model (`src/lib/auth.ts`)
 
-Authentication uses session cookies managed by `src/lib/auth.ts`. Visual passwords for students use animal or object selections in `src/components/students/visual-password-creator.tsx`.
+Three roles in one `users` table: `student`, `teacher`, `admin`, with role-specific detail tables (`students`, `teachers`). Sessions are a 7-day opaque cookie (`session-id`) backed by the `session` table. `getCurrentUser()` is the single entry point used in every API route and server component — always go through it rather than reading cookies directly.
 
-### Database Schema (src/lib/db/schema.ts)
-Core entities:
-- `users` - Students, teachers, admins with role-based access
-- `schools` - Educational institutions
-- `classes` - Teacher-managed student groups
-- `stories` - Reading content with TTS audio and archive support
-- `assignments` - Stories assigned to classes with due dates
-- `recordings` - Student audio submissions with metadata
-- `session` - Authentication session management
+Students have three login paths:
+1. **Visual password** — pick an animal/object sequence stored in `students.visual_password_data` (`src/components/students/visual-password-creator.tsx`).
+2. **Magic link** — `/s/[token]` looks up `users.login_token`, creates a session, and redirects to `/student/dashboard` (`src/app/s/[token]/route.ts`).
+3. **Class shortcode** — `/c/[shortCode]` does a prefix match on `classes.id::text` and redirects to `/student-login/[classId]` (`src/app/c/[shortCode]/route.ts`).
 
-### App Router Structure
-- `/admin/*` - School/user management (admins only)
-- `/teacher/*` - Story creation, class management, review recordings
-- `/student/*` - Practice reading, submit recordings
-- `/api/*` - REST endpoints for all functionality
-- Route groups: `(admin)`, `(student)` for role-based layouts
+`src/middleware.ts` only whitelists public routes; the **client-side `AuthProvider`** handles role-based redirects, and each API route re-checks via `getCurrentUser()`. Don't rely on middleware for authorization.
 
-### Story Management
-Stories support:
-- Archive/unarchive functionality (active field controls visibility)
-- TTS audio generation via Google Cloud Text-to-Speech
-- Reading levels and grade targeting
-- Rich text content with metadata (word count, reading time)
+### Route layout
 
-Archive system: Stories have an `active` boolean field. Archived stories (active=false) are hidden from students but visible to teachers in a dedicated dashboard section.
+- `src/app/(admin)/*` — admin dashboard, schools, users, audit logs, global stories (route group)
+- `src/app/(student)/*` — student layout wrapper (route group)
+- `src/app/admin/*` — admin-managed books (not in the `(admin)` group)
+- `src/app/teacher/*` — classes, stories, assignments, spelling lists, submissions, students
+- `src/app/student/*` — dashboard, assignments, practice
+- `src/app/api/*` — REST endpoints; role checks inside each handler
+- `src/app/c/[shortCode]`, `src/app/s/[token]` — student short-URL entry points
 
-### Audio Processing
-- Student recordings uploaded to Cloudflare R2
-- TTS audio generated for stories via Google Cloud Text-to-Speech API
-- Audio playback components with controls
-- Presigned URLs for secure file access
+### Database (`src/lib/db/schema.ts`)
 
-### Key Components
-- `StoryLibrary` - Filterable story grid with archive support
-- `StoryDetailView` - Story management with TTS generation
-- `AudioRecorder` - WebRTC recording with upload
-- `VisualPasswordInput` - Student authentication UI
-- `CreateAssignmentDialog` - Teacher assignment creation
+Core reading loop: `users` → `students`/`teachers` → `classes` (teacher-owned, school-scoped) → `class_enrollments` → `assignments` (one `story` per class with due date + attempts) → `recordings` (per-attempt, WebM in R2) → `student_progress`.
+
+Beyond the reading loop, the schema covers several parallel features that share classes/students:
+- **Spelling** — `spelling_lists` → `spelling_words` (with TTS audio + Gemini-generated image + Mandarin translation + cached `spelling_word_sentences` for fill-in-the-blank) → `spelling_game_results` (per-round "snowman" game tracking).
+- **Attendance** — `class_schedules` (day-of-week meetings) + `attendance_records` (daily per-student, with makeup tracking).
+- **Student media** — `student_media` holds teacher/admin-uploaded videos, photos, audio for a student's gallery.
+- **Books & syllabus** — `books` (admin-managed materials) → `class_books` → `class_progress` (daily pages/notes) and `class_syllabus_weeks` → `class_syllabus_assignments` (book+pages per week).
+
+`stories.tts_audio` is a `jsonb` array — a story can have multiple TTS voices/versions cached.
+
+Most table soft-deletes use an `active` boolean; the stories archive flow is just `active=false` (hidden from students, shown in teacher's archived section).
+
+### Storage pattern (`src/lib/storage/r2-client.ts`)
+
+R2 bucket is private. Files are served through three proxy routes so URLs don't expire:
+- `/api/audio/[...key]` — audio (recordings + TTS)
+- `/api/images/[...key]` — images (spelling word art, etc.)
+- `/api/media/[...key]` — student media gallery
+
+`r2Client.uploadFile()` returns the proxy URL automatically based on content-type. For large uploads (student recordings, media), the client requests a **presigned PUT URL** from `/api/upload/presigned-url` and uploads directly to R2 — this bypasses Next.js's body-size limit. `next.config.mjs` also raises server-action body size to 200mb as a fallback.
+
+File-key conventions live as methods on `r2Client`: `generateAudioKey`, `generateMediaKey`, `generateSyllabusKey`, `generateImageKey`. Use these rather than composing keys inline.
+
+### TTS
+
+Primary client is Google Cloud TTS (`src/lib/tts/client.ts`) with Journey/Chirp voice presets. There's also an ElevenLabs client (`src/lib/tts/elevenlabs-client.ts`) — check which one an API route imports before assuming. TTS output is uploaded to R2 under `audio/tts/` and its URL is appended to `stories.tts_audio` or `spelling_words.audio_url`.
 
 ## Environment Variables
 
-Required in `.env.local`:
-- `DATABASE_URL` - PostgreSQL connection string
-- `R2_*` - Cloudflare R2 storage credentials
-- `GOOGLE_TTS_PROJECT_ID`, `GOOGLE_TTS_CLIENT_EMAIL`, `GOOGLE_TTS_PRIVATE_KEY` - Google Cloud Text-to-Speech credentials
-- `GEMINI_API_KEY` - Google Gemini API key for spelling word image generation
-- `BETTER_AUTH_SECRET` - Session encryption key
+Required in `.env.local` (see `.env.example`):
+- `DATABASE_URL` — Postgres connection string (Railway in prod; see `DATABASE.md`)
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`
+- `GOOGLE_TTS_PROJECT_ID`, `GOOGLE_TTS_CLIENT_EMAIL`, `GOOGLE_TTS_PRIVATE_KEY` (note the escaped `\n` in the key)
+- `GEMINI_API_KEY` — spelling word images
+- `BETTER_AUTH_SECRET` — legacy name; used as the session secret
+- `NEXT_PUBLIC_APP_URL` — used to build redirect URLs from short-code routes
 
-## API Patterns
+## Gotchas
 
-- Role-based authorization via `getCurrentUser()` in routes
-- RESTful endpoints under `/api/` with HTTP method routing
-- Consistent error handling and JSON responses
-- Archive endpoints: `POST /api/stories/[id]/archive` and `DELETE /api/stories/[id]/archive`
-
-## Database Operations
-
-- Use Drizzle ORM with typed queries
-- `npm run db:studio` to inspect data via web UI
-- Migration workflow: modify schema → `db:generate` → `db:push/migrate`
-- Seed data available via `npm run db:seed`
-
-## Build Configuration
-
-- ESLint warnings disabled for deployment (see `eslint.config.mjs`)
-- TypeScript errors ignored during build (see `next.config.ts`)
-- Turbopack enabled for faster builds and development
+- `npm run build` is **not** a correctness check: TypeScript errors are ignored and ESLint rules are mostly off. Run the dev server and exercise the feature.
+- Don't use Turbopack for production builds — the script intentionally disables it.
+- Middleware is pass-through; all auth happens in route handlers/server components via `getCurrentUser()`.
+- When adding file uploads over a few MB, use the presigned-URL flow (`/api/upload/presigned-url`), not a server-action POST.
+- Ignore `GEMINI.md` — it's stale (claims ElevenLabs is the TTS stack, references a `(teacher)` route group that doesn't exist).
