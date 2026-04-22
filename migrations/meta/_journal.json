@@ -120,6 +120,13 @@
       "when": 1774865944523,
       "tag": "0016_simple_komodo",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1776895278603,
+      "tag": "0017_giant_avengers",
+      "breakpoints": true
     }
   ]
 }

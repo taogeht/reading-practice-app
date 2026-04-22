@@ -124,6 +124,7 @@ export const classes = pgTable('classes', {
   active: boolean('active').default(true),
   showPracticeStories: boolean('show_practice_stories').default(false),
   syllabusUrl: varchar('syllabus_url', { length: 500 }),
+  currentUnit: integer('current_unit').default(1).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

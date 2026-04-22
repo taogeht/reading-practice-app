@@ -1,0 +1,222 @@
+[
+  {
+    "unit": 1,
+    "topic": "My classroom",
+    "vocabulary": [
+      "pen", "bird", "door", "folder", "bag", "ruler", "bookcase", "pencil", "window", "eraser"
+    ],
+    "grammar_patterns": [
+      {
+        "id": "g1_1",
+        "pattern": "What's this?",
+        "response": "It's a [noun].",
+        "examples": [
+          "What's this? It's a ruler.",
+          "What's this? It's a pen.",
+          "What's this? It's a bag."
+        ]
+      },
+      {
+        "id": "g1_2",
+        "pattern": "It's my [noun].",
+        "examples": [
+          "It's my pencil.",
+          "It's my bag.",
+          "It's my ruler."
+        ]
+      },
+      {
+        "id": "g1_3",
+        "pattern": "What is this? / It is my [noun].",
+        "note": "Long form of contractions",
+        "examples": [
+          "What is this? It is my bag.",
+          "It is my pencil.",
+          "It is red."
+        ]
+      }
+    ],
+    "key_sentences": [
+      "What's this?",
+      "It's a ruler.",
+      "It's my pencil.",
+      "It's red.",
+      "It's a bookcase."
+    ],
+    "colors_introduced": ["red"],
+    "exercise_types": ["choose_and_write", "complete_the_word", "write_sentences", "match"]
+  },
+  {
+    "unit": 2,
+    "topic": "My toys",
+    "vocabulary": [
+      "doll", "car", "bike", "kite", "game", "ball", "train", "puzzle", "teddy bear", "scooter"
+    ],
+    "grammar_patterns": [
+      {
+        "id": "g2_1",
+        "pattern": "Is this your [noun]?",
+        "affirmative": "Yes, it is.",
+        "negative": "No, it isn't.",
+        "examples": [
+          "Is this your teddy bear? Yes, it is.",
+          "Is this your doll? No, it isn't.",
+          "Is this your train? Yes, it is.",
+          "Is this your hat? No, it isn't."
+        ]
+      },
+      {
+        "id": "g2_2",
+        "pattern": "This is my [noun].",
+        "examples": [
+          "This is my bike.",
+          "This is my kite.",
+          "This is my train."
+        ]
+      }
+    ],
+    "key_sentences": [
+      "Is this your bike? Yes, it is.",
+      "Is this your doll? No, it isn't.",
+      "This is my train.",
+      "This is my kite."
+    ],
+    "exercise_types": ["circle_correct_word", "write_and_match", "order_words", "complete_answers"]
+  },
+  {
+    "unit": 3,
+    "topic": "My body",
+    "vocabulary": [
+      "face", "eyes", "ears", "nose", "legs", "arms", "hands", "shoulders", "finger", "eyebrow"
+    ],
+    "grammar_patterns": [
+      {
+        "id": "g3_1",
+        "pattern": "This is my [singular noun].",
+        "examples": [
+          "This is my nose.",
+          "This is my face.",
+          "This is my finger.",
+          "This is my eye."
+        ]
+      },
+      {
+        "id": "g3_2",
+        "pattern": "These are my [plural noun].",
+        "examples": [
+          "These are my eyes.",
+          "These are my hands.",
+          "These are my legs.",
+          "These are my ears."
+        ]
+      },
+      {
+        "id": "g3_3",
+        "pattern": "Singular vs plural with numbers",
+        "note": "Use singular with 'one', plural with 2+",
+        "examples": [
+          "one hand",
+          "two eyebrows",
+          "three lions",
+          "four kites",
+          "five legs"
+        ]
+      }
+    ],
+    "key_sentences": [
+      "This is my nose.",
+      "These are my eyes.",
+      "This is my finger.",
+      "These are my fingers.",
+      "one hand, two hands"
+    ],
+    "exercise_types": ["match", "circle_correct_word", "check_correct_sentence"]
+  },
+  {
+    "unit": 4,
+    "topic": "Jobs and people",
+    "vocabulary": [
+      "teacher", "doctor", "zookeeper", "farmer", "firefighter", "student", "cook", "nurse", "pilot", "police officer", "mailman"
+    ],
+    "grammar_patterns": [
+      {
+        "id": "g4_1",
+        "pattern": "Is he a [job]?",
+        "affirmative": "Yes, he is.",
+        "negative": "No, he isn't.",
+        "examples": [
+          "Is he a pilot? Yes, he is.",
+          "Is he a mailman? No, he isn't.",
+          "Is he a cook? Yes, he is."
+        ]
+      },
+      {
+        "id": "g4_2",
+        "pattern": "Is she a [job]?",
+        "affirmative": "Yes, she is.",
+        "negative": "No, she isn't.",
+        "examples": [
+          "Is she a nurse? Yes, she is.",
+          "Is she a pilot? No, she isn't.",
+          "Is she a teacher? Yes, she is."
+        ]
+      },
+      {
+        "id": "g4_3",
+        "pattern": "He's / She's a [job].",
+        "examples": [
+          "She's a teacher.",
+          "He's a doctor.",
+          "She's a nurse."
+        ]
+      }
+    ],
+    "key_sentences": [
+      "Is he a pilot? Yes, he is.",
+      "Is she a nurse? No, she isn't.",
+      "She's a teacher.",
+      "He's a doctor."
+    ],
+    "pronouns_introduced": ["he", "she", "he's", "she's"],
+    "exercise_types": ["find_and_write", "look_and_write", "order_words", "complete_sentences"]
+  },
+  {
+    "unit": 5,
+    "topic": "At the park",
+    "vocabulary": [
+      "swing", "tree", "frisbee", "jungle gym", "ice cream", "slide", "pool", "goal", "seesaw", "sandbox"
+    ],
+    "grammar_patterns": [
+      {
+        "id": "g5_1",
+        "pattern": "Where's the [noun]?",
+        "response": "It's [in/on/under] the [noun].",
+        "examples": [
+          "Where's the frisbee? It's in the goal.",
+          "Where's the book? It's in the bag.",
+          "Where's the doll? It's in the pool.",
+          "Where's the apple? It's in the bag."
+        ]
+      },
+      {
+        "id": "g5_2",
+        "pattern": "Prepositions: in, on, under",
+        "examples": [
+          "The ball is in the goal.",
+          "The umbrella is on the seesaw.",
+          "The teddy bear is under the pool.",
+          "The girl is on the slide.",
+          "The car is under the seesaw."
+        ]
+      }
+    ],
+    "key_sentences": [
+      "Where's the frisbee? It's in the goal.",
+      "The ball is in the goal.",
+      "The umbrella is on the seesaw.",
+      "The teddy bear is under the pool."
+    ],
+    "prepositions": ["in", "on", "under"],
+    "exercise_types": ["mark_yes_no", "complete_word", "complete_with_preposition", "complete_sentences"]
+  }
+]

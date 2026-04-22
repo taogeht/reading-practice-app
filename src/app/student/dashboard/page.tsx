@@ -16,9 +16,10 @@ import { FlashcardGame } from "@/components/spelling/flashcard-game";
 
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
+import HomeworkHelper from "@/components/homework-helper/homework-helper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 
@@ -352,6 +353,24 @@ export default function StudentDashboardPage() {
           </Card>
         )}
 
+        {/* Main sections — tabbed to keep the dashboard tidy as more learning activities are added */}
+        <Tabs defaultValue="reading" className="w-full">
+          <TabsList className="w-full grid grid-cols-3 h-auto p-1 bg-white/60 border border-gray-200">
+            <TabsTrigger value="reading" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
+              <BookOpen className="w-4 h-4" />
+              Reading
+            </TabsTrigger>
+            <TabsTrigger value="spelling" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
+              <SpellCheck className="w-4 h-4" />
+              Spelling
+            </TabsTrigger>
+            <TabsTrigger value="helper" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
+              <Sparkles className="w-4 h-4" />
+              Helper
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="reading" className="mt-6 space-y-8">
         {/* Assignment History - Prominent at top with feedback */}
         {(submittedAssignments.length > 0 || completedAssignments.length > 0) && (
           <Card>
@@ -465,59 +484,6 @@ export default function StudentDashboardPage() {
         {/* Student Media Gallery - only shows if teacher has uploaded media */}
         <StudentMediaGallery studentId={student.id} />
 
-        {/* Spelling Words - Prominent full-width section */}
-        <StudentSpellingSection />
-
-        {/* Spelling Games via Tabs */}
-        <div className="space-y-4">
-          <Tabs defaultValue="snowman" className="w-full">
-            <div className="space-y-2 mb-2">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Gamepad2 className="w-6 h-6 text-indigo-500" />
-                Spelling Practice
-              </h2>
-              <TabsList className="bg-white/50 border border-gray-200 h-auto gap-1 p-1 w-full grid grid-cols-3 sm:grid-cols-5">
-                <TabsTrigger value="snowman" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
-                  ⛄ Snowman
-                </TabsTrigger>
-                <TabsTrigger value="listen" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
-                  🎧 Listen & Spell
-                </TabsTrigger>
-                <TabsTrigger value="unscramble" className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800 text-xs sm:text-sm">
-                  🔀 Unscramble
-                </TabsTrigger>
-                <TabsTrigger value="missing" className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 text-xs sm:text-sm">
-                  ✏️ Missing Letters
-                </TabsTrigger>
-                <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs sm:text-sm">
-                  🃏 Flashcards
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="snowman" className="mt-0">
-              <SnowmanGame />
-            </TabsContent>
-
-            <TabsContent value="listen" className="mt-0">
-              <ListenAndSpellGame />
-            </TabsContent>
-
-            <TabsContent value="unscramble" className="mt-0">
-              <UnscrambleGame />
-            </TabsContent>
-
-            <TabsContent value="missing" className="mt-0">
-              <MissingLettersGame />
-            </TabsContent>
-
-            <TabsContent value="flashcards" className="mt-0">
-              <FlashcardGame />
-            </TabsContent>
-
-          </Tabs>
-        </div>
-
         {/* Homework & Practice Stories */}
         <StudentHomeworkSection />
 
@@ -548,6 +514,66 @@ export default function StudentDashboardPage() {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="spelling" className="mt-6 space-y-8">
+            {/* Spelling Words - Prominent full-width section */}
+            <StudentSpellingSection />
+
+            {/* Spelling Games via Tabs */}
+            <div className="space-y-4">
+              <Tabs defaultValue="snowman" className="w-full">
+                <div className="space-y-2 mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Gamepad2 className="w-6 h-6 text-indigo-500" />
+                    Spelling Practice
+                  </h2>
+                  <TabsList className="bg-white/50 border border-gray-200 h-auto gap-1 p-1 w-full grid grid-cols-3 sm:grid-cols-5">
+                    <TabsTrigger value="snowman" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
+                      ⛄ Snowman
+                    </TabsTrigger>
+                    <TabsTrigger value="listen" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
+                      🎧 Listen & Spell
+                    </TabsTrigger>
+                    <TabsTrigger value="unscramble" className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800 text-xs sm:text-sm">
+                      🔀 Unscramble
+                    </TabsTrigger>
+                    <TabsTrigger value="missing" className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 text-xs sm:text-sm">
+                      ✏️ Missing Letters
+                    </TabsTrigger>
+                    <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs sm:text-sm">
+                      🃏 Flashcards
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+
+                <TabsContent value="snowman" className="mt-0">
+                  <SnowmanGame />
+                </TabsContent>
+
+                <TabsContent value="listen" className="mt-0">
+                  <ListenAndSpellGame />
+                </TabsContent>
+
+                <TabsContent value="unscramble" className="mt-0">
+                  <UnscrambleGame />
+                </TabsContent>
+
+                <TabsContent value="missing" className="mt-0">
+                  <MissingLettersGame />
+                </TabsContent>
+
+                <TabsContent value="flashcards" className="mt-0">
+                  <FlashcardGame />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="helper" className="mt-6">
+            <HomeworkHelper />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <AvatarPickerDialog

@@ -1,0 +1,1 @@
+ALTER TABLE "classes" ADD COLUMN "current_unit" integer DEFAULT 1 NOT NULL;
