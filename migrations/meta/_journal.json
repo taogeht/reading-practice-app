@@ -127,6 +127,13 @@
       "when": 1776895278603,
       "tag": "0017_giant_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1776983838128,
+      "tag": "0018_shocking_moon_knight",
+      "breakpoints": true
     }
   ]
 }

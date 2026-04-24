@@ -611,6 +611,54 @@ export const classSyllabusAssignmentsRelations = relations(classSyllabusAssignme
   book: one(books, { fields: [classSyllabusAssignments.bookId], references: [books.id] }),
 }));
 
+// Practice Questions — AI-generated question bank per unit, reviewed by teachers
+export const practiceQuestions = pgTable(
+  'practice_questions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    unit: integer('unit').notNull(),
+    questionType: varchar('question_type', { length: 30 }).notNull().default('fill_blank_mcq'),
+    prompt: text('prompt').notNull(),
+    correctAnswer: varchar('correct_answer', { length: 100 }).notNull(),
+    distractors: jsonb('distractors').$type<string[]>().notNull(),
+    gradeLevel: integer('grade_level').default(1),
+    generatedBy: uuid('generated_by').references(() => users.id, { onDelete: 'set null' }),
+    active: boolean('active').default(true).notNull(),
+    timesServed: integer('times_served').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    unitActiveIdx: index('idx_practice_questions_unit_active').on(table.unit, table.active),
+    typeIdx: index('idx_practice_questions_type').on(table.questionType),
+  })
+);
+
+export const practiceAttempts = pgTable(
+  'practice_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    questionId: uuid('question_id').notNull().references(() => practiceQuestions.id, { onDelete: 'cascade' }),
+    selectedAnswer: varchar('selected_answer', { length: 100 }).notNull(),
+    isCorrect: boolean('is_correct').notNull(),
+    answeredAt: timestamp('answered_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    studentIdIdx: index('idx_practice_attempts_student_id').on(table.studentId),
+    questionIdIdx: index('idx_practice_attempts_question_id').on(table.questionId),
+  })
+);
+
+export const practiceQuestionsRelations = relations(practiceQuestions, ({ one, many }) => ({
+  creator: one(users, { fields: [practiceQuestions.generatedBy], references: [users.id] }),
+  attempts: many(practiceAttempts),
+}));
+
+export const practiceAttemptsRelations = relations(practiceAttempts, ({ one }) => ({
+  student: one(users, { fields: [practiceAttempts.studentId], references: [users.id] }),
+  question: one(practiceQuestions, { fields: [practiceAttempts.questionId], references: [practiceQuestions.id] }),
+}));
+
 // Simple sessions table for authentication
 export const session = pgTable('session', {
   id: varchar('id', { length: 255 }).primaryKey(),

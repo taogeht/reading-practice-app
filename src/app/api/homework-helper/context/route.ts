@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -6,9 +6,20 @@ import { classEnrollments, classes, spellingLists, spellingWords } from '@/lib/d
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
-  if (!user || user.role !== 'student') {
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Teacher/admin preview mode: unit comes from query string, no student context lookup
+  if (user.role === 'teacher' || user.role === 'admin') {
+    const unitParam = Number(request.nextUrl.searchParams.get('unit'));
+    const unit = Number.isInteger(unitParam) && unitParam >= 1 && unitParam <= 5 ? unitParam : 1;
+    return NextResponse.json({ currentUnit: unit, spellingWords: [] });
+  }
+
+  if (user.role !== 'student') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -56,18 +56,29 @@ const GREETING: ChatMessage = {
   content: "Hi! I'm Sunny! 🌟 I can help you practice English. What do you want to learn today?",
 };
 
-export default function HomeworkHelper() {
+type HomeworkHelperProps = {
+  /** When set, the helper fetches context for this unit (teacher preview mode). */
+  teacherUnit?: number;
+};
+
+export default function HomeworkHelper({ teacherUnit }: HomeworkHelperProps = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [context, setContext] = useState<HelperContext>({ currentUnit: 1, spellingWords: [] });
+  const [context, setContext] = useState<HelperContext>({
+    currentUnit: teacherUnit ?? 1,
+    spellingWords: [],
+  });
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/homework-helper/context')
+    const url = teacherUnit
+      ? `/api/homework-helper/context?unit=${teacherUnit}`
+      : '/api/homework-helper/context';
+    fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: HelperContext | null) => {
         if (!cancelled && data) setContext(data);
@@ -78,7 +89,7 @@ export default function HomeworkHelper() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [teacherUnit]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -105,6 +116,7 @@ export default function HomeworkHelper() {
             role: m.role,
             content: m.content,
           })),
+          ...(teacherUnit ? { unit: teacherUnit } : {}),
         }),
       });
 

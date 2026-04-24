@@ -60,7 +60,7 @@ function getClient(): Anthropic | null {
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
-  if (!user || user.role !== 'student') {
+  if (!user || (user.role !== 'student' && user.role !== 'teacher' && user.role !== 'admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { message?: unknown; conversationHistory?: unknown };
+  let body: { message?: unknown; conversationHistory?: unknown; unit?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -100,7 +100,17 @@ export async function POST(request: NextRequest) {
         .slice(-MAX_HISTORY_TURNS)
     : [];
 
-  const { currentUnit, spellingWords } = await resolveStudentContext(user.id);
+  // Teachers/admins pass unit explicitly (preview mode); students have it derived from session.
+  let currentUnit: number;
+  let spellingWords: string[];
+  if (user.role === 'student') {
+    ({ currentUnit, spellingWords } = await resolveStudentContext(user.id));
+  } else {
+    const teacherUnit = Number(body.unit);
+    currentUnit =
+      Number.isInteger(teacherUnit) && teacherUnit >= 1 && teacherUnit <= 5 ? teacherUnit : 1;
+    spellingWords = [];
+  }
 
   const systemBlocks: Anthropic.TextBlockParam[] = [
     {

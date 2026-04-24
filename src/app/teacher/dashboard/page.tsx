@@ -23,7 +23,9 @@ import {
   Volume2,
   BarChart3,
   LogOut,
-  List
+  List,
+  Trophy,
+  Sparkles
 } from "lucide-react";
 
 type Teacher = {
@@ -200,6 +202,14 @@ export default function TeacherDashboardPage() {
               <Button variant="outline" onClick={() => router.push('/teacher/spelling-lists')}>
                 <BookOpen className="w-4 h-4 mr-2" />
                 Manage Spelling Lists
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/teacher/practice-questions')}>
+                <Trophy className="w-4 h-4 mr-2" />
+                Practice Questions
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/teacher/helper')}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Sunny Preview
               </Button>
               <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
                 <List className="w-4 h-4 mr-2" />
