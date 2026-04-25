@@ -3,6 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
+import { isValidUnit } from '@/lib/practice/units';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url);
   const unit = Number(url.searchParams.get('unit'));
-  if (!Number.isInteger(unit) || unit < 1 || unit > 5) {
+  if (!isValidUnit(unit)) {
     return NextResponse.json({ error: 'Invalid unit' }, { status: 400 });
   }
 

@@ -6,14 +6,7 @@ import HomeworkHelper from '@/components/homework-helper/homework-helper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-
-const UNITS = [
-  { unit: 1, topic: 'My classroom' },
-  { unit: 2, topic: 'My toys' },
-  { unit: 3, topic: 'My body' },
-  { unit: 4, topic: 'Jobs and people' },
-  { unit: 5, topic: 'At the park' },
-];
+import { UNITS } from '@/lib/practice/units';
 
 export default function TeacherHelperPreviewPage() {
   const router = useRouter();

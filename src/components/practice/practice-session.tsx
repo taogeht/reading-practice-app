@@ -5,14 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft } from 'lucide-react';
-
-const UNITS = [
-  { unit: 1, topic: 'My classroom', emoji: '🏫' },
-  { unit: 2, topic: 'My toys', emoji: '🧸' },
-  { unit: 3, topic: 'My body', emoji: '👋' },
-  { unit: 4, topic: 'Jobs and people', emoji: '👩‍🏫' },
-  { unit: 5, topic: 'At the park', emoji: '🛝' },
-];
+import { UNITS } from '@/lib/practice/units';
 
 type Question = {
   id: string;

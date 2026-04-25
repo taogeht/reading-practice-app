@@ -1,0 +1,47 @@
+{
+  "unit": 13,
+  "topic": "Clean up!",
+  "vocabulary": [
+    { "word": "bed",     "image": "/images/unit13/bed.png" },
+    { "word": "blanket", "image": "/images/unit13/blanket.png" },
+    { "word": "pillow",  "image": "/images/unit13/pillow.png" },
+    { "word": "desk",    "image": "/images/unit13/desk.png" },
+    { "word": "cabinet", "image": "/images/unit13/cabinet.png" },
+    { "word": "shelf",   "image": "/images/unit13/shelf.png" },
+    { "word": "rug",     "image": "/images/unit13/rug.png" }
+  ],
+  "numbers": ["twelve", "fourteen", "fifteen", "seventeen", "twenty"],
+  "prepositions": ["in", "on", "under"],
+  "grammar_patterns": [
+    {
+      "pattern": "There's a [noun] [preposition] the [noun].",
+      "examples": [
+        "There's a train under the bed.",
+        "There's a car in the cabinet.",
+        "There's a teddy bear on the bed."
+      ]
+    },
+    {
+      "pattern": "There are [noun]s [preposition] the [noun].",
+      "examples": [
+        "There are books on the shelf.",
+        "There are coats in the cabinet.",
+        "There are dolls on the rug."
+      ]
+    },
+    {
+      "pattern": "There are [number] [noun]s [preposition] the [noun].",
+      "examples": [
+        "There are three coats in the cabinet.",
+        "There are two books on the shelf.",
+        "There are three dolls on the rug."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "There's a teddy bear on the bed.",
+    "There are three dolls on the rug.",
+    "There's a car in the cabinet.",
+    "There are books on the shelf."
+  ]
+}

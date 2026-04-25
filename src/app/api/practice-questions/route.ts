@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
 import { generateQuestions } from '@/lib/practice/generate';
+import { isValidUnit } from '@/lib/practice/units';
 import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -46,8 +47,8 @@ export async function POST(request: NextRequest) {
 
   const unit = Number(body.unit);
   const count = Math.min(Number(body.count) || 5, MAX_GENERATE);
-  if (!Number.isInteger(unit) || unit < 1 || unit > 5) {
-    return NextResponse.json({ error: 'Invalid unit (must be 1-5)' }, { status: 400 });
+  if (!isValidUnit(unit)) {
+    return NextResponse.json({ error: 'Invalid unit (must be 1-15)' }, { status: 400 });
   }
   if (count < 1) {
     return NextResponse.json({ error: 'Invalid count' }, { status: 400 });

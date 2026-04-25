@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Loader2, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { UNITS } from '@/lib/practice/units';
 
 type Question = {
   id: string;
@@ -18,14 +19,6 @@ type Question = {
   timesServed: number;
   createdAt: string;
 };
-
-const UNITS = [
-  { unit: 1, topic: 'My classroom' },
-  { unit: 2, topic: 'My toys' },
-  { unit: 3, topic: 'My body' },
-  { unit: 4, topic: 'Jobs and people' },
-  { unit: 5, topic: 'At the park' },
-];
 
 export default function PracticeQuestionsPage() {
   const router = useRouter();

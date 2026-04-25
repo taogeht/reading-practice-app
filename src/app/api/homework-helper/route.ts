@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classEnrollments, classes, spellingLists, spellingWords } from '@/lib/db/schema';
 import { buildSystemPrompt } from '@/lib/curriculum/context';
+import { isValidUnit } from '@/lib/practice/units';
 import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -107,8 +108,7 @@ export async function POST(request: NextRequest) {
     ({ currentUnit, spellingWords } = await resolveStudentContext(user.id));
   } else {
     const teacherUnit = Number(body.unit);
-    currentUnit =
-      Number.isInteger(teacherUnit) && teacherUnit >= 1 && teacherUnit <= 5 ? teacherUnit : 1;
+    currentUnit = isValidUnit(teacherUnit) ? teacherUnit : 1;
     spellingWords = [];
   }
 
