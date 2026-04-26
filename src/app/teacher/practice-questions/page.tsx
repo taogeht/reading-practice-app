@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Loader2, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { UNITS } from '@/lib/practice/units';
+import { AVAILABLE_PRACTICE_UNITS } from '@/lib/practice/units';
 
 type Question = {
   id: string;
@@ -15,6 +15,8 @@ type Question = {
   prompt: string;
   correctAnswer: string;
   distractors: string[];
+  imageUrl: string | null;
+  imagePrompt: string | null;
   active: boolean;
   timesServed: number;
   createdAt: string;
@@ -25,7 +27,9 @@ export default function PracticeQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingUnit, setGeneratingUnit] = useState<number | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<number>(1);
+  const [selectedUnit, setSelectedUnit] = useState<number>(
+    AVAILABLE_PRACTICE_UNITS[0]?.unit ?? 1
+  );
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -45,7 +49,7 @@ export default function PracticeQuestionsPage() {
 
   const unitCounts = useMemo(() => {
     const counts = new Map<number, { active: number; total: number }>();
-    for (const u of UNITS) counts.set(u.unit, { active: 0, total: 0 });
+    for (const u of AVAILABLE_PRACTICE_UNITS) counts.set(u.unit, { active: 0, total: 0 });
     for (const q of questions) {
       const entry = counts.get(q.unit);
       if (!entry) continue;
@@ -114,7 +118,7 @@ export default function PracticeQuestionsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {UNITS.map((u) => {
+              {AVAILABLE_PRACTICE_UNITS.map((u) => {
                 const counts = unitCounts.get(u.unit) ?? { active: 0, total: 0 };
                 const isSelected = selectedUnit === u.unit;
                 return (
@@ -144,7 +148,7 @@ export default function PracticeQuestionsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>
-              Unit {selectedUnit} — {UNITS.find((u) => u.unit === selectedUnit)?.topic}
+              Unit {selectedUnit} — {AVAILABLE_PRACTICE_UNITS.find((u) => u.unit === selectedUnit)?.topic}
             </CardTitle>
             <div className="flex gap-2">
               <Button
@@ -188,19 +192,40 @@ export default function PracticeQuestionsPage() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-2">
-                        <div className="text-base font-semibold text-gray-900">{q.prompt}</div>
-                        <div className="flex flex-wrap gap-2 text-sm">
-                          <Badge className="bg-green-100 text-green-800 border-green-300">
-                            {q.correctAnswer}
-                          </Badge>
-                          {q.distractors.map((d, i) => (
-                            <Badge key={i} variant="outline" className="text-gray-600">
-                              {d}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Served {q.timesServed}× · {q.active ? 'Active' : 'Inactive'}
+                        <div className="flex items-start gap-3">
+                          {q.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={q.imageUrl}
+                              alt=""
+                              className="h-20 w-20 rounded border border-gray-200 bg-white object-contain shrink-0"
+                            />
+                          ) : (
+                            <div className="h-20 w-20 rounded border border-dashed border-gray-300 bg-gray-50 text-[10px] text-gray-400 flex items-center justify-center text-center shrink-0">
+                              no image
+                            </div>
+                          )}
+                          <div className="flex-1 space-y-2">
+                            <div className="text-base font-semibold text-gray-900">{q.prompt}</div>
+                            <div className="flex flex-wrap gap-2 text-sm">
+                              <Badge className="bg-green-100 text-green-800 border-green-300">
+                                {q.correctAnswer}
+                              </Badge>
+                              {q.distractors.map((d, i) => (
+                                <Badge key={i} variant="outline" className="text-gray-600">
+                                  {d}
+                                </Badge>
+                              ))}
+                            </div>
+                            {q.imagePrompt && (
+                              <div className="text-xs text-gray-500 italic">
+                                Image: {q.imagePrompt}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500">
+                              Served {q.timesServed}× · {q.active ? 'Active' : 'Inactive'}
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-1 shrink-0">

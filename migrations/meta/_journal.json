@@ -134,6 +134,13 @@
       "when": 1776983838128,
       "tag": "0018_shocking_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1777190461084,
+      "tag": "0019_colorful_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

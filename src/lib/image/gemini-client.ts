@@ -34,10 +34,30 @@ class GeminiImageClient {
       };
     }
 
-    try {
-      const prompt = `Create a simple, colorful clipart-style illustration of "${word}". The image should show a single clear object or concept on a plain white background, suitable for a young child's spelling flashcard. No text or letters in the image. Friendly, simple, and easy to recognize.`;
+    const prompt = `Create a simple, colorful clipart-style illustration of "${word}". The image should show a single clear object or concept on a plain white background, suitable for a young child's spelling flashcard. No text or letters in the image. Friendly, simple, and easy to recognize.`;
+    return this.generateFromPrompt(prompt, `"${word}"`);
+  }
 
-      console.log(`[gemini-client] Sending request for "${word}"...`);
+  /**
+   * Generate an image from a free-form scene description. Used by practice
+   * questions where the picture must depict quantities, positions, or multi-
+   * object scenes — not just a single labeled object.
+   */
+  async generateScene(description: string): Promise<ImageGenerationResult> {
+    if (!this.apiKey) {
+      return { success: false, error: 'Gemini is not configured. Please provide GEMINI_API_KEY.' };
+    }
+    if (!description || !description.trim()) {
+      return { success: false, error: 'No description provided for image generation.' };
+    }
+
+    const prompt = `Create a simple, colorful clipart-style illustration for a Grade 1 ESL practice question. Scene: ${description.trim()}. Plain white background. No text, letters, or numbers anywhere in the image. Friendly, child-appropriate, and visually unambiguous — counts and positions should be obvious at a glance.`;
+    return this.generateFromPrompt(prompt, description.slice(0, 60));
+  }
+
+  private async generateFromPrompt(prompt: string, label: string): Promise<ImageGenerationResult> {
+    try {
+      console.log(`[gemini-client] Sending request for ${label}...`);
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${this.apiKey}`;
 
@@ -65,33 +85,22 @@ class GeminiImageClient {
       }
 
       const data = await res.json();
-      console.log('[gemini-client] Got response from Gemini');
-
       const parts = data.candidates?.[0]?.content?.parts;
-
       if (!parts) {
-        return {
-          success: false,
-          error: 'No content returned from Gemini.',
-        };
+        return { success: false, error: 'No content returned from Gemini.' };
       }
 
       for (const part of parts) {
         if (part.inlineData) {
-          const imageBuffer = Buffer.from(part.inlineData.data, 'base64');
-          const mimeType = part.inlineData.mimeType || 'image/png';
           return {
             success: true,
-            imageBuffer,
-            contentType: mimeType,
+            imageBuffer: Buffer.from(part.inlineData.data, 'base64'),
+            contentType: part.inlineData.mimeType || 'image/png',
           };
         }
       }
 
-      return {
-        success: false,
-        error: 'No image data returned from Gemini. The word may be too abstract to illustrate.',
-      };
+      return { success: false, error: 'No image data returned from Gemini.' };
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return { success: false, error: 'Gemini request timed out after 30 seconds' };

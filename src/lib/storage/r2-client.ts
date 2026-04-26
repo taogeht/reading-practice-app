@@ -233,6 +233,13 @@ class R2Client {
   }
 
   /**
+   * Generate a file key for practice question images
+   */
+  generatePracticeImageKey(unit: number, questionId: string): string {
+    return `practice-images/unit-${unit}/${questionId}.png`;
+  }
+
+  /**
    * Get file metadata
    */
   async getFileMetadata(key: string): Promise<{

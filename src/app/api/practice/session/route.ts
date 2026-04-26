@@ -3,7 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
-import { isValidUnit } from '@/lib/practice/units';
+import { isAvailablePracticeUnit } from '@/lib/practice/units';
 
 export const runtime = 'nodejs';
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url);
   const unit = Number(url.searchParams.get('unit'));
-  if (!isValidUnit(unit)) {
+  if (!isAvailablePracticeUnit(unit)) {
     return NextResponse.json({ error: 'Invalid unit' }, { status: 400 });
   }
 
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       prompt: practiceQuestions.prompt,
       correctAnswer: practiceQuestions.correctAnswer,
       distractors: practiceQuestions.distractors,
+      imageUrl: practiceQuestions.imageUrl,
     })
     .from(practiceQuestions)
     .where(and(eq(practiceQuestions.unit, unit), eq(practiceQuestions.active, true)))
@@ -65,6 +66,7 @@ export async function GET(request: NextRequest) {
   const questions = rows.map((r) => ({
     id: r.id,
     prompt: r.prompt,
+    imageUrl: r.imageUrl,
     choices: shuffle([r.correctAnswer, ...r.distractors]),
   }));
 

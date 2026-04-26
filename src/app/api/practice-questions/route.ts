@@ -4,7 +4,9 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
 import { generateQuestions } from '@/lib/practice/generate';
-import { isValidUnit } from '@/lib/practice/units';
+import { isAvailablePracticeUnit } from '@/lib/practice/units';
+import { geminiImageClient } from '@/lib/image/gemini-client';
+import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -47,8 +49,11 @@ export async function POST(request: NextRequest) {
 
   const unit = Number(body.unit);
   const count = Math.min(Number(body.count) || 5, MAX_GENERATE);
-  if (!isValidUnit(unit)) {
-    return NextResponse.json({ error: 'Invalid unit (must be 1-15)' }, { status: 400 });
+  if (!isAvailablePracticeUnit(unit)) {
+    return NextResponse.json(
+      { error: 'No curated curriculum for that unit yet.' },
+      { status: 400 }
+    );
   }
   if (count < 1) {
     return NextResponse.json({ error: 'Invalid count' }, { status: 400 });
@@ -72,12 +77,48 @@ export async function POST(request: NextRequest) {
           prompt: q.prompt,
           correctAnswer: q.correctAnswer,
           distractors: q.distractors,
+          imagePrompt: q.imagePrompt,
           generatedBy: user.id,
         }))
       )
       .returning();
 
-    return NextResponse.json({ questions: inserted, requested: count, accepted: inserted.length });
+    // Best-effort image generation: a question without an image is still
+    // usable, so we don't fail the batch if Gemini hiccups on one.
+    let imageSuccessCount = 0;
+    for (const row of inserted) {
+      if (!row.imagePrompt) continue;
+      try {
+        const result = await geminiImageClient.generateScene(row.imagePrompt);
+        if (!result.success || !result.imageBuffer) {
+          logError(new Error(result.error || 'Image generation failed'), `practice-questions.image[${row.id}]`);
+          continue;
+        }
+        const key = r2Client.generatePracticeImageKey(unit, row.id);
+        const imageUrl = await r2Client.uploadFile(
+          key,
+          result.imageBuffer,
+          result.contentType || 'image/png'
+        );
+        await db
+          .update(practiceQuestions)
+          .set({ imageUrl })
+          .where(eq(practiceQuestions.id, row.id));
+        row.imageUrl = imageUrl;
+        imageSuccessCount += 1;
+      } catch (err) {
+        logError(err, `practice-questions.image[${row.id}]`);
+      }
+      // Light rate-limit (Gemini free tier: ~10 req/min)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    return NextResponse.json({
+      questions: inserted,
+      requested: count,
+      accepted: inserted.length,
+      imagesGenerated: imageSuccessCount,
+    });
   } catch (error) {
     logError(error, 'practice-questions.generate');
     const message = error instanceof Error ? error.message : 'Generation failed';

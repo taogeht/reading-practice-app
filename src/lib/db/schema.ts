@@ -621,6 +621,8 @@ export const practiceQuestions = pgTable(
     prompt: text('prompt').notNull(),
     correctAnswer: varchar('correct_answer', { length: 100 }).notNull(),
     distractors: jsonb('distractors').$type<string[]>().notNull(),
+    imagePrompt: text('image_prompt'),
+    imageUrl: text('image_url'),
     gradeLevel: integer('grade_level').default(1),
     generatedBy: uuid('generated_by').references(() => users.id, { onDelete: 'set null' }),
     active: boolean('active').default(true).notNull(),

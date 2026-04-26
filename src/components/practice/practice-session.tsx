@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft } from 'lucide-react';
-import { UNITS } from '@/lib/practice/units';
+import { AVAILABLE_PRACTICE_UNITS, UNITS } from '@/lib/practice/units';
 
 type Question = {
   id: string;
   prompt: string;
+  imageUrl?: string | null;
   choices: string[];
 };
 
@@ -112,21 +113,27 @@ export function PracticeSession() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {UNITS.map((u) => (
-              <button
-                key={u.unit}
-                onClick={() => startUnit(u.unit)}
-                className="text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition rounded-xl p-4 cursor-pointer"
-              >
-                <div className="text-3xl mb-1">{u.emoji}</div>
-                <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
-                  Unit {u.unit}
-                </div>
-                <div className="text-sm font-bold text-gray-900">{u.topic}</div>
-              </button>
-            ))}
-          </div>
+          {AVAILABLE_PRACTICE_UNITS.length === 0 ? (
+            <div className="py-8 text-center text-gray-500">
+              No practice units are ready yet. Check back soon!
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {AVAILABLE_PRACTICE_UNITS.map((u) => (
+                <button
+                  key={u.unit}
+                  onClick={() => startUnit(u.unit)}
+                  className="text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition rounded-xl p-4 cursor-pointer"
+                >
+                  <div className="text-3xl mb-1">{u.emoji}</div>
+                  <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
+                    Unit {u.unit}
+                  </div>
+                  <div className="text-sm font-bold text-gray-900">{u.topic}</div>
+                </button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -204,7 +211,17 @@ export function PracticeSession() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="text-2xl sm:text-3xl font-bold text-center py-6 text-gray-900">
+        {question.imageUrl && (
+          <div className="flex justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={question.imageUrl}
+              alt=""
+              className="max-h-56 sm:max-h-64 w-auto rounded-xl border border-gray-200 bg-white object-contain"
+            />
+          </div>
+        )}
+        <div className="text-2xl sm:text-3xl font-bold text-center py-2 text-gray-900">
           {question.prompt.split('____').map((part, i, arr) => (
             <span key={i}>
               {part}
