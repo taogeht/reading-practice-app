@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Loader2, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ArrowLeft, ImageIcon, Loader2, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { AVAILABLE_PRACTICE_UNITS } from '@/lib/practice/units';
 
 type Question = {
@@ -31,6 +31,9 @@ export default function PracticeQuestionsPage() {
     AVAILABLE_PRACTICE_UNITS[0]?.unit ?? 1
   );
   const [error, setError] = useState<string | null>(null);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
+  const [promptDraft, setPromptDraft] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,6 +100,32 @@ export default function PracticeQuestionsPage() {
     if (!confirm(`Delete this question permanently?\n\n"${q.prompt}"`)) return;
     const res = await fetch(`/api/practice-questions/${q.id}`, { method: 'DELETE' });
     if (res.ok) setQuestions((prev) => prev.filter((item) => item.id !== q.id));
+  };
+
+  const regenerateImage = async (q: Question, overridePrompt?: string) => {
+    setRegeneratingId(q.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/practice-questions/${q.id}/regenerate-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(overridePrompt ? { imagePrompt: overridePrompt } : {}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to regenerate image');
+      const updated = data.question as Question;
+      setQuestions((prev) => prev.map((item) => (item.id === q.id ? updated : item)));
+      setEditingPromptId(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to regenerate image');
+    } finally {
+      setRegeneratingId(null);
+    }
+  };
+
+  const startEditPrompt = (q: Question) => {
+    setEditingPromptId(q.id);
+    setPromptDraft(q.imagePrompt ?? '');
   };
 
   return (
@@ -191,18 +220,18 @@ export default function PracticeQuestionsPage() {
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start gap-3">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start gap-4">
                           {q.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={q.imageUrl}
                               alt=""
-                              className="h-20 w-20 rounded border border-gray-200 bg-white object-contain shrink-0"
+                              className="h-40 w-40 rounded-lg border border-gray-200 bg-white object-contain shrink-0"
                             />
                           ) : (
-                            <div className="h-20 w-20 rounded border border-dashed border-gray-300 bg-gray-50 text-[10px] text-gray-400 flex items-center justify-center text-center shrink-0">
-                              no image
+                            <div className="h-40 w-40 rounded-lg border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-400 flex items-center justify-center text-center shrink-0 px-2">
+                              No image yet
                             </div>
                           )}
                           <div className="flex-1 space-y-2">
@@ -217,15 +246,88 @@ export default function PracticeQuestionsPage() {
                                 </Badge>
                               ))}
                             </div>
-                            {q.imagePrompt && (
-                              <div className="text-xs text-gray-500 italic">
-                                Image: {q.imagePrompt}
-                              </div>
-                            )}
                             <div className="text-xs text-gray-500">
                               Served {q.timesServed}× · {q.active ? 'Active' : 'Inactive'}
                             </div>
                           </div>
+                        </div>
+
+                        <div className="rounded border border-gray-200 bg-gray-50 p-3 text-xs space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-semibold text-gray-700 uppercase tracking-wide">
+                              Image prompt
+                            </div>
+                            <div className="flex gap-1">
+                              {editingPromptId !== q.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2"
+                                  onClick={() => startEditPrompt(q)}
+                                  disabled={regeneratingId !== null}
+                                >
+                                  Edit prompt
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2"
+                                onClick={() => regenerateImage(q)}
+                                disabled={regeneratingId !== null || !q.imagePrompt}
+                                title={
+                                  q.imagePrompt
+                                    ? 'Generate a new image from the current prompt'
+                                    : 'No prompt available yet'
+                                }
+                              >
+                                {regeneratingId === q.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                )}
+                                <span className="ml-1">Regenerate</span>
+                              </Button>
+                            </div>
+                          </div>
+                          {editingPromptId === q.id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs font-normal text-gray-800 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                rows={3}
+                                value={promptDraft}
+                                onChange={(e) => setPromptDraft(e.target.value)}
+                              />
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2"
+                                  onClick={() => setEditingPromptId(null)}
+                                  disabled={regeneratingId !== null}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="h-7 px-2"
+                                  onClick={() => regenerateImage(q, promptDraft)}
+                                  disabled={regeneratingId !== null || !promptDraft.trim()}
+                                >
+                                  {regeneratingId === q.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                  ) : (
+                                    <ImageIcon className="w-3.5 h-3.5 mr-1" />
+                                  )}
+                                  Save & regenerate
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-gray-600 italic">
+                              {q.imagePrompt || '(no prompt — old question; edit to add one)'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-1 shrink-0">
