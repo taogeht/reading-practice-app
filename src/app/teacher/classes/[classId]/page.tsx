@@ -14,6 +14,7 @@ import { WordMasterySection } from "@/components/spelling/word-mastery-section";
 import { AttendanceSection } from "@/components/attendance/attendance-section";
 
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
+import { ClassPracticeSection } from "@/components/practice/class-practice-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
@@ -474,6 +475,10 @@ export default function ClassDetailPage() {
                 {
                   id: "makeup",
                   node: <MakeupWorkSection classId={classId} />,
+                },
+                {
+                  id: "practice",
+                  node: <ClassPracticeSection classId={classId} defaultExpanded={false} />,
                 },
               ]}
             />

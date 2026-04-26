@@ -17,6 +17,7 @@ import { FlashcardGame } from "@/components/spelling/flashcard-game";
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
 import { PracticeSession } from "@/components/practice/practice-session";
+import { PracticeStatsCard } from "@/components/practice/practice-stats-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
 import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy } from "lucide-react";
@@ -570,7 +571,8 @@ export default function StudentDashboardPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="practice" className="mt-6">
+          <TabsContent value="practice" className="mt-6 space-y-6">
+            <PracticeStatsCard />
             <PracticeSession />
           </TabsContent>
         </Tabs>
