@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
   await db
     .update(practiceQuestions)
     .set({ timesServed: sql`${practiceQuestions.timesServed} + 1` })
-    .where(sql`${practiceQuestions.id} = ANY(${ids})`);
+    .where(inArray(practiceQuestions.id, ids));
 
   // Do NOT return correctAnswer to the client — grading happens server-side.
   const questions = rows.map((r) => ({
