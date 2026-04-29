@@ -94,6 +94,23 @@ export default function LoginCardsPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+      <style>{`
+        @media print {
+          @page { size: letter portrait; margin: 0.4in; }
+          html, body { background: #fff !important; }
+          .print-cards-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.25in !important;
+          }
+          .print-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            height: 4.85in;
+            box-sizing: border-box;
+          }
+        }
+      `}</style>
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 print:hidden">
           <div>
@@ -117,7 +134,7 @@ export default function LoginCardsPage() {
             <p className="text-gray-600">No students enrolled in this class yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 print:grid-cols-2 print:gap-3">
+          <div className="print-cards-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 print:grid-cols-2 print:gap-3">
             {classData.students.map((student) => {
               const loginUrl = student.loginToken
                 ? `${base}/s/${student.loginToken}`
@@ -126,7 +143,7 @@ export default function LoginCardsPage() {
               return (
                 <Card
                   key={student.id}
-                  className="bg-white border-2 border-gray-200 shadow-sm print:shadow-none print:border-gray-400"
+                  className="print-card bg-white border-2 border-gray-200 shadow-sm print:shadow-none print:border-gray-400"
                 >
                   <CardContent className="p-4 flex flex-col h-full justify-between">
                     <div className="space-y-3 text-center">
