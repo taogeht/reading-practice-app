@@ -1,0 +1,2 @@
+ALTER TABLE "spelling_lists" ADD COLUMN "is_current" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE INDEX "idx_spelling_lists_is_current" ON "spelling_lists" USING btree ("class_id","is_current");

@@ -27,12 +27,12 @@ export async function GET(request: NextRequest) {
 
         const classIds = teacherClasses.map((c) => c.id);
 
-        // Get all spelling lists for these classes
+        // Get all spelling lists for these classes (current week first)
         const lists = await db
             .select()
             .from(spellingLists)
             .where(inArray(spellingLists.classId, classIds))
-            .orderBy(desc(spellingLists.createdAt));
+            .orderBy(desc(spellingLists.isCurrent), desc(spellingLists.createdAt));
 
         // Build class lookup
         const classMap = new Map(

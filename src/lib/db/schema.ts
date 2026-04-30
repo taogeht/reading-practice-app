@@ -261,6 +261,7 @@ export const spellingLists = pgTable(
     weekNumber: integer('week_number'),
     gradeLevel: integer('grade_level'),
     isPublic: boolean('is_public').default(false),
+    isCurrent: boolean('is_current').default(false).notNull(),
     active: boolean('active').default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -270,6 +271,7 @@ export const spellingLists = pgTable(
     activeIdx: index('idx_spelling_lists_active').on(table.active),
     isPublicIdx: index('idx_spelling_lists_is_public').on(table.isPublic),
     gradeLevelIdx: index('idx_spelling_lists_grade_level').on(table.gradeLevel),
+    isCurrentIdx: index('idx_spelling_lists_is_current').on(table.classId, table.isCurrent),
   })
 );
 

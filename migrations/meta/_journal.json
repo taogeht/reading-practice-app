@@ -141,6 +141,13 @@
       "when": 1777190461084,
       "tag": "0019_colorful_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1777527314499,
+      "tag": "0020_abnormal_living_lightning",
+      "breakpoints": true
     }
   ]
 }

@@ -29,7 +29,8 @@ import {
   X,
   Scissors,
   ImageIcon,
-  Gamepad2
+  Gamepad2,
+  Star
 } from "lucide-react";
 import { format } from "date-fns";
 import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelling/manage-spelling-list-dialog";
@@ -62,6 +63,7 @@ type SpellingList = {
   weekNumber: number | null;
   gradeLevel: number | null;
   isPublic: boolean;
+  isCurrent: boolean;
   active: boolean;
   words: SpellingWord[];
   createdAt: string;
@@ -81,6 +83,7 @@ export default function ManageSpellingListsPage() {
   const [editingList, setEditingList] = useState<SpellingList | null>(null);
   const [generatingAudioFor, setGeneratingAudioFor] = useState<string | null>(null);
   const [generatingImagesFor, setGeneratingImagesFor] = useState<string | null>(null);
+  const [settingCurrentFor, setSettingCurrentFor] = useState<string | null>(null);
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [playingWordId, setPlayingWordId] = useState<string | null>(null);
   const [editingSyllablesWord, setEditingSyllablesWord] = useState<SpellingWord | null>(null);
@@ -260,6 +263,49 @@ export default function ManageSpellingListsPage() {
     }
   };
 
+  const handleToggleCurrent = async (list: SpellingList) => {
+    setSettingCurrentFor(list.id);
+    try {
+      const applyToListIds = list.allListIds || [list.id];
+      const isMakingCurrent = !list.isCurrent;
+
+      if (isMakingCurrent) {
+        const response = await fetch(`/api/teacher/spelling-lists/${list.id}/set-current`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ applyToListIds }),
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to set current week");
+        }
+      } else {
+        const params = new URLSearchParams({ applyToListIds: applyToListIds.join(",") });
+        const response = await fetch(`/api/teacher/spelling-lists/${list.id}/set-current?${params}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to clear current week");
+        }
+      }
+
+      // Optimistic local update: only one list can be current per class group, so clear others
+      setLists((prev) =>
+        prev.map((l) => {
+          if (l.id === list.id) return { ...l, isCurrent: isMakingCurrent };
+          if (isMakingCurrent) return { ...l, isCurrent: false };
+          return l;
+        })
+      );
+    } catch (err: any) {
+      console.error("Error toggling current week:", err);
+      alert(err.message || "Failed to update current week.");
+    } finally {
+      setSettingCurrentFor(null);
+    }
+  };
+
   const handleEditClick = (list: SpellingList) => {
     setEditingList(list);
     setShowManageDialog(true);
@@ -340,11 +386,24 @@ export default function ManageSpellingListsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {lists.map((list) => (
-              <Card key={list.id} className="hover:shadow-md transition-shadow flex flex-col">
-                <CardHeader className="pb-3 border-b">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg line-clamp-1">{list.title}</CardTitle>
+              <Card
+                key={list.id}
+                className={`hover:shadow-md transition-shadow flex flex-col ${
+                  list.isCurrent ? "border-amber-300 ring-2 ring-amber-200/60 shadow-amber-100" : ""
+                }`}
+              >
+                <CardHeader className={`pb-3 border-b ${list.isCurrent ? "bg-amber-50/50" : ""}`}>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <CardTitle className="text-lg line-clamp-1">{list.title}</CardTitle>
+                        {list.isCurrent && (
+                          <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2 py-0.5 flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-current" />
+                            Current Week
+                          </Badge>
+                        )}
+                      </div>
                       <CardDescription className="mt-1 flex items-center gap-2 flex-wrap">
                          <span>
                            {(list.classNames?.length || 0) > 1
@@ -475,6 +534,24 @@ export default function ManageSpellingListsPage() {
                     >
                       <Edit className="w-3.5 h-3.5 mr-2" />
                       Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-9 w-9 shrink-0 ${
+                        list.isCurrent
+                          ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                          : "text-gray-400 hover:text-amber-500 hover:bg-amber-50"
+                      }`}
+                      onClick={() => handleToggleCurrent(list)}
+                      disabled={settingCurrentFor === list.id}
+                      title={list.isCurrent ? "Unmark as current week" : "Set as current week"}
+                    >
+                      {settingCurrentFor === list.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Star className={`w-4 h-4 ${list.isCurrent ? "fill-current" : ""}`} />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"

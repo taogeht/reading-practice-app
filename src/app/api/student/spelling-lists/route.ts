@@ -49,16 +49,17 @@ export async function GET(request: NextRequest) {
                         },
                     },
                 },
-                orderBy: [desc(spellingLists.createdAt)],
+                orderBy: [desc(spellingLists.isCurrent), desc(spellingLists.createdAt)],
             });
 
             allLists.push(...lists);
         }
 
-        // Sort by creation date (most recent first)
-        allLists.sort((a, b) =>
-            new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-        );
+        // Sort: current week first, then by creation date (most recent first)
+        allLists.sort((a, b) => {
+            if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+            return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
+        });
 
         return NextResponse.json(allLists);
     } catch (error) {

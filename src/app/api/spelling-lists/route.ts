@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
             .select()
             .from(spellingLists)
             .where(eq(spellingLists.classId, classId))
-            .orderBy(desc(spellingLists.createdAt));
+            .orderBy(desc(spellingLists.isCurrent), desc(spellingLists.createdAt));
 
         // Fetch words for each list separately
         const listsWithWords = await Promise.all(
