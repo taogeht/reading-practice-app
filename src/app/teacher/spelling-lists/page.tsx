@@ -30,12 +30,14 @@ import {
   Scissors,
   ImageIcon,
   Gamepad2,
-  Star
+  Star,
+  Wand2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelling/manage-spelling-list-dialog";
 import { ImportSpellingListDialog } from "@/components/spelling/import-spelling-list-dialog";
 import { SyllableEditorDialog } from "@/components/spelling/syllable-editor-dialog";
+import { RegenerateAudioDialog } from "@/components/spelling/regenerate-audio-dialog";
 
 type ClassOption = {
   id: string;
@@ -87,6 +89,7 @@ export default function ManageSpellingListsPage() {
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [playingWordId, setPlayingWordId] = useState<string | null>(null);
   const [editingSyllablesWord, setEditingSyllablesWord] = useState<SpellingWord | null>(null);
+  const [regeneratingAudioWord, setRegeneratingAudioWord] = useState<SpellingWord | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePlayAudio = useCallback((word: SpellingWord) => {
@@ -125,6 +128,15 @@ export default function ManageSpellingListsPage() {
         w.id === wordId ? { ...w, syllables } : w
       ),
     })));
+  };
+
+  const handleAudioRegenerated = (wordId: string, newAudioUrl: string) => {
+    setLists((prev) =>
+      prev.map((list) => ({
+        ...list,
+        words: list.words.map((w) => (w.id === wordId ? { ...w, audioUrl: newAudioUrl } : w)),
+      }))
+    );
   };
 
   useEffect(() => {
@@ -487,6 +499,14 @@ export default function ManageSpellingListsPage() {
                                 ? w.syllables.join(" · ")
                                 : "add syllables..."}
                             </button>
+
+                            <button
+                              onClick={() => setRegeneratingAudioWord(w)}
+                              className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                              title="Regenerate audio with a different voice"
+                            >
+                              <Wand2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -644,6 +664,17 @@ export default function ManageSpellingListsPage() {
           onSave={(syllables) => handleSyllablesSaved(editingSyllablesWord.id, syllables)}
           onClose={() => setEditingSyllablesWord(null)}
           open={true}
+        />
+      )}
+
+      {regeneratingAudioWord && (
+        <RegenerateAudioDialog
+          wordId={regeneratingAudioWord.id}
+          word={regeneratingAudioWord.word}
+          currentAudioUrl={regeneratingAudioWord.audioUrl}
+          open={true}
+          onClose={() => setRegeneratingAudioWord(null)}
+          onRegenerated={(newUrl) => handleAudioRegenerated(regeneratingAudioWord.id, newUrl)}
         />
       )}
 
