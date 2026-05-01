@@ -623,6 +623,10 @@ export const practiceQuestions = pgTable(
     prompt: text('prompt').notNull(),
     correctAnswer: varchar('correct_answer', { length: 100 }).notNull(),
     distractors: jsonb('distractors').$type<string[]>().notNull(),
+    // Per-type extra data: sentence_builder uses { tokens: string[] }, picture_tap
+    // uses { choices: [{ id, imageUrl, imagePrompt }], correctChoiceId }. Null for
+    // fill_blank_mcq and true_false where the existing columns suffice.
+    payload: jsonb('payload'),
     imagePrompt: text('image_prompt'),
     imageUrl: text('image_url'),
     gradeLevel: integer('grade_level').default(1),
@@ -650,6 +654,13 @@ export const practiceAttempts = pgTable(
   (table) => ({
     studentIdIdx: index('idx_practice_attempts_student_id').on(table.studentId),
     questionIdIdx: index('idx_practice_attempts_question_id').on(table.questionId),
+    // Used by the Leitner selection query in /api/practice/session — pulls
+    // each (student, question)'s recent attempts to derive box + due_at.
+    studentQuestionTimeIdx: index('idx_practice_attempts_student_question_time').on(
+      table.studentId,
+      table.questionId,
+      table.answeredAt,
+    ),
   })
 );
 

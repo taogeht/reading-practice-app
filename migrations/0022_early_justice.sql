@@ -1,0 +1,2 @@
+ALTER TABLE "practice_questions" ADD COLUMN "payload" jsonb;--> statement-breakpoint
+CREATE INDEX "idx_practice_attempts_student_question_time" ON "practice_attempts" USING btree ("student_id","question_id","answered_at");
