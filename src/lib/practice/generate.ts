@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 
+export type QuestionType = 'fill_blank_mcq' | 'true_false';
+
 export type GeneratedQuestion = {
   prompt: string;
   correctAnswer: string;
@@ -67,7 +69,7 @@ function formatCurriculumText(c: UnitCurriculum): string {
 
 // ---------- Prompts ----------
 
-const SYSTEM_PROMPT = `You create fill-in-the-blank multiple-choice questions for Grade 1 ESL students (age 6-7).
+const MCQ_SYSTEM_PROMPT = `You create fill-in-the-blank multiple-choice questions for Grade 1 ESL students (age 6-7).
 
 You will be given the curriculum specification for one unit as a structured text block. Treat it as the authoritative source for which vocabulary, grammar patterns, and sentence styles this student has studied.
 
@@ -87,9 +89,28 @@ For each question also produce an "imagePrompt": a short, concrete description (
 
 Return the result as JSON matching the provided schema.`;
 
+const TRUE_FALSE_SYSTEM_PROMPT = `You create true/false picture questions for Grade 1 ESL students (age 6-7).
+
+You will be given the curriculum specification for one unit as a structured text block. Treat it as the authoritative source for which vocabulary, grammar patterns, and sentence styles this student has studied.
+
+STRICT RULES:
+1. Every statement must use ONLY words, numbers, prepositions, or grammar patterns listed in the provided specification. Never introduce content outside it.
+2. Each question is a SHORT, COMPLETE statement (3-7 words) — no blanks, no underscores. The student decides if the statement is TRUE or FALSE based on the picture.
+3. "correctAnswer" must be EXACTLY the lowercase string "true" or "false".
+4. Mix true and false roughly evenly across the batch.
+5. The picture is what makes the answer unambiguous. The statement and the picture together must have only one correct verdict.
+6. Vary the sentences — no two prompts should be identical.
+7. Match the simplicity of the unit's key sentences.
+
+For each question also produce an "imagePrompt": a short, concrete description (1 sentence, ~10-20 words) of a clipart-style scene the student looks at. Describe quantities, positions, and objects literally so the picture cannot be misread. Examples:
+- Statement "There are three dolls on the rug." (answer "true") → imagePrompt: "Three small dolls sitting in a row on a rectangular rug on a wooden floor."
+- Statement "There is a pillow under the bed." (answer "false") → imagePrompt: "A single pillow resting on top of a neatly made bed, nothing under the bed."
+
+Return the result as JSON matching the provided schema.`;
+
 // ---------- JSON schema ----------
 
-const QUESTION_SCHEMA = {
+const MCQ_QUESTION_SCHEMA = {
   type: 'object',
   properties: {
     questions: {
@@ -114,7 +135,28 @@ const QUESTION_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-function validateShape(raw: unknown): GeneratedQuestion[] {
+const TRUE_FALSE_QUESTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string' },
+          correctAnswer: { type: 'string', enum: ['true', 'false'] },
+          imagePrompt: { type: 'string' },
+        },
+        required: ['prompt', 'correctAnswer', 'imagePrompt'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['questions'],
+  additionalProperties: false,
+} as const;
+
+function validateMcqShape(raw: unknown): GeneratedQuestion[] {
   if (typeof raw !== 'object' || raw === null) throw new Error('Response is not an object');
   const questions = (raw as { questions?: unknown }).questions;
   if (!Array.isArray(questions)) throw new Error('Missing questions array');
@@ -136,14 +178,54 @@ function validateShape(raw: unknown): GeneratedQuestion[] {
   });
 }
 
+function validateTrueFalseShape(raw: unknown): GeneratedQuestion[] {
+  if (typeof raw !== 'object' || raw === null) throw new Error('Response is not an object');
+  const questions = (raw as { questions?: unknown }).questions;
+  if (!Array.isArray(questions)) throw new Error('Missing questions array');
+
+  return questions
+    .filter((q): q is { prompt: string; correctAnswer: string; imagePrompt: string } => {
+      if (typeof q !== 'object' || q === null) return false;
+      const obj = q as Record<string, unknown>;
+      const answer = typeof obj.correctAnswer === 'string' ? obj.correctAnswer.toLowerCase() : '';
+      return (
+        typeof obj.prompt === 'string' &&
+        obj.prompt.length > 0 &&
+        !obj.prompt.includes('____') &&
+        (answer === 'true' || answer === 'false') &&
+        typeof obj.imagePrompt === 'string' &&
+        obj.imagePrompt.length > 0
+      );
+    })
+    .map((q) => {
+      const answer = q.correctAnswer.toLowerCase();
+      return {
+        prompt: q.prompt,
+        correctAnswer: answer,
+        distractors: [answer === 'true' ? 'false' : 'true'],
+        imagePrompt: q.imagePrompt,
+      };
+    });
+}
+
 // ---------- Main ----------
 
 export async function generateQuestions(params: {
   unit: number;
   count: number;
+  questionType?: QuestionType;
 }): Promise<GeneratedQuestion[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+
+  const questionType: QuestionType = params.questionType ?? 'fill_blank_mcq';
+  const isTrueFalse = questionType === 'true_false';
+  const systemPrompt = isTrueFalse ? TRUE_FALSE_SYSTEM_PROMPT : MCQ_SYSTEM_PROMPT;
+  const schema = isTrueFalse ? TRUE_FALSE_QUESTION_SCHEMA : MCQ_QUESTION_SCHEMA;
+  const validate = isTrueFalse ? validateTrueFalseShape : validateMcqShape;
+  const userInstruction = isTrueFalse
+    ? `Generate ${params.count} true/false picture statements at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above. Mix true and false roughly evenly.`
+    : `Generate ${params.count} fill-in-the-blank multiple-choice questions at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above.`;
 
   const client = new Anthropic({ apiKey });
 
@@ -162,7 +244,7 @@ export async function generateQuestions(params: {
 
   userContent.push({
     type: 'text',
-    text: `Generate ${params.count} fill-in-the-blank multiple-choice questions at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above.`,
+    text: userInstruction,
   });
 
   const response = await client.messages.create({
@@ -171,12 +253,12 @@ export async function generateQuestions(params: {
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',
-      format: { type: 'json_schema', schema: QUESTION_SCHEMA },
+      format: { type: 'json_schema', schema },
     },
     system: [
       {
         type: 'text',
-        text: SYSTEM_PROMPT,
+        text: systemPrompt,
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -196,5 +278,5 @@ export async function generateQuestions(params: {
     throw new Error('Model did not return valid JSON');
   }
 
-  return validateShape(parsed);
+  return validate(parsed);
 }

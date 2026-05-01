@@ -3,7 +3,7 @@ import { and, eq, desc } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
-import { generateQuestions } from '@/lib/practice/generate';
+import { generateQuestions, type QuestionType } from '@/lib/practice/generate';
 import { isAvailablePracticeUnit } from '@/lib/practice/units';
 import { geminiImageClient } from '@/lib/image/gemini-client';
 import { r2Client } from '@/lib/storage/r2-client';
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { unit?: unknown; count?: unknown };
+  let body: { unit?: unknown; count?: unknown; questionType?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
 
   const unit = Number(body.unit);
   const count = Math.min(Number(body.count) || 5, MAX_GENERATE);
+  const questionType: QuestionType =
+    body.questionType === 'true_false' ? 'true_false' : 'fill_blank_mcq';
   if (!isAvailablePracticeUnit(unit)) {
     return NextResponse.json(
       { error: 'No curated curriculum for that unit yet.' },
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const generated = await generateQuestions({ unit, count });
+    const generated = await generateQuestions({ unit, count, questionType });
     if (generated.length === 0) {
       return NextResponse.json(
         { error: 'Generator returned no valid questions. Try again.' },
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
       .values(
         generated.map((q) => ({
           unit,
-          questionType: 'fill_blank_mcq',
+          questionType,
           prompt: q.prompt,
           correctAnswer: q.correctAnswer,
           distractors: q.distractors,

@@ -6,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ImageIcon, Loader2, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AVAILABLE_PRACTICE_UNITS } from '@/lib/practice/units';
+
+type QuestionType = 'fill_blank_mcq' | 'true_false';
 
 type Question = {
   id: string;
@@ -34,6 +37,7 @@ export default function PracticeQuestionsPage() {
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
   const [promptDraft, setPromptDraft] = useState('');
+  const [generateType, setGenerateType] = useState<QuestionType>('fill_blank_mcq');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,7 +75,7 @@ export default function PracticeQuestionsPage() {
       const res = await fetch('/api/practice-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unit, count }),
+        body: JSON.stringify({ unit, count, questionType: generateType }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to generate');
@@ -179,7 +183,20 @@ export default function PracticeQuestionsPage() {
             <CardTitle>
               Unit {selectedUnit} — {AVAILABLE_PRACTICE_UNITS.find((u) => u.unit === selectedUnit)?.topic}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <Select
+                value={generateType}
+                onValueChange={(v) => setGenerateType(v as QuestionType)}
+                disabled={generatingUnit !== null}
+              >
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fill_blank_mcq">Multiple Choice</SelectItem>
+                  <SelectItem value="true_false">True / False</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 onClick={() => generate(selectedUnit, 5)}
                 disabled={generatingUnit !== null}
@@ -235,7 +252,14 @@ export default function PracticeQuestionsPage() {
                             </div>
                           )}
                           <div className="flex-1 space-y-2">
-                            <div className="text-base font-semibold text-gray-900">{q.prompt}</div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="text-base font-semibold text-gray-900">{q.prompt}</div>
+                              {q.questionType === 'true_false' && (
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-wide bg-purple-50 text-purple-700 border-purple-200">
+                                  True / False
+                                </Badge>
+                              )}
+                            </div>
                             <div className="flex flex-wrap gap-2 text-sm">
                               <Badge className="bg-green-100 text-green-800 border-green-300">
                                 {q.correctAnswer}
