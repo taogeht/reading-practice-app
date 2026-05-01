@@ -16,9 +16,11 @@ import { FlashcardGame } from "@/components/spelling/flashcard-game";
 
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
+import { PracticeSession } from "@/components/practice/practice-session";
+import { PracticeStatsCard } from "@/components/practice/practice-stats-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 
@@ -354,7 +356,7 @@ export default function StudentDashboardPage() {
 
         {/* Main sections — tabbed to keep the dashboard tidy as more learning activities are added */}
         <Tabs defaultValue="reading" className="w-full">
-          <TabsList className="w-full grid grid-cols-2 h-auto p-1 bg-white/60 border border-gray-200">
+          <TabsList className="w-full grid grid-cols-3 h-auto p-1 bg-white/60 border border-gray-200">
             <TabsTrigger value="reading" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
               <BookOpen className="w-4 h-4" />
               Reading
@@ -362,6 +364,10 @@ export default function StudentDashboardPage() {
             <TabsTrigger value="spelling" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
               <SpellCheck className="w-4 h-4" />
               Spelling
+            </TabsTrigger>
+            <TabsTrigger value="practice" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
+              <Trophy className="w-4 h-4" />
+              Practice
             </TabsTrigger>
           </TabsList>
 
@@ -565,6 +571,10 @@ export default function StudentDashboardPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="practice" className="mt-6 space-y-6">
+            <PracticeStatsCard />
+            <PracticeSession />
+          </TabsContent>
         </Tabs>
       </div>
 
