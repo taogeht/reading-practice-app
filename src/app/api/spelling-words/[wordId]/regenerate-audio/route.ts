@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { spellingWords, spellingLists, classes } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { googleTtsClient } from '@/lib/tts/client';
 import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { r2Client } from '@/lib/storage/r2-client';
@@ -14,11 +14,14 @@ interface RouteParams {
 }
 
 // POST /api/spelling-words/[wordId]/regenerate-audio
-// Body: { voiceId?: string, applyToSchool?: boolean }
+// Body: {
+//   voiceId?: string,
+//   applyToListIds?: string[],   // sibling list IDs (deduped view) — same-text words inside these get the new audio too
+//   applyToSchool?: boolean,     // also overwrite every matching same-text word in the whole school
+// }
 // Generates a fresh TTS audio file for a single spelling word using the chosen
 // voice. Uploads to a new versioned R2 key so the URL changes (avoids stale
-// browser cache). When applyToSchool is true, propagates the new URL to all
-// matching same-text words in the same school.
+// browser cache).
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
         const { wordId } = await params;
@@ -31,6 +34,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const body = await request.json().catch(() => ({}));
         const voiceParam: string | undefined = body.voiceId;
         const applyToSchool: boolean = body.applyToSchool === true;
+        const applyToListIds: string[] = Array.isArray(body.applyToListIds)
+            ? body.applyToListIds.filter((id: unknown): id is string => typeof id === 'string')
+            : [];
 
         // Resolve TTS client + voice (mirrors /api/spelling-lists/[id]/generate-audio)
         let ttsClient: typeof googleTtsClient | typeof elevenLabsTtsClient;
@@ -103,7 +109,35 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Update this word
         await db.update(spellingWords).set({ audioUrl }).where(eq(spellingWords.id, word.id));
 
-        let propagatedCount = 0;
+        // Propagate to sibling lists (the deduped teacher view of the same logical list).
+        // Authorize: only sibling lists owned by this teacher (or anything for admin).
+        let siblingsUpdated = 0;
+        const siblingListIds = applyToListIds.filter((id) => id !== word.spellingList.id);
+        if (siblingListIds.length > 0) {
+            const allowedLists = await db
+                .select({ id: spellingLists.id })
+                .from(spellingLists)
+                .innerJoin(classes, eq(classes.id, spellingLists.classId))
+                .where(
+                    user.role === 'admin'
+                        ? inArray(spellingLists.id, siblingListIds)
+                        : and(inArray(spellingLists.id, siblingListIds), eq(classes.teacherId, user.id))
+                );
+
+            const allowedIds = allowedLists.map((row) => row.id);
+            if (allowedIds.length > 0) {
+                const result = await db.execute(sql`
+                    UPDATE spelling_words sw
+                    SET audio_url = ${audioUrl}
+                    WHERE sw.spelling_list_id = ANY(${allowedIds})
+                      AND LOWER(sw.word) = LOWER(${word.word})
+                      AND sw.id != ${word.id}
+                `);
+                siblingsUpdated = result.rowCount ?? 0;
+            }
+        }
+
+        let schoolUpdated = 0;
         if (applyToSchool && word.spellingList.class.schoolId) {
             // Propagate to every matching same-text word in classes belonging to the same school
             const result = await db.execute(sql`
@@ -114,9 +148,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 WHERE sw.spelling_list_id = sl.id
                   AND c.school_id = ${word.spellingList.class.schoolId}
                   AND LOWER(sw.word) = LOWER(${word.word})
-                  AND sw.id != ${word.id}
+                  AND sw.audio_url IS DISTINCT FROM ${audioUrl}
             `);
-            propagatedCount = result.rowCount ?? 0;
+            schoolUpdated = result.rowCount ?? 0;
         }
 
         return NextResponse.json({
@@ -125,7 +159,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             audioUrl,
             provider: ttsProvider,
             voiceId,
-            propagatedCount,
+            siblingsUpdated,
+            schoolUpdated,
         });
     } catch (error) {
         console.error('[POST /api/spelling-words/[wordId]/regenerate-audio] Error:', error);

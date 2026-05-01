@@ -18,6 +18,8 @@ interface RegenerateAudioDialogProps {
     wordId: string;
     word: string;
     currentAudioUrl: string | null;
+    /** Sibling list IDs (deduped view) — same-text words inside these lists also get the new audio. */
+    applyToListIds?: string[];
     open: boolean;
     onClose: () => void;
     onRegenerated: (newAudioUrl: string) => void;
@@ -27,6 +29,7 @@ export function RegenerateAudioDialog({
     wordId,
     word,
     currentAudioUrl,
+    applyToListIds,
     open,
     onClose,
     onRegenerated,
@@ -108,7 +111,11 @@ export function RegenerateAudioDialog({
             const response = await fetch(`/api/spelling-words/${wordId}/regenerate-audio`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ voiceId: selectedVoice || undefined, applyToSchool }),
+                body: JSON.stringify({
+                    voiceId: selectedVoice || undefined,
+                    applyToListIds: applyToListIds || [],
+                    applyToSchool,
+                }),
             });
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
@@ -209,8 +216,8 @@ export function RegenerateAudioDialog({
                         <span>
                             <span className="font-medium">Apply to whole school</span>
                             <span className="block text-xs text-gray-500">
-                                Replace audio for every "{word}" across all classes in this school.
-                                Off by default — only this word is updated.
+                                Also replace audio for every "{word}" in other teachers' classes in this school.
+                                By default, only your classes that share this list are updated.
                             </span>
                         </span>
                     </label>

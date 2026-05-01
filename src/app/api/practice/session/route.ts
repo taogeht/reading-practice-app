@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { practiceQuestions } from '@/lib/db/schema';
+import { classEnrollments, classPracticeUnits, practiceQuestions } from '@/lib/db/schema';
 import { isAvailablePracticeUnit } from '@/lib/practice/units';
 
 export const runtime = 'nodejs';
@@ -29,6 +29,20 @@ export async function GET(request: NextRequest) {
   const unit = Number(url.searchParams.get('unit'));
   if (!isAvailablePracticeUnit(unit)) {
     return NextResponse.json({ error: 'Invalid unit' }, { status: 400 });
+  }
+
+  // Enforce: student must be enrolled in a class that has this unit enabled
+  const enabled = await db
+    .select({ unit: classPracticeUnits.unit })
+    .from(classPracticeUnits)
+    .innerJoin(classEnrollments, eq(classEnrollments.classId, classPracticeUnits.classId))
+    .where(and(eq(classEnrollments.studentId, user.id), eq(classPracticeUnits.unit, unit)))
+    .limit(1);
+  if (enabled.length === 0) {
+    return NextResponse.json(
+      { error: 'This unit is not enabled for your class.' },
+      { status: 403 }
+    );
   }
 
   const rows = await db

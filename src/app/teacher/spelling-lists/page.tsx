@@ -89,7 +89,7 @@ export default function ManageSpellingListsPage() {
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [playingWordId, setPlayingWordId] = useState<string | null>(null);
   const [editingSyllablesWord, setEditingSyllablesWord] = useState<SpellingWord | null>(null);
-  const [regeneratingAudioWord, setRegeneratingAudioWord] = useState<SpellingWord | null>(null);
+  const [regeneratingAudio, setRegeneratingAudio] = useState<{ word: SpellingWord; listIds: string[] } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePlayAudio = useCallback((word: SpellingWord) => {
@@ -501,7 +501,12 @@ export default function ManageSpellingListsPage() {
                             </button>
 
                             <button
-                              onClick={() => setRegeneratingAudioWord(w)}
+                              onClick={() =>
+                                setRegeneratingAudio({
+                                  word: w,
+                                  listIds: list.allListIds || [list.id],
+                                })
+                              }
                               className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
                               title="Regenerate audio with a different voice"
                             >
@@ -667,14 +672,15 @@ export default function ManageSpellingListsPage() {
         />
       )}
 
-      {regeneratingAudioWord && (
+      {regeneratingAudio && (
         <RegenerateAudioDialog
-          wordId={regeneratingAudioWord.id}
-          word={regeneratingAudioWord.word}
-          currentAudioUrl={regeneratingAudioWord.audioUrl}
+          wordId={regeneratingAudio.word.id}
+          word={regeneratingAudio.word.word}
+          currentAudioUrl={regeneratingAudio.word.audioUrl}
+          applyToListIds={regeneratingAudio.listIds}
           open={true}
-          onClose={() => setRegeneratingAudioWord(null)}
-          onRegenerated={(newUrl) => handleAudioRegenerated(regeneratingAudioWord.id, newUrl)}
+          onClose={() => setRegeneratingAudio(null)}
+          onRegenerated={(newUrl) => handleAudioRegenerated(regeneratingAudio.word.id, newUrl)}
         />
       )}
 

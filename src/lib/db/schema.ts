@@ -653,6 +653,28 @@ export const practiceAttempts = pgTable(
   })
 );
 
+// Per-class allowlist of practice units. A row (class_id, unit) means the
+// students in that class can pick that unit in the practice picker. Empty for a
+// class = nothing visible to its students. Backfilled with every existing class
+// × every available unit so legacy classes don't lose access on first deploy.
+export const classPracticeUnits = pgTable(
+  'class_practice_units',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    unit: integer('unit').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    uniqueClassUnit: uniqueIndex('unique_class_practice_unit').on(table.classId, table.unit),
+    classIdIdx: index('idx_class_practice_units_class_id').on(table.classId),
+  })
+);
+
+export const classPracticeUnitsRelations = relations(classPracticeUnits, ({ one }) => ({
+  class: one(classes, { fields: [classPracticeUnits.classId], references: [classes.id] }),
+}));
+
 export const practiceQuestionsRelations = relations(practiceQuestions, ({ one, many }) => ({
   creator: one(users, { fields: [practiceQuestions.generatedBy], references: [users.id] }),
   attempts: many(practiceAttempts),

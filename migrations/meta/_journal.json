@@ -148,6 +148,13 @@
       "when": 1777527314499,
       "tag": "0020_abnormal_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1777619430159,
+      "tag": "0021_wild_proudstar",
+      "breakpoints": true
     }
   ]
 }

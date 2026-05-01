@@ -14,6 +14,7 @@ import { AttendanceSection } from "@/components/attendance/attendance-section";
 
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { ClassPracticeSection } from "@/components/practice/class-practice-section";
+import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-units-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
@@ -470,6 +471,10 @@ export default function ClassDetailPage() {
                 {
                   id: "makeup",
                   node: <MakeupWorkSection classId={classId} />,
+                },
+                {
+                  id: "practice-units",
+                  node: <ClassPracticeUnitsSection classId={classId} defaultExpanded={false} />,
                 },
                 {
                   id: "practice",

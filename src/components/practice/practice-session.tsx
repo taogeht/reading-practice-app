@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft } from 'lucide-react';
-import { AVAILABLE_PRACTICE_UNITS, UNITS } from '@/lib/practice/units';
+import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2 } from 'lucide-react';
+import type { UnitInfo } from '@/lib/practice/units';
 
 type Question = {
   id: string;
@@ -26,6 +26,27 @@ export function PracticeSession() {
   const [selected, setSelected] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ correct: boolean; correctAnswer: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [availableUnits, setAvailableUnits] = useState<UnitInfo[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/student/practice/available-units');
+        if (!res.ok) {
+          if (!cancelled) setAvailableUnits([]);
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) setAvailableUnits(data.units || []);
+      } catch {
+        if (!cancelled) setAvailableUnits([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const startUnit = async (unit: number) => {
     setView({ name: 'loading' });
@@ -113,13 +134,17 @@ export function PracticeSession() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {AVAILABLE_PRACTICE_UNITS.length === 0 ? (
+          {availableUnits === null ? (
+            <div className="py-8 text-center text-gray-500 flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading units…
+            </div>
+          ) : availableUnits.length === 0 ? (
             <div className="py-8 text-center text-gray-500">
-              No practice units are ready yet. Check back soon!
+              No practice units are turned on for your class yet. Ask your teacher!
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {AVAILABLE_PRACTICE_UNITS.map((u) => (
+              {availableUnits.map((u) => (
                 <button
                   key={u.unit}
                   onClick={() => startUnit(u.unit)}
@@ -196,7 +221,7 @@ export function PracticeSession() {
   // --- Quiz ---
   const question = view.questions[view.index];
   const isAnswered = feedback !== null;
-  const unitInfo = UNITS.find((u) => u.unit === view.unit);
+  const unitInfo = (availableUnits ?? []).find((u) => u.unit === view.unit);
 
   return (
     <Card>
