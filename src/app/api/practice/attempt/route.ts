@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceAttempts, practiceQuestions } from '@/lib/db/schema';
@@ -49,6 +49,19 @@ export async function POST(request: NextRequest) {
 
   const isCorrect = normalize(selectedAnswer) === normalize(question.correctAnswer);
 
+  // Check BEFORE insert: has this student attempted this question before?
+  // Used below to gate the wrong-answer effort credit so it can only fire on
+  // the very first attempt — students can't farm XP by re-failing the same
+  // question.
+  const [priorAttempt] = await db
+    .select({ id: practiceAttempts.id })
+    .from(practiceAttempts)
+    .where(
+      and(eq(practiceAttempts.studentId, user.id), eq(practiceAttempts.questionId, questionId))
+    )
+    .limit(1);
+  const isFirstAttemptOnQuestion = !priorAttempt;
+
   const [attempt] = await db
     .insert(practiceAttempts)
     .values({
@@ -59,7 +72,12 @@ export async function POST(request: NextRequest) {
     })
     .returning({ id: practiceAttempts.id });
 
-  // XP for correct answers only. First-correct-today gets a bonus.
+  // XP awards:
+  //   - Correct → practice_correct (3 XP), plus practice_first_try_bonus (+2)
+  //     once per day for the first correct answer of the day.
+  //   - Wrong → practice_wrong_first_attempt (1 XP) ONLY if this was the
+  //     student's first ever attempt at this question. Subsequent wrong
+  //     attempts pay nothing, so re-failing on purpose can't farm XP.
   let award = null;
   if (isCorrect) {
     const isFirstToday = await isFirstPracticeCorrectToday(user.id);
@@ -67,6 +85,8 @@ export async function POST(request: NextRequest) {
     if (isFirstToday) {
       await awardXp(user.id, 'practice_first_try_bonus', attempt.id);
     }
+  } else if (isFirstAttemptOnQuestion) {
+    award = await awardXp(user.id, 'practice_wrong_first_attempt', attempt.id);
   }
 
   return NextResponse.json({

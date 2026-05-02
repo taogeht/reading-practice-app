@@ -5,6 +5,7 @@ export type XpEventType =
   | 'spelling_lost'
   | 'practice_correct'
   | 'practice_first_try_bonus'
+  | 'practice_wrong_first_attempt'
   | 'recording_submitted'
   | 'daily_login'
   | 'streak_7_bonus'
@@ -16,6 +17,10 @@ export const XP_VALUES: Record<XpEventType, number> = {
   spelling_lost: 1,
   practice_correct: 3,
   practice_first_try_bonus: 2,
+  // Effort credit when a student gets a question wrong, but ONLY on their very
+  // first attempt at that question — prevents grinding XP by spamming wrong
+  // answers on the same question.
+  practice_wrong_first_attempt: 1,
   recording_submitted: 20,
   daily_login: 10,
   streak_7_bonus: 25,
