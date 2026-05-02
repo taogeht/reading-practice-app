@@ -11,7 +11,7 @@ import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-const MAX_GENERATE = 10;
+const MAX_GENERATE = 20;
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();

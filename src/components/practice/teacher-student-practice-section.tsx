@@ -23,7 +23,15 @@ type FlaggedQuestion = {
   totalAttempts: number;
   wrongAttempts: number;
   lastWrongAt: string | null;
+  wrongAnswers: Array<{ answer: string; count: number }>;
 };
+
+function formatWrongAnswers(answers: Array<{ answer: string; count: number }>): string {
+  if (answers.length === 0) return '';
+  return answers
+    .map((a) => (a.count > 1 ? `"${a.answer}" (${a.count}×)` : `"${a.answer}"`))
+    .join(', ');
+}
 
 type Response = {
   unitStats: UnitStat[];
@@ -177,6 +185,11 @@ export function TeacherStudentPracticeSection({ studentId }: { studentId: string
                           <Badge className="bg-green-100 text-green-800 border-green-300">
                             answer: {q.correctAnswer}
                           </Badge>
+                          {q.wrongAnswers.length > 0 && (
+                            <Badge className="bg-red-100 text-red-800 border-red-300">
+                              said: {formatWrongAnswers(q.wrongAnswers)}
+                            </Badge>
+                          )}
                           <span className="text-red-700 font-medium">
                             wrong {q.wrongAttempts}/{q.totalAttempts}
                           </span>

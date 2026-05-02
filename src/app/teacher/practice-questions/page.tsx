@@ -46,6 +46,7 @@ export default function PracticeQuestionsPage() {
   const [promptDraft, setPromptDraft] = useState('');
   const [generateType, setGenerateType] = useState<QuestionType>('fill_blank_mcq');
   const [vocabMix, setVocabMix] = useState<VocabMix>('mix');
+  const [generateCount, setGenerateCount] = useState<5 | 10 | 20>(5);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -225,8 +226,22 @@ export default function PracticeQuestionsPage() {
                   <SelectItem value="heavy-review">Heavy review (30/70)</SelectItem>
                 </SelectContent>
               </Select>
+              <Select
+                value={String(generateCount)}
+                onValueChange={(v) => setGenerateCount(Number(v) as 5 | 10 | 20)}
+                disabled={generatingUnit !== null}
+              >
+                <SelectTrigger className="w-[110px] h-9" title="How many questions to generate in this batch">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 at once</SelectItem>
+                  <SelectItem value="10">10 at once</SelectItem>
+                  <SelectItem value="20">20 at once</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
-                onClick={() => generate(selectedUnit, 5)}
+                onClick={() => generate(selectedUnit, generateCount)}
                 disabled={generatingUnit !== null}
               >
                 {generatingUnit === selectedUnit ? (
@@ -237,7 +252,7 @@ export default function PracticeQuestionsPage() {
                 ) : (
                   <>
                     <Plus className="w-4 h-4 mr-2" />
-                    Generate 5 more
+                    Generate {generateCount} more
                   </>
                 )}
               </Button>

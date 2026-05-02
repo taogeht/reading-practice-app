@@ -24,6 +24,7 @@ type FlaggedRow = {
   total_attempts: number;
   wrong_attempts: number;
   last_wrong_at: string | null;
+  wrong_answers: Array<{ answer: string; count: number }> | null;
 };
 
 export async function GET(
@@ -81,7 +82,21 @@ export async function GET(
       pq.image_url AS image_url,
       COUNT(*)::int AS total_attempts,
       COUNT(*) FILTER (WHERE NOT pa.is_correct)::int AS wrong_attempts,
-      MAX(pa.answered_at) FILTER (WHERE NOT pa.is_correct) AS last_wrong_at
+      MAX(pa.answered_at) FILTER (WHERE NOT pa.is_correct) AS last_wrong_at,
+      (
+        SELECT jsonb_agg(jsonb_build_object('answer', wa.selected_answer, 'count', wa.cnt) ORDER BY wa.cnt DESC, wa.last_at DESC)
+        FROM (
+          SELECT
+            pa2.selected_answer,
+            COUNT(*)::int AS cnt,
+            MAX(pa2.answered_at) AS last_at
+          FROM practice_attempts pa2
+          WHERE pa2.student_id = ${studentId}
+            AND pa2.question_id = pq.id
+            AND pa2.is_correct = false
+          GROUP BY pa2.selected_answer
+        ) wa
+      ) AS wrong_answers
     FROM practice_attempts pa
     JOIN practice_questions pq ON pq.id = pa.question_id
     WHERE pa.student_id = ${studentId}
@@ -100,6 +115,7 @@ export async function GET(
     totalAttempts: r.total_attempts,
     wrongAttempts: r.wrong_attempts,
     lastWrongAt: r.last_wrong_at,
+    wrongAnswers: r.wrong_answers ?? [],
   }));
 
   return NextResponse.json({ unitStats, flaggedQuestions });

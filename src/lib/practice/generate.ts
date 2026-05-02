@@ -422,9 +422,13 @@ async function runGenerationCall(
     },
   ];
 
+  // ~250 tokens per question covers sentence_builder's biggest payloads;
+  // floor of 1500 keeps small batches from being constrained.
+  const maxTokens = Math.max(1500, count * 250);
+
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 2000,
+    max_tokens: maxTokens,
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',
