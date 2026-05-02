@@ -12,6 +12,49 @@
     { "word": "juice",         "image": "/images/unit-12/juice.png" },
     { "word": "milk",          "image": "/images/unit-12/milk.png" },
     { "word": "tea",           "image": "/images/unit-12/tea.png" },
-    { "word": "water",         "image": "/images/unit-12/water.png" }
+    { "word": "water",         "image": "/images/unit-12/water.png" },
+    { "word": "egg" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "Do you like [food]?",
+      "examples": [
+        "Do you like fish?",
+        "Do you like milk?",
+        "Do you like carrots?",
+        "Do you like grapes?"
+      ]
+    },
+    {
+      "pattern": "Yes, I do. / No, I don't.",
+      "examples": [
+        "Do you like bread? Yes, I do.",
+        "Do you like tea? No, I don't.",
+        "Do you like tomatoes? No, I don't."
+      ]
+    },
+    {
+      "pattern": "I like [food]. / I don't like [food].",
+      "examples": [
+        "I like hot chocolate.",
+        "I don't like rice.",
+        "I don't like grapes.",
+        "I like sandwiches."
+      ]
+    },
+    {
+      "pattern": "What do you like?",
+      "examples": [
+        "What do you like?"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Do you like fish? Yes, I do.",
+    "Do you like milk? No, I don't.",
+    "I like hot chocolate.",
+    "I don't like rice.",
+    "What do you like?",
+    "I like bread and yogurt."
   ]
 }

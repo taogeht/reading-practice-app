@@ -16,34 +16,39 @@
   "prepositions": ["in", "on", "under"],
   "grammar_patterns": [
     {
-      "pattern": "There's a [noun] [preposition] the [noun].",
+      "pattern": "There's a [noun] [preposition] my/the [noun].",
       "examples": [
-        "There's a train under the bed.",
+        "There's a train under my bed.",
         "There's a car in the cabinet.",
-        "There's a teddy bear on the bed."
+        "There's a teddy bear on my bed.",
+        "There's a soccer ball under the bed."
       ]
     },
     {
-      "pattern": "There are [noun]s [preposition] the [noun].",
+      "pattern": "There are [noun]s [preposition] my/the [noun].",
       "examples": [
         "There are books on the shelf.",
-        "There are coats in the cabinet.",
-        "There are dolls on the rug."
+        "There are coats in my cabinet.",
+        "There are dolls on my rug.",
+        "There are pillows on the bed."
       ]
     },
     {
-      "pattern": "There are [number] [noun]s [preposition] the [noun].",
+      "pattern": "There are [number] [noun]s [preposition] my/the [noun].",
       "examples": [
         "There are three coats in the cabinet.",
-        "There are two books on the shelf.",
-        "There are twelve dolls on the rug."
+        "There are two books on my shelf.",
+        "There are twelve dolls on the rug.",
+        "There are fifteen books on my shelf."
       ]
     }
   ],
   "key_sentences": [
-    "There's a teddy bear on the bed.",
+    "There's a teddy bear on my bed.",
     "There are three dolls on the rug.",
-    "There's a car in the cabinet.",
-    "There are books on the shelf."
+    "There's a car in my cabinet.",
+    "There are books on the shelf.",
+    "There's a soccer ball under my bed.",
+    "There are twelve pillows on the bed."
   ]
 }
