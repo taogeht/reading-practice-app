@@ -1,0 +1,16 @@
+{
+  "unit": 5,
+  "topic": "Where's the ball?",
+  "vocabulary": [
+    { "word": "armbands",   "image": "/images/unit-5/armbands.png" },
+    { "word": "jungle gym", "image": "/images/unit-5/jungle-gym.png" },
+    { "word": "frisbee",    "image": "/images/unit-5/frisbee.png" },
+    { "word": "ice cream",  "image": "/images/unit-5/ice-cream.png" },
+    { "word": "goal",       "image": "/images/unit-5/goal.png" },
+    { "word": "pool",       "image": "/images/unit-5/pool.png" },
+    { "word": "seesaw",     "image": "/images/unit-5/seesaw.png" },
+    { "word": "slide",      "image": "/images/unit-5/slide.png" },
+    { "word": "swing",      "image": "/images/unit-5/swing.png" },
+    { "word": "tree",       "image": "/images/unit-5/tree.png" }
+  ]
+}

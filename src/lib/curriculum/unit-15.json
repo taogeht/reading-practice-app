@@ -1,0 +1,17 @@
+{
+  "unit": 15,
+  "topic": "Let's play ball!",
+  "vocabulary": [
+    { "word": "bat",        "image": "/images/unit-15/bat.png" },
+    { "word": "beach",      "image": "/images/unit-15/beach.png" },
+    { "word": "boat",       "image": "/images/unit-15/boat.png" },
+    { "word": "pail",       "image": "/images/unit-15/pail.png" },
+    { "word": "crab",       "image": "/images/unit-15/crab.png" },
+    { "word": "ice pop",    "image": "/images/unit-15/ice-pop.png" },
+    { "word": "sandcastle", "image": "/images/unit-15/sandcastle.png" },
+    { "word": "shell",      "image": "/images/unit-15/shell.png" },
+    { "word": "shovel",     "image": "/images/unit-15/shovel.png" },
+    { "word": "sunscreen",  "image": "/images/unit-15/sunscreen.png" },
+    { "word": "the ocean",  "image": "/images/unit-15/the-ocean.png" }
+  ]
+}

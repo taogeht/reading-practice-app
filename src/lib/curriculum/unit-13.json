@@ -2,15 +2,17 @@
   "unit": 13,
   "topic": "Clean up!",
   "vocabulary": [
-    { "word": "bed",     "image": "/images/unit13/bed.png" },
-    { "word": "blanket", "image": "/images/unit13/blanket.png" },
-    { "word": "pillow",  "image": "/images/unit13/pillow.png" },
-    { "word": "desk",    "image": "/images/unit13/desk.png" },
-    { "word": "cabinet", "image": "/images/unit13/cabinet.png" },
-    { "word": "shelf",   "image": "/images/unit13/shelf.png" },
-    { "word": "rug",     "image": "/images/unit13/rug.png" }
+    { "word": "bed",      "image": "/images/unit-13/bed.png" },
+    { "word": "cabinet",  "image": "/images/unit-13/cabinet.png" },
+    { "word": "pillow",   "image": "/images/unit-13/pillow.png" },
+    { "word": "blanket",  "image": "/images/unit-13/blanket.png" },
+    { "word": "rug",      "image": "/images/unit-13/rug.png" },
+    { "word": "shelf",    "image": "/images/unit-13/shelf.png" }
   ],
-  "numbers": ["twelve", "fourteen", "fifteen", "seventeen", "twenty"],
+  "numbers": [
+    "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen", "twenty"
+  ],
   "prepositions": ["in", "on", "under"],
   "grammar_patterns": [
     {
@@ -34,7 +36,7 @@
       "examples": [
         "There are three coats in the cabinet.",
         "There are two books on the shelf.",
-        "There are three dolls on the rug."
+        "There are twelve dolls on the rug."
       ]
     }
   ],

@@ -1,0 +1,15 @@
+{
+  "unit": 11,
+  "topic": "I like monkeys!",
+  "vocabulary": [
+    { "word": "elephant",   "image": "/images/unit-11/elephant.png" },
+    { "word": "giraffe",    "image": "/images/unit-11/giraffe.png" },
+    { "word": "monkey",     "image": "/images/unit-11/monkey.png" },
+    { "word": "parrot",     "image": "/images/unit-11/parrot.png" },
+    { "word": "polar bear", "image": "/images/unit-11/polar-bear.png" },
+    { "word": "seal",       "image": "/images/unit-11/seal.png" },
+    { "word": "snake",      "image": "/images/unit-11/snake.png" },
+    { "word": "tiger",      "image": "/images/unit-11/tiger.png" }
+  ],
+  "adjectives": ["big", "little", "tall"]
+}

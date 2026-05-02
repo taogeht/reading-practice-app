@@ -4,14 +4,20 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2 } from 'lucide-react';
+import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2, Wand2 } from 'lucide-react';
 import type { UnitInfo } from '@/lib/practice/units';
 
+type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
+
+// Field set varies by questionType — fill_blank_mcq/true_false have prompt+choices,
+// sentence_builder has tokens (and no prompt — the prompt IS the answer).
 type Question = {
   id: string;
-  prompt: string;
+  questionType: QuestionType;
   imageUrl?: string | null;
-  choices: string[];
+  prompt?: string;
+  choices?: string[];
+  tokens?: string[];
 };
 
 type View =
@@ -24,6 +30,8 @@ type View =
 export function PracticeSession() {
   const [view, setView] = useState<View>({ name: 'picker' });
   const [selected, setSelected] = useState<string | null>(null);
+  // For sentence_builder: indices into the question.tokens array, in tap order.
+  const [assembled, setAssembled] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<{ correct: boolean; correctAnswer: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [availableUnits, setAvailableUnits] = useState<UnitInfo[] | null>(null);
@@ -70,6 +78,7 @@ export function PracticeSession() {
         correctCount: 0,
       });
       setSelected(null);
+      setAssembled([]);
       setFeedback(null);
     } catch {
       setView({
@@ -81,16 +90,21 @@ export function PracticeSession() {
   };
 
   const submitAnswer = async () => {
-    if (view.name !== 'quiz' || !selected || submitting) return;
-    setSubmitting(true);
+    if (view.name !== 'quiz' || submitting) return;
     const currentQuestion = view.questions[view.index];
+    const submission =
+      currentQuestion.questionType === 'sentence_builder'
+        ? assembled.map((i) => currentQuestion.tokens?.[i] ?? '').join(' ')
+        : selected;
+    if (!submission) return;
+    setSubmitting(true);
     try {
       const res = await fetch('/api/practice/attempt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           questionId: currentQuestion.id,
-          selectedAnswer: selected,
+          selectedAnswer: submission,
         }),
       });
       const data = await res.json();
@@ -119,6 +133,7 @@ export function PracticeSession() {
     } else {
       setView({ ...view, index: nextIndex });
       setSelected(null);
+      setAssembled([]);
       setFeedback(null);
     }
   };
@@ -246,50 +261,67 @@ export function PracticeSession() {
             />
           </div>
         )}
-        <div className="text-2xl sm:text-3xl font-bold text-center py-2 text-gray-900">
-          {question.prompt.split('____').map((part, i, arr) => (
-            <span key={i}>
-              {part}
-              {i < arr.length - 1 && (
-                <span className="inline-block min-w-[80px] border-b-4 border-indigo-400 mx-2">
-                  &nbsp;
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {question.choices.map((choice) => {
-            const isSelected = selected === choice;
-            const isCorrectChoice =
-              feedback && feedback.correctAnswer.toLowerCase() === choice.toLowerCase();
-            const isWrongSelected = isAnswered && isSelected && !feedback?.correct;
-
-            let className =
-              'text-xl font-bold py-5 rounded-xl border-2 transition cursor-pointer ';
-            if (isAnswered && isCorrectChoice) {
-              className += 'bg-green-100 border-green-500 text-green-800';
-            } else if (isWrongSelected) {
-              className += 'bg-red-100 border-red-500 text-red-800';
-            } else if (isSelected) {
-              className += 'bg-indigo-100 border-indigo-500 text-indigo-800';
-            } else {
-              className += 'bg-white border-gray-300 hover:border-indigo-400 hover:bg-indigo-50';
+        {question.questionType === 'sentence_builder' ? (
+          <SentenceBuilder
+            tokens={question.tokens ?? []}
+            assembled={assembled}
+            isAnswered={isAnswered}
+            onTapTray={(idx) =>
+              !isAnswered && setAssembled((prev) => (prev.includes(idx) ? prev : [...prev, idx]))
             }
+            onTapAssembled={(positionInAssembled) =>
+              !isAnswered &&
+              setAssembled((prev) => prev.filter((_, i) => i !== positionInAssembled))
+            }
+          />
+        ) : (
+          <>
+            <div className="text-2xl sm:text-3xl font-bold text-center py-2 text-gray-900">
+              {(question.prompt ?? '').split('____').map((part, i, arr) => (
+                <span key={i}>
+                  {part}
+                  {i < arr.length - 1 && (
+                    <span className="inline-block min-w-[80px] border-b-4 border-indigo-400 mx-2">
+                      &nbsp;
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
 
-            return (
-              <button
-                key={choice}
-                onClick={() => !isAnswered && setSelected(choice)}
-                disabled={isAnswered}
-                className={className}
-              >
-                {choice}
-              </button>
-            );
-          })}
-        </div>
+            <div className="grid grid-cols-2 gap-3">
+              {(question.choices ?? []).map((choice) => {
+                const isSelected = selected === choice;
+                const isCorrectChoice =
+                  feedback && feedback.correctAnswer.toLowerCase() === choice.toLowerCase();
+                const isWrongSelected = isAnswered && isSelected && !feedback?.correct;
+
+                let className =
+                  'text-xl font-bold py-5 rounded-xl border-2 transition cursor-pointer ';
+                if (isAnswered && isCorrectChoice) {
+                  className += 'bg-green-100 border-green-500 text-green-800';
+                } else if (isWrongSelected) {
+                  className += 'bg-red-100 border-red-500 text-red-800';
+                } else if (isSelected) {
+                  className += 'bg-indigo-100 border-indigo-500 text-indigo-800';
+                } else {
+                  className += 'bg-white border-gray-300 hover:border-indigo-400 hover:bg-indigo-50';
+                }
+
+                return (
+                  <button
+                    key={choice}
+                    onClick={() => !isAnswered && setSelected(choice)}
+                    disabled={isAnswered}
+                    className={className}
+                  >
+                    {choice}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {isAnswered ? (
           <div className="space-y-3">
@@ -312,7 +344,12 @@ export function PracticeSession() {
         ) : (
           <Button
             className="w-full py-6 text-base"
-            disabled={!selected || submitting}
+            disabled={
+              submitting ||
+              (question.questionType === 'sentence_builder'
+                ? assembled.length !== (question.tokens?.length ?? 0) || assembled.length === 0
+                : !selected)
+            }
             onClick={submitAnswer}
           >
             Check answer
@@ -320,5 +357,65 @@ export function PracticeSession() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+interface SentenceBuilderProps {
+  tokens: string[];
+  assembled: number[];
+  isAnswered: boolean;
+  onTapTray: (idx: number) => void;
+  onTapAssembled: (positionInAssembled: number) => void;
+}
+
+function SentenceBuilder({ tokens, assembled, isAnswered, onTapTray, onTapAssembled }: SentenceBuilderProps) {
+  const usedSet = new Set(assembled);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-center gap-2 text-sm font-semibold text-indigo-700 uppercase tracking-wide">
+        <Wand2 className="w-4 h-4" />
+        Build the sentence
+      </div>
+
+      {/* Assembled line — tap a placed word to send it back to the tray */}
+      <div className="min-h-[64px] rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50/50 p-3 flex flex-wrap items-center justify-center gap-2">
+        {assembled.length === 0 ? (
+          <span className="text-sm text-gray-400 italic">Tap words below to build the sentence</span>
+        ) : (
+          assembled.map((tokenIdx, position) => (
+            <button
+              key={`${tokenIdx}-${position}`}
+              onClick={() => onTapAssembled(position)}
+              disabled={isAnswered}
+              className="text-lg sm:text-xl font-semibold px-3 py-1.5 rounded-lg bg-white border-2 border-indigo-400 text-indigo-800 shadow-sm hover:bg-indigo-100 disabled:opacity-80 disabled:cursor-default transition"
+            >
+              {tokens[tokenIdx]}
+            </button>
+          ))
+        )}
+      </div>
+
+      {/* Tray — shuffled tokens. Used ones are dimmed */}
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+        {tokens.map((tok, i) => {
+          const used = usedSet.has(i);
+          return (
+            <button
+              key={i}
+              onClick={() => onTapTray(i)}
+              disabled={used || isAnswered}
+              className={`text-lg sm:text-xl font-semibold px-3 py-1.5 rounded-lg border-2 transition ${
+                used
+                  ? 'bg-gray-100 border-gray-200 text-gray-300 cursor-default'
+                  : 'bg-white border-gray-300 text-gray-800 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer'
+              }`}
+            >
+              {tok}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

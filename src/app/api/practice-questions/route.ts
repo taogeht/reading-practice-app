@@ -49,8 +49,13 @@ export async function POST(request: NextRequest) {
 
   const unit = Number(body.unit);
   const count = Math.min(Number(body.count) || 5, MAX_GENERATE);
+  const requestedType = body.questionType;
   const questionType: QuestionType =
-    body.questionType === 'true_false' ? 'true_false' : 'fill_blank_mcq';
+    requestedType === 'true_false'
+      ? 'true_false'
+      : requestedType === 'sentence_builder'
+        ? 'sentence_builder'
+        : 'fill_blank_mcq';
   if (!isAvailablePracticeUnit(unit)) {
     return NextResponse.json(
       { error: 'No curated curriculum for that unit yet.' },
@@ -79,6 +84,7 @@ export async function POST(request: NextRequest) {
           prompt: q.prompt,
           correctAnswer: q.correctAnswer,
           distractors: q.distractors,
+          payload: q.payload ?? null,
           imagePrompt: q.imagePrompt,
           generatedBy: user.id,
         }))

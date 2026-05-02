@@ -1,0 +1,16 @@
+{
+  "unit": 7,
+  "topic": "Are these his pants?",
+  "vocabulary": [
+    { "word": "sweater",   "image": "/images/unit-7/sweater.png" },
+    { "word": "coat",      "image": "/images/unit-7/coat.png" },
+    { "word": "dress",     "image": "/images/unit-7/dress.png" },
+    { "word": "hat",       "image": "/images/unit-7/hat.png" },
+    { "word": "shoes",     "image": "/images/unit-7/shoes.png" },
+    { "word": "shorts",    "image": "/images/unit-7/shorts.png" },
+    { "word": "socks",     "image": "/images/unit-7/socks.png" },
+    { "word": "tracksuit", "image": "/images/unit-7/tracksuit.png" },
+    { "word": "pants",     "image": "/images/unit-7/pants.png" },
+    { "word": "t-shirt",   "image": "/images/unit-7/t-shirt.png" }
+  ]
+}

@@ -35,9 +35,11 @@ function shuffle<T>(arr: T[]): T[] {
 
 type QuestionRow = {
   id: string;
+  questionType: string;
   prompt: string;
   correctAnswer: string;
   distractors: string[];
+  payload: unknown;
   imageUrl: string | null;
   timesServed: number;
 };
@@ -80,9 +82,11 @@ export async function GET(request: NextRequest) {
   const allQuestions: QuestionRow[] = await db
     .select({
       id: practiceQuestions.id,
+      questionType: practiceQuestions.questionType,
       prompt: practiceQuestions.prompt,
       correctAnswer: practiceQuestions.correctAnswer,
       distractors: practiceQuestions.distractors,
+      payload: practiceQuestions.payload,
       imageUrl: practiceQuestions.imageUrl,
       timesServed: practiceQuestions.timesServed,
     })
@@ -226,12 +230,26 @@ export async function GET(request: NextRequest) {
     .where(inArray(practiceQuestions.id, selectedIds));
 
   // Do NOT return correctAnswer to the client — grading happens server-side.
-  const questions = finalOrder.map((c) => ({
-    id: c.q.id,
-    prompt: c.q.prompt,
-    imageUrl: c.q.imageUrl,
-    choices: shuffle([c.q.correctAnswer, ...c.q.distractors]),
-  }));
+  // For sentence_builder, prompt IS the answer, so omit it from the response and
+  // return shuffled tokens instead of choices.
+  const questions = finalOrder.map((c) => {
+    if (c.q.questionType === 'sentence_builder') {
+      const tokens = (c.q.payload as { tokens?: string[] } | null)?.tokens ?? [];
+      return {
+        id: c.q.id,
+        questionType: c.q.questionType,
+        imageUrl: c.q.imageUrl,
+        tokens: shuffle(tokens),
+      };
+    }
+    return {
+      id: c.q.id,
+      questionType: c.q.questionType,
+      prompt: c.q.prompt,
+      imageUrl: c.q.imageUrl,
+      choices: shuffle([c.q.correctAnswer, ...c.q.distractors]),
+    };
+  });
 
   return NextResponse.json({ unit, questions });
 }

@@ -1,0 +1,16 @@
+{
+  "unit": 4,
+  "topic": "He's a hero!",
+  "vocabulary": [
+    { "word": "doctor",         "image": "/images/unit-4/doctor.png" },
+    { "word": "farmer",         "image": "/images/unit-4/farmer.png" },
+    { "word": "firefighter",    "image": "/images/unit-4/firefighter.png" },
+    { "word": "mailman",        "image": "/images/unit-4/mailman.png" },
+    { "word": "pilot",          "image": "/images/unit-4/pilot.png" },
+    { "word": "police officer", "image": "/images/unit-4/police-officer.png" },
+    { "word": "cook",           "image": "/images/unit-4/cook.png" },
+    { "word": "student",        "image": "/images/unit-4/student.png" },
+    { "word": "teacher",        "image": "/images/unit-4/teacher.png" },
+    { "word": "zookeeper",      "image": "/images/unit-4/zookeeper.png" }
+  ]
+}

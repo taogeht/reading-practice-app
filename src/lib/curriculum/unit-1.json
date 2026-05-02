@@ -1,0 +1,16 @@
+{
+  "unit": 1,
+  "topic": "What's this?",
+  "vocabulary": [
+    { "word": "bag",      "image": "/images/unit-1/bag.png" },
+    { "word": "book",     "image": "/images/unit-1/book.png" },
+    { "word": "bookcase", "image": "/images/unit-1/bookcase.png" },
+    { "word": "door",     "image": "/images/unit-1/door.png" },
+    { "word": "folder",   "image": "/images/unit-1/folder.png" },
+    { "word": "pen",      "image": "/images/unit-1/pen.png" },
+    { "word": "pencil",   "image": "/images/unit-1/pencil.png" },
+    { "word": "eraser",   "image": "/images/unit-1/eraser.png" },
+    { "word": "ruler",    "image": "/images/unit-1/ruler.png" },
+    { "word": "window",   "image": "/images/unit-1/window.png" }
+  ]
+}

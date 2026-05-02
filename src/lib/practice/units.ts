@@ -10,21 +10,21 @@ export type UnitInfo = {
 };
 
 export const UNITS: UnitInfo[] = [
-  { unit: 1, topic: 'My classroom', emoji: '🏫' },
-  { unit: 2, topic: 'My toys', emoji: '🧸' },
-  { unit: 3, topic: 'My body', emoji: '👋' },
-  { unit: 4, topic: 'Jobs and people', emoji: '👩‍🏫' },
-  { unit: 5, topic: 'At the park', emoji: '🛝' },
-  { unit: 6, topic: 'Unit 6', emoji: '📖' },
-  { unit: 7, topic: 'Unit 7', emoji: '📖' },
-  { unit: 8, topic: 'Unit 8', emoji: '📖' },
-  { unit: 9, topic: 'Unit 9', emoji: '📖' },
-  { unit: 10, topic: 'Unit 10', emoji: '📖' },
-  { unit: 11, topic: 'Unit 11', emoji: '📖' },
-  { unit: 12, topic: 'Unit 12', emoji: '📖' },
+  { unit: 1, topic: "What's this?", emoji: '🏫' },
+  { unit: 2, topic: 'Playtime!', emoji: '🧸' },
+  { unit: 3, topic: 'This is my nose!', emoji: '👃' },
+  { unit: 4, topic: "He's a hero!", emoji: '🦸' },
+  { unit: 5, topic: "Where's the ball?", emoji: '⚽' },
+  { unit: 6, topic: "Billy's teddy bear!", emoji: '🧸' },
+  { unit: 7, topic: 'Are these his pants?', emoji: '👕' },
+  { unit: 8, topic: "Where's Grandma?", emoji: '🏠' },
+  { unit: 9, topic: 'Lunchtime!', emoji: '🍱' },
+  { unit: 10, topic: 'A new friend!', emoji: '👯' },
+  { unit: 11, topic: 'I like monkeys!', emoji: '🐵' },
+  { unit: 12, topic: 'Dinnertime!', emoji: '🍚' },
   { unit: 13, topic: 'Clean up!', emoji: '🧹' },
-  { unit: 14, topic: 'Unit 14', emoji: '📖' },
-  { unit: 15, topic: 'Unit 15', emoji: '📖' },
+  { unit: 14, topic: 'Action Boy can run!', emoji: '🏃' },
+  { unit: 15, topic: "Let's play ball!", emoji: '🏖️' },
 ];
 
 export const MIN_UNIT = 1;

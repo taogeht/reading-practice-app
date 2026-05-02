@@ -9,7 +9,7 @@ import { ArrowLeft, ImageIcon, Loader2, Plus, RefreshCw, Trash2, ToggleLeft, Tog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AVAILABLE_PRACTICE_UNITS } from '@/lib/practice/units';
 
-type QuestionType = 'fill_blank_mcq' | 'true_false';
+type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
 
 type Question = {
   id: string;
@@ -195,6 +195,7 @@ export default function PracticeQuestionsPage() {
                 <SelectContent>
                   <SelectItem value="fill_blank_mcq">Multiple Choice</SelectItem>
                   <SelectItem value="true_false">True / False</SelectItem>
+                  <SelectItem value="sentence_builder">Sentence Builder</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -257,6 +258,11 @@ export default function PracticeQuestionsPage() {
                               {q.questionType === 'true_false' && (
                                 <Badge variant="outline" className="text-[10px] uppercase tracking-wide bg-purple-50 text-purple-700 border-purple-200">
                                   True / False
+                                </Badge>
+                              )}
+                              {q.questionType === 'sentence_builder' && (
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-wide bg-emerald-50 text-emerald-700 border-emerald-200">
+                                  Sentence Builder
                                 </Badge>
                               )}
                             </div>

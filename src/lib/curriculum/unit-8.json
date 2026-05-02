@@ -1,0 +1,16 @@
+{
+  "unit": 8,
+  "topic": "Where's Grandma?",
+  "vocabulary": [
+    { "word": "bathroom",    "image": "/images/unit-8/bathroom.png" },
+    { "word": "bedroom",     "image": "/images/unit-8/bedroom.png" },
+    { "word": "dining room", "image": "/images/unit-8/dining-room.png" },
+    { "word": "living room", "image": "/images/unit-8/living-room.png" },
+    { "word": "kitchen",     "image": "/images/unit-8/kitchen.png" },
+    { "word": "yard",        "image": "/images/unit-8/yard.png" },
+    { "word": "apartment",   "image": "/images/unit-8/apartment.png" },
+    { "word": "house",       "image": "/images/unit-8/house.png" },
+    { "word": "downstairs",  "image": "/images/unit-8/downstairs.png" },
+    { "word": "upstairs",    "image": "/images/unit-8/upstairs.png" }
+  ]
+}

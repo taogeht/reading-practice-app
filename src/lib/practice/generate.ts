@@ -2,13 +2,16 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 
-export type QuestionType = 'fill_blank_mcq' | 'true_false';
+export type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
 
 export type GeneratedQuestion = {
   prompt: string;
   correctAnswer: string;
   distractors: string[];
   imagePrompt: string;
+  // Per-type extra data. sentence_builder: { tokens: string[] } in canonical order
+  // (multi-word phrases like "teddy bear" stay grouped as one token).
+  payload?: Record<string, unknown> | null;
 };
 
 type UnitCurriculum = {
@@ -18,7 +21,11 @@ type UnitCurriculum = {
   numbers?: string[];
   prepositions?: string[];
   colors?: string[];
-  grammar_patterns: Array<{ pattern: string; examples?: string[] }>;
+  verbs?: string[];
+  adjectives?: string[];
+  // Optional — vocab-only stub units (used as cumulative providers) won't have
+  // grammar patterns. The generator refuses to run for a unit without patterns.
+  grammar_patterns?: Array<{ pattern: string; examples?: string[] }>;
   key_sentences?: string[];
 };
 
@@ -34,23 +41,76 @@ async function loadUnitJson(unit: number): Promise<UnitCurriculum | null> {
   }
 }
 
+// Builds a unit spec for question generation that includes vocabulary from
+// every prior unit (0..targetUnit-1) the student has studied — spiral curriculum.
+// The grammar_patterns and key_sentences come from ONLY the target unit, so
+// generated questions still focus on what's currently being taught.
+async function loadCumulativeCurriculum(targetUnit: number): Promise<UnitCurriculum | null> {
+  const target = await loadUnitJson(targetUnit);
+  if (!target) return null;
+
+  const merged: UnitCurriculum = {
+    unit: target.unit,
+    topic: target.topic,
+    vocabulary: [...target.vocabulary],
+    numbers: [...(target.numbers ?? [])],
+    prepositions: [...(target.prepositions ?? [])],
+    colors: [...(target.colors ?? [])],
+    verbs: [...(target.verbs ?? [])],
+    adjectives: [...(target.adjectives ?? [])],
+    grammar_patterns: target.grammar_patterns,
+    key_sentences: target.key_sentences,
+  };
+
+  for (let i = 0; i < targetUnit; i++) {
+    const prior = await loadUnitJson(i);
+    if (!prior) continue;
+    appendUnique(merged.vocabulary, prior.vocabulary, (v) => v.word.toLowerCase());
+    appendUnique(merged.numbers!, prior.numbers ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.prepositions!, prior.prepositions ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.colors!, prior.colors ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.verbs!, prior.verbs ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.adjectives!, prior.adjectives ?? [], (s) => s.toLowerCase());
+  }
+
+  return merged;
+}
+
+function appendUnique<T>(target: T[], source: T[], keyFn: (t: T) => string) {
+  const seen = new Set(target.map(keyFn));
+  for (const item of source) {
+    const k = keyFn(item);
+    if (seen.has(k)) continue;
+    target.push(item);
+    seen.add(k);
+  }
+}
+
 function formatCurriculumText(c: UnitCurriculum): string {
   const lines: string[] = [];
   lines.push(`UNIT ${c.unit} — ${c.topic}`);
   lines.push('');
-  lines.push(`VOCABULARY (use these nouns only): ${c.vocabulary.map((v) => v.word).join(', ')}`);
+  lines.push('The vocabulary below is CUMULATIVE — it includes words from this unit and all earlier units the student has studied. You may use any of these words in your questions, but the GRAMMAR PATTERNS section below is what this unit teaches and must drive every question.');
+  lines.push('');
+  lines.push(`NOUNS (use any of these): ${c.vocabulary.map((v) => v.word).join(', ')}`);
   if (c.numbers?.length) {
-    lines.push(`NUMBERS (use these only): ${c.numbers.join(', ')}`);
+    lines.push(`NUMBERS (use any of these): ${c.numbers.join(', ')}`);
   }
   if (c.prepositions?.length) {
-    lines.push(`PREPOSITIONS (use these only): ${c.prepositions.join(', ')}`);
+    lines.push(`PREPOSITIONS (use any of these): ${c.prepositions.join(', ')}`);
   }
   if (c.colors?.length) {
-    lines.push(`COLORS (use these only): ${c.colors.join(', ')}`);
+    lines.push(`COLORS (use any of these): ${c.colors.join(', ')}`);
+  }
+  if (c.verbs?.length) {
+    lines.push(`VERBS (use any of these): ${c.verbs.join(', ')}`);
+  }
+  if (c.adjectives?.length) {
+    lines.push(`ADJECTIVES (use any of these): ${c.adjectives.join(', ')}`);
   }
   lines.push('');
-  lines.push('GRAMMAR PATTERNS (use these sentence shapes):');
-  for (const gp of c.grammar_patterns) {
+  lines.push('GRAMMAR PATTERNS (the questions MUST teach these — this is the unit\'s focus):');
+  for (const gp of c.grammar_patterns ?? []) {
     lines.push(`• ${gp.pattern}`);
     if (gp.examples?.length) {
       const ex = gp.examples.slice(0, 3).map((e) => `"${e}"`).join(' / ');
@@ -108,6 +168,24 @@ For each question also produce an "imagePrompt": a short, concrete description (
 
 Return the result as JSON matching the provided schema.`;
 
+const SENTENCE_BUILDER_SYSTEM_PROMPT = `You create sentence-building exercises for Grade 1 ESL students (age 6-7). The student sees a picture and a shuffled bank of words; they tap the words in order to assemble the target sentence.
+
+You will be given the curriculum specification for one unit as a structured text block. Treat it as the authoritative source for which vocabulary, grammar patterns, and sentence styles this student has studied.
+
+STRICT RULES:
+1. Every sentence must use ONLY words, numbers, prepositions, or grammar patterns listed in the provided specification. Never introduce content outside it.
+2. Each sentence is short (3-7 word-tokens), matching the simplicity of the unit's key sentences.
+3. "correctAnswer" is the canonical sentence with proper capitalization and end punctuation (period, question mark).
+4. "tokens" is the array of word-tokens in CANONICAL order, WITHOUT end-of-sentence punctuation. Capitalize the first token. Keep contractions intact ("There's" is one token). Group multi-word noun phrases that the curriculum teaches as a unit (like "teddy bear", "pick up") as ONE token. tokens.join(" ") + end-punctuation must equal correctAnswer.
+5. Vary sentences across the batch — different sentence shapes, different vocabulary, different grammar patterns.
+6. The picture must make the target sentence unambiguous. The picture shows what's true; the student's job is to put the right words in the right order.
+
+For each question also produce an "imagePrompt": a short, concrete description (1 sentence, ~10-20 words) of a clipart-style scene that matches the target sentence literally. Examples:
+- correctAnswer "There's a teddy bear on the bed.", tokens ["There's","a","teddy bear","on","the","bed"] → imagePrompt: "A small brown teddy bear sitting on top of a neatly made bed."
+- correctAnswer "Are there four books on the shelf?", tokens ["Are","there","four","books","on","the","shelf"] → imagePrompt: "A wooden shelf with four colorful books standing in a row."
+
+Return the result as JSON matching the provided schema.`;
+
 // ---------- JSON schema ----------
 
 const MCQ_QUESTION_SCHEMA = {
@@ -156,6 +234,32 @@ const TRUE_FALSE_QUESTION_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+const SENTENCE_BUILDER_QUESTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          correctAnswer: { type: 'string' },
+          tokens: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 3,
+            maxItems: 12,
+          },
+          imagePrompt: { type: 'string' },
+        },
+        required: ['correctAnswer', 'tokens', 'imagePrompt'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['questions'],
+  additionalProperties: false,
+} as const;
+
 function validateMcqShape(raw: unknown): GeneratedQuestion[] {
   if (typeof raw !== 'object' || raw === null) throw new Error('Response is not an object');
   const questions = (raw as { questions?: unknown }).questions;
@@ -176,6 +280,46 @@ function validateMcqShape(raw: unknown): GeneratedQuestion[] {
       obj.imagePrompt.length > 0
     );
   });
+}
+
+// Strip end-of-sentence punctuation and lowercase, for comparing reconstructed
+// tokens against the canonical correctAnswer.
+function normalizeForBuilder(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[.,!?;:"]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function validateSentenceBuilderShape(raw: unknown): GeneratedQuestion[] {
+  if (typeof raw !== 'object' || raw === null) throw new Error('Response is not an object');
+  const questions = (raw as { questions?: unknown }).questions;
+  if (!Array.isArray(questions)) throw new Error('Missing questions array');
+
+  return questions
+    .filter((q): q is { correctAnswer: string; tokens: string[]; imagePrompt: string } => {
+      if (typeof q !== 'object' || q === null) return false;
+      const obj = q as Record<string, unknown>;
+      if (typeof obj.correctAnswer !== 'string' || obj.correctAnswer.length === 0) return false;
+      if (!Array.isArray(obj.tokens) || obj.tokens.length < 3) return false;
+      if (!obj.tokens.every((t) => typeof t === 'string' && t.length > 0)) return false;
+      if (typeof obj.imagePrompt !== 'string' || obj.imagePrompt.length === 0) return false;
+      // tokens.join(' ') must reconstruct the correctAnswer modulo end punctuation.
+      const reconstructed = normalizeForBuilder((obj.tokens as string[]).join(' '));
+      const target = normalizeForBuilder(obj.correctAnswer);
+      return reconstructed === target;
+    })
+    .map((q) => ({
+      // For sentence_builder, prompt mirrors correctAnswer — it's the canonical
+      // sentence stored for teacher review. The session API does NOT return prompt
+      // to the student player for this type.
+      prompt: q.correctAnswer,
+      correctAnswer: q.correctAnswer,
+      distractors: [],
+      imagePrompt: q.imagePrompt,
+      payload: { tokens: q.tokens },
+    }));
 }
 
 function validateTrueFalseShape(raw: unknown): GeneratedQuestion[] {
@@ -219,19 +363,40 @@ export async function generateQuestions(params: {
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
   const questionType: QuestionType = params.questionType ?? 'fill_blank_mcq';
-  const isTrueFalse = questionType === 'true_false';
-  const systemPrompt = isTrueFalse ? TRUE_FALSE_SYSTEM_PROMPT : MCQ_SYSTEM_PROMPT;
-  const schema = isTrueFalse ? TRUE_FALSE_QUESTION_SCHEMA : MCQ_QUESTION_SCHEMA;
-  const validate = isTrueFalse ? validateTrueFalseShape : validateMcqShape;
-  const userInstruction = isTrueFalse
-    ? `Generate ${params.count} true/false picture statements at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above. Mix true and false roughly evenly.`
-    : `Generate ${params.count} fill-in-the-blank multiple-choice questions at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above.`;
+
+  let systemPrompt: string;
+  let schema: typeof MCQ_QUESTION_SCHEMA | typeof TRUE_FALSE_QUESTION_SCHEMA | typeof SENTENCE_BUILDER_QUESTION_SCHEMA;
+  let validate: (raw: unknown) => GeneratedQuestion[];
+  let userInstruction: string;
+
+  switch (questionType) {
+    case 'true_false':
+      systemPrompt = TRUE_FALSE_SYSTEM_PROMPT;
+      schema = TRUE_FALSE_QUESTION_SCHEMA;
+      validate = validateTrueFalseShape;
+      userInstruction = `Generate ${params.count} true/false picture statements at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above. Mix true and false roughly evenly.`;
+      break;
+    case 'sentence_builder':
+      systemPrompt = SENTENCE_BUILDER_SYSTEM_PROMPT;
+      schema = SENTENCE_BUILDER_QUESTION_SCHEMA;
+      validate = validateSentenceBuilderShape;
+      userInstruction = `Generate ${params.count} sentence-building exercises at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above. Vary the sentence shapes (statements, questions, imperatives if the unit teaches them).`;
+      break;
+    default:
+      systemPrompt = MCQ_SYSTEM_PROMPT;
+      schema = MCQ_QUESTION_SCHEMA;
+      validate = validateMcqShape;
+      userInstruction = `Generate ${params.count} fill-in-the-blank multiple-choice questions at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above.`;
+  }
 
   const client = new Anthropic({ apiKey });
 
-  const curriculum = await loadUnitJson(params.unit);
+  const curriculum = await loadCumulativeCurriculum(params.unit);
   if (!curriculum) {
     throw new Error(`No curated curriculum for Unit ${params.unit} — add src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
+  }
+  if (!curriculum.grammar_patterns?.length) {
+    throw new Error(`Unit ${params.unit} has no grammar_patterns yet — add them to src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
   }
 
   const userContent: Anthropic.ContentBlockParam[] = [

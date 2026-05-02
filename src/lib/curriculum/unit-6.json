@@ -1,0 +1,15 @@
+{
+  "unit": 6,
+  "topic": "Billy's teddy bear!",
+  "vocabulary": [
+    { "word": "mom",     "image": "/images/unit-6/mom.png" },
+    { "word": "dad",     "image": "/images/unit-6/dad.png" },
+    { "word": "sister",  "image": "/images/unit-6/sister.png" },
+    { "word": "brother", "image": "/images/unit-6/brother.png" },
+    { "word": "grandma", "image": "/images/unit-6/grandma.png" },
+    { "word": "grandpa", "image": "/images/unit-6/grandpa.png" },
+    { "word": "aunt",    "image": "/images/unit-6/aunt.png" },
+    { "word": "uncle",   "image": "/images/unit-6/uncle.png" },
+    { "word": "cousin",  "image": "/images/unit-6/cousin.png" }
+  ]
+}

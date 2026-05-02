@@ -1,0 +1,12 @@
+{
+  "unit": 10,
+  "topic": "A new friend!",
+  "vocabulary": [
+    { "word": "circle",    "image": "/images/unit-10/circle.png" },
+    { "word": "diamond",   "image": "/images/unit-10/diamond.png" },
+    { "word": "rectangle", "image": "/images/unit-10/rectangle.png" },
+    { "word": "square",    "image": "/images/unit-10/square.png" },
+    { "word": "triangle",  "image": "/images/unit-10/triangle.png" }
+  ],
+  "adjectives": ["blond", "brown", "curly", "long", "short", "straight"]
+}

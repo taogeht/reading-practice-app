@@ -1,0 +1,16 @@
+{
+  "unit": 2,
+  "topic": "Playtime!",
+  "vocabulary": [
+    { "word": "ball",       "image": "/images/unit-2/ball.png" },
+    { "word": "bike",       "image": "/images/unit-2/bike.png" },
+    { "word": "car",        "image": "/images/unit-2/car.png" },
+    { "word": "doll",       "image": "/images/unit-2/doll.png" },
+    { "word": "game",       "image": "/images/unit-2/game.png" },
+    { "word": "kite",       "image": "/images/unit-2/kite.png" },
+    { "word": "puzzle",     "image": "/images/unit-2/puzzle.png" },
+    { "word": "scooter",    "image": "/images/unit-2/scooter.png" },
+    { "word": "teddy bear", "image": "/images/unit-2/teddy-bear.png" },
+    { "word": "train",      "image": "/images/unit-2/train.png" }
+  ]
+}

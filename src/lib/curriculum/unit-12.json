@@ -1,0 +1,17 @@
+{
+  "unit": 12,
+  "topic": "Dinnertime!",
+  "vocabulary": [
+    { "word": "bread",         "image": "/images/unit-12/bread.png" },
+    { "word": "carrots",       "image": "/images/unit-12/carrots.png" },
+    { "word": "fish",          "image": "/images/unit-12/fish.png" },
+    { "word": "meat",          "image": "/images/unit-12/meat.png" },
+    { "word": "rice",          "image": "/images/unit-12/rice.png" },
+    { "word": "yogurt",        "image": "/images/unit-12/yogurt.png" },
+    { "word": "hot chocolate", "image": "/images/unit-12/hot-chocolate.png" },
+    { "word": "juice",         "image": "/images/unit-12/juice.png" },
+    { "word": "milk",          "image": "/images/unit-12/milk.png" },
+    { "word": "tea",           "image": "/images/unit-12/tea.png" },
+    { "word": "water",         "image": "/images/unit-12/water.png" }
+  ]
+}

@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
   }
 
   const [question] = await db
-    .select({ correctAnswer: practiceQuestions.correctAnswer })
+    .select({
+      correctAnswer: practiceQuestions.correctAnswer,
+      questionType: practiceQuestions.questionType,
+    })
     .from(practiceQuestions)
     .where(eq(practiceQuestions.id, questionId))
     .limit(1);
@@ -38,8 +41,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Question not found' }, { status: 404 });
   }
 
-  const isCorrect =
-    selectedAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
+  const normalize = (s: string) =>
+    question.questionType === 'sentence_builder'
+      ? s.toLowerCase().replace(/[.,!?;:"]+/g, '').replace(/\s+/g, ' ').trim()
+      : s.trim().toLowerCase();
+
+  const isCorrect = normalize(selectedAnswer) === normalize(question.correctAnswer);
 
   await db.insert(practiceAttempts).values({
     studentId: user.id,
