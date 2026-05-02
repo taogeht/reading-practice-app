@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import confetti from "canvas-confetti";
+import { pickNextWordViaSrs } from "./srs-picker";
 import {
     Puzzle,
     RotateCcw,
@@ -224,14 +225,23 @@ export function MissingLettersGame({ initialLists, skipTracking }: MissingLetter
         }, 100);
     };
 
-    const pickNewWord = useCallback((overridePool?: "current" | "all") => {
+    const pickNewWord = useCallback(async (overridePool?: "current" | "all") => {
         const pool = overridePool || wordPool;
         const allWordObjects = getWordObjectsForPool(pool);
         if (allWordObjects.length === 0) return;
 
-        const unplayed = allWordObjects.filter((w) => !wordsPlayed.has(w.word.id));
-        const wordChoices = unplayed.length > 0 ? unplayed : allWordObjects;
-        const chosen = wordChoices[Math.floor(Math.random() * wordChoices.length)];
+        const playedSet = wordsPlayed;
+        const excludeIds = allWordObjects.filter((w) => playedSet.has(w.word.id)).map((w) => w.word.id);
+        const chosenId = await pickNextWordViaSrs(
+            allWordObjects.map((w) => w.word.id),
+            excludeIds,
+        );
+        let chosen = chosenId ? allWordObjects.find((w) => w.word.id === chosenId) : undefined;
+        if (!chosen) {
+            const unplayed = allWordObjects.filter((w) => !playedSet.has(w.word.id));
+            const wordChoices = unplayed.length > 0 ? unplayed : allWordObjects;
+            chosen = wordChoices[Math.floor(Math.random() * wordChoices.length)];
+        }
 
         setWordsPlayed((prev) => new Set(prev).add(chosen.word.id));
         initializeWord(chosen.word, chosen.classId);

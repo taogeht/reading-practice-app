@@ -15,6 +15,7 @@ import { MissingLettersGame } from "@/components/spelling/missing-letters-game";
 import { FlashcardGame } from "@/components/spelling/flashcard-game";
 
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
+import { StudentProgressionCard } from "@/components/gamification/student-progression-card";
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
 import { PracticeSession } from "@/components/practice/practice-session";
 import { PracticeStatsCard } from "@/components/practice/practice-stats-card";
@@ -227,6 +228,9 @@ export default function StudentDashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Gamification — level, streak, XP, animal */}
+        <StudentProgressionCard />
+
         {/* Online Practice Login */}
         {student.oupEmail && student.oupPassword && (
           <>

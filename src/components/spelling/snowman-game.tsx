@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { pickNextWordViaSrs } from "./srs-picker";
 import { SnowmanSVG } from "./snowman-svg";
 import { HangmanSVG } from "./hangman-svg";
 import { BombSVG } from "./bomb-svg";
@@ -188,16 +189,26 @@ export function SnowmanGame({ initialLists, skipTracking, initialVariant = "snow
         return getWordsForPool(wordPool);
     }, [getWordsForPool, wordPool]);
 
-    const pickNewWord = useCallback((overridePool?: "current" | "all") => {
+    const pickNewWord = useCallback(async (overridePool?: "current" | "all") => {
         const pool = overridePool || wordPool;
         const allWordObjects = getWordObjectsForPool(pool);
         if (allWordObjects.length === 0) return;
 
-        // Try to pick a word we haven't played yet
-        const unplayed = allWordObjects.filter((w) => !wordsPlayed.has(w.word.toUpperCase()));
-        const wordChoices = unplayed.length > 0 ? unplayed : allWordObjects;
-
-        const chosen = wordChoices[Math.floor(Math.random() * wordChoices.length)];
+        // Ask the SRS picker which word to serve. Falls back to local random if it fails.
+        const playedSet = wordsPlayed;
+        const excludeIds = allWordObjects
+            .filter((w) => playedSet.has(w.word.toUpperCase()))
+            .map((w) => w.id);
+        const chosenId = await pickNextWordViaSrs(
+            allWordObjects.map((w) => w.id),
+            excludeIds,
+        );
+        let chosen = chosenId ? allWordObjects.find((w) => w.id === chosenId) : undefined;
+        if (!chosen) {
+            const unplayed = allWordObjects.filter((w) => !playedSet.has(w.word.toUpperCase()));
+            const wordChoices = unplayed.length > 0 ? unplayed : allWordObjects;
+            chosen = wordChoices[Math.floor(Math.random() * wordChoices.length)];
+        }
         const newWord = chosen.word.toUpperCase();
         setCurrentWord(newWord);
         setCurrentWordId(chosen.id);

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceAttempts, practiceQuestions } from '@/lib/db/schema';
+import { awardXp, isFirstPracticeCorrectToday } from '@/lib/gamification/award';
 
 export const runtime = 'nodejs';
 
@@ -48,15 +49,29 @@ export async function POST(request: NextRequest) {
 
   const isCorrect = normalize(selectedAnswer) === normalize(question.correctAnswer);
 
-  await db.insert(practiceAttempts).values({
-    studentId: user.id,
-    questionId,
-    selectedAnswer,
-    isCorrect,
-  });
+  const [attempt] = await db
+    .insert(practiceAttempts)
+    .values({
+      studentId: user.id,
+      questionId,
+      selectedAnswer,
+      isCorrect,
+    })
+    .returning({ id: practiceAttempts.id });
+
+  // XP for correct answers only. First-correct-today gets a bonus.
+  let award = null;
+  if (isCorrect) {
+    const isFirstToday = await isFirstPracticeCorrectToday(user.id);
+    award = await awardXp(user.id, 'practice_correct', attempt.id);
+    if (isFirstToday) {
+      await awardXp(user.id, 'practice_first_try_bonus', attempt.id);
+    }
+  }
 
   return NextResponse.json({
     isCorrect,
     correctAnswer: question.correctAnswer,
+    award,
   });
 }

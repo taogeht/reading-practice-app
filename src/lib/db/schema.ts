@@ -5,6 +5,7 @@ import {
   text,
   boolean,
   timestamp,
+  date,
   integer,
   pgEnum,
   jsonb,
@@ -125,6 +126,9 @@ export const classes = pgTable('classes', {
   showPracticeStories: boolean('show_practice_stories').default(false),
   syllabusUrl: varchar('syllabus_url', { length: 500 }),
   currentUnit: integer('current_unit').default(1).notNull(),
+  // When true, the class's students see /student/leaderboard. Off by default
+  // so existing classes stay quiet until the teacher opts in.
+  leaderboardEnabled: boolean('leaderboard_enabled').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -684,6 +688,63 @@ export const classPracticeUnits = pgTable(
 
 export const classPracticeUnitsRelations = relations(classPracticeUnits, ({ one }) => ({
   class: one(classes, { fields: [classPracticeUnits.classId], references: [classes.id] }),
+}));
+
+// ---------- Gamification ----------
+//
+// Three-table design: append-only event log + materialized rollup + unlock list.
+// XP events are the source of truth; the rollup avoids summing the log on every read.
+
+export const studentXpEvents = pgTable(
+  'student_xp_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    eventType: varchar('event_type', { length: 40 }).notNull(),
+    sourceId: uuid('source_id'),
+    points: integer('points').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    studentTimeIdx: index('idx_student_xp_events_student_time').on(table.studentId, table.createdAt),
+  })
+);
+
+export const studentProgression = pgTable('student_progression', {
+  studentId: uuid('student_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  totalXp: integer('total_xp').default(0).notNull(),
+  currentLevel: integer('current_level').default(1).notNull(),
+  currentStreakDays: integer('current_streak_days').default(0).notNull(),
+  longestStreakDays: integer('longest_streak_days').default(0).notNull(),
+  lastActivityDate: date('last_activity_date'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const studentUnlocks = pgTable(
+  'student_unlocks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    unlockType: varchar('unlock_type', { length: 20 }).notNull(),
+    unlockKey: varchar('unlock_key', { length: 60 }).notNull(),
+    unlockedAt: timestamp('unlocked_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueUnlock: uniqueIndex('unique_student_unlock').on(table.studentId, table.unlockType, table.unlockKey),
+    studentIdx: index('idx_student_unlocks_student').on(table.studentId),
+  })
+);
+
+export const studentXpEventsRelations = relations(studentXpEvents, ({ one }) => ({
+  student: one(users, { fields: [studentXpEvents.studentId], references: [users.id] }),
+}));
+
+export const studentProgressionRelations = relations(studentProgression, ({ one }) => ({
+  student: one(users, { fields: [studentProgression.studentId], references: [users.id] }),
+}));
+
+export const studentUnlocksRelations = relations(studentUnlocks, ({ one }) => ({
+  student: one(users, { fields: [studentUnlocks.studentId], references: [users.id] }),
 }));
 
 export const practiceQuestionsRelations = relations(practiceQuestions, ({ one, many }) => ({

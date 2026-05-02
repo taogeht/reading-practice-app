@@ -1,6 +1,65 @@
 {
   "unit": 14,
   "topic": "Action Boy can run!",
-  "vocabulary": [],
-  "verbs": ["climb", "dance", "draw", "fly", "run", "sing", "swim", "talk", "walk", "write"]
+  "vocabulary": [
+    { "word": "climb", "image": "/images/unit-14/climb.png" },
+    { "word": "cook",  "image": "/images/unit-4/cook.png"  },
+    { "word": "dance", "image": "/images/unit-14/dance.png" },
+    { "word": "draw",  "image": "/images/unit-14/draw.png" },
+    { "word": "fly",   "image": "/images/unit-14/fly.png"  },
+    { "word": "run",   "image": "/images/unit-14/run.png"  },
+    { "word": "sing",  "image": "/images/unit-14/sing.png" },
+    { "word": "swim",  "image": "/images/unit-14/swim.png" },
+    { "word": "talk",  "image": "/images/unit-14/talk.png" },
+    { "word": "walk",  "image": "/images/unit-14/walk.png" },
+    { "word": "write", "image": "/images/unit-14/write.png" }
+  ],
+  "verbs": ["climb", "cook", "dance", "draw", "fly", "run", "sing", "swim", "talk", "walk", "write"],
+  "grammar_patterns": [
+    {
+      "pattern": "[Subject] can [verb].",
+      "examples": [
+        "She can draw.",
+        "She can swim.",
+        "He can run.",
+        "I can sing."
+      ]
+    },
+    {
+      "pattern": "[Subject] can't [verb].",
+      "examples": [
+        "He can't cook.",
+        "She can't fly.",
+        "I can't swim.",
+        "It can't talk."
+      ]
+    },
+    {
+      "pattern": "Can [subject] [verb]?",
+      "examples": [
+        "Can she draw?",
+        "Can he run?",
+        "Can it fly?",
+        "Can she sing?",
+        "Can he climb?"
+      ]
+    },
+    {
+      "pattern": "Yes, [subject] can. / No, [subject] can't.",
+      "examples": [
+        "Can Anna run? Yes, she can.",
+        "Can Jim swim? No, he can't.",
+        "Can it fly? No, it can't.",
+        "Can she draw? Yes, she can."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "She can draw.",
+    "He can't cook.",
+    "Can he run? Yes, he can.",
+    "Can she swim? No, she can't.",
+    "Can it fly?",
+    "I can sing and dance."
+  ]
 }

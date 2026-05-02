@@ -13,5 +13,44 @@
     { "word": "shovel",     "image": "/images/unit-15/shovel.png" },
     { "word": "sunscreen",  "image": "/images/unit-15/sunscreen.png" },
     { "word": "the ocean",  "image": "/images/unit-15/the-ocean.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "Let's [verb] [object].",
+      "examples": [
+        "Let's play ball!",
+        "Let's find shells.",
+        "Let's make sandcastles!",
+        "Let's count the shells.",
+        "Let's find the crabs.",
+        "Let's make a sandcastle.",
+        "Let's walk on the beach.",
+        "Let's swim in the ocean."
+      ]
+    },
+    {
+      "pattern": "That's a good idea.",
+      "examples": [
+        "Let's play ball! That's a good idea.",
+        "Let's find shells. That's a good idea."
+      ]
+    },
+    {
+      "pattern": "Don't forget your [noun].",
+      "examples": [
+        "Don't forget your hat.",
+        "Don't forget your sunscreen.",
+        "Don't forget your shovel.",
+        "Don't forget your pail."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Let's play ball!",
+    "Let's make a sandcastle.",
+    "Let's swim in the ocean.",
+    "That's a good idea.",
+    "Don't forget your hat.",
+    "Don't forget your sunscreen."
   ]
 }

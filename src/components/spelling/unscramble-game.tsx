@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import confetti from "canvas-confetti";
+import { pickNextWordViaSrs } from "./srs-picker";
 import {
     Shuffle,
     RotateCcw,
@@ -268,16 +269,23 @@ export function UnscrambleGame({ initialLists, skipTracking }: UnscrambleGamePro
     };
 
     const pickNewWord = useCallback(
-        (overridePool?: "current" | "all") => {
+        async (overridePool?: "current" | "all") => {
             const pool = overridePool || wordPool;
             const allWords = getWordObjectsForPool(pool);
             if (allWords.length === 0) return;
 
-            // Try to pick unplayed word
-            const unplayed = allWords.filter((w) => !wordsPlayed.has(w.word.id));
-            const choices = unplayed.length > 0 ? unplayed : allWords;
-
-            const chosen = choices[Math.floor(Math.random() * choices.length)];
+            const playedSet = wordsPlayed;
+            const excludeIds = allWords.filter((w) => playedSet.has(w.word.id)).map((w) => w.word.id);
+            const chosenId = await pickNextWordViaSrs(
+                allWords.map((w) => w.word.id),
+                excludeIds,
+            );
+            let chosen = chosenId ? allWords.find((w) => w.word.id === chosenId) : undefined;
+            if (!chosen) {
+                const unplayed = allWords.filter((w) => !playedSet.has(w.word.id));
+                const choices = unplayed.length > 0 ? unplayed : allWords;
+                chosen = choices[Math.floor(Math.random() * choices.length)];
+            }
             setWordsPlayed((prev) => new Set(prev).add(chosen.word.id));
             initializeWord(chosen.word, chosen.classId);
         },

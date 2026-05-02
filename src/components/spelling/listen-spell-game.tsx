@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Play, Volume2, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 import confetti from "canvas-confetti";
+import { pickNextWordViaSrs } from "./srs-picker";
 
 type SpellingWord = {
     id: string;
@@ -96,20 +97,27 @@ export function ListenAndSpellGame({ initialLists, skipTracking }: ListenAndSpel
         return words;
     }, []);
 
-    const pickRandomWord = useCallback((listData: SpellingList[], pool: "current" | "all") => {
+    const pickRandomWord = useCallback(async (listData: SpellingList[], pool: "current" | "all") => {
         const availableWords = getWordObjectsForPool(listData, pool);
         if (availableWords.length === 0) return;
 
-        // Try to find a word we haven't played yet in this session
-        let unplayedWords = availableWords.filter(w => !wordsPlayed.has(w.word.id));
-
-        // If all words have been played, reset the played pool
-        if (unplayedWords.length === 0) {
+        // Reset played pool if exhausted
+        const playedSet = wordsPlayed;
+        const allPlayed = availableWords.every((w) => playedSet.has(w.word.id));
+        if (allPlayed) {
             setWordsPlayed(new Set());
-            unplayedWords = availableWords;
         }
+        const excludeIds = allPlayed ? [] : availableWords.filter((w) => playedSet.has(w.word.id)).map((w) => w.word.id);
 
-        const randomSelection = unplayedWords[Math.floor(Math.random() * unplayedWords.length)];
+        const chosenId = await pickNextWordViaSrs(
+            availableWords.map((w) => w.word.id),
+            excludeIds,
+        );
+        let randomSelection = chosenId ? availableWords.find((w) => w.word.id === chosenId) : undefined;
+        if (!randomSelection) {
+            const eligible = allPlayed ? availableWords : availableWords.filter((w) => !playedSet.has(w.word.id));
+            randomSelection = eligible[Math.floor(Math.random() * eligible.length)];
+        }
 
         setCurrentWord(randomSelection.word);
         setCurrentClassId(randomSelection.classId);

@@ -5,6 +5,7 @@ import { recordings, assignments, classes, classEnrollments } from '@/lib/db/sch
 import { eq, and, desc } from 'drizzle-orm';
 import { generateRecordingKey, uploadRecordingToR2 } from '@/lib/storage/r2-client';
 import { logError, createRequestContext } from '@/lib/logger';
+import { awardXp } from '@/lib/gamification/award';
 
 export const runtime = 'nodejs';
 
@@ -106,6 +107,8 @@ export async function POST(request: NextRequest) {
       submittedAt: new Date(),
     }).returning();
 
+    const award = await awardXp(user.id, 'recording_submitted', newRecording.id);
+
     return NextResponse.json({
       success: true,
       recording: {
@@ -114,7 +117,8 @@ export async function POST(request: NextRequest) {
         audioUrl: newRecording.audioUrl,
         submittedAt: newRecording.submittedAt,
         status: newRecording.status,
-      }
+      },
+      award,
     });
 
   } catch (error) {

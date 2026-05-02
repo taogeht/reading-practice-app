@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { spellingGameResults, spellingWords } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
+import { awardXp } from '@/lib/gamification/award';
 
 export const runtime = 'nodejs';
 
@@ -50,7 +51,10 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
-        return NextResponse.json(result, { status: 201 });
+        // Award XP — never blocks the result save
+        const award = await awardXp(user.id, won ? 'spelling_won' : 'spelling_lost', result.id);
+
+        return NextResponse.json({ ...result, award }, { status: 201 });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         const stack = error instanceof Error ? error.stack : '';

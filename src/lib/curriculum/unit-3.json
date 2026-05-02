@@ -1,0 +1,16 @@
+{
+  "unit": 3,
+  "topic": "My body",
+  "vocabulary": [
+    { "word": "ear",      "image": "/images/unit-3/ear.png" },
+    { "word": "eye",      "image": "/images/unit-3/eye.png" },
+    { "word": "eyebrow",  "image": "/images/unit-3/eyebrow.png" },
+    { "word": "face",     "image": "/images/unit-3/face.png" },
+    { "word": "nose",     "image": "/images/unit-3/nose.png" },
+    { "word": "shoulder", "image": "/images/unit-3/shoulder.png" },
+    { "word": "arm",      "image": "/images/unit-3/arm.png" },
+    { "word": "hand",     "image": "/images/unit-3/hand.png" },
+    { "word": "finger",   "image": "/images/unit-3/finger.png" },
+    { "word": "leg",      "image": "/images/unit-3/leg.png" }
+  ]
+}
