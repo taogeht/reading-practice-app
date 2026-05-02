@@ -246,8 +246,6 @@ const SENTENCE_BUILDER_QUESTION_SCHEMA = {
           tokens: {
             type: 'array',
             items: { type: 'string' },
-            minItems: 3,
-            maxItems: 12,
           },
           imagePrompt: { type: 'string' },
         },
