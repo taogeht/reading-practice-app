@@ -13,6 +13,40 @@ export const runtime = 'nodejs';
 
 const MAX_GENERATE = 20;
 
+// Generates images for a batch of inserted practice questions and patches
+// imageUrl onto each row. Designed to be called as a fire-and-forget
+// background task — never throws, swallows per-question errors so one bad
+// image doesn't poison the rest of the batch.
+async function generateImagesInBackground(
+  rows: { id: string; imagePrompt: string | null }[],
+  unit: number,
+) {
+  for (const row of rows) {
+    if (!row.imagePrompt) continue;
+    try {
+      const result = await geminiImageClient.generateScene(row.imagePrompt);
+      if (!result.success || !result.imageBuffer) {
+        logError(new Error(result.error || 'Image generation failed'), `practice-questions.image[${row.id}]`);
+        continue;
+      }
+      const key = r2Client.generatePracticeImageKey(unit, row.id);
+      const imageUrl = await r2Client.uploadFile(
+        key,
+        result.imageBuffer,
+        result.contentType || 'image/png',
+      );
+      await db
+        .update(practiceQuestions)
+        .set({ imageUrl })
+        .where(eq(practiceQuestions.id, row.id));
+    } catch (err) {
+      logError(err, `practice-questions.image[${row.id}]`);
+    }
+    // Light rate-limit (Gemini free tier: ~10 req/min)
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+}
+
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
@@ -109,41 +143,19 @@ export async function POST(request: NextRequest) {
       )
       .returning();
 
-    // Best-effort image generation: a question without an image is still
-    // usable, so we don't fail the batch if Gemini hiccups on one.
-    let imageSuccessCount = 0;
-    for (const row of inserted) {
-      if (!row.imagePrompt) continue;
-      try {
-        const result = await geminiImageClient.generateScene(row.imagePrompt);
-        if (!result.success || !result.imageBuffer) {
-          logError(new Error(result.error || 'Image generation failed'), `practice-questions.image[${row.id}]`);
-          continue;
-        }
-        const key = r2Client.generatePracticeImageKey(unit, row.id);
-        const imageUrl = await r2Client.uploadFile(
-          key,
-          result.imageBuffer,
-          result.contentType || 'image/png'
-        );
-        await db
-          .update(practiceQuestions)
-          .set({ imageUrl })
-          .where(eq(practiceQuestions.id, row.id));
-        row.imageUrl = imageUrl;
-        imageSuccessCount += 1;
-      } catch (err) {
-        logError(err, `practice-questions.image[${row.id}]`);
-      }
-      // Light rate-limit (Gemini free tier: ~10 req/min)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
+    // Image generation runs as fire-and-forget so this endpoint returns before
+    // Cloudflare's 100s upstream timeout. The Node process keeps the promise
+    // alive (this server is dockerized, not serverless). Teachers see questions
+    // immediately; images populate as Gemini finishes — the teacher page
+    // auto-polls until imageUrl is filled in.
+    const pending = inserted.filter((r) => r.imagePrompt).length;
+    void generateImagesInBackground(inserted, unit);
 
     return NextResponse.json({
       questions: inserted,
       requested: count,
       accepted: inserted.length,
-      imagesGenerated: imageSuccessCount,
+      imagesPending: pending,
     });
   } catch (error) {
     logError(error, 'practice-questions.generate');

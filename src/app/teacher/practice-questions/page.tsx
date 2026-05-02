@@ -48,14 +48,14 @@ export default function PracticeQuestionsPage() {
   const [vocabMix, setVocabMix] = useState<VocabMix>('mix');
   const [generateCount, setGenerateCount] = useState<5 | 10 | 20>(5);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/practice-questions');
       const data = await res.json();
       if (res.ok) setQuestions(data.questions);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -76,6 +76,23 @@ export default function PracticeQuestionsPage() {
   }, [questions]);
 
   const filtered = questions.filter((q) => q.unit === selectedUnit);
+
+  // Auto-poll while any question is missing its image (background generation
+  // populates imageUrl progressively). Stops after 3 minutes or once every
+  // question has an image.
+  const hasPendingImages = questions.some((q) => !q.imageUrl);
+  useEffect(() => {
+    if (!hasPendingImages) return;
+    const start = Date.now();
+    const interval = setInterval(() => {
+      if (Date.now() - start > 3 * 60 * 1000) {
+        clearInterval(interval);
+        return;
+      }
+      load(true);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [hasPendingImages, load]);
 
   const generate = async (unit: number, count = 5) => {
     setGeneratingUnit(unit);
