@@ -38,6 +38,7 @@ import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelli
 import { ImportSpellingListDialog } from "@/components/spelling/import-spelling-list-dialog";
 import { SyllableEditorDialog } from "@/components/spelling/syllable-editor-dialog";
 import { RegenerateAudioDialog } from "@/components/spelling/regenerate-audio-dialog";
+import { BulkAudioDialog } from "@/components/spelling/bulk-audio-dialog";
 
 type ClassOption = {
   id: string;
@@ -90,6 +91,7 @@ export default function ManageSpellingListsPage() {
   const [playingWordId, setPlayingWordId] = useState<string | null>(null);
   const [editingSyllablesWord, setEditingSyllablesWord] = useState<SpellingWord | null>(null);
   const [regeneratingAudio, setRegeneratingAudio] = useState<{ word: SpellingWord; listIds: string[] } | null>(null);
+  const [bulkAudioFor, setBulkAudioFor] = useState<{ list: SpellingList; isRegenerate: boolean } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePlayAudio = useCallback((word: SpellingWord) => {
@@ -198,15 +200,16 @@ export default function ManageSpellingListsPage() {
     }
   };
 
-  const handleGenerateAudio = async (list: SpellingList, force = false) => {
-    if (force && !confirm("Regenerate all audio? This will overwrite existing audio files.")) {
-      return;
-    }
+  const handleGenerateAudio = async (list: SpellingList, force = false, voiceId?: string) => {
     setGeneratingAudioFor(list.id);
     try {
-      const forceParam = force ? "?force=true" : "";
+      const params = new URLSearchParams();
+      if (force) params.set("force", "true");
+      if (voiceId) params.set("voiceId", voiceId);
+      const qs = params.toString() ? `?${params.toString()}` : "";
+
       // Generate audio for the primary list
-      const response = await fetch(`/api/spelling-lists/${list.id}/generate-audio${forceParam}`, {
+      const response = await fetch(`/api/spelling-lists/${list.id}/generate-audio${qs}`, {
         method: "POST",
       });
 
@@ -222,7 +225,7 @@ export default function ManageSpellingListsPage() {
       if (otherIds.length > 0) {
         await Promise.all(
           otherIds.map(id =>
-            fetch(`/api/spelling-lists/${id}/generate-audio${forceParam}`, { method: "POST" })
+            fetch(`/api/spelling-lists/${id}/generate-audio${qs}`, { method: "POST" })
           )
         );
       }
@@ -231,7 +234,7 @@ export default function ManageSpellingListsPage() {
       fetchData();
     } catch (err: any) {
       console.error("Error generating audio:", err);
-      alert(err.message || "Failed to generate audio. Please try again.");
+      throw err;
     } finally {
       setGeneratingAudioFor(null);
     }
@@ -594,7 +597,7 @@ export default function ManageSpellingListsPage() {
                       className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 h-9 w-9 shrink-0"
                       onClick={() => {
                         const allHaveAudio = list.words.length > 0 && list.words.every(w => w.audioUrl);
-                        handleGenerateAudio(list, allHaveAudio);
+                        setBulkAudioFor({ list, isRegenerate: allHaveAudio });
                       }}
                       disabled={generatingAudioFor === list.id || list.words.length === 0}
                       title={list.words.every(w => w.audioUrl) ? "Regenerate all audio" : "Generate audio for words"}
@@ -681,6 +684,19 @@ export default function ManageSpellingListsPage() {
           open={true}
           onClose={() => setRegeneratingAudio(null)}
           onRegenerated={(newUrl) => handleAudioRegenerated(regeneratingAudio.word.id, newUrl)}
+        />
+      )}
+
+      {bulkAudioFor && (
+        <BulkAudioDialog
+          listTitle={bulkAudioFor.list.title}
+          wordCount={bulkAudioFor.list.words.length}
+          isRegenerate={bulkAudioFor.isRegenerate}
+          open={true}
+          onClose={() => setBulkAudioFor(null)}
+          onConfirm={(voiceId) =>
+            handleGenerateAudio(bulkAudioFor.list, bulkAudioFor.isRegenerate, voiceId)
+          }
         />
       )}
 

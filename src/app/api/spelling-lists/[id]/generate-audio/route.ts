@@ -119,8 +119,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     throw new Error(ttsResult.error || 'TTS generation failed');
                 }
 
-                // Upload to R2 - using uploadFile which returns presigned URLs for audio
-                const audioKey = `spelling/${list.classId}/${list.id}/${word.id}.mp3`;
+                // Upload to R2 - using uploadFile which returns proxy URLs for audio.
+                // Versioned key so the URL changes each regeneration — the audio proxy
+                // sets max-age=31536000 immutable, so reusing the same key would leave
+                // browsers serving the stale cached copy forever.
+                const audioKey = `spelling/${list.classId}/${list.id}/${word.id}-${Date.now()}.mp3`;
                 const buffer = Buffer.isBuffer(ttsResult.audioBuffer)
                     ? ttsResult.audioBuffer
                     : Buffer.from(ttsResult.audioBuffer);
