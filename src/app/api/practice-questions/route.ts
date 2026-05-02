@@ -40,7 +40,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { unit?: unknown; count?: unknown; questionType?: unknown };
+  let body: {
+    unit?: unknown;
+    count?: unknown;
+    questionType?: unknown;
+    currentUnitVocabRatio?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -56,6 +61,19 @@ export async function POST(request: NextRequest) {
       : requestedType === 'sentence_builder'
         ? 'sentence_builder'
         : 'fill_blank_mcq';
+
+  let currentUnitVocabRatio = 0.6;
+  if (body.currentUnitVocabRatio !== undefined) {
+    const r = Number(body.currentUnitVocabRatio);
+    if (!Number.isFinite(r) || r < 0 || r > 1) {
+      return NextResponse.json(
+        { error: 'currentUnitVocabRatio must be a number between 0 and 1' },
+        { status: 400 }
+      );
+    }
+    currentUnitVocabRatio = r;
+  }
+
   if (!isAvailablePracticeUnit(unit)) {
     return NextResponse.json(
       { error: 'No curated curriculum for that unit yet.' },
@@ -67,7 +85,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const generated = await generateQuestions({ unit, count, questionType });
+    const generated = await generateQuestions({ unit, count, questionType, currentUnitVocabRatio });
     if (generated.length === 0) {
       return NextResponse.json(
         { error: 'Generator returned no valid questions. Try again.' },

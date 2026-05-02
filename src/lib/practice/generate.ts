@@ -41,15 +41,12 @@ async function loadUnitJson(unit: number): Promise<UnitCurriculum | null> {
   }
 }
 
-// Builds a unit spec for question generation that includes vocabulary from
-// every prior unit (0..targetUnit-1) the student has studied — spiral curriculum.
-// The grammar_patterns and key_sentences come from ONLY the target unit, so
-// generated questions still focus on what's currently being taught.
-async function loadCumulativeCurriculum(targetUnit: number): Promise<UnitCurriculum | null> {
+// Loads the target unit's own curriculum (vocab + grammar) without merging in
+// any prior-unit vocabulary. Used for the unit-only half of a generation batch.
+async function loadUnitOnlyCurriculum(targetUnit: number): Promise<UnitCurriculum | null> {
   const target = await loadUnitJson(targetUnit);
   if (!target) return null;
-
-  const merged: UnitCurriculum = {
+  return {
     unit: target.unit,
     topic: target.topic,
     vocabulary: [...target.vocabulary],
@@ -61,6 +58,15 @@ async function loadCumulativeCurriculum(targetUnit: number): Promise<UnitCurricu
     grammar_patterns: target.grammar_patterns,
     key_sentences: target.key_sentences,
   };
+}
+
+// Builds a unit spec for question generation that includes vocabulary from
+// every prior unit (0..targetUnit-1) the student has studied — spiral curriculum.
+// The grammar_patterns and key_sentences come from ONLY the target unit, so
+// generated questions still focus on what's currently being taught.
+async function loadCumulativeCurriculum(targetUnit: number): Promise<UnitCurriculum | null> {
+  const merged = await loadUnitOnlyCurriculum(targetUnit);
+  if (!merged) return null;
 
   for (let i = 0; i < targetUnit; i++) {
     const prior = await loadUnitJson(i);
@@ -86,11 +92,15 @@ function appendUnique<T>(target: T[], source: T[], keyFn: (t: T) => string) {
   }
 }
 
-function formatCurriculumText(c: UnitCurriculum): string {
+function formatCurriculumText(c: UnitCurriculum, mode: 'unit-only' | 'cumulative'): string {
   const lines: string[] = [];
   lines.push(`UNIT ${c.unit} — ${c.topic}`);
   lines.push('');
-  lines.push('The vocabulary below is CUMULATIVE — it includes words from this unit and all earlier units the student has studied. You may use any of these words in your questions, but the GRAMMAR PATTERNS section below is what this unit teaches and must drive every question.');
+  if (mode === 'unit-only') {
+    lines.push('The vocabulary below is from THIS UNIT ONLY. Every sentence MUST use only these words. The GRAMMAR PATTERNS section is what this unit teaches and must drive every question.');
+  } else {
+    lines.push('This is a SPIRAL-REVIEW batch. Vocabulary covers this unit AND every earlier unit in the textbook. ACTIVELY pull in words from prior units — do not stay confined to the current unit\'s words. The GRAMMAR PATTERNS section is what this unit teaches and must drive every question (the grammar comes from this unit; the vocab can come from any unit listed below).');
+  }
   lines.push('');
   lines.push(`NOUNS (use any of these): ${c.vocabulary.map((v) => v.word).join(', ')}`);
   if (c.numbers?.length) {
@@ -352,63 +362,65 @@ function validateTrueFalseShape(raw: unknown): GeneratedQuestion[] {
 
 // ---------- Main ----------
 
-export async function generateQuestions(params: {
-  unit: number;
-  count: number;
-  questionType?: QuestionType;
-}): Promise<GeneratedQuestion[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+const DEFAULT_CURRENT_UNIT_VOCAB_RATIO = 0.6;
 
-  const questionType: QuestionType = params.questionType ?? 'fill_blank_mcq';
+type TypeBundle = {
+  systemPrompt: string;
+  schema:
+    | typeof MCQ_QUESTION_SCHEMA
+    | typeof TRUE_FALSE_QUESTION_SCHEMA
+    | typeof SENTENCE_BUILDER_QUESTION_SCHEMA;
+  validate: (raw: unknown) => GeneratedQuestion[];
+  buildInstruction: (unit: number, count: number) => string;
+};
 
-  let systemPrompt: string;
-  let schema: typeof MCQ_QUESTION_SCHEMA | typeof TRUE_FALSE_QUESTION_SCHEMA | typeof SENTENCE_BUILDER_QUESTION_SCHEMA;
-  let validate: (raw: unknown) => GeneratedQuestion[];
-  let userInstruction: string;
-
+function bundleForType(questionType: QuestionType): TypeBundle {
   switch (questionType) {
     case 'true_false':
-      systemPrompt = TRUE_FALSE_SYSTEM_PROMPT;
-      schema = TRUE_FALSE_QUESTION_SCHEMA;
-      validate = validateTrueFalseShape;
-      userInstruction = `Generate ${params.count} true/false picture statements at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above. Mix true and false roughly evenly.`;
-      break;
+      return {
+        systemPrompt: TRUE_FALSE_SYSTEM_PROMPT,
+        schema: TRUE_FALSE_QUESTION_SCHEMA,
+        validate: validateTrueFalseShape,
+        buildInstruction: (unit, count) =>
+          `Generate ${count} true/false picture statements at Grade 1 ESL difficulty based on the Unit ${unit} specification above. Mix true and false roughly evenly.`,
+      };
     case 'sentence_builder':
-      systemPrompt = SENTENCE_BUILDER_SYSTEM_PROMPT;
-      schema = SENTENCE_BUILDER_QUESTION_SCHEMA;
-      validate = validateSentenceBuilderShape;
-      userInstruction = `Generate ${params.count} sentence-building exercises at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above. Vary the sentence shapes (statements, questions, imperatives if the unit teaches them).`;
-      break;
+      return {
+        systemPrompt: SENTENCE_BUILDER_SYSTEM_PROMPT,
+        schema: SENTENCE_BUILDER_QUESTION_SCHEMA,
+        validate: validateSentenceBuilderShape,
+        buildInstruction: (unit, count) =>
+          `Generate ${count} sentence-building exercises at Grade 1 ESL difficulty based on the Unit ${unit} specification above. Vary the sentence shapes (statements, questions, imperatives if the unit teaches them).`,
+      };
     default:
-      systemPrompt = MCQ_SYSTEM_PROMPT;
-      schema = MCQ_QUESTION_SCHEMA;
-      validate = validateMcqShape;
-      userInstruction = `Generate ${params.count} fill-in-the-blank multiple-choice questions at Grade 1 ESL difficulty based on the Unit ${params.unit} specification above.`;
+      return {
+        systemPrompt: MCQ_SYSTEM_PROMPT,
+        schema: MCQ_QUESTION_SCHEMA,
+        validate: validateMcqShape,
+        buildInstruction: (unit, count) =>
+          `Generate ${count} fill-in-the-blank multiple-choice questions at Grade 1 ESL difficulty based on the Unit ${unit} specification above.`,
+      };
   }
+}
 
-  const client = new Anthropic({ apiKey });
-
-  const curriculum = await loadCumulativeCurriculum(params.unit);
-  if (!curriculum) {
-    throw new Error(`No curated curriculum for Unit ${params.unit} — add src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
-  }
-  if (!curriculum.grammar_patterns?.length) {
-    throw new Error(`Unit ${params.unit} has no grammar_patterns yet — add them to src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
-  }
-
+async function runGenerationCall(
+  client: Anthropic,
+  bundle: TypeBundle,
+  curriculum: UnitCurriculum,
+  mode: 'unit-only' | 'cumulative',
+  count: number,
+): Promise<GeneratedQuestion[]> {
   const userContent: Anthropic.ContentBlockParam[] = [
     {
       type: 'text',
-      text: formatCurriculumText(curriculum),
+      text: formatCurriculumText(curriculum, mode),
       cache_control: { type: 'ephemeral' },
     },
+    {
+      type: 'text',
+      text: bundle.buildInstruction(curriculum.unit, count),
+    },
   ];
-
-  userContent.push({
-    type: 'text',
-    text: userInstruction,
-  });
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
@@ -416,12 +428,12 @@ export async function generateQuestions(params: {
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',
-      format: { type: 'json_schema', schema },
+      format: { type: 'json_schema', schema: bundle.schema },
     },
     system: [
       {
         type: 'text',
-        text: systemPrompt,
+        text: bundle.systemPrompt,
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -441,5 +453,74 @@ export async function generateQuestions(params: {
     throw new Error('Model did not return valid JSON');
   }
 
-  return validate(parsed);
+  return bundle.validate(parsed);
+}
+
+export async function generateQuestions(params: {
+  unit: number;
+  count: number;
+  questionType?: QuestionType;
+  // Fraction of `count` whose vocabulary is drawn from THIS unit only.
+  // The remaining fraction draws from cumulative book vocabulary (spiral review).
+  // Range [0, 1]. Default 0.6 (60% unit-focused, 40% review).
+  currentUnitVocabRatio?: number;
+}): Promise<GeneratedQuestion[]> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+
+  const questionType: QuestionType = params.questionType ?? 'fill_blank_mcq';
+  const bundle = bundleForType(questionType);
+
+  const rawRatio =
+    typeof params.currentUnitVocabRatio === 'number' && Number.isFinite(params.currentUnitVocabRatio)
+      ? params.currentUnitVocabRatio
+      : DEFAULT_CURRENT_UNIT_VOCAB_RATIO;
+  const ratio = Math.min(1, Math.max(0, rawRatio));
+
+  const unitOnlyCurriculum = await loadUnitOnlyCurriculum(params.unit);
+  if (!unitOnlyCurriculum) {
+    throw new Error(`No curated curriculum for Unit ${params.unit} — add src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
+  }
+  if (!unitOnlyCurriculum.grammar_patterns?.length) {
+    throw new Error(`Unit ${params.unit} has no grammar_patterns yet — add them to src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
+  }
+
+  const unitOnlyCount = Math.round(params.count * ratio);
+  const cumulativeCount = params.count - unitOnlyCount;
+
+  const client = new Anthropic({ apiKey });
+  const calls: Promise<GeneratedQuestion[]>[] = [];
+
+  if (unitOnlyCount > 0) {
+    calls.push(runGenerationCall(client, bundle, unitOnlyCurriculum, 'unit-only', unitOnlyCount));
+  }
+  if (cumulativeCount > 0) {
+    const cumulativeCurriculum = await loadCumulativeCurriculum(params.unit);
+    if (!cumulativeCurriculum) {
+      throw new Error(`No curated curriculum for Unit ${params.unit}.`);
+    }
+    // If cumulative load added no new vocabulary (e.g. unit 0 with no priors),
+    // there is nothing extra to spiral over — fold the cumulative half back
+    // into the unit-only call to avoid wasting an LLM round.
+    const unitVocabSize = unitOnlyCurriculum.vocabulary.length;
+    const cumulativeVocabSize = cumulativeCurriculum.vocabulary.length;
+    if (cumulativeVocabSize <= unitVocabSize) {
+      if (calls.length === 0) {
+        calls.push(runGenerationCall(client, bundle, unitOnlyCurriculum, 'unit-only', cumulativeCount));
+      } else {
+        // Re-issue the unit-only call with the full count instead of two calls.
+        calls.length = 0;
+        calls.push(
+          runGenerationCall(client, bundle, unitOnlyCurriculum, 'unit-only', unitOnlyCount + cumulativeCount),
+        );
+      }
+    } else {
+      calls.push(
+        runGenerationCall(client, bundle, cumulativeCurriculum, 'cumulative', cumulativeCount),
+      );
+    }
+  }
+
+  const results = await Promise.all(calls);
+  return results.flat();
 }

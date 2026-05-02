@@ -10,6 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AVAILABLE_PRACTICE_UNITS } from '@/lib/practice/units';
 
 type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
+type VocabMix = 'unit-only' | 'mix' | 'heavy-review';
+
+const VOCAB_MIX_RATIO: Record<VocabMix, number> = {
+  'unit-only': 1,
+  'mix': 0.6,
+  'heavy-review': 0.3,
+};
 
 type Question = {
   id: string;
@@ -38,6 +45,7 @@ export default function PracticeQuestionsPage() {
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
   const [promptDraft, setPromptDraft] = useState('');
   const [generateType, setGenerateType] = useState<QuestionType>('fill_blank_mcq');
+  const [vocabMix, setVocabMix] = useState<VocabMix>('mix');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,7 +83,12 @@ export default function PracticeQuestionsPage() {
       const res = await fetch('/api/practice-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unit, count, questionType: generateType }),
+        body: JSON.stringify({
+          unit,
+          count,
+          questionType: generateType,
+          currentUnitVocabRatio: VOCAB_MIX_RATIO[vocabMix],
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to generate');
@@ -196,6 +209,20 @@ export default function PracticeQuestionsPage() {
                   <SelectItem value="fill_blank_mcq">Multiple Choice</SelectItem>
                   <SelectItem value="true_false">True / False</SelectItem>
                   <SelectItem value="sentence_builder">Sentence Builder</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={vocabMix}
+                onValueChange={(v) => setVocabMix(v as VocabMix)}
+                disabled={generatingUnit !== null}
+              >
+                <SelectTrigger className="w-[170px] h-9" title="How much vocabulary from prior units to mix in for spiral review">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unit-only">Unit only</SelectItem>
+                  <SelectItem value="mix">Mix (60/40)</SelectItem>
+                  <SelectItem value="heavy-review">Heavy review (30/70)</SelectItem>
                 </SelectContent>
               </Select>
               <Button

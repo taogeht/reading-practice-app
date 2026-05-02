@@ -37,7 +37,7 @@ export function isValidUnit(n: number): boolean {
 // Units with a curated curriculum JSON at src/lib/curriculum/unit-{N}.json.
 // The practice-quiz generator only supports these — there is no PDF fallback.
 // Add a unit number here when you write its JSON.
-const PRACTICE_UNIT_NUMBERS: ReadonlySet<number> = new Set([12, 13]);
+const PRACTICE_UNIT_NUMBERS: ReadonlySet<number> = new Set([12, 13, 14, 15]);
 
 export const AVAILABLE_PRACTICE_UNITS: UnitInfo[] = UNITS.filter((u) =>
   PRACTICE_UNIT_NUMBERS.has(u.unit)
