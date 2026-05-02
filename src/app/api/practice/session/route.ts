@@ -12,11 +12,18 @@ import { isAvailablePracticeUnit } from '@/lib/practice/units';
 
 export const runtime = 'nodejs';
 
-const QUESTIONS_PER_SESSION = 5;
-const TARGET_OVERDUE = 2;
-const TARGET_UNSEEN = 2;
-const TARGET_WILDCARD = 1;
-const MAX_REVIEW_PER_SESSION = 3; // cap so a struggling kid never gets a punishment session
+const ALLOWED_COUNTS = new Set([5, 10, 20]);
+const DEFAULT_QUESTIONS_PER_SESSION = 5;
+
+// Scales the 5/10/20 session length into per-pool targets. The 5-question case
+// matches the original tuning (2 overdue / 2 unseen / 1 wildcard, max 3 review).
+function targetsForCount(count: number) {
+  const targetOverdue = Math.round(count * 0.4);
+  const targetUnseen = Math.round(count * 0.4);
+  const targetWildcard = count - targetOverdue - targetUnseen;
+  const maxReview = Math.round(count * 0.6);
+  return { targetOverdue, targetUnseen, targetWildcard, maxReview };
+}
 
 // 5-box Leitner intervals in days. Box = consecutive correct answers from
 // the latest attempt backwards (capped at 4). A single wrong answer resets to 0.
@@ -63,6 +70,12 @@ export async function GET(request: NextRequest) {
   if (!isAvailablePracticeUnit(unit)) {
     return NextResponse.json({ error: 'Invalid unit' }, { status: 400 });
   }
+
+  const requestedCount = Number(url.searchParams.get('count'));
+  const count = ALLOWED_COUNTS.has(requestedCount)
+    ? requestedCount
+    : DEFAULT_QUESTIONS_PER_SESSION;
+  const { targetOverdue, targetUnseen, targetWildcard, maxReview } = targetsForCount(count);
 
   // Enforce: student must be enrolled in a class that has this unit enabled
   const enabled = await db
@@ -197,23 +210,23 @@ export async function GET(request: NextRequest) {
     }
   };
 
-  take(overdue, TARGET_OVERDUE);
-  take(unseen, TARGET_UNSEEN);
-  take(wildcardPool, TARGET_WILDCARD);
+  take(overdue, targetOverdue);
+  take(unseen, targetUnseen);
+  take(wildcardPool, targetWildcard);
 
   // Backfill cascade: prefer unseen → wildcard → more overdue → anything else.
-  // Enforce MAX_REVIEW_PER_SESSION so a kid with a huge overdue queue still gets variety.
+  // Enforce maxReview so a kid with a huge overdue queue still gets variety.
   const reviewCount = () =>
     selected.filter((s) => s.hasHistory && s.dueAt && s.dueAt <= now).length;
 
   const cascade = [unseen, wildcardPool, overdue, categorized];
   for (const pool of cascade) {
-    if (selected.length >= QUESTIONS_PER_SESSION) break;
+    if (selected.length >= count) break;
     for (const c of pool) {
-      if (selected.length >= QUESTIONS_PER_SESSION) break;
+      if (selected.length >= count) break;
       if (usedIds.has(c.q.id)) continue;
       const isReview = c.hasHistory && c.dueAt && c.dueAt <= now;
-      if (isReview && reviewCount() >= MAX_REVIEW_PER_SESSION) continue;
+      if (isReview && reviewCount() >= maxReview) continue;
       selected.push(c);
       usedIds.add(c.q.id);
     }

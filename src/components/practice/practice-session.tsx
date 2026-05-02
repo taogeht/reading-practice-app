@@ -27,6 +27,8 @@ type View =
   | { name: 'results'; unit: number; correctCount: number; total: number }
   | { name: 'empty'; unit: number; message: string };
 
+type SessionLength = 5 | 10 | 20;
+
 export function PracticeSession() {
   const [view, setView] = useState<View>({ name: 'picker' });
   const [selected, setSelected] = useState<string | null>(null);
@@ -35,6 +37,7 @@ export function PracticeSession() {
   const [feedback, setFeedback] = useState<{ correct: boolean; correctAnswer: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [availableUnits, setAvailableUnits] = useState<UnitInfo[] | null>(null);
+  const [sessionLength, setSessionLength] = useState<SessionLength>(5);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +62,7 @@ export function PracticeSession() {
   const startUnit = async (unit: number) => {
     setView({ name: 'loading' });
     try {
-      const res = await fetch(`/api/practice/session?unit=${unit}`);
+      const res = await fetch(`/api/practice/session?unit=${unit}&count=${sessionLength}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to load');
       if (!data.questions || data.questions.length === 0) {
@@ -158,21 +161,47 @@ export function PracticeSession() {
               No practice units are turned on for your class yet. Ask your teacher!
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {availableUnits.map((u) => (
-                <button
-                  key={u.unit}
-                  onClick={() => startUnit(u.unit)}
-                  className="text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition rounded-xl p-4 cursor-pointer"
-                >
-                  <div className="text-3xl mb-1">{u.emoji}</div>
-                  <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
-                    Unit {u.unit}
-                  </div>
-                  <div className="text-sm font-bold text-gray-900">{u.topic}</div>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="text-sm font-semibold text-gray-700">
+                  How many questions?
+                </div>
+                <div className="inline-flex rounded-lg border-2 border-indigo-200 bg-white overflow-hidden self-start sm:self-auto">
+                  {([5, 10, 20] as const).map((n) => {
+                    const active = sessionLength === n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setSessionLength(n)}
+                        className={`px-4 py-2 text-sm font-bold transition ${
+                          active
+                            ? 'bg-indigo-500 text-white'
+                            : 'text-indigo-700 hover:bg-indigo-50'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {availableUnits.map((u) => (
+                  <button
+                    key={u.unit}
+                    onClick={() => startUnit(u.unit)}
+                    className="text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition rounded-xl p-4 cursor-pointer"
+                  >
+                    <div className="text-3xl mb-1">{u.emoji}</div>
+                    <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
+                      Unit {u.unit}
+                    </div>
+                    <div className="text-sm font-bold text-gray-900">{u.topic}</div>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
