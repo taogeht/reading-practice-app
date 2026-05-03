@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2, Wand2 } from 'lucide-react';
+import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2, Wand2, Sparkles } from 'lucide-react';
 import type { UnitInfo } from '@/lib/practice/units';
 
 type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
@@ -34,10 +34,16 @@ export function PracticeSession() {
   const [selected, setSelected] = useState<string | null>(null);
   // For sentence_builder: indices into the question.tokens array, in tap order.
   const [assembled, setAssembled] = useState<number[]>([]);
-  const [feedback, setFeedback] = useState<{ correct: boolean; correctAnswer: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    correct: boolean;
+    correctAnswer: string;
+    xpEarned: number;
+    firstTryBonus: number;
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [availableUnits, setAvailableUnits] = useState<UnitInfo[] | null>(null);
   const [sessionLength, setSessionLength] = useState<SessionLength>(5);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,12 +118,19 @@ export function PracticeSession() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed');
-      setFeedback({ correct: data.isCorrect, correctAnswer: data.correctAnswer });
+      setFeedback({
+        correct: data.isCorrect,
+        correctAnswer: data.correctAnswer,
+        xpEarned: typeof data.xpEarned === 'number' ? data.xpEarned : 0,
+        firstTryBonus: typeof data.firstTryBonus === 'number' ? data.firstTryBonus : 0,
+      });
       if (data.isCorrect) {
         setView({ ...view, correctCount: view.correctCount + 1 });
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2500);
       }
     } catch {
-      setFeedback({ correct: false, correctAnswer: '' });
+      setFeedback({ correct: false, correctAnswer: '', xpEarned: 0, firstTryBonus: 0 });
     } finally {
       setSubmitting(false);
     }
@@ -138,6 +151,7 @@ export function PracticeSession() {
       setSelected(null);
       setAssembled([]);
       setFeedback(null);
+      setShowConfetti(false);
     }
   };
 
@@ -268,7 +282,26 @@ export function PracticeSession() {
   const unitInfo = (availableUnits ?? []).find((u) => u.unit === view.unit);
 
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
+      {showConfetti && (
+        <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+          {[...Array(24)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-bounce"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 60}%`,
+                animationDelay: `${Math.random() * 0.4}s`,
+                animationDuration: `${0.8 + Math.random() * 1.2}s`,
+                fontSize: `${16 + Math.random() * 12}px`,
+              }}
+            >
+              {['🎉', '⭐', '✨', '🌟', '💫'][Math.floor(Math.random() * 5)]}
+            </div>
+          ))}
+        </div>
+      )}
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <Badge variant="outline" className="text-sm">
@@ -362,10 +395,29 @@ export function PracticeSession() {
               }`}
             >
               {feedback.correct ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
-              {feedback.correct
-                ? 'Correct! Great job!'
-                : `Good try! The answer was "${feedback.correctAnswer}".`}
+              <span className="flex-1">
+                {feedback.correct
+                  ? 'Correct! Great job!'
+                  : `Good try! The answer was "${feedback.correctAnswer}".`}
+              </span>
+              {feedback.xpEarned > 0 && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-bold border ${
+                    feedback.correct
+                      ? 'bg-amber-100 border-amber-300 text-amber-800'
+                      : 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  +{feedback.xpEarned} XP
+                </span>
+              )}
             </div>
+            {feedback.correct && feedback.firstTryBonus > 0 && (
+              <div className="text-center text-xs font-semibold text-amber-700">
+                ✨ First correct of the day! +{feedback.firstTryBonus} bonus XP
+              </div>
+            )}
             <Button className="w-full py-6 text-base" onClick={nextQuestion}>
               {view.index + 1 === view.questions.length ? 'See results' : 'Next question'}
             </Button>

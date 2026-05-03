@@ -78,20 +78,30 @@ export async function POST(request: NextRequest) {
   //   - Wrong → practice_wrong_first_attempt (1 XP) ONLY if this was the
   //     student's first ever attempt at this question. Subsequent wrong
   //     attempts pay nothing, so re-failing on purpose can't farm XP.
+  // awardXp itself can layer on auto-bonuses (daily_login, streak milestones),
+  // which are already included in its returned `pointsAwarded`.
+  let xpEarned = 0;
+  let firstTryBonus = 0;
   let award = null;
   if (isCorrect) {
     const isFirstToday = await isFirstPracticeCorrectToday(user.id);
     award = await awardXp(user.id, 'practice_correct', attempt.id);
+    xpEarned += award.pointsAwarded;
     if (isFirstToday) {
-      await awardXp(user.id, 'practice_first_try_bonus', attempt.id);
+      const bonus = await awardXp(user.id, 'practice_first_try_bonus', attempt.id);
+      xpEarned += bonus.pointsAwarded;
+      firstTryBonus = bonus.pointsAwarded;
     }
   } else if (isFirstAttemptOnQuestion) {
     award = await awardXp(user.id, 'practice_wrong_first_attempt', attempt.id);
+    xpEarned += award.pointsAwarded;
   }
 
   return NextResponse.json({
     isCorrect,
     correctAnswer: question.correctAnswer,
     award,
+    xpEarned,
+    firstTryBonus,
   });
 }
