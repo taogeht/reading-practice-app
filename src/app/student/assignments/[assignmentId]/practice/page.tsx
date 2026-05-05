@@ -369,7 +369,7 @@ export default function AssignmentPracticePage() {
             <div className="text-center">
               <AudioRecorder
                 onRecordingComplete={handleRecordingComplete}
-                maxDurationSeconds={300}
+                maxDurationSeconds={60}
                 showLivePreview={true}
                 disabled={false}
                 assignmentId={assignment.id}

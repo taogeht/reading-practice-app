@@ -1,0 +1,2 @@
+ALTER TABLE "practice_questions" ADD COLUMN "book_slug" varchar(50) DEFAULT 'family-friends-1' NOT NULL;--> statement-breakpoint
+CREATE INDEX "idx_practice_questions_book_unit_active" ON "practice_questions" USING btree ("book_slug","unit","active");

@@ -34,12 +34,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the assignment exists and the student has access. We also pull
-    // the recording mode + story content here so the AI-grading branch below
-    // doesn't need a second round-trip.
+    // the recording mode + max attempts + story content here so the AI-grading
+    // branch below doesn't need a second round-trip.
     const assignmentWithAccess = await db
       .select({
         id: assignments.id,
         status: assignments.status,
+        maxAttempts: assignments.maxAttempts,
         recordingMode: assignments.recordingMode,
         storyContent: stories.content,
       })
@@ -79,6 +80,13 @@ export async function POST(request: NextRequest) {
       ? (existingRecordings[0].attemptNumber || 0) + 1
       : 1;
 
+    const maxAttempts = assignment.maxAttempts ?? 3;
+    if (attemptNumber > maxAttempts) {
+      return NextResponse.json(
+        { error: `Maximum attempts (${maxAttempts}) exceeded for this assignment` },
+        { status: 400 }
+      );
+    }
 
     // Convert file to buffer
     const arrayBuffer = await audioFile.arrayBuffer();

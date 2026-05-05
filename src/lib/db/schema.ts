@@ -634,6 +634,9 @@ export const practiceQuestions = pgTable(
   'practice_questions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    // Book identifier — every book has its own units 1..N, so unit alone isn't
+    // unique across the curriculum. Existing rows are all Family and Friends 1.
+    bookSlug: varchar('book_slug', { length: 50 }).notNull().default('family-friends-1'),
     unit: integer('unit').notNull(),
     questionType: varchar('question_type', { length: 30 }).notNull().default('fill_blank_mcq'),
     prompt: text('prompt').notNull(),
@@ -653,6 +656,11 @@ export const practiceQuestions = pgTable(
   },
   (table) => ({
     unitActiveIdx: index('idx_practice_questions_unit_active').on(table.unit, table.active),
+    bookUnitActiveIdx: index('idx_practice_questions_book_unit_active').on(
+      table.bookSlug,
+      table.unit,
+      table.active
+    ),
     typeIdx: index('idx_practice_questions_type').on(table.questionType),
   })
 );

@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
 import { generateQuestions, type QuestionType } from '@/lib/practice/generate';
 import { isAvailablePracticeUnit } from '@/lib/practice/units';
+import { DEFAULT_BOOK_SLUG, isUnitAvailableForBook, isValidBookSlug } from '@/lib/practice/books';
 import { geminiImageClient } from '@/lib/image/gemini-client';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
@@ -56,8 +57,12 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const unitParam = url.searchParams.get('unit');
   const unit = unitParam ? Number(unitParam) : null;
+  const bookSlugParam = url.searchParams.get('bookSlug');
+  const bookSlug = bookSlugParam && isValidBookSlug(bookSlugParam) ? bookSlugParam : null;
 
-  const conditions = unit ? [eq(practiceQuestions.unit, unit)] : [];
+  const conditions = [];
+  if (unit) conditions.push(eq(practiceQuestions.unit, unit));
+  if (bookSlug) conditions.push(eq(practiceQuestions.bookSlug, bookSlug));
 
   const rows = await db
     .select()
@@ -75,6 +80,7 @@ export async function POST(request: NextRequest) {
   }
 
   let body: {
+    bookSlug?: unknown;
     unit?: unknown;
     count?: unknown;
     questionType?: unknown;
@@ -86,6 +92,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  const rawBookSlug = typeof body.bookSlug === 'string' ? body.bookSlug : DEFAULT_BOOK_SLUG;
+  if (!isValidBookSlug(rawBookSlug)) {
+    return NextResponse.json({ error: 'Invalid bookSlug' }, { status: 400 });
+  }
+  const bookSlug = rawBookSlug;
   const unit = Number(body.unit);
   const count = Math.min(Number(body.count) || 5, MAX_GENERATE);
   const requestedType = body.questionType;
@@ -108,9 +119,16 @@ export async function POST(request: NextRequest) {
     currentUnitVocabRatio = r;
   }
 
-  if (!isAvailablePracticeUnit(unit)) {
+  // For Family and Friends 1 we keep the legacy unit gate (units 12–15) so the
+  // existing student practice flows aren't disturbed. For any other book the
+  // book's own availableUnits list is the source of truth.
+  const validUnit =
+    bookSlug === DEFAULT_BOOK_SLUG
+      ? isAvailablePracticeUnit(unit)
+      : isUnitAvailableForBook(bookSlug, unit);
+  if (!validUnit) {
     return NextResponse.json(
-      { error: 'No curated curriculum for that unit yet.' },
+      { error: `No curated curriculum for ${bookSlug} unit ${unit} yet.` },
       { status: 400 }
     );
   }
@@ -119,7 +137,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const generated = await generateQuestions({ unit, count, questionType, currentUnitVocabRatio });
+    const generated = await generateQuestions({ bookSlug, unit, count, questionType, currentUnitVocabRatio });
     if (generated.length === 0) {
       return NextResponse.json(
         { error: 'Generator returned no valid questions. Try again.' },
@@ -131,6 +149,7 @@ export async function POST(request: NextRequest) {
       .insert(practiceQuestions)
       .values(
         generated.map((q) => ({
+          bookSlug,
           unit,
           questionType,
           prompt: q.prompt,

@@ -273,7 +273,7 @@ export default function PracticePage({ params }: PracticePageProps) {
                 {currentStep === 'record' && (
                   <AudioRecorder
                     onRecordingComplete={handleRecordingComplete}
-                    maxDurationSeconds={300}
+                    maxDurationSeconds={60}
                     showLivePreview={true}
                   />
                 )}

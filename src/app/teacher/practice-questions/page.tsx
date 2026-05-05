@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ImageIcon, Loader2, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AVAILABLE_PRACTICE_UNITS } from '@/lib/practice/units';
+import { UNITS } from '@/lib/practice/units';
+import { BOOKS, DEFAULT_BOOK_SLUG, getBook, type BookSlug } from '@/lib/practice/books';
 
 type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
 type VocabMix = 'unit-only' | 'mix' | 'heavy-review';
@@ -20,6 +21,7 @@ const VOCAB_MIX_RATIO: Record<VocabMix, number> = {
 
 type Question = {
   id: string;
+  bookSlug: BookSlug;
   unit: number;
   questionType: string;
   prompt: string;
@@ -37,9 +39,10 @@ export default function PracticeQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingUnit, setGeneratingUnit] = useState<number | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<number>(
-    AVAILABLE_PRACTICE_UNITS[0]?.unit ?? 1
-  );
+  const [selectedBook, setSelectedBook] = useState<BookSlug>(DEFAULT_BOOK_SLUG);
+  const currentBook = getBook(selectedBook);
+  const availableUnitsForBook = currentBook?.availableUnits ?? [];
+  const [selectedUnit, setSelectedUnit] = useState<number>(availableUnitsForBook[0] ?? 1);
   const [error, setError] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
@@ -47,6 +50,17 @@ export default function PracticeQuestionsPage() {
   const [generateType, setGenerateType] = useState<QuestionType>('fill_blank_mcq');
   const [vocabMix, setVocabMix] = useState<VocabMix>('mix');
   const [generateCount, setGenerateCount] = useState<5 | 10 | 20>(5);
+
+  // When the teacher switches books, snap the selected unit to the new book's
+  // first available unit (or 1 if the book has no curriculum yet).
+  useEffect(() => {
+    const first = availableUnitsForBook[0];
+    if (first === undefined) {
+      setSelectedUnit(1);
+    } else if (!availableUnitsForBook.includes(selectedUnit)) {
+      setSelectedUnit(first);
+    }
+  }, [selectedBook, availableUnitsForBook, selectedUnit]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -63,19 +77,24 @@ export default function PracticeQuestionsPage() {
     load();
   }, [load]);
 
+  // Per-unit counts scoped to the currently selected book — questions from
+  // other books don't bleed into the unit grid for this book.
   const unitCounts = useMemo(() => {
     const counts = new Map<number, { active: number; total: number }>();
-    for (const u of AVAILABLE_PRACTICE_UNITS) counts.set(u.unit, { active: 0, total: 0 });
+    for (const u of availableUnitsForBook) counts.set(u, { active: 0, total: 0 });
     for (const q of questions) {
+      if (q.bookSlug !== selectedBook) continue;
       const entry = counts.get(q.unit);
       if (!entry) continue;
       entry.total += 1;
       if (q.active) entry.active += 1;
     }
     return counts;
-  }, [questions]);
+  }, [questions, selectedBook, availableUnitsForBook]);
 
-  const filtered = questions.filter((q) => q.unit === selectedUnit);
+  const filtered = questions.filter(
+    (q) => q.bookSlug === selectedBook && q.unit === selectedUnit,
+  );
 
   // Auto-poll while any question is missing its image (background generation
   // populates imageUrl progressively). Stops after 3 minutes or once every
@@ -102,6 +121,7 @@ export default function PracticeQuestionsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          bookSlug: selectedBook,
           unit,
           count,
           questionType: generateType,
@@ -178,17 +198,17 @@ export default function PracticeQuestionsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Question pool by unit</CardTitle>
+            <CardTitle>Book</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {AVAILABLE_PRACTICE_UNITS.map((u) => {
-                const counts = unitCounts.get(u.unit) ?? { active: 0, total: 0 };
-                const isSelected = selectedUnit === u.unit;
+              {BOOKS.map((b) => {
+                const isSelected = selectedBook === b.slug;
+                const hasContent = b.availableUnits.length > 0;
                 return (
                   <button
-                    key={u.unit}
-                    onClick={() => setSelectedUnit(u.unit)}
+                    key={b.slug}
+                    onClick={() => setSelectedBook(b.slug)}
                     className={`text-left rounded-xl p-4 border-2 transition ${
                       isSelected
                         ? 'border-indigo-500 bg-indigo-50'
@@ -196,11 +216,13 @@ export default function PracticeQuestionsPage() {
                     }`}
                   >
                     <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
-                      Unit {u.unit}
+                      {b.shortLabel}
                     </div>
-                    <div className="text-sm font-bold text-gray-900">{u.topic}</div>
+                    <div className="text-sm font-bold text-gray-900">{b.title}</div>
                     <div className="text-xs text-gray-600 mt-2">
-                      {counts.active} active · {counts.total} total
+                      {hasContent
+                        ? `${b.availableUnits.length} unit${b.availableUnits.length === 1 ? '' : 's'} authored`
+                        : 'No curriculum yet'}
                     </div>
                   </button>
                 );
@@ -210,9 +232,68 @@ export default function PracticeQuestionsPage() {
         </Card>
 
         <Card>
+          <CardHeader>
+            <CardTitle>{currentBook?.title} — question pool by unit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {availableUnitsForBook.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500">
+                No curriculum content for {currentBook?.title} yet. Add JSON files to{' '}
+                <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                  src/lib/curriculum/{selectedBook}/unit-N.json
+                </code>{' '}
+                and list the unit numbers in{' '}
+                <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                  src/lib/practice/books.ts
+                </code>{' '}
+                to enable generation.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {availableUnitsForBook.map((unitNum) => {
+                  const counts = unitCounts.get(unitNum) ?? { active: 0, total: 0 };
+                  const isSelected = selectedUnit === unitNum;
+                  // Topics in UNITS only correspond to FAF1; for other books we
+                  // just show "Unit N" until curriculum metadata is added.
+                  const topic =
+                    selectedBook === DEFAULT_BOOK_SLUG
+                      ? UNITS.find((u) => u.unit === unitNum)?.topic
+                      : null;
+                  return (
+                    <button
+                      key={unitNum}
+                      onClick={() => setSelectedUnit(unitNum)}
+                      className={`text-left rounded-xl p-4 border-2 transition ${
+                        isSelected
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 bg-white hover:border-indigo-300'
+                      }`}
+                    >
+                      <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
+                        Unit {unitNum}
+                      </div>
+                      {topic && <div className="text-sm font-bold text-gray-900">{topic}</div>}
+                      <div className="text-xs text-gray-600 mt-2">
+                        {counts.active} active · {counts.total} total
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>
-              Unit {selectedUnit} — {AVAILABLE_PRACTICE_UNITS.find((u) => u.unit === selectedUnit)?.topic}
+              {currentBook?.shortLabel} · Unit {selectedUnit}
+              {selectedBook === DEFAULT_BOOK_SLUG && (
+                <>
+                  {' — '}
+                  {UNITS.find((u) => u.unit === selectedUnit)?.topic}
+                </>
+              )}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Select
@@ -259,7 +340,12 @@ export default function PracticeQuestionsPage() {
               </Select>
               <Button
                 onClick={() => generate(selectedUnit, generateCount)}
-                disabled={generatingUnit !== null}
+                disabled={generatingUnit !== null || availableUnitsForBook.length === 0}
+                title={
+                  availableUnitsForBook.length === 0
+                    ? `No curriculum authored for ${currentBook?.title} yet`
+                    : undefined
+                }
               >
                 {generatingUnit === selectedUnit ? (
                   <>

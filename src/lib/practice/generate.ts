@@ -31,8 +31,15 @@ type UnitCurriculum = {
 
 // ---------- JSON loader ----------
 
-async function loadUnitJson(unit: number): Promise<UnitCurriculum | null> {
-  const jsonPath = path.join(process.cwd(), 'src', 'lib', 'curriculum', `unit-${unit}.json`);
+async function loadUnitJson(bookSlug: string, unit: number): Promise<UnitCurriculum | null> {
+  const jsonPath = path.join(
+    process.cwd(),
+    'src',
+    'lib',
+    'curriculum',
+    bookSlug,
+    `unit-${unit}.json`,
+  );
   try {
     const contents = await readFile(jsonPath, 'utf-8');
     return JSON.parse(contents) as UnitCurriculum;
@@ -43,8 +50,11 @@ async function loadUnitJson(unit: number): Promise<UnitCurriculum | null> {
 
 // Loads the target unit's own curriculum (vocab + grammar) without merging in
 // any prior-unit vocabulary. Used for the unit-only half of a generation batch.
-async function loadUnitOnlyCurriculum(targetUnit: number): Promise<UnitCurriculum | null> {
-  const target = await loadUnitJson(targetUnit);
+async function loadUnitOnlyCurriculum(
+  bookSlug: string,
+  targetUnit: number,
+): Promise<UnitCurriculum | null> {
+  const target = await loadUnitJson(bookSlug, targetUnit);
   if (!target) return null;
   return {
     unit: target.unit,
@@ -64,12 +74,15 @@ async function loadUnitOnlyCurriculum(targetUnit: number): Promise<UnitCurriculu
 // every prior unit (0..targetUnit-1) the student has studied — spiral curriculum.
 // The grammar_patterns and key_sentences come from ONLY the target unit, so
 // generated questions still focus on what's currently being taught.
-async function loadCumulativeCurriculum(targetUnit: number): Promise<UnitCurriculum | null> {
-  const merged = await loadUnitOnlyCurriculum(targetUnit);
+async function loadCumulativeCurriculum(
+  bookSlug: string,
+  targetUnit: number,
+): Promise<UnitCurriculum | null> {
+  const merged = await loadUnitOnlyCurriculum(bookSlug, targetUnit);
   if (!merged) return null;
 
   for (let i = 0; i < targetUnit; i++) {
-    const prior = await loadUnitJson(i);
+    const prior = await loadUnitJson(bookSlug, i);
     if (!prior) continue;
     appendUnique(merged.vocabulary, prior.vocabulary, (v) => v.word.toLowerCase());
     appendUnique(merged.numbers!, prior.numbers ?? [], (s) => s.toLowerCase());
@@ -461,6 +474,7 @@ async function runGenerationCall(
 }
 
 export async function generateQuestions(params: {
+  bookSlug: string;
   unit: number;
   count: number;
   questionType?: QuestionType;
@@ -481,12 +495,16 @@ export async function generateQuestions(params: {
       : DEFAULT_CURRENT_UNIT_VOCAB_RATIO;
   const ratio = Math.min(1, Math.max(0, rawRatio));
 
-  const unitOnlyCurriculum = await loadUnitOnlyCurriculum(params.unit);
+  const unitOnlyCurriculum = await loadUnitOnlyCurriculum(params.bookSlug, params.unit);
   if (!unitOnlyCurriculum) {
-    throw new Error(`No curated curriculum for Unit ${params.unit} — add src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
+    throw new Error(
+      `No curated curriculum for ${params.bookSlug} Unit ${params.unit} — add src/lib/curriculum/${params.bookSlug}/unit-${params.unit}.json before generating questions.`,
+    );
   }
   if (!unitOnlyCurriculum.grammar_patterns?.length) {
-    throw new Error(`Unit ${params.unit} has no grammar_patterns yet — add them to src/lib/curriculum/unit-${params.unit}.json before generating questions.`);
+    throw new Error(
+      `${params.bookSlug} Unit ${params.unit} has no grammar_patterns yet — add them to src/lib/curriculum/${params.bookSlug}/unit-${params.unit}.json before generating questions.`,
+    );
   }
 
   const unitOnlyCount = Math.round(params.count * ratio);
@@ -499,9 +517,9 @@ export async function generateQuestions(params: {
     calls.push(runGenerationCall(client, bundle, unitOnlyCurriculum, 'unit-only', unitOnlyCount));
   }
   if (cumulativeCount > 0) {
-    const cumulativeCurriculum = await loadCumulativeCurriculum(params.unit);
+    const cumulativeCurriculum = await loadCumulativeCurriculum(params.bookSlug, params.unit);
     if (!cumulativeCurriculum) {
-      throw new Error(`No curated curriculum for Unit ${params.unit}.`);
+      throw new Error(`No curated curriculum for ${params.bookSlug} Unit ${params.unit}.`);
     }
     // If cumulative load added no new vocabulary (e.g. unit 0 with no priors),
     // there is nothing extra to spiral over — fold the cumulative half back
