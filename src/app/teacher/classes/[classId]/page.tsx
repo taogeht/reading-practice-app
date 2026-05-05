@@ -18,6 +18,7 @@ import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-
 import { ClassEngagementSection } from "@/components/gamification/class-engagement-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { RecapConfirmationSummary } from "@/components/recap/recap-confirmation-summary";
+import { SyllabusImportDialog } from "@/components/syllabus/syllabus-import-dialog";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
 import { GRADE_LEVELS } from "@/lib/grade-levels";
@@ -46,6 +47,7 @@ import {
   Info,
   CreditCard,
   CalendarDays,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface Class {
@@ -82,6 +84,7 @@ export default function ClassDetailPage() {
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   const [showStudentsSheet, setShowStudentsSheet] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
+  const [showSyllabusImport, setShowSyllabusImport] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const hasSpelling = classData?.gradeLevel !== null && classData?.gradeLevel !== undefined && classData.gradeLevel >= 1;
@@ -391,6 +394,14 @@ export default function ClassDetailPage() {
             >
               <CalendarDays className="w-4 h-4 mr-1.5" />
               Weekly Recap
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSyllabusImport(true)}
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-1.5" />
+              Import Syllabus
             </Button>
             <Button
               variant="outline"
@@ -722,6 +733,15 @@ export default function ClassDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Syllabus Import Dialog */}
+      <SyllabusImportDialog
+        classId={classId}
+        className={classData.name}
+        open={showSyllabusImport}
+        onOpenChange={setShowSyllabusImport}
+        onImported={fetchClassData}
+      />
 
       {/* Students Sheet (Slide-out Panel) */}
       <Sheet open={showStudentsSheet} onOpenChange={setShowStudentsSheet}>
