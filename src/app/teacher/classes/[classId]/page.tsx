@@ -54,6 +54,7 @@ interface Class {
   academicYear: string | null;
   active: boolean;
   showPracticeStories: boolean;
+  trackLoginActivity: boolean;
   createdAt: string;
   studentCount: number;
   students: Student[];
@@ -90,6 +91,7 @@ export default function ClassDetailPage() {
     academicYear: "",
     active: true,
     showPracticeStories: false,
+    trackLoginActivity: true,
   });
 
   useEffect(() => {
@@ -113,6 +115,7 @@ export default function ClassDetailPage() {
           academicYear: data.class.academicYear || "",
           active: data.class.active,
           showPracticeStories: data.class.showPracticeStories || false,
+          trackLoginActivity: data.class.trackLoginActivity ?? true,
         });
       } else {
         console.error('Failed to fetch class data');
@@ -140,6 +143,7 @@ export default function ClassDetailPage() {
           academicYear: editForm.academicYear || null,
           active: editForm.active,
           showPracticeStories: editForm.showPracticeStories,
+          trackLoginActivity: editForm.trackLoginActivity,
         }),
       });
 
@@ -219,6 +223,7 @@ export default function ClassDetailPage() {
       academicYear: classData?.academicYear || "",
       active: classData?.active || true,
       showPracticeStories: classData?.showPracticeStories || false,
+      trackLoginActivity: classData?.trackLoginActivity ?? true,
     });
   };
 
@@ -574,6 +579,21 @@ export default function ClassDetailPage() {
                 <div>
                   <div>Show Practice Stories to Students</div>
                   <p className="text-xs text-gray-600 font-normal">Students will see a practice stories library on their dashboard</p>
+                </div>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="trackLoginActivity"
+                checked={editForm.trackLoginActivity}
+                onChange={(e) => setEditForm(prev => ({ ...prev, trackLoginActivity: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="trackLoginActivity">
+                <div>
+                  <div>Track Student Login Activity</div>
+                  <p className="text-xs text-gray-600 font-normal">Turn off for classes where students never log in (e.g. attendance-only classes). Hides them from the login activity dashboard.</p>
                 </div>
               </Label>
             </div>

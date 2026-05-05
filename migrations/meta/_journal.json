@@ -169,6 +169,20 @@
       "when": 1777713523698,
       "tag": "0023_normal_unicorn",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1777937933284,
+      "tag": "0024_illegal_frog_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1777959976499,
+      "tag": "0025_white_pepper_potts",
+      "breakpoints": true
     }
   ]
 }

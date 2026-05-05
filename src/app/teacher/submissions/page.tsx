@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star, AlertCircle, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star, AlertCircle, Trash2, Users, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { AIAnalysisPanel } from "@/components/grading/ai-analysis-panel";
 
 interface Recording {
   id: string;
@@ -27,6 +28,11 @@ interface Recording {
   reviewedAt: string | null;
   teacherFeedback: string | null;
   accuracyScore: number | null;
+  wpmScore: number | null;
+  letterGrade: string | null;
+  transcript: string | null;
+  analysisJson: Record<string, unknown> | null;
+  recordingMode: 'teacher_review' | 'ai_graded';
 }
 
 export default function TeacherSubmissionsPage() {
@@ -419,11 +425,22 @@ export default function TeacherSubmissionsPage() {
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-3 mb-2 flex-wrap">
                               <CardTitle className="text-lg">{recording.assignmentTitle}</CardTitle>
                               <Badge className={getStatusColor(recording.status)}>
                                 {recording.status}
                               </Badge>
+                              {recording.recordingMode === 'ai_graded' && (
+                                <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-300 flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3" />
+                                  AI-graded
+                                </Badge>
+                              )}
+                              {recording.recordingMode === 'ai_graded' && recording.letterGrade && (
+                                <Badge variant="outline" className="flex items-center gap-1 font-semibold">
+                                  {recording.letterGrade}
+                                </Badge>
+                              )}
                               {recording.accuracyScore && (
                                 <Badge variant="outline" className="flex items-center gap-1">
                                   <Star className="w-3 h-3" />
@@ -568,6 +585,18 @@ export default function TeacherSubmissionsPage() {
                             )}
                           </div>
                         </div>
+
+                        {recording.recordingMode === 'ai_graded' && (
+                          <AIAnalysisPanel
+                            recordingId={recording.id}
+                            letterGrade={recording.letterGrade}
+                            accuracyScore={recording.accuracyScore !== null ? Number(recording.accuracyScore) : null}
+                            wpmScore={recording.wpmScore !== null ? Number(recording.wpmScore) : null}
+                            transcript={recording.transcript}
+                            analysisJson={recording.analysisJson as never}
+                            onReanalyzed={fetchRecordings}
+                          />
+                        )}
 
                         {feedbackMode === recording.id && (
                           <div className="mt-4 p-4 bg-gray-50 border rounded-lg space-y-3">

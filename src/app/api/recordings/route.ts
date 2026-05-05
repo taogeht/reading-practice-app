@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { recordings, assignments, students, classes, classEnrollments, users } from '@/lib/db/schema';
+import { recordings, assignments, students, classes, classEnrollments, users, stories } from '@/lib/db/schema';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
@@ -153,9 +153,16 @@ export async function GET(request: NextRequest) {
         reviewedAt: recordings.reviewedAt,
         teacherFeedback: recordings.teacherFeedback,
         accuracyScore: recordings.accuracyScore,
+        wpmScore: recordings.wpmScore,
+        letterGrade: recordings.letterGrade,
+        transcript: recordings.transcript,
+        analysisJson: recordings.analysisJson,
+        recordingMode: assignments.recordingMode,
+        storyContent: stories.content,
       })
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
+      .innerJoin(stories, eq(assignments.storyId, stories.id))
       .innerJoin(students, eq(recordings.studentId, students.id))
       .innerJoin(users, eq(students.id, users.id))
       .innerJoin(classes, eq(assignments.classId, classes.id))

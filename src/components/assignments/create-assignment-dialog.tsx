@@ -29,7 +29,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Users, Volume2, VolumeX } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BookOpen, Users, Volume2, VolumeX, Mic, Sparkles } from "lucide-react";
 import type { StoryTtsAudio } from "@/types/story";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,9 +42,15 @@ const assignmentSchema = z.object({
   storyId: z.string().min(1, "Please select a story"),
   classId: z.string().min(1, "Please select a class"),
   instructions: z.string().optional(),
+  recordingMode: z.enum(['teacher_review', 'ai_graded']).default('teacher_review'),
 });
 
 type AssignmentFormData = z.infer<typeof assignmentSchema>;
+
+// Client-side flag for whether to expose the AI-graded option to teachers.
+// Pair this with the server-side ENABLE_AI_GRADING flag — both should be set
+// together. Production stays off until we ship for real.
+const AI_GRADING_VISIBLE = process.env.NEXT_PUBLIC_ENABLE_AI_GRADING === 'true';
 
 interface Story {
   id: string;
@@ -85,8 +92,11 @@ export function CreateAssignmentDialog({
       storyId: "",
       classId: "",
       instructions: "",
+      recordingMode: "teacher_review",
     },
   });
+
+  const recordingMode = form.watch('recordingMode');
 
   // Load stories and classes when dialog opens
   useEffect(() => {
@@ -163,6 +173,31 @@ export function CreateAssignmentDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {AI_GRADING_VISIBLE && (
+              <div className="space-y-2">
+                <Tabs
+                  value={recordingMode}
+                  onValueChange={(v) => form.setValue('recordingMode', v as AssignmentFormData['recordingMode'])}
+                >
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="teacher_review" className="gap-2">
+                      <Mic className="w-4 h-4" />
+                      Standard Recording
+                    </TabsTrigger>
+                    <TabsTrigger value="ai_graded" className="gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      AI-Graded (beta)
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                {recordingMode === 'ai_graded' && (
+                  <p className="text-xs text-gray-600 px-1">
+                    Students get an instant letter grade after submitting. You'll see a transcript and word-level analysis on the submissions page.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Assignment Title */}
             <FormField
               control={form.control}

@@ -129,6 +129,10 @@ export const classes = pgTable('classes', {
   // When true, the class's students see /student/leaderboard. Off by default
   // so existing classes stay quiet until the teacher opts in.
   leaderboardEnabled: boolean('leaderboard_enabled').default(false).notNull(),
+  // When false, the class is excluded from teacher login-activity dashboards.
+  // Useful for classes (e.g. kindergarten) used only for attendance/syllabus
+  // tracking where students never log in themselves.
+  trackLoginActivity: boolean('track_login_activity').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -160,6 +164,10 @@ export const assignments = pgTable(
     dueAt: timestamp('due_at', { withTimezone: true }),
     maxAttempts: integer('max_attempts').default(3),
     instructions: text('instructions'),
+    // 'teacher_review' (default, current behavior) | 'ai_graded' (Whisper-based
+    // auto-grading). Opt-in per assignment; the option is also gated by the
+    // ENABLE_AI_GRADING env flag at creation time and at trigger time.
+    recordingMode: varchar('recording_mode', { length: 20 }).default('teacher_review').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -189,6 +197,10 @@ export const recordings = pgTable(
     automatedFlags: jsonb('automated_flags'),
     wpmScore: decimal('wpm_score', { precision: 5, scale: 2 }),
     accuracyScore: decimal('accuracy_score', { precision: 5, scale: 2 }),
+    // Populated only for ai_graded assignments after Whisper analysis completes.
+    transcript: text('transcript'),
+    analysisJson: jsonb('analysis_json'),
+    letterGrade: varchar('letter_grade', { length: 2 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },

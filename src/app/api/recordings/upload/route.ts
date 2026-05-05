@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { recordings, assignments, classes, classEnrollments } from '@/lib/db/schema';
+import { recordings, assignments, classes, classEnrollments, stories } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { generateRecordingKey, uploadRecordingToR2 } from '@/lib/storage/r2-client';
 import { logError, createRequestContext } from '@/lib/logger';
 import { awardXp } from '@/lib/gamification/award';
+import { aiGradingEnabled, analyzeRecordingInBackground } from '@/lib/grading/analyze-recording';
 
 export const runtime = 'nodejs';
 
@@ -32,14 +33,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the assignment exists and the student has access
+    // Verify the assignment exists and the student has access. We also pull
+    // the recording mode + story content here so the AI-grading branch below
+    // doesn't need a second round-trip.
     const assignmentWithAccess = await db
       .select({
         id: assignments.id,
         status: assignments.status,
+        recordingMode: assignments.recordingMode,
+        storyContent: stories.content,
       })
       .from(assignments)
       .innerJoin(classes, eq(assignments.classId, classes.id))
+      .innerJoin(stories, eq(assignments.storyId, stories.id))
       .innerJoin(classEnrollments, and(
         eq(classEnrollments.classId, classes.id),
         eq(classEnrollments.studentId, user.id)
@@ -108,6 +114,18 @@ export async function POST(request: NextRequest) {
     }).returning();
 
     const award = await awardXp(user.id, 'recording_submitted', newRecording.id);
+
+    // Fire-and-forget Whisper analysis for AI-graded assignments. The env
+    // flag short-circuits this in production until we ship the feature.
+    if (assignment.recordingMode === 'ai_graded' && aiGradingEnabled()) {
+      analyzeRecordingInBackground({
+        recordingId: newRecording.id,
+        audioBuffer: buffer,
+        audioMime: audioFile.type || 'audio/webm',
+        audioExtension: extension,
+        storyText: assignment.storyContent ?? '',
+      });
+    }
 
     return NextResponse.json({
       success: true,

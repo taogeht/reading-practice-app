@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         dueAt: assignments.dueAt,
         maxAttempts: assignments.maxAttempts,
         instructions: assignments.instructions,
+        recordingMode: assignments.recordingMode,
         createdAt: assignments.createdAt,
         storyTitle: stories.title,
         classId: assignments.classId,
@@ -197,6 +198,7 @@ export async function POST(request: NextRequest) {
       dueAt,
       maxAttempts = 3,
       instructions,
+      recordingMode = 'teacher_review',
     } = body;
 
     // Validate required fields
@@ -204,6 +206,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Title, story, and class are required' },
         { status: 400 }
+      );
+    }
+
+    // Server-side guard: only accept ai_graded when the env flag is on, even
+    // if the client sends it. Belt-and-suspenders for the feature flag.
+    if (recordingMode !== 'teacher_review' && recordingMode !== 'ai_graded') {
+      return NextResponse.json(
+        { error: 'Invalid recordingMode' },
+        { status: 400 }
+      );
+    }
+    if (recordingMode === 'ai_graded' && process.env.ENABLE_AI_GRADING !== 'true') {
+      return NextResponse.json(
+        { error: 'AI-graded recordings are not enabled in this environment' },
+        { status: 403 }
       );
     }
 
@@ -244,6 +261,7 @@ export async function POST(request: NextRequest) {
         dueAt: dueAt ? new Date(dueAt) : null,
         maxAttempts,
         instructions,
+        recordingMode,
       })
       .returning();
 

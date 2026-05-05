@@ -1,0 +1,1 @@
+ALTER TABLE "classes" ADD COLUMN "track_login_activity" boolean DEFAULT true NOT NULL;

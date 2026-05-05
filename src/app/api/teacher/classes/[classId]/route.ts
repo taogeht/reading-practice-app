@@ -33,6 +33,7 @@ export async function GET(
         academicYear: classes.academicYear,
         active: classes.active,
         showPracticeStories: classes.showPracticeStories,
+        trackLoginActivity: classes.trackLoginActivity,
         createdAt: classes.createdAt,
       })
       .from(classes)
@@ -102,7 +103,7 @@ export async function PUT(
 
     const { classId } = await params;
     const body = await request.json();
-    const { name, description, gradeLevel, academicYear, active, showPracticeStories } = body;
+    const { name, description, gradeLevel, academicYear, active, showPracticeStories, trackLoginActivity } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -138,6 +139,7 @@ export async function PUT(
         academicYear: academicYear?.trim() || null,
         active: active !== undefined ? active : true,
         showPracticeStories: showPracticeStories !== undefined ? showPracticeStories : false,
+        trackLoginActivity: trackLoginActivity !== undefined ? trackLoginActivity : true,
         updatedAt: new Date(),
       })
       .where(eq(classes.id, classId))

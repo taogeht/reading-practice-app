@@ -31,11 +31,17 @@ export async function GET(request: NextRequest) {
         const now = new Date();
         const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
 
-        // Teacher's classes (admin sees all)
+        // Teacher's classes (admin sees all). Excludes classes the teacher has
+        // marked as untracked (e.g. attendance-only kindergarten where students
+        // never log in).
         const teacherClasses = await db
             .select({ id: classes.id, name: classes.name })
             .from(classes)
-            .where(user.role === 'admin' ? undefined : eq(classes.teacherId, user.id));
+            .where(
+                user.role === 'admin'
+                    ? eq(classes.trackLoginActivity, true)
+                    : and(eq(classes.teacherId, user.id), eq(classes.trackLoginActivity, true))
+            );
 
         if (teacherClasses.length === 0) {
             return NextResponse.json({

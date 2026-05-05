@@ -21,7 +21,7 @@ import { PracticeSession } from "@/components/practice/practice-session";
 import { PracticeStatsCard } from "@/components/practice/practice-stats-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy, Layers } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 
@@ -47,6 +47,8 @@ type Assignment = {
   attempts: number;
   maxAttempts: number;
   bestScore: number | null;
+  letterGrade: string | null;
+  recordingMode: 'teacher_review' | 'ai_graded';
   instructions: string | null;
   className: string;
   teacherFeedback: string | null;
@@ -360,7 +362,7 @@ export default function StudentDashboardPage() {
 
         {/* Main sections — tabbed to keep the dashboard tidy as more learning activities are added */}
         <Tabs defaultValue="reading" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 h-auto p-1 bg-white/60 border border-gray-200">
+          <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-white/60 border border-gray-200">
             <TabsTrigger value="reading" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
               <BookOpen className="w-4 h-4" />
               Reading
@@ -368,6 +370,10 @@ export default function StudentDashboardPage() {
             <TabsTrigger value="spelling" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
               <SpellCheck className="w-4 h-4" />
               Spelling
+            </TabsTrigger>
+            <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 py-2 gap-2">
+              <Layers className="w-4 h-4" />
+              Flashcards
             </TabsTrigger>
             <TabsTrigger value="practice" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
               <Trophy className="w-4 h-4" />
@@ -457,6 +463,14 @@ export default function StudentDashboardPage() {
                               <p className="text-xs text-gray-600">{assignment.storyTitle}</p>
                             </div>
                             <div className="flex items-center gap-1">
+                              {assignment.recordingMode === 'ai_graded' && assignment.letterGrade && (
+                                <Badge
+                                  variant="default"
+                                  className="bg-purple-600 text-white text-[10px] px-1.5 py-0 h-5 font-bold"
+                                >
+                                  {assignment.letterGrade}
+                                </Badge>
+                              )}
                               {assignment.bestScore && (
                                 <Badge variant="default" className="bg-green-600 text-[10px] px-1.5 py-0 h-5">
                                   {assignment.bestScore}%
@@ -533,7 +547,7 @@ export default function StudentDashboardPage() {
                     <Gamepad2 className="w-6 h-6 text-indigo-500" />
                     Spelling Practice
                   </h2>
-                  <TabsList className="bg-white/50 border border-gray-200 h-auto gap-1 p-1 w-full grid grid-cols-3 sm:grid-cols-5">
+                  <TabsList className="bg-white/50 border border-gray-200 h-auto gap-1 p-1 w-full grid grid-cols-2 sm:grid-cols-4">
                     <TabsTrigger value="snowman" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 text-xs sm:text-sm">
                       ⛄ Snowman
                     </TabsTrigger>
@@ -545,9 +559,6 @@ export default function StudentDashboardPage() {
                     </TabsTrigger>
                     <TabsTrigger value="missing" className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 text-xs sm:text-sm">
                       ✏️ Missing Letters
-                    </TabsTrigger>
-                    <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs sm:text-sm">
-                      🃏 Flashcards
                     </TabsTrigger>
                   </TabsList>
                 </div>
@@ -567,12 +578,21 @@ export default function StudentDashboardPage() {
                 <TabsContent value="missing" className="mt-0">
                   <MissingLettersGame />
                 </TabsContent>
-
-                <TabsContent value="flashcards" className="mt-0">
-                  <FlashcardGame />
-                </TabsContent>
               </Tabs>
             </div>
+          </TabsContent>
+
+          <TabsContent value="flashcards" className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Layers className="w-6 h-6 text-amber-500" />
+                Flashcards
+              </h2>
+              <p className="text-sm text-gray-600">
+                Smart practice — words you struggle with come back more often, ones you know take a break.
+              </p>
+            </div>
+            <FlashcardGame />
           </TabsContent>
 
           <TabsContent value="practice" className="mt-6 space-y-6">

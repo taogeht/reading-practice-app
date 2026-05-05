@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
         dueAt: assignments.dueAt,
         maxAttempts: assignments.maxAttempts,
         instructions: assignments.instructions,
+        recordingMode: assignments.recordingMode,
         className: classes.name,
       })
       .from(assignments)
@@ -91,6 +92,7 @@ export async function GET(request: NextRequest) {
         attemptNumber: recordings.attemptNumber,
         status: recordings.status,
         accuracyScore: recordings.accuracyScore,
+        letterGrade: recordings.letterGrade,
         submittedAt: recordings.submittedAt,
         teacherFeedback: recordings.teacherFeedback,
         reviewedAt: recordings.reviewedAt,
@@ -103,24 +105,32 @@ export async function GET(request: NextRequest) {
     const assignmentsWithStatus = studentAssignments.map(assignment => {
       const assignmentRecordings = studentRecordings.filter(r => r.assignmentId === assignment.id);
       const completedRecordings = assignmentRecordings.filter(r => r.status === 'reviewed' || r.status === 'submitted');
-      const bestScore = completedRecordings.length > 0
-        ? Math.max(...completedRecordings.map(r => Number(r.accuracyScore) || 0))
-        : null;
+      const bestRecording = completedRecordings.reduce<typeof completedRecordings[0] | null>((best, r) => {
+        const score = Number(r.accuracyScore) || 0;
+        const bestScore = best ? Number(best.accuracyScore) || 0 : -1;
+        return score > bestScore ? r : best;
+      }, null);
+      const bestScore = bestRecording ? Number(bestRecording.accuracyScore) || 0 : null;
+      const bestLetterGrade = bestRecording?.letterGrade || null;
 
       // Get the most recent recording with feedback
       const latestRecordingWithFeedback = assignmentRecordings
         .filter(r => r.teacherFeedback && r.submittedAt)
         .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())[0];
 
-      // Determine assignment status based on recording states
-      // - 'completed': At least one recording has been reviewed by teacher
-      // - 'submitted': Recording(s) submitted but none reviewed yet
-      // - 'pending': No recordings submitted
+      // Determine assignment status based on recording states.
+      // - For 'teacher_review' (default) assignments: a recording is "completed"
+      //   only after the teacher reviews it. (Today's behavior.)
+      // - For 'ai_graded' assignments: a recording with a letterGrade is the
+      //   final score, so we treat it as completed without waiting for the teacher.
       const hasReviewedRecording = assignmentRecordings.some(r => r.status === 'reviewed');
       const hasSubmittedRecording = assignmentRecordings.some(r => r.status === 'submitted');
+      const hasGradedRecording =
+        assignment.recordingMode === 'ai_graded' &&
+        assignmentRecordings.some(r => r.letterGrade);
 
       let status: 'pending' | 'submitted' | 'completed';
-      if (hasReviewedRecording) {
+      if (hasReviewedRecording || hasGradedRecording) {
         status = 'completed';
       } else if (hasSubmittedRecording) {
         status = 'submitted';
@@ -138,7 +148,9 @@ export async function GET(request: NextRequest) {
         status,
         attempts: assignmentRecordings.length,
         maxAttempts: assignment.maxAttempts || 3,
-        bestScore: bestScore ? Math.round(bestScore) : null,
+        bestScore: bestScore !== null ? Math.round(bestScore) : null,
+        letterGrade: bestLetterGrade,
+        recordingMode: assignment.recordingMode,
         instructions: assignment.instructions,
         className: assignment.className,
         teacherFeedback: latestRecordingWithFeedback?.teacherFeedback || null,
