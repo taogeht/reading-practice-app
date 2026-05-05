@@ -1,0 +1,37 @@
+# Local dev only — Postgres for the Reading Practice app.
+# Coolify deploys from the Dockerfile; this file is never used in prod.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d        # start
+#   docker compose -f docker-compose.dev.yml logs -f      # tail logs
+#   docker compose -f docker-compose.dev.yml down         # stop (data persists)
+#   docker compose -f docker-compose.dev.yml down -v      # stop + nuke data
+#
+# Connection string for .env.local:
+#   DATABASE_URL=postgresql://rhw:rhw_dev_password@localhost:5432/recording_homework_app
+#
+# Note: match the postgres image tag to whatever your Hetzner prod instance
+# runs (16 is current LTS-style; if prod is 15 or 17, pin this accordingly so
+# pg_dump snapshots restore cleanly in either direction).
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: rhw-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: rhw
+      POSTGRES_PASSWORD: rhw_dev_password
+      POSTGRES_DB: recording_homework_app
+    volumes:
+      - rhw-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rhw -d recording_homework_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rhw-postgres-data:

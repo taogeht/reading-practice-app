@@ -17,6 +17,7 @@ import { ClassPracticeSection } from "@/components/practice/class-practice-secti
 import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-units-section";
 import { ClassEngagementSection } from "@/components/gamification/class-engagement-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
+import { RecapConfirmationSummary } from "@/components/recap/recap-confirmation-summary";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
 import { GRADE_LEVELS } from "@/lib/grade-levels";
@@ -44,6 +45,7 @@ import {
   ChevronDown,
   Info,
   CreditCard,
+  CalendarDays,
 } from "lucide-react";
 
 interface Class {
@@ -385,6 +387,14 @@ export default function ClassDetailPage() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => router.push(`/teacher/classes/${classId}/weekly-recap`)}
+            >
+              <CalendarDays className="w-4 h-4 mr-1.5" />
+              Weekly Recap
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleQRCodeClick}
             >
               <QrCode className="w-4 h-4 mr-1.5" />
@@ -406,6 +416,9 @@ export default function ClassDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Column - Secondary Items */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Weekly Recap summary — current week's status + parent confirmations */}
+            <RecapConfirmationSummary classId={classId} />
+
             {/* Login Activity */}
             <LoginActivitySection classId={classId} defaultExpanded={false} />
 

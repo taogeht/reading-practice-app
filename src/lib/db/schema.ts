@@ -502,6 +502,65 @@ export const classSyllabusAssignments = pgTable(
   })
 );
 
+// Weekly Recap - one row per class per week. Class-level content (pages,
+// vocab, tests, homework) shared by every student in the class. Per-student
+// behavior + parent confirmation lives in studentWeeklyRecapEntries.
+export const classWeeklyRecaps = pgTable(
+  'class_weekly_recaps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    weekNumber: integer('week_number').notNull(),
+    startDate: timestamp('start_date', { withTimezone: true }).notNull(),
+    endDate: timestamp('end_date', { withTimezone: true }).notNull(),
+    pagesCovered: text('pages_covered'),
+    vocabulary: text('vocabulary'),
+    spellingTestInfo: text('spelling_test_info'),
+    grammarTestInfo: text('grammar_test_info'),
+    homework: text('homework'),
+    // 'checklist' = each student gets the 6 behavior ratings.
+    // 'comment' = each student gets a free-text teacher note.
+    behaviorFormat: varchar('behavior_format', { length: 20 }).notNull().default('checklist'),
+    // 'draft' is teacher-only; 'published' is visible to students.
+    status: varchar('status', { length: 20 }).notNull().default('draft'),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => teachers.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    classIdIdx: index('idx_class_weekly_recaps_class_id').on(table.classId),
+    uniqueClassWeek: uniqueIndex('unique_class_weekly_recap').on(table.classId, table.weekNumber),
+    statusIdx: index('idx_class_weekly_recaps_status').on(table.status),
+  })
+);
+
+// Per-student row attached to a recap. Auto-created for every enrolled student
+// when the teacher opens or publishes the recap. Holds personalized behavior
+// data (whichever shape matches the parent recap's behaviorFormat) and the
+// parent's "I've reviewed this" timestamp.
+export const studentWeeklyRecapEntries = pgTable(
+  'student_weekly_recap_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recapId: uuid('recap_id').notNull().references(() => classWeeklyRecaps.id, { onDelete: 'cascade' }),
+    studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    // Used when the parent recap is in 'checklist' mode. Shape:
+    //   { listening: 'excellent' | 'good' | 'needs_work', ... 6 keys ... }
+    behaviorRatings: jsonb('behavior_ratings'),
+    // Used when the parent recap is in 'comment' mode.
+    teacherComment: text('teacher_comment'),
+    parentConfirmedAt: timestamp('parent_confirmed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    recapIdIdx: index('idx_student_weekly_recap_entries_recap_id').on(table.recapId),
+    studentIdIdx: index('idx_student_weekly_recap_entries_student_id').on(table.studentId),
+    uniqueRecapStudent: uniqueIndex('unique_recap_student').on(table.recapId, table.studentId),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   student: one(students, { fields: [users.id], references: [students.id] }),
