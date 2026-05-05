@@ -95,6 +95,8 @@ export async function GET(request: NextRequest) {
         letterGrade: recordings.letterGrade,
         submittedAt: recordings.submittedAt,
         teacherFeedback: recordings.teacherFeedback,
+        teacherReplyAudioUrl: recordings.teacherReplyAudioUrl,
+        teacherReplyDurationSeconds: recordings.teacherReplyDurationSeconds,
         reviewedAt: recordings.reviewedAt,
       })
       .from(recordings)
@@ -113,9 +115,11 @@ export async function GET(request: NextRequest) {
       const bestScore = bestRecording ? Number(bestRecording.accuracyScore) || 0 : null;
       const bestLetterGrade = bestRecording?.letterGrade || null;
 
-      // Get the most recent recording with feedback
+      // Get the most recent recording with any teacher response — text feedback
+      // OR an audio reply. A reply alone (no text) still surfaces in the
+      // student's feedback callout.
       const latestRecordingWithFeedback = assignmentRecordings
-        .filter(r => r.teacherFeedback && r.submittedAt)
+        .filter((r) => (r.teacherFeedback || r.teacherReplyAudioUrl) && r.submittedAt)
         .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())[0];
 
       // Determine assignment status based on recording states.
@@ -154,8 +158,12 @@ export async function GET(request: NextRequest) {
         instructions: assignment.instructions,
         className: assignment.className,
         teacherFeedback: latestRecordingWithFeedback?.teacherFeedback || null,
+        teacherReplyAudioUrl: latestRecordingWithFeedback?.teacherReplyAudioUrl || null,
+        teacherReplyDurationSeconds: latestRecordingWithFeedback?.teacherReplyDurationSeconds ?? null,
         reviewedAt: latestRecordingWithFeedback?.reviewedAt?.toISOString() || null,
-        hasTeacherFeedback: !!latestRecordingWithFeedback?.teacherFeedback,
+        hasTeacherFeedback:
+          !!latestRecordingWithFeedback?.teacherFeedback ||
+          !!latestRecordingWithFeedback?.teacherReplyAudioUrl,
       };
     });
 

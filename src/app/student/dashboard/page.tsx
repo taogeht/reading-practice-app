@@ -53,6 +53,8 @@ type Assignment = {
   instructions: string | null;
   className: string;
   teacherFeedback: string | null;
+  teacherReplyAudioUrl: string | null;
+  teacherReplyDurationSeconds: number | null;
   reviewedAt: string | null;
   hasTeacherFeedback: boolean;
 };
@@ -489,10 +491,25 @@ export default function StudentDashboardPage() {
                             </div>
                           </div>
 
-                          {assignment.teacherFeedback && (
-                            <div className="mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-md">
+                          {(assignment.teacherFeedback || assignment.teacherReplyAudioUrl) && (
+                            <div className="mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-md space-y-2">
                               <p className="text-xs font-medium text-blue-700 mb-0.5">Teacher feedback:</p>
-                              <p className="text-sm text-blue-900 leading-snug">&ldquo;{assignment.teacherFeedback}&rdquo;</p>
+                              {assignment.teacherFeedback && (
+                                <p className="text-sm text-blue-900 leading-snug">&ldquo;{assignment.teacherFeedback}&rdquo;</p>
+                              )}
+                              {assignment.teacherReplyAudioUrl && (
+                                <div className="space-y-1">
+                                  <p className="text-xs font-medium text-blue-700 flex items-center gap-1">
+                                    <Mic className="w-3 h-3" />
+                                    Voice message from your teacher
+                                  </p>
+                                  <audio
+                                    src={assignment.teacherReplyAudioUrl}
+                                    controls
+                                    className="w-full h-9"
+                                  />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

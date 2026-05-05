@@ -201,6 +201,13 @@ export const recordings = pgTable(
     transcript: text('transcript'),
     analysisJson: jsonb('analysis_json'),
     letterGrade: varchar('letter_grade', { length: 2 }),
+    // Optional voice reply from the teacher. When populated, the student's
+    // feedback callout renders an audio player alongside the text feedback.
+    // Re-recording overwrites: the prior R2 key is deleted, this column is
+    // updated. Null when the teacher hasn't recorded a reply.
+    teacherReplyAudioUrl: varchar('teacher_reply_audio_url', { length: 500 }),
+    teacherReplyDurationSeconds: integer('teacher_reply_duration_seconds'),
+    teacherReplyUploadedAt: timestamp('teacher_reply_uploaded_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },

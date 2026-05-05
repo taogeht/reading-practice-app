@@ -10,6 +10,7 @@ import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star,
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AIAnalysisPanel } from "@/components/grading/ai-analysis-panel";
+import { TeacherReplyRecorder } from "@/components/recordings/teacher-reply-recorder";
 
 interface Recording {
   id: string;
@@ -33,6 +34,8 @@ interface Recording {
   transcript: string | null;
   analysisJson: Record<string, unknown> | null;
   recordingMode: 'teacher_review' | 'ai_graded';
+  teacherReplyAudioUrl: string | null;
+  teacherReplyDurationSeconds: number | null;
 }
 
 export default function TeacherSubmissionsPage() {
@@ -635,6 +638,13 @@ export default function TeacherSubmissionsPage() {
                                 className="w-full"
                               />
                             </div>
+                            <TeacherReplyRecorder
+                              recordingId={recording.id}
+                              initialAudioUrl={recording.teacherReplyAudioUrl}
+                              initialDurationSeconds={recording.teacherReplyDurationSeconds}
+                              onChange={fetchRecordings}
+                              disabled={submittingFeedback}
+                            />
                             <p className="text-xs text-gray-500">
                               This feedback will be visible to the student and will mark the recording as reviewed.
                             </p>

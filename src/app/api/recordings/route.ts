@@ -159,6 +159,8 @@ export async function GET(request: NextRequest) {
         analysisJson: recordings.analysisJson,
         recordingMode: assignments.recordingMode,
         storyContent: stories.content,
+        teacherReplyAudioUrl: recordings.teacherReplyAudioUrl,
+        teacherReplyDurationSeconds: recordings.teacherReplyDurationSeconds,
       })
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
