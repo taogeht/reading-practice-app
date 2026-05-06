@@ -365,25 +365,28 @@ export default function StudentDashboardPage() {
 
         {/* Main sections — tabbed to keep the dashboard tidy as more learning activities are added */}
         <Tabs defaultValue="reading" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 sm:grid-cols-5 h-auto p-1 bg-white/60 border border-gray-200">
-            <TabsTrigger value="reading" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
-              <BookOpen className="w-4 h-4" />
+          {/* Five tabs in a single row at every width. On mobile each tab
+              stacks the icon over the label (text-[10px]) so we don't wrap to
+              a second row that would overflow on top of the content below. */}
+          <TabsList className="w-full grid grid-cols-5 h-auto p-1 bg-white/60 border border-gray-200 gap-1">
+            <TabsTrigger value="reading" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
+              <BookOpen className="w-4 h-4 shrink-0" />
               Reading
             </TabsTrigger>
-            <TabsTrigger value="this-week" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
-              <CalendarDays className="w-4 h-4" />
+            <TabsTrigger value="this-week" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
+              <CalendarDays className="w-4 h-4 shrink-0" />
               This Week
             </TabsTrigger>
-            <TabsTrigger value="spelling" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
-              <SpellCheck className="w-4 h-4" />
+            <TabsTrigger value="spelling" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
+              <SpellCheck className="w-4 h-4 shrink-0" />
               Spelling
             </TabsTrigger>
-            <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 py-2 gap-2">
-              <Layers className="w-4 h-4" />
+            <TabsTrigger value="flashcards" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
+              <Layers className="w-4 h-4 shrink-0" />
               Flashcards
             </TabsTrigger>
-            <TabsTrigger value="practice" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 py-2 gap-2">
-              <Trophy className="w-4 h-4" />
+            <TabsTrigger value="practice" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
+              <Trophy className="w-4 h-4 shrink-0" />
               Practice
             </TabsTrigger>
           </TabsList>
