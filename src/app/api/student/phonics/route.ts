@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, classEnrollments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { logError } from '@/lib/logger';
 import { DEFAULT_BOOK_SLUG } from '@/lib/practice/books';
@@ -26,10 +26,52 @@ interface PhonicsBlock {
   chant?: string[];
 }
 
+interface AvailableUnit {
+  unit: number;
+  sound: string;
+  topic: string;
+}
+
+const CURRICULUM_DIR = path.join(process.cwd(), 'src', 'lib', 'curriculum');
+
+// Scans the book's curriculum directory and returns every unit with a phonics
+// block — the picker pool the student sees in the deck UI.
+async function listUnitsWithPhonics(bookSlug: string): Promise<AvailableUnit[]> {
+  const dir = path.join(CURRICULUM_DIR, bookSlug);
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return [];
+  }
+  const out: AvailableUnit[] = [];
+  for (const name of entries) {
+    const m = name.match(/^unit-(\d+)\.json$/);
+    if (!m) continue;
+    const unitNum = parseInt(m[1], 10);
+    try {
+      const contents = await readFile(path.join(dir, name), 'utf-8');
+      const json = JSON.parse(contents) as {
+        phonics?: PhonicsBlock;
+        topic?: string;
+      };
+      if (json.phonics) {
+        out.push({ unit: unitNum, sound: json.phonics.sound, topic: json.topic ?? '' });
+      }
+    } catch {
+      // skip malformed
+    }
+  }
+  out.sort((a, b) => a.unit - b.unit);
+  return out;
+}
+
 // GET /api/student/phonics?unit=13
-// Returns the phonics block for a unit. With no `unit` param, defaults to the
-// student's enrolled class's currentUnit. Returns null if the unit's curriculum
-// JSON has no phonics section yet (older units).
+// Returns the phonics block for a specific unit plus the list of units that
+// have phonics content available. With no ?unit, defaults to the student's
+// enrolled class's currentUnit if that unit has phonics; otherwise falls back
+// to the first available unit so the student sees something instead of an
+// empty state.
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -39,28 +81,35 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url);
     const unitParam = url.searchParams.get('unit');
-    let unit = unitParam ? parseInt(unitParam, 10) : NaN;
+    const requestedUnit = unitParam ? parseInt(unitParam, 10) : NaN;
 
-    if (!Number.isFinite(unit)) {
-      // Pull the student's class current unit. Pick the first class — students
-      // are typically only enrolled in one Family-and-Friends class at a time.
+    // Always FAF1 for now — when other books get curriculum, route by class's
+    // currentBookSlug (not yet wired).
+    const bookSlug = DEFAULT_BOOK_SLUG;
+
+    const availableUnits = await listUnitsWithPhonics(bookSlug);
+
+    let unit: number;
+    if (Number.isFinite(requestedUnit)) {
+      unit = requestedUnit;
+    } else {
       const enrollment = await db
         .select({ currentUnit: classes.currentUnit })
         .from(classEnrollments)
         .innerJoin(classes, eq(classes.id, classEnrollments.classId))
         .where(eq(classEnrollments.studentId, user.id))
         .limit(1);
-      unit = enrollment[0]?.currentUnit ?? 1;
+      const classUnit = enrollment[0]?.currentUnit ?? 1;
+      // If the class's current unit has phonics, use it. Otherwise fall back
+      // to the first available unit so the student sees content immediately.
+      const hasContent = availableUnits.some((u) => u.unit === classUnit);
+      unit = hasContent
+        ? classUnit
+        : availableUnits[0]?.unit ?? classUnit;
     }
 
-    // Always FAF1 for now — when other books get curriculum, route by class's
-    // currentBookSlug (not yet wired).
-    const bookSlug = DEFAULT_BOOK_SLUG;
     const jsonPath = path.join(
-      process.cwd(),
-      'src',
-      'lib',
-      'curriculum',
+      CURRICULUM_DIR,
       bookSlug,
       `unit-${unit}.json`,
     );
@@ -70,10 +119,14 @@ export async function GET(request: NextRequest) {
       const contents = await readFile(jsonPath, 'utf-8');
       curriculum = JSON.parse(contents);
     } catch {
-      return NextResponse.json({ unit, phonics: null });
+      return NextResponse.json({ unit, phonics: null, availableUnits });
     }
 
-    return NextResponse.json({ unit, phonics: curriculum.phonics ?? null });
+    return NextResponse.json({
+      unit,
+      phonics: curriculum.phonics ?? null,
+      availableUnits,
+    });
   } catch (error) {
     logError(error, 'api/student/phonics');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -126,9 +126,16 @@ function FlipCard({ word, family }: FlipCardProps) {
   );
 }
 
+interface AvailableUnit {
+  unit: number;
+  sound: string;
+  topic: string;
+}
+
 export function PhonicsDeck() {
   const [phonics, setPhonics] = useState<PhonicsBlock | null>(null);
   const [unit, setUnit] = useState<number | null>(null);
+  const [availableUnits, setAvailableUnits] = useState<AvailableUnit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Voices on some browsers (especially Chrome) load asynchronously after
@@ -147,26 +154,33 @@ export function PhonicsDeck() {
     }
   }, []);
 
+  // Loader for both initial mount and switching units. The API returns the
+  // available unit list every time so the picker stays in sync if a teacher
+  // adds new content.
+  const load = async (targetUnit?: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url =
+        typeof targetUnit === 'number'
+          ? `/api/student/phonics?unit=${targetUnit}`
+          : '/api/student/phonics';
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to load');
+      setPhonics(data.phonics);
+      setUnit(data.unit);
+      setAvailableUnits(data.availableUnits ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch('/api/student/phonics');
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) throw new Error(data?.error || 'Failed to load');
-        setPhonics(data.phonics);
-        setUnit(data.unit);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totalWords = useMemo(
@@ -191,22 +205,67 @@ export function PhonicsDeck() {
     );
   }
 
+  // Pill row letting the student switch between any unit that has phonics
+  // content. Hidden when there's only one (or none) so it doesn't clutter
+  // the screen.
+  const unitPicker = availableUnits.length > 1 && (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+        Pick a unit:
+      </span>
+      {availableUnits.map((u) => {
+        const active = u.unit === unit;
+        return (
+          <button
+            key={u.unit}
+            type="button"
+            onClick={() => void load(u.unit)}
+            disabled={loading}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
+              active
+                ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                : 'bg-white text-amber-800 border-amber-300 hover:bg-amber-50'
+            }`}
+          >
+            Unit {u.unit}
+            <span className={`ml-1.5 text-[10px] ${active ? 'text-amber-50/90' : 'text-amber-600'}`}>
+              {u.sound}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   if (!phonics) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center text-gray-500">
-          <Sparkles className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-          <p className="text-sm">Phonics for Unit {unit ?? '?'} aren&apos;t set up yet.</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Check back later — your teacher is adding new units soon!
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {unitPicker}
+        <Card>
+          <CardContent className="py-10 text-center text-gray-500">
+            <Sparkles className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+            <p className="text-sm">Phonics for Unit {unit ?? '?'} aren&apos;t set up yet.</p>
+            {availableUnits.length > 0 && (
+              <p className="text-xs text-gray-500 mt-2">
+                Try one of the other units above —{' '}
+                {availableUnits.map((u, i) => (
+                  <span key={u.unit}>
+                    Unit {u.unit}
+                    {i < availableUnits.length - 1 ? ', ' : ''}
+                  </span>
+                ))}{' '}
+                {availableUnits.length === 1 ? 'has' : 'have'} phonics ready.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-5">
+      {unitPicker}
       <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
           <h2 className="text-xl font-bold text-amber-900 flex items-center gap-2">
