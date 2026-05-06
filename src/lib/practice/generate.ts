@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 
-export type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
+export type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder' | 'phonics';
 
 export type GeneratedQuestion = {
   prompt: string;

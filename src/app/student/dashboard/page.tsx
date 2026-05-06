@@ -19,6 +19,7 @@ import { StudentProgressionCard } from "@/components/gamification/student-progre
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
 import { PracticeSession } from "@/components/practice/practice-session";
 import { PracticeStatsCard } from "@/components/practice/practice-stats-card";
+import { PhonicsDeck } from "@/components/practice/phonics-deck";
 import { WeeklyRecapView } from "@/components/recap/weekly-recap-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
@@ -624,9 +625,34 @@ export default function StudentDashboardPage() {
             <FlashcardGame />
           </TabsContent>
 
-          <TabsContent value="practice" className="mt-6 space-y-6">
-            <PracticeStatsCard />
-            <PracticeSession />
+          <TabsContent value="practice" className="mt-6 space-y-4">
+            {/* Quiz keeps the existing per-unit MCQ flow; Phonics adds a
+                flip-card deck for the unit's CVC sound families. */}
+            <Tabs defaultValue="quiz" className="w-full">
+              <TabsList className="grid grid-cols-2 w-full max-w-sm bg-white/60 border border-gray-200">
+                <TabsTrigger
+                  value="quiz"
+                  className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 gap-2"
+                >
+                  <Trophy className="w-4 h-4" />
+                  Quiz
+                </TabsTrigger>
+                <TabsTrigger
+                  value="phonics"
+                  className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 gap-2"
+                >
+                  <SmilePlus className="w-4 h-4" />
+                  Phonics
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="quiz" className="mt-4 space-y-6">
+                <PracticeStatsCard />
+                <PracticeSession />
+              </TabsContent>
+              <TabsContent value="phonics" className="mt-4">
+                <PhonicsDeck />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>

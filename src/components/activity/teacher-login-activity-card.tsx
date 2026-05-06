@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
     Activity,
+    ChevronDown,
     ChevronRight,
     Loader2,
     RefreshCw,
@@ -51,6 +52,9 @@ export function TeacherLoginActivityCard() {
     const [data, setData] = useState<ApiResponse | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>("lastLogin");
     const [dateRange, setDateRange] = useState<DateRange>("7");
+    // Collapsed by default — the dashboard summary line is enough at a glance,
+    // teachers can expand for the full per-student breakdown.
+    const [expanded, setExpanded] = useState(false);
 
     useEffect(() => {
         fetchActivity();
@@ -132,23 +136,54 @@ export function TeacherLoginActivityCard() {
 
     return (
         <Card className="mb-8">
-            <CardHeader className="pb-3">
+            {/* Header is the click-target when collapsed. Buttons inside the
+                header (refresh, dropdowns) stop propagation to avoid toggling
+                when the teacher just wants to interact with them. */}
+            <CardHeader
+                className={`pb-3 ${expanded ? '' : 'cursor-pointer hover:bg-gray-50 rounded-t-xl transition-colors'}`}
+                onClick={(e) => {
+                    if (expanded) return;
+                    // Don't toggle when interacting with controls inside the header.
+                    if ((e.target as HTMLElement).closest('button, [role="combobox"], select')) return;
+                    setExpanded(true);
+                }}
+            >
                 <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                            <Activity className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-lg">Student Login Activity</CardTitle>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setExpanded((v) => !v);
+                            }}
+                            className="p-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors shrink-0"
+                            aria-label={expanded ? 'Collapse' : 'Expand'}
+                        >
+                            {expanded ? (
+                                <ChevronDown className="w-5 h-5 text-blue-600" />
+                            ) : (
+                                <Activity className="w-5 h-5 text-blue-600" />
+                            )}
+                        </button>
+                        <div className="min-w-0">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                Student Login Activity
+                                {!expanded && data && onlineCount > 0 && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                        {onlineCount} online
+                                    </span>
+                                )}
+                            </CardTitle>
                             <p className="text-sm text-gray-500 mt-0.5">
                                 {loading ? (
                                     "Loading…"
                                 ) : data ? (
                                     <>
                                         {data.studentsLoggedIn} of {data.uniqueStudents} students logged in
-                                        {onlineCount > 0 && (
+                                        {onlineCount > 0 && expanded && (
                                             <span className="text-green-600 font-medium ml-2">
-                                                • {onlineCount} online now
+                                                • {onlineCount} active now
                                             </span>
                                         )}
                                         {neverLoggedIn > 0 && (
@@ -164,45 +199,67 @@ export function TeacherLoginActivityCard() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-                            <SelectTrigger className="h-9 w-[120px] text-sm">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="7">Last 7 days</SelectItem>
-                                <SelectItem value="30">Last 30 days</SelectItem>
-                                <SelectItem value="all">All time</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    {expanded ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
+                                <SelectTrigger className="h-9 w-[120px] text-sm">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="7">Last 7 days</SelectItem>
+                                    <SelectItem value="30">Last 30 days</SelectItem>
+                                    <SelectItem value="all">All time</SelectItem>
+                                </SelectContent>
+                            </Select>
 
-                        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                            <SelectTrigger className="h-9 w-[140px] text-sm">
-                                <ArrowUpDown className="w-3.5 h-3.5 mr-1 shrink-0" />
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="lastLogin">Last login</SelectItem>
-                                <SelectItem value="timeOnline">Time online</SelectItem>
-                                <SelectItem value="name">Name</SelectItem>
-                                <SelectItem value="class">Class</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                                <SelectTrigger className="h-9 w-[140px] text-sm">
+                                    <ArrowUpDown className="w-3.5 h-3.5 mr-1 shrink-0" />
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="lastLogin">Last login</SelectItem>
+                                    <SelectItem value="timeOnline">Time online</SelectItem>
+                                    <SelectItem value="name">Name</SelectItem>
+                                    <SelectItem value="class">Class</SelectItem>
+                                </SelectContent>
+                            </Select>
 
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9"
+                                onClick={(e) => { e.stopPropagation(); fetchActivity(); }}
+                                disabled={loading}
+                                title="Refresh"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+                                className="text-xs text-gray-500"
+                            >
+                                Hide
+                            </Button>
+                        </div>
+                    ) : (
                         <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9"
-                            onClick={fetchActivity}
-                            disabled={loading}
-                            title="Refresh"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+                            className="text-xs text-gray-600"
                         >
-                            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                            Show
+                            <ChevronRight className="w-3.5 h-3.5 ml-1" />
                         </Button>
-                    </div>
+                    )}
                 </div>
             </CardHeader>
 
+            {expanded && (
             <CardContent className="pt-0">
                 {loading && !data ? (
                     <div className="flex items-center justify-center py-10">
@@ -269,6 +326,7 @@ export function TeacherLoginActivityCard() {
                     </div>
                 )}
             </CardContent>
+            )}
         </Card>
     );
 }

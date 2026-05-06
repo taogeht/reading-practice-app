@@ -12,9 +12,14 @@
     { "word": "swim",  "image": "/images/unit-14/swim.png" },
     { "word": "talk",  "image": "/images/unit-14/talk.png" },
     { "word": "walk",  "image": "/images/unit-14/walk.png" },
-    { "word": "write", "image": "/images/unit-14/write.png" }
+    { "word": "write", "image": "/images/unit-14/write.png" },
+    { "word": "play",  "image": "/images/unit-14/play.png" },
+    { "word": "read",  "image": "/images/unit-14/read.png" }
   ],
-  "verbs": ["climb", "cook", "dance", "draw", "fly", "run", "sing", "swim", "talk", "walk", "write"],
+  "verbs": [
+    "climb", "cook", "dance", "draw", "fly", "run",
+    "sing", "swim", "talk", "walk", "write", "play", "read"
+  ],
   "grammar_patterns": [
     {
       "pattern": "[Subject] can [verb].",
@@ -22,7 +27,9 @@
         "She can draw.",
         "She can swim.",
         "He can run.",
-        "I can sing."
+        "I can sing.",
+        "This boy can swim.",
+        "This girl can run."
       ]
     },
     {
@@ -31,7 +38,9 @@
         "He can't cook.",
         "She can't fly.",
         "I can't swim.",
-        "It can't talk."
+        "It can't talk.",
+        "This cat can't climb.",
+        "This dog can't fly."
       ]
     },
     {
@@ -52,14 +61,104 @@
         "Can it fly? No, it can't.",
         "Can she draw? Yes, she can."
       ]
+    },
+    {
+      "pattern": "What can you do? I can [verb].",
+      "examples": [
+        "What can you do? I can sing.",
+        "What can you do? I can dance and draw.",
+        "What can you do? I can run.",
+        "What can you do? I can read."
+      ]
+    },
+    {
+      "pattern": "A [animal] can/can't [verb] [object].",
+      "examples": [
+        "A giraffe can't climb trees.",
+        "A monkey can climb trees.",
+        "A snake can't walk.",
+        "A seal can't fly.",
+        "A bird can fly."
+      ]
+    },
+    {
+      "pattern": "A [animal] cannot [verb]. (long form of can't)",
+      "examples": [
+        "A giraffe cannot swim.",
+        "A monkey cannot fly.",
+        "A snake cannot run.",
+        "A seal cannot talk."
+      ]
+    },
+    {
+      "pattern": "[Subject] can [verb] and [subject] can [verb].",
+      "examples": [
+        "They can swim and they can fly.",
+        "She can sing and she can dance.",
+        "I can read and I can write."
+      ]
+    },
+    {
+      "pattern": "[Subject] can [verb], but [subject] cannot [verb].",
+      "examples": [
+        "They can swim, but they cannot fly.",
+        "I can sing, but I cannot dance.",
+        "He can run, but he cannot swim."
+      ]
+    },
+    {
+      "pattern": "It is [adjective]. It has [adjective] [noun].",
+      "examples": [
+        "It is pink. It has yellow eyes.",
+        "It is tall. It has long legs.",
+        "It is small. It has a long neck."
+      ]
+    },
+    {
+      "pattern": "[Animal]s like [noun].",
+      "examples": [
+        "Flamingos like water.",
+        "Monkeys like trees.",
+        "Birds like the sky."
+      ]
     }
   ],
+  "phonics": {
+    "sound": "short o",
+    "description": "CVC words with the short o vowel sound. Two rhyming families: -ot and -ox.",
+    "word_families": [
+      {
+        "family": "-ot",
+        "words": [
+          { "word": "pot", "emoji": "🍲" },
+          { "word": "hot", "emoji": "🔥" },
+          { "word": "dot", "emoji": "🟤" }
+        ]
+      },
+      {
+        "family": "-ox",
+        "words": [
+          { "word": "fox", "emoji": "🦊" },
+          { "word": "box", "emoji": "📦" },
+          { "word": "ox",  "emoji": "🐂" }
+        ]
+      }
+    ],
+    "chant": [
+      "Look at the fox",
+      "Hop over a pot",
+      "Look at the box",
+      "Hop into the box"
+    ]
+  },
   "key_sentences": [
     "She can draw.",
     "He can't cook.",
     "Can he run? Yes, he can.",
     "Can she swim? No, she can't.",
-    "Can it fly?",
-    "I can sing and dance."
+    "What can you do? I can sing and dance.",
+    "A giraffe can't climb trees.",
+    "It is pink and it has yellow eyes.",
+    "They can swim, but they cannot fly."
   ]
 }

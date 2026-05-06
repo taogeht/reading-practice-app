@@ -244,7 +244,9 @@ export async function GET(request: NextRequest) {
 
   // Do NOT return correctAnswer to the client — grading happens server-side.
   // For sentence_builder, prompt IS the answer, so omit it from the response and
-  // return shuffled tokens instead of choices.
+  // return shuffled tokens instead of choices. For phonics, expose `payload`
+  // so the renderer knows the kind (rhyme/sound/listen) and can show a Play
+  // button for the listen variant.
   const questions = finalOrder.map((c) => {
     if (c.q.questionType === 'sentence_builder') {
       const tokens = (c.q.payload as { tokens?: string[] } | null)?.tokens ?? [];
@@ -261,6 +263,9 @@ export async function GET(request: NextRequest) {
       prompt: c.q.prompt,
       imageUrl: c.q.imageUrl,
       choices: shuffle([c.q.correctAnswer, ...c.q.distractors]),
+      // Only forward phonics payload — other types' payloads are
+      // server-side bookkeeping the client doesn't need.
+      payload: c.q.questionType === 'phonics' ? c.q.payload : null,
     };
   });
 

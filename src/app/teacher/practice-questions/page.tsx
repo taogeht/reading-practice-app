@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { UNITS } from '@/lib/practice/units';
 import { BOOKS, DEFAULT_BOOK_SLUG, getBook, type BookSlug } from '@/lib/practice/books';
 
-type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
+type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder' | 'phonics';
 type VocabMix = 'unit-only' | 'mix' | 'heavy-review';
+type PhonicsKind = 'mixed' | 'rhyme' | 'sound' | 'listen';
 
 const VOCAB_MIX_RATIO: Record<VocabMix, number> = {
   'unit-only': 1,
@@ -49,6 +50,7 @@ export default function PracticeQuestionsPage() {
   const [promptDraft, setPromptDraft] = useState('');
   const [generateType, setGenerateType] = useState<QuestionType>('fill_blank_mcq');
   const [vocabMix, setVocabMix] = useState<VocabMix>('mix');
+  const [phonicsKind, setPhonicsKind] = useState<PhonicsKind>('mixed');
   const [generateCount, setGenerateCount] = useState<5 | 10 | 20>(5);
 
   // When the teacher switches books, snap the selected unit to the new book's
@@ -125,7 +127,11 @@ export default function PracticeQuestionsPage() {
           unit,
           count,
           questionType: generateType,
-          currentUnitVocabRatio: VOCAB_MIX_RATIO[vocabMix],
+          // Spiral-review ratio is irrelevant for phonics — only sent for the
+          // LLM-backed types.
+          ...(generateType === 'phonics'
+            ? { phonicsKind }
+            : { currentUnitVocabRatio: VOCAB_MIX_RATIO[vocabMix] }),
         }),
       });
       const data = await res.json();
@@ -308,22 +314,47 @@ export default function PracticeQuestionsPage() {
                   <SelectItem value="fill_blank_mcq">Multiple Choice</SelectItem>
                   <SelectItem value="true_false">True / False</SelectItem>
                   <SelectItem value="sentence_builder">Sentence Builder</SelectItem>
+                  <SelectItem value="phonics">Phonics</SelectItem>
                 </SelectContent>
               </Select>
-              <Select
-                value={vocabMix}
-                onValueChange={(v) => setVocabMix(v as VocabMix)}
-                disabled={generatingUnit !== null}
-              >
-                <SelectTrigger className="w-[170px] h-9" title="How much vocabulary from prior units to mix in for spiral review">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unit-only">Unit only</SelectItem>
-                  <SelectItem value="mix">Mix (60/40)</SelectItem>
-                  <SelectItem value="heavy-review">Heavy review (30/70)</SelectItem>
-                </SelectContent>
-              </Select>
+              {generateType === 'phonics' ? (
+                <Select
+                  value={phonicsKind}
+                  onValueChange={(v) => setPhonicsKind(v as PhonicsKind)}
+                  disabled={generatingUnit !== null}
+                >
+                  <SelectTrigger
+                    className="w-[170px] h-9"
+                    title="Which phonics question kind to generate"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mixed">Mixed kinds</SelectItem>
+                    <SelectItem value="rhyme">Rhymes only</SelectItem>
+                    <SelectItem value="sound">Sound match only</SelectItem>
+                    <SelectItem value="listen">Listen only</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select
+                  value={vocabMix}
+                  onValueChange={(v) => setVocabMix(v as VocabMix)}
+                  disabled={generatingUnit !== null}
+                >
+                  <SelectTrigger
+                    className="w-[170px] h-9"
+                    title="How much vocabulary from prior units to mix in for spiral review"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unit-only">Unit only</SelectItem>
+                    <SelectItem value="mix">Mix (60/40)</SelectItem>
+                    <SelectItem value="heavy-review">Heavy review (30/70)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               <Select
                 value={String(generateCount)}
                 onValueChange={(v) => setGenerateCount(Number(v) as 5 | 10 | 20)}
@@ -408,6 +439,11 @@ export default function PracticeQuestionsPage() {
                               {q.questionType === 'sentence_builder' && (
                                 <Badge variant="outline" className="text-[10px] uppercase tracking-wide bg-emerald-50 text-emerald-700 border-emerald-200">
                                   Sentence Builder
+                                </Badge>
+                              )}
+                              {q.questionType === 'phonics' && (
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-wide bg-amber-50 text-amber-700 border-amber-200">
+                                  Phonics
                                 </Badge>
                               )}
                             </div>

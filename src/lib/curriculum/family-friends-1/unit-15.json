@@ -2,18 +2,24 @@
   "unit": 15,
   "topic": "Let's play ball!",
   "vocabulary": [
-    { "word": "bat",        "image": "/images/unit-15/bat.png" },
-    { "word": "beach",      "image": "/images/unit-15/beach.png" },
-    { "word": "boat",       "image": "/images/unit-15/boat.png" },
-    { "word": "pail",       "image": "/images/unit-15/pail.png" },
-    { "word": "crab",       "image": "/images/unit-15/crab.png" },
-    { "word": "ice pop",    "image": "/images/unit-15/ice-pop.png" },
-    { "word": "sandcastle", "image": "/images/unit-15/sandcastle.png" },
-    { "word": "shell",      "image": "/images/unit-15/shell.png" },
-    { "word": "shovel",     "image": "/images/unit-15/shovel.png" },
-    { "word": "sunscreen",  "image": "/images/unit-15/sunscreen.png" },
-    { "word": "the ocean",  "image": "/images/unit-15/the-ocean.png" }
+    { "word": "bat",         "image": "/images/unit-15/bat.png" },
+    { "word": "ball",        "image": "/images/unit-15/ball.png" },
+    { "word": "beach",       "image": "/images/unit-15/beach.png" },
+    { "word": "boat",        "image": "/images/unit-15/boat.png" },
+    { "word": "pail",        "image": "/images/unit-15/pail.png" },
+    { "word": "crab",        "image": "/images/unit-15/crab.png" },
+    { "word": "ice pop",     "image": "/images/unit-15/ice-pop.png" },
+    { "word": "ice cream",   "image": "/images/unit-15/ice-cream.png" },
+    { "word": "drink",       "image": "/images/unit-15/drink.png" },
+    { "word": "kite",        "image": "/images/unit-15/kite.png" },
+    { "word": "frisbee",     "image": "/images/unit-15/frisbee.png" },
+    { "word": "sandcastle",  "image": "/images/unit-15/sandcastle.png" },
+    { "word": "shell",       "image": "/images/unit-15/shell.png" },
+    { "word": "shovel",      "image": "/images/unit-15/shovel.png" },
+    { "word": "sunscreen",   "image": "/images/unit-15/sunscreen.png" },
+    { "word": "the ocean",   "image": "/images/unit-15/the-ocean.png" }
   ],
+  "verbs": ["find", "go", "make", "play", "swim", "walk"],
   "grammar_patterns": [
     {
       "pattern": "Let's [verb] [object].",
@@ -25,7 +31,16 @@
         "Let's find the crabs.",
         "Let's make a sandcastle.",
         "Let's walk on the beach.",
-        "Let's swim in the ocean."
+        "Let's swim in the ocean.",
+        "Let's go in a boat."
+      ]
+    },
+    {
+      "pattern": "Let's go and [verb] [noun].",
+      "examples": [
+        "Let's go and have fun.",
+        "Let's go and play ball.",
+        "Let's go and find shells."
       ]
     },
     {
@@ -43,14 +58,110 @@
         "Don't forget your shovel.",
         "Don't forget your pail."
       ]
+    },
+    {
+      "pattern": "I am at the [noun]. / We're at the [noun].",
+      "examples": [
+        "I am at the beach.",
+        "We're at the beach.",
+        "We're at the ocean."
+      ]
+    },
+    {
+      "pattern": "He/She has a/an [noun].",
+      "examples": [
+        "He has sunscreen.",
+        "She has ice cream.",
+        "He has an ice pop.",
+        "He has a bat.",
+        "She has a drink.",
+        "He has a ball."
+      ]
+    },
+    {
+      "pattern": "I have a [noun]. / I have lots of [noun]s.",
+      "examples": [
+        "I have a kite.",
+        "I have a frisbee.",
+        "I have lots of shells.",
+        "I have lots of friends."
+      ]
+    },
+    {
+      "pattern": "Here is the [noun].",
+      "examples": [
+        "Here is the rug.",
+        "Here is the sandcastle.",
+        "Here is the boat."
+      ]
+    },
+    {
+      "pattern": "How many [noun]s does a [noun] have? It has [number] [noun]s.",
+      "examples": [
+        "How many legs does a crab have? It has ten legs.",
+        "How many shells does it have? It has five shells.",
+        "How many eyes does a fish have? It has two eyes."
+      ]
+    },
+    {
+      "pattern": "Does a [noun] have [object]? Yes, it does. / No, it doesn't.",
+      "examples": [
+        "Does a crab have a shell? Yes, it does.",
+        "Does a fish have legs? No, it doesn't.",
+        "Does a bird have wings? Yes, it does."
+      ]
+    },
+    {
+      "pattern": "Can [plural subject] [verb]? Yes, they can. / No, they can't.",
+      "examples": [
+        "Can crabs run? Yes, they can.",
+        "Can crabs fly? No, they can't.",
+        "Can birds swim? Some can."
+      ]
     }
   ],
+  "phonics": {
+    "sound": "short u",
+    "description": "CVC words with the short u vowel sound. Two rhyming families: -ug and -un.",
+    "word_families": [
+      {
+        "family": "-ug",
+        "words": [
+          { "word": "bug", "emoji": "🐛" },
+          { "word": "rug", "emoji": "🟫" },
+          { "word": "hug", "emoji": "🤗" }
+        ]
+      },
+      {
+        "family": "-un",
+        "words": [
+          { "word": "sun", "emoji": "☀️" },
+          { "word": "fun", "emoji": "🎉" },
+          { "word": "run", "emoji": "🏃" }
+        ]
+      }
+    ],
+    "chant": [
+      "I'm on the rug",
+      "Rug, rug, rug",
+      "Look at the bug",
+      "Bug, bug, bug",
+      "Here is the sun",
+      "Sun, sun, sun",
+      "Let's go and have fun",
+      "Fun, fun, fun"
+    ]
+  },
   "key_sentences": [
     "Let's play ball!",
     "Let's make a sandcastle.",
     "Let's swim in the ocean.",
     "That's a good idea.",
     "Don't forget your hat.",
-    "Don't forget your sunscreen."
+    "Don't forget your sunscreen.",
+    "We're at the beach.",
+    "She has ice cream.",
+    "How many legs does a crab have? It has ten legs.",
+    "Does a crab have a shell? Yes, it does."
   ]
 }

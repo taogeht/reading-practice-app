@@ -4,10 +4,22 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2, Wand2, Sparkles } from 'lucide-react';
+import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2, Wand2, Sparkles, Volume2 } from 'lucide-react';
 import type { UnitInfo } from '@/lib/practice/units';
 
-type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder';
+type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder' | 'phonics';
+
+// `kind` is server-set on phonics questions; the renderer uses it to decide
+// whether to show a Play button (listen) vs a plain MCQ (rhyme / sound).
+type PhonicsPayload = {
+  kind?: 'rhyme' | 'sound' | 'listen';
+  audioWord?: string;
+  targetEmoji?: string | null;
+  correctEmoji?: string | null;
+  sound?: string;
+  target?: string;
+  family?: string;
+};
 
 // Field set varies by questionType — fill_blank_mcq/true_false have prompt+choices,
 // sentence_builder has tokens (and no prompt — the prompt IS the answer).
@@ -18,7 +30,24 @@ type Question = {
   prompt?: string;
   choices?: string[];
   tokens?: string[];
+  payload?: PhonicsPayload | null;
 };
+
+// Speaks the given word using the browser's built-in speech synthesis.
+// No audio files needed; same approach as the phonics flashcard deck.
+function speakWord(word: string) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.lang = 'en-US';
+  utter.rate = 0.85;
+  const voices = window.speechSynthesis.getVoices();
+  const preferred =
+    voices.find((v) => v.lang === 'en-US' && /female|samantha|google/i.test(v.name)) ??
+    voices.find((v) => v.lang.startsWith('en'));
+  if (preferred) utter.voice = preferred;
+  window.speechSynthesis.speak(utter);
+}
 
 type View =
   | { name: 'picker' }
@@ -64,6 +93,20 @@ export function PracticeSession() {
       cancelled = true;
     };
   }, []);
+
+  // Auto-play the listen-kind word when its question becomes the current one.
+  // The student can also tap the Play button to hear it again.
+  useEffect(() => {
+    if (view.name !== 'quiz') return;
+    const q = view.questions[view.index];
+    if (q.questionType !== 'phonics') return;
+    const payload = q.payload as PhonicsPayload | null | undefined;
+    if (payload?.kind === 'listen' && payload.audioWord) {
+      // Small delay so voices have time to load on first question.
+      const t = setTimeout(() => speakWord(payload.audioWord!), 250);
+      return () => clearTimeout(t);
+    }
+  }, [view]);
 
   const startUnit = async (unit: number) => {
     setView({ name: 'loading' });
@@ -280,6 +323,8 @@ export function PracticeSession() {
   const question = view.questions[view.index];
   const isAnswered = feedback !== null;
   const unitInfo = (availableUnits ?? []).find((u) => u.unit === view.unit);
+  const phonics = question.questionType === 'phonics' ? (question.payload ?? null) : null;
+  const phonicsKind = phonics?.kind ?? null;
 
   return (
     <Card className="relative overflow-hidden">
@@ -338,18 +383,46 @@ export function PracticeSession() {
           />
         ) : (
           <>
-            <div className="text-2xl sm:text-3xl font-bold text-center py-2 text-gray-900">
-              {(question.prompt ?? '').split('____').map((part, i, arr) => (
-                <span key={i}>
-                  {part}
-                  {i < arr.length - 1 && (
-                    <span className="inline-block min-w-[80px] border-b-4 border-indigo-400 mx-2">
-                      &nbsp;
+            {/* Phonics — listen kind: hide the prompt text and show a big
+                Play button. Audio plays the word; the student picks from
+                printed choices below. */}
+            {phonicsKind === 'listen' && phonics?.audioWord ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <button
+                  type="button"
+                  onClick={() => speakWord(phonics.audioWord!)}
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-amber-100 hover:bg-amber-200 active:scale-95 transition border-4 border-amber-300 flex items-center justify-center shadow-md"
+                  aria-label="Hear the word"
+                >
+                  <Volume2 className="w-12 h-12 text-amber-700" />
+                </button>
+                <p className="text-sm text-amber-800 font-medium">
+                  Tap to hear the word
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Phonics — rhyme/sound: show the target emoji as a big
+                    visual cue alongside the printed prompt. */}
+                {phonicsKind && (phonics?.targetEmoji || phonics?.correctEmoji) && (
+                  <div className="text-6xl text-center py-1" aria-hidden>
+                    {phonics.targetEmoji ?? phonics.correctEmoji}
+                  </div>
+                )}
+                <div className="text-2xl sm:text-3xl font-bold text-center py-2 text-gray-900">
+                  {(question.prompt ?? '').split('____').map((part, i, arr) => (
+                    <span key={i}>
+                      {part}
+                      {i < arr.length - 1 && (
+                        <span className="inline-block min-w-[80px] border-b-4 border-indigo-400 mx-2">
+                          &nbsp;
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-              ))}
-            </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               {(question.choices ?? []).map((choice) => {

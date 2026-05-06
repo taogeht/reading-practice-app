@@ -41,14 +41,86 @@
         "There are twelve dolls on the rug.",
         "There are fifteen books on my shelf."
       ]
+    },
+    {
+      "pattern": "Where's the [noun]? It's [preposition] the [noun].",
+      "examples": [
+        "Where's the pillow? It's on the bed.",
+        "Where's the book? It's on the shelf.",
+        "Where's the T-shirt? It's in the cabinet.",
+        "Where's the teddy bear? It's on the rug."
+      ]
+    },
+    {
+      "pattern": "Where are the [noun]s? They're [preposition] the [noun].",
+      "examples": [
+        "Where are the books? They're on the shelf.",
+        "Where are the dolls? They're on the rug.",
+        "Where are the pillows? They're on the bed.",
+        "Where are the coats? They're in the cabinet."
+      ]
+    },
+    {
+      "pattern": "What's [preposition] the/my [noun]? [Noun]s are [preposition] the/my [noun].",
+      "examples": [
+        "What's on your shelf? My books are on my shelf.",
+        "What's in my cabinet? Lots of clothes are in my cabinet.",
+        "What's on the bed? Pillows are on the bed."
+      ]
+    },
+    {
+      "pattern": "Do you like your [noun]? Yes, I do. / No, I don't.",
+      "examples": [
+        "Do you like your bedroom? Yes, I do.",
+        "Do you like your bed? Yes, I do.",
+        "Do you like your rug? No, I don't."
+      ]
+    },
+    {
+      "pattern": "What color is/are the [noun]?",
+      "examples": [
+        "What color is the pillow? It's blue.",
+        "What color are the shoes? They're red.",
+        "What color is the blanket? It's purple."
+      ]
     }
   ],
+  "phonics": {
+    "sound": "short i",
+    "description": "CVC words with the short i vowel sound. Two rhyming families: -in and -ig.",
+    "word_families": [
+      {
+        "family": "-in",
+        "words": [
+          { "word": "pin", "emoji": "📍" },
+          { "word": "in",  "emoji": "➡️" },
+          { "word": "Jin", "emoji": "🧒" }
+        ]
+      },
+      {
+        "family": "-ig",
+        "words": [
+          { "word": "pig", "emoji": "🐷" },
+          { "word": "fig", "emoji": "🍐" },
+          { "word": "big", "emoji": "🐘" }
+        ]
+      }
+    ],
+    "chant": [
+      "A big, big pin",
+      "And a big, big fig",
+      "Keep the big pig",
+      "Give the fig to a pig"
+    ]
+  },
   "key_sentences": [
     "There's a teddy bear on my bed.",
     "There are three dolls on the rug.",
     "There's a car in my cabinet.",
     "There are books on the shelf.",
-    "There's a soccer ball under my bed.",
-    "There are twelve pillows on the bed."
+    "Where's the pillow? It's on the bed.",
+    "Where are the books? They're on the shelf.",
+    "Do you like your bedroom? Yes, I do.",
+    "What color is the blanket? It's purple."
   ]
 }

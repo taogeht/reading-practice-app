@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
 import { generateQuestions, type QuestionType } from '@/lib/practice/generate';
+import { generatePhonicsQuestions, type PhonicsKindOrMixed } from '@/lib/practice/generate-phonics';
 import { isAvailablePracticeUnit } from '@/lib/practice/units';
 import { DEFAULT_BOOK_SLUG, isUnitAvailableForBook, isValidBookSlug } from '@/lib/practice/books';
 import { geminiImageClient } from '@/lib/image/gemini-client';
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
     count?: unknown;
     questionType?: unknown;
     currentUnitVocabRatio?: unknown;
+    phonicsKind?: unknown;
   };
   try {
     body = await request.json();
@@ -105,7 +107,22 @@ export async function POST(request: NextRequest) {
       ? 'true_false'
       : requestedType === 'sentence_builder'
         ? 'sentence_builder'
-        : 'fill_blank_mcq';
+        : requestedType === 'phonics'
+          ? 'phonics'
+          : 'fill_blank_mcq';
+
+  // Phonics-only sub-kind picker. Validated below so a typo doesn't silently
+  // become 'mixed' — the teacher gets a clean 400.
+  const PHONICS_KINDS: ReadonlySet<PhonicsKindOrMixed> = new Set([
+    'mixed',
+    'rhyme',
+    'sound',
+    'listen',
+  ]);
+  const phonicsKind: PhonicsKindOrMixed =
+    typeof body.phonicsKind === 'string' && PHONICS_KINDS.has(body.phonicsKind as PhonicsKindOrMixed)
+      ? (body.phonicsKind as PhonicsKindOrMixed)
+      : 'mixed';
 
   let currentUnitVocabRatio = 0.6;
   if (body.currentUnitVocabRatio !== undefined) {
@@ -137,7 +154,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const generated = await generateQuestions({ bookSlug, unit, count, questionType, currentUnitVocabRatio });
+    // Phonics has its own deterministic builder (no LLM, no ratio knob).
+    // Other types still go through the Claude-backed generator.
+    const generated =
+      questionType === 'phonics'
+        ? await generatePhonicsQuestions({ bookSlug, unit, count, kind: phonicsKind })
+        : await generateQuestions({ bookSlug, unit, count, questionType, currentUnitVocabRatio });
     if (generated.length === 0) {
       return NextResponse.json(
         { error: 'Generator returned no valid questions. Try again.' },
