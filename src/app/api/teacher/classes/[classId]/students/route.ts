@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { classes, classEnrollments, students, users } from '@/lib/db/schema';
 import { eq, and, notInArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { userCanManageClass } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -25,16 +26,7 @@ export async function GET(
     const { classId } = await params;
 
     // Verify teacher owns this class
-    const teacherClass = await db
-      .select({ id: classes.id })
-      .from(classes)
-      .where(and(
-        eq(classes.id, classId),
-        eq(classes.teacherId, user.id)
-      ))
-      .limit(1);
-
-    if (!teacherClass.length) {
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
       return NextResponse.json(
         { error: 'Class not found' },
         { status: 404 }
@@ -96,16 +88,7 @@ export async function POST(
     }
 
     // Verify teacher owns this class
-    const teacherClass = await db
-      .select({ id: classes.id })
-      .from(classes)
-      .where(and(
-        eq(classes.id, classId),
-        eq(classes.teacherId, user.id)
-      ))
-      .limit(1);
-
-    if (!teacherClass.length) {
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
       return NextResponse.json(
         { error: 'Class not found' },
         { status: 404 }

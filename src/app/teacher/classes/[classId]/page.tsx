@@ -19,6 +19,7 @@ import { ClassEngagementSection } from "@/components/gamification/class-engageme
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { RecapConfirmationSummary } from "@/components/recap/recap-confirmation-summary";
 import { SyllabusImportDialog } from "@/components/syllabus/syllabus-import-dialog";
+import { ClassTeachersCard } from "@/components/teachers/class-teachers-card";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
 import { GRADE_LEVELS } from "@/lib/grade-levels";
@@ -427,6 +428,9 @@ export default function ClassDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Column - Secondary Items */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Teachers — primary + co-teachers */}
+            <ClassTeachersCard classId={classId} />
+
             {/* Weekly Recap summary — current week's status + parent confirmations */}
             <RecapConfirmationSummary classId={classId} />
 

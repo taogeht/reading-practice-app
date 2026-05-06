@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { classes, classEnrollments, users, students } from '@/lib/db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { userCanManageClass, userIsClassPrimary } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -22,6 +23,9 @@ export async function GET(
     }
 
     const { classId } = await params;
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    }
 
     // Get class details with student count
     const classData = await db
@@ -37,10 +41,7 @@ export async function GET(
         createdAt: classes.createdAt,
       })
       .from(classes)
-      .where(and(
-        eq(classes.id, classId),
-        eq(classes.teacherId, user.id)
-      ))
+      .where(eq(classes.id, classId))
       .limit(1);
 
     if (!classData.length) {
@@ -102,6 +103,9 @@ export async function PUT(
     }
 
     const { classId } = await params;
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    }
     const body = await request.json();
     const { name, description, gradeLevel, academicYear, active, showPracticeStories, trackLoginActivity } = body;
 
@@ -112,14 +116,10 @@ export async function PUT(
       );
     }
 
-    // Verify teacher owns this class
     const existingClass = await db
       .select({ id: classes.id })
       .from(classes)
-      .where(and(
-        eq(classes.id, classId),
-        eq(classes.teacherId, user.id)
-      ))
+      .where(eq(classes.id, classId))
       .limit(1);
 
     if (!existingClass.length) {
@@ -174,15 +174,19 @@ export async function DELETE(
     }
 
     const { classId } = await params;
+    // Only the primary teacher (or admin) can delete a class — co-teachers
+    // can edit but not remove.
+    if (user.role !== 'admin' && !(await userIsClassPrimary(user.id, classId))) {
+      return NextResponse.json(
+        { error: 'Only the primary teacher can delete this class' },
+        { status: 403 },
+      );
+    }
 
-    // Verify teacher owns this class
     const existingClass = await db
       .select({ id: classes.id })
       .from(classes)
-      .where(and(
-        eq(classes.id, classId),
-        eq(classes.teacherId, user.id)
-      ))
+      .where(eq(classes.id, classId))
       .limit(1);
 
     if (!existingClass.length) {

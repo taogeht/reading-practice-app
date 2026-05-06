@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { recordings, assignments } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { userCanManageRecording } from '@/lib/auth/class-access';
 
 export async function PATCH(
   request: NextRequest,
@@ -19,21 +20,7 @@ export async function PATCH(
     const body = await request.json();
     const { teacherFeedback, status } = body;
 
-    // Verify the recording exists and the teacher has access to it
-    const recording = await db
-      .select({
-        id: recordings.id,
-        assignmentId: recordings.assignmentId,
-      })
-      .from(recordings)
-      .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
-      .where(and(
-        eq(recordings.id, id),
-        eq(assignments.teacherId, user.id)
-      ))
-      .limit(1);
-
-    if (!recording.length) {
+    if (!(await userCanManageRecording(user.id, user.role, id))) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
 
@@ -74,32 +61,8 @@ export async function DELETE(
     }
 
     const { id: recordingId } = await params;
-
-    // First verify the recording exists and the teacher owns the assignment
-    const recording = await db
-      .select({
-        id: recordings.id,
-        assignmentId: recordings.assignmentId,
-        teacherId: assignments.teacherId,
-      })
-      .from(recordings)
-      .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
-      .where(eq(recordings.id, recordingId))
-      .limit(1);
-
-    if (!recording.length) {
-      return NextResponse.json(
-        { error: 'Recording not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if the teacher owns the assignment
-    if (recording[0].teacherId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete this recording' },
-        { status: 403 }
-      );
+    if (!(await userCanManageRecording(user.id, user.role, recordingId))) {
+      return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
 
     // Delete the recording

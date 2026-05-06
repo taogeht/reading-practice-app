@@ -15,6 +15,7 @@ import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { normalizeTtsAudio, StoryTtsAudio } from '@/types/story';
 import { r2Client } from '@/lib/storage/r2-client';
+import { userCanManageAssignment } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -314,17 +315,8 @@ export async function PUT(
       );
     }
 
-    // Verify assignment exists and belongs to teacher
-    const existingAssignment = await db
-      .select({ id: assignments.id })
-      .from(assignments)
-      .where(and(
-        eq(assignments.id, assignmentId),
-        eq(assignments.teacherId, teacher.id)
-      ))
-      .limit(1);
-
-    if (!existingAssignment.length) {
+    // Class membership covers both primary and co-teachers; admins always pass.
+    if (!(await userCanManageAssignment(user.id, user.role, assignmentId))) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
@@ -379,17 +371,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
     }
 
-    // Verify assignment exists and belongs to teacher
-    const existingAssignment = await db
-      .select({ id: assignments.id })
-      .from(assignments)
-      .where(and(
-        eq(assignments.id, assignmentId),
-        eq(assignments.teacherId, teacher.id)
-      ))
-      .limit(1);
-
-    if (!existingAssignment.length) {
+    if (!(await userCanManageAssignment(user.id, user.role, assignmentId))) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 

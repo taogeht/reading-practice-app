@@ -5,6 +5,7 @@ import { classes, classBooks, books } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { buildSyllabusTemplate } from '@/lib/syllabus/build-template';
+import { userCanManageClass } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -22,17 +23,17 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { classId } = await params;
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const classRows = await db
-      .select({ id: classes.id, name: classes.name, teacherId: classes.teacherId })
+      .select({ id: classes.id, name: classes.name })
       .from(classes)
       .where(eq(classes.id, classId))
       .limit(1);
     if (!classRows.length) {
       return NextResponse.json({ error: 'Class not found' }, { status: 404 });
-    }
-    if (user.role !== 'admin' && classRows[0].teacherId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const classBookRows = await db

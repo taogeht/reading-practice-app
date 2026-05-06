@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, schools, schoolMemberships, teachers, classEnrollments } from '@/lib/db/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, count, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -18,7 +19,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get teacher's classes (admins see all classes)
+    // Classes the user can manage = primary OR co-teacher (admin = all).
+    const allowedIds = await accessibleClassIds(user.id, user.role);
+    if (allowedIds.length === 0 && user.role !== 'admin') {
+      return NextResponse.json({ classes: [] }, { status: 200 });
+    }
     const teacherClasses = await db
       .select({
         id: classes.id,
@@ -32,7 +37,7 @@ export async function GET(request: NextRequest) {
       })
       .from(classes)
       .innerJoin(schools, eq(classes.schoolId, schools.id))
-      .where(user.role === 'admin' ? undefined : eq(classes.teacherId, user.id))
+      .where(user.role === 'admin' ? undefined : inArray(classes.id, allowedIds))
       .orderBy(classes.createdAt);
 
     // Get student counts for each class

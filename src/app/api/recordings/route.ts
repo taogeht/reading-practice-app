@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { recordings, assignments, students, classes, classEnrollments, users, stories } from '@/lib/db/schema';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc, inArray, sql } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { accessibleClassIds, userCanManageClass } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -134,6 +135,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Scope recordings to every class the user can manage (primary or co).
+    const allowedClassIds = await accessibleClassIds(user.id, user.role);
+    if (allowedClassIds.length === 0 && user.role !== 'admin') {
+      return NextResponse.json({ success: true, recordings: [] });
+    }
+
     // For teachers, get recordings from their assignments with class information
     const teacherRecordings = await db
       .select({
@@ -168,7 +175,7 @@ export async function GET(request: NextRequest) {
       .innerJoin(students, eq(recordings.studentId, students.id))
       .innerJoin(users, eq(students.id, users.id))
       .innerJoin(classes, eq(assignments.classId, classes.id))
-      .where(eq(assignments.teacherId, user.id))
+      .where(user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds))
       .orderBy(desc(recordings.submittedAt));
 
     console.log(`Found ${teacherRecordings.length} recordings for teacher ${user.id}`);
@@ -198,27 +205,22 @@ export async function DELETE(request: NextRequest) {
     const classId = url.searchParams.get('classId');
 
     if (classId) {
-      // Delete all recordings from a specific class
-      // First verify the teacher owns the class
-      const teacherClass = await db.query.classes.findFirst({
-        where: and(eq(classes.id, classId), eq(classes.teacherId, user.id)),
-      });
-
-      if (!teacherClass) {
+      // Any class member (primary or co-teacher) can wipe class recordings.
+      if (!(await userCanManageClass(user.id, user.role, classId))) {
         return NextResponse.json(
           { error: 'Class not found or unauthorized' },
           { status: 404 }
         );
       }
+      const teacherClass = await db.query.classes.findFirst({
+        where: eq(classes.id, classId),
+      });
 
-      // First get all assignment IDs for this class
+      // All assignments under this class (regardless of original creator).
       const classAssignments = await db
         .select({ id: assignments.id })
         .from(assignments)
-        .where(and(
-          eq(assignments.classId, classId),
-          eq(assignments.teacherId, user.id)
-        ));
+        .where(eq(assignments.classId, classId));
 
       const assignmentIds = classAssignments.map(a => a.id);
 

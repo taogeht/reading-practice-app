@@ -3,6 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes } from '@/lib/db/schema';
+import { userCanManageClass } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -33,15 +34,7 @@ export async function GET(
   }
 
   const { classId } = await params;
-
-  // Confirm the teacher owns this class.
-  const owned = await db
-    .select({ id: classes.id })
-    .from(classes)
-    .where(and(eq(classes.id, classId), eq(classes.teacherId, user.id)))
-    .limit(1);
-
-  if (owned.length === 0) {
+  if (!(await userCanManageClass(user.id, user.role, classId))) {
     return NextResponse.json({ error: 'Class not found' }, { status: 404 });
   }
 

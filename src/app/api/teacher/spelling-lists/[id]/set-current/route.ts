@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { spellingLists, classes } from '@/lib/db/schema';
+import { spellingLists } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, inArray } from 'drizzle-orm';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -30,24 +31,23 @@ export async function POST(
         // Always include the primary id
         const targetIds = Array.from(new Set([listId, ...requestedIds]));
 
-        // Fetch all target lists with their owning class for permission checks
+        // Fetch all target lists for the class-id needed below.
         const targets = await db
             .select({
                 id: spellingLists.id,
                 classId: spellingLists.classId,
-                teacherId: classes.teacherId,
             })
             .from(spellingLists)
-            .innerJoin(classes, eq(classes.id, spellingLists.classId))
             .where(inArray(spellingLists.id, targetIds));
 
         if (targets.length === 0) {
             return NextResponse.json({ error: 'List not found' }, { status: 404 });
         }
 
-        // Authorize: every targeted list must belong to a class this user owns (or admin)
+        // Authorize: every targeted list must belong to a class the user can manage.
         if (user.role !== 'admin') {
-            const unauthorized = targets.find((t) => t.teacherId !== user.id);
+            const myClassIds = new Set(await accessibleClassIds(user.id, user.role));
+            const unauthorized = targets.find((t) => !myClassIds.has(t.classId));
             if (unauthorized) {
                 return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
             }
@@ -95,17 +95,19 @@ export async function DELETE(
         const targetIds = Array.from(new Set([listId, ...requestedIds]));
 
         const targets = await db
-            .select({ id: spellingLists.id, teacherId: classes.teacherId })
+            .select({ id: spellingLists.id, classId: spellingLists.classId })
             .from(spellingLists)
-            .innerJoin(classes, eq(classes.id, spellingLists.classId))
             .where(inArray(spellingLists.id, targetIds));
 
         if (targets.length === 0) {
             return NextResponse.json({ error: 'List not found' }, { status: 404 });
         }
 
-        if (user.role !== 'admin' && targets.some((t) => t.teacherId !== user.id)) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        if (user.role !== 'admin') {
+            const myClassIds = new Set(await accessibleClassIds(user.id, user.role));
+            if (targets.some((t) => !myClassIds.has(t.classId))) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            }
         }
 
         await db

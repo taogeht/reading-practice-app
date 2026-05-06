@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { assignments, teachers } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { userCanManageAssignment } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -28,19 +29,14 @@ export async function POST(
       return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
     }
 
-    // Verify assignment exists and belongs to teacher
+    if (!(await userCanManageAssignment(user.id, user.role, assignmentId))) {
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
+    }
     const existingAssignment = await db
-      .select({
-        id: assignments.id,
-        status: assignments.status
-      })
+      .select({ id: assignments.id, status: assignments.status })
       .from(assignments)
-      .where(and(
-        eq(assignments.id, assignmentId),
-        eq(assignments.teacherId, teacher.id)
-      ))
+      .where(eq(assignments.id, assignmentId))
       .limit(1);
-
     if (!existingAssignment.length) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }

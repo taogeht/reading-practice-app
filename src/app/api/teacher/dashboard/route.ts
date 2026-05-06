@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 import {
   classes,
   assignments,
@@ -80,6 +81,17 @@ export async function GET(request: NextRequest) {
         });
     }
 
+    // Every class the user can manage (primary + co-teacher; admins see all).
+    const allowedClassIds = await accessibleClassIds(user.id, user.role);
+    if (allowedClassIds.length === 0 && user.role !== 'admin') {
+      return NextResponse.json({
+        classes: [],
+        upcomingAssignments: [],
+        recentSubmissions: [],
+        stats: { activeStudents: 0, totalAssignments: 0, pendingReviews: 0 },
+      });
+    }
+
     // Get teacher's classes with student counts
     const teacherClasses = await db
       .select({
@@ -89,7 +101,7 @@ export async function GET(request: NextRequest) {
       })
       .from(classes)
       .leftJoin(classEnrollments, eq(classes.id, classEnrollments.classId))
-      .where(eq(classes.teacherId, user.id))
+      .where(user.role === 'admin' ? undefined : inArray(classes.id, allowedClassIds))
       .groupBy(classes.id, classes.name);
 
     const assignmentProgressRows = await db
@@ -116,7 +128,7 @@ export async function GET(request: NextRequest) {
         )
       )
       .where(and(
-        eq(assignments.teacherId, user.id),
+        user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
         inArray(assignments.status, ['published'])
       ))
       .groupBy(
@@ -132,11 +144,11 @@ export async function GET(request: NextRequest) {
         sql`COALESCE(${assignments.dueAt}, ${assignments.createdAt}) ASC`
       );
 
-    // Get active assignments count
+    // Get active assignments count (across every accessible class)
     const activeAssignmentsResult = await db
       .select({ count: count() })
       .from(assignments)
-      .where(eq(assignments.teacherId, user.id));
+      .where(user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds));
 
     // Get pending reviews count
     const pendingReviewsResult = await db
@@ -144,7 +156,7 @@ export async function GET(request: NextRequest) {
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
       .where(and(
-        eq(assignments.teacherId, user.id),
+        user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
         eq(recordings.status, 'pending')
       ));
 
@@ -171,7 +183,7 @@ export async function GET(request: NextRequest) {
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
       .innerJoin(students, eq(recordings.studentId, students.id))
       .innerJoin(users, eq(students.id, users.id))
-      .where(eq(assignments.teacherId, user.id))
+      .where(user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds))
       .orderBy(desc(recordings.submittedAt))
       .limit(10);
 

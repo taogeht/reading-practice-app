@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, teachers, classEnrollments, schoolMemberships } from '@/lib/db/schema';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -23,6 +24,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
     }
 
+    // Every class the user can manage (primary + co-teacher; admins see all).
+    const allowedIds = await accessibleClassIds(user.id, user.role);
+
     // Get classes for this teacher with student count
     const teacherClasses = await db
       .select({
@@ -37,7 +41,7 @@ export async function GET(request: NextRequest) {
       })
       .from(classes)
       .leftJoin(classEnrollments, eq(classes.id, classEnrollments.classId))
-      .where(eq(classes.teacherId, teacher.id))
+      .where(allowedIds.length > 0 ? inArray(classes.id, allowedIds) : eq(classes.id, '00000000-0000-0000-0000-000000000000'))
       .groupBy(classes.id)
       .orderBy(classes.name);
 

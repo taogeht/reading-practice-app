@@ -21,17 +21,9 @@ import {
   isoWeekNumber,
   isoWeekRange,
 } from '@/lib/recap/prefill';
+import { userCanManageClass } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
-
-async function ensureTeacherOwnsClass(userId: string, classId: string) {
-  const rows = await db
-    .select({ id: classes.id })
-    .from(classes)
-    .where(and(eq(classes.id, classId), eq(classes.teacherId, userId)))
-    .limit(1);
-  return rows.length > 0;
-}
 
 // Auto-creates a student_weekly_recap_entries row for every currently-enrolled
 // student in the class. Idempotent — uses ON CONFLICT DO NOTHING so it's safe
@@ -130,7 +122,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { classId } = await params;
-    if (user.role !== 'admin' && !(await ensureTeacherOwnsClass(user.id, classId))) {
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -213,7 +205,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { classId } = await params;
-    if (user.role !== 'admin' && !(await ensureTeacherOwnsClass(user.id, classId))) {
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -315,7 +307,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { classId } = await params;
-    if (user.role !== 'admin' && !(await ensureTeacherOwnsClass(user.id, classId))) {
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

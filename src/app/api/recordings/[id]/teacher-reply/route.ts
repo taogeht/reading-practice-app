@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { recordings, assignments } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { recordings } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
+import { userCanManageRecording } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -30,21 +31,22 @@ function pickExtension(mimeType: string | undefined): string {
   return sub.replace(/[^a-z0-9]/gi, '') || 'webm';
 }
 
+// Verifies the user can manage the recording's class (primary or co-teacher,
+// admins always pass). Returns the existing reply URL alongside so the
+// caller can clean up the prior R2 object if any.
 async function authorizeTeacher(recordingId: string, userId: string, role: string) {
+  if (!(await userCanManageRecording(userId, role, recordingId))) {
+    return { error: 'Forbidden', status: 403 } as const;
+  }
   const rows = await db
     .select({
       recordingId: recordings.id,
-      teacherId: assignments.teacherId,
       existingUrl: recordings.teacherReplyAudioUrl,
     })
     .from(recordings)
-    .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
     .where(eq(recordings.id, recordingId))
     .limit(1);
   if (!rows.length) return { error: 'Recording not found', status: 404 } as const;
-  if (role !== 'admin' && rows[0].teacherId !== userId) {
-    return { error: 'Forbidden', status: 403 } as const;
-  }
   return { row: rows[0] } as const;
 }
 

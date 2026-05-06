@@ -10,6 +10,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { validateBehaviorRatings } from '@/lib/recap/behaviors';
+import { userCanManageClass } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -35,15 +36,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { classId } = await params;
-
-    // Teacher owns the class (admins bypass).
-    if (user.role !== 'admin') {
-      const owns = await db
-        .select({ id: classes.id })
-        .from(classes)
-        .where(and(eq(classes.id, classId), eq(classes.teacherId, user.id)))
-        .limit(1);
-      if (!owns.length) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const url = new URL(request.url);

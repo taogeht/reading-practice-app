@@ -150,6 +150,26 @@ export const classEnrollments = pgTable(
   })
 );
 
+// Co-teachers attached to a class. The "primary" teacher stays in
+// classes.teacher_id (unchanged) — this table holds *additional* teachers who
+// share full control of the class. Membership is checked across both
+// classes.teacher_id and this table by lib/auth/class-access.
+export const classTeachers = pgTable(
+  'class_teachers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    teacherId: uuid('teacher_id').notNull().references(() => teachers.id, { onDelete: 'cascade' }),
+    addedBy: uuid('added_by').references(() => users.id, { onDelete: 'set null' }),
+    addedAt: timestamp('added_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    classIdIdx: index('idx_class_teachers_class_id').on(table.classId),
+    teacherIdIdx: index('idx_class_teachers_teacher_id').on(table.teacherId),
+    uniqueClassTeacher: uniqueIndex('unique_class_teacher').on(table.classId, table.teacherId),
+  })
+);
+
 export const assignments = pgTable(
   'assignments',
   {

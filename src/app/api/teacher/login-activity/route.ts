@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { session, users, students, classes, classEnrollments } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, and, desc, gte, inArray } from 'drizzle-orm';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -31,16 +32,21 @@ export async function GET(request: NextRequest) {
         const now = new Date();
         const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
 
-        // Teacher's classes (admin sees all). Excludes classes the teacher has
-        // marked as untracked (e.g. attendance-only kindergarten where students
-        // never log in).
+        // Every class the user can manage (primary + co-teacher; admins see
+        // all). Excludes classes marked untracked.
+        const allowedIds = await accessibleClassIds(user.id, user.role);
         const teacherClasses = await db
             .select({ id: classes.id, name: classes.name })
             .from(classes)
             .where(
                 user.role === 'admin'
                     ? eq(classes.trackLoginActivity, true)
-                    : and(eq(classes.teacherId, user.id), eq(classes.trackLoginActivity, true))
+                    : and(
+                          allowedIds.length > 0
+                              ? inArray(classes.id, allowedIds)
+                              : eq(classes.id, '00000000-0000-0000-0000-000000000000'),
+                          eq(classes.trackLoginActivity, true),
+                      )
             );
 
         if (teacherClasses.length === 0) {

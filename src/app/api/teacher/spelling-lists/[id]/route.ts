@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { spellingLists, spellingWords, classes } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, and, inArray } from 'drizzle-orm';
+import { userCanManageClass, accessibleClassIds } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -92,7 +93,7 @@ export async function PUT(
             return NextResponse.json({ error: 'List not found' }, { status: 404 });
         }
 
-        if (existingList.class.teacherId !== user.id && user.role !== 'admin') {
+        if (!(await userCanManageClass(user.id, user.role, existingList.classId))) {
             return NextResponse.json({ error: 'Unauthorized to edit this list' }, { status: 403 });
         }
 
@@ -101,17 +102,21 @@ export async function PUT(
             ? classIds
             : classId ? [classId] : [existingList.classId];
 
-        // Find all sibling lists (same title + teacher, representing shared copies)
-        const allTeacherLists = await db
-            .select({ id: spellingLists.id, classId: spellingLists.classId })
-            .from(spellingLists)
-            .innerJoin(classes, eq(classes.id, spellingLists.classId))
-            .where(
-                and(
-                    eq(spellingLists.title, existingList.title),
-                    eq(classes.teacherId, existingList.class.teacherId)
+        // Sibling lists with the same title across every class the editing
+        // user can manage (primary or co-teacher). Co-teachers see and update
+        // the same shared copies their primary would.
+        const myClassIds = await accessibleClassIds(user.id, user.role);
+        const allTeacherLists = myClassIds.length > 0
+            ? await db
+                .select({ id: spellingLists.id, classId: spellingLists.classId })
+                .from(spellingLists)
+                .where(
+                    and(
+                        eq(spellingLists.title, existingList.title),
+                        inArray(spellingLists.classId, myClassIds),
+                    )
                 )
-            );
+            : [];
 
         const existingClassIds = allTeacherLists.map(l => l.classId);
         const existingListMap = new Map(allTeacherLists.map(l => [l.classId, l.id]));

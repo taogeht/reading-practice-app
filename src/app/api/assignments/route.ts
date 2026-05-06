@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { accessibleClassIds, userCanManageClass } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -31,6 +32,10 @@ export async function GET(request: NextRequest) {
     if (!teacher) {
       return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
     }
+
+    // Across every class the user can manage (primary + co-teacher), pull
+    // assignments. Admins see all.
+    const allowedClassIds = await accessibleClassIds(user.id, user.role);
 
     // Get assignments for this teacher
     const teacherAssignments = await db
@@ -52,7 +57,7 @@ export async function GET(request: NextRequest) {
       .from(assignments)
       .leftJoin(stories, eq(assignments.storyId, stories.id))
       .leftJoin(classes, eq(assignments.classId, classes.id))
-      .where(eq(assignments.teacherId, teacher.id))
+      .where(allowedClassIds.length > 0 ? inArray(assignments.classId, allowedClassIds) : sql`false`)
       .orderBy(desc(assignments.createdAt));
 
     const progressRows = await db
@@ -78,7 +83,7 @@ export async function GET(request: NextRequest) {
           inArray(recordings.status, ['submitted', 'reviewed'])
         )
       )
-      .where(eq(assignments.teacherId, teacher.id))
+      .where(allowedClassIds.length > 0 ? inArray(assignments.classId, allowedClassIds) : sql`false`)
       .groupBy(
         assignments.id,
         classEnrollments.studentId,
@@ -233,18 +238,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
 
-    // Verify the class exists and belongs to this teacher
-    const classRecord = await db.query.classes.findFirst({
-      where: and(
-        eq(classes.id, classId),
-        eq(classes.teacherId, teacher.id)
-      ),
-    });
-
-    if (!classRecord) {
+    // Verify the user can manage this class (primary or co-teacher).
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
       return NextResponse.json({
         error: 'Class not found or you do not have permission to assign to this class'
       }, { status: 404 });
+    }
+    const classRecord = await db.query.classes.findFirst({
+      where: eq(classes.id, classId),
+    });
+    if (!classRecord) {
+      return NextResponse.json({ error: 'Class not found' }, { status: 404 });
     }
 
     // Create the assignment

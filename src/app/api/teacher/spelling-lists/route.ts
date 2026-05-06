@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { spellingLists, classes, spellingWords } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, desc, inArray } from 'drizzle-orm';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -15,17 +16,11 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get all classes for this teacher (admins see all classes)
-        const teacherClasses = await db
-            .select({ id: classes.id })
-            .from(classes)
-            .where(user.role === 'admin' ? undefined : eq(classes.teacherId, user.id));
-
-        if (teacherClasses.length === 0) {
+        // Every class the user can manage (primary or co-teacher; admins see all).
+        const classIds = await accessibleClassIds(user.id, user.role);
+        if (classIds.length === 0) {
             return NextResponse.json([]);
         }
-
-        const classIds = teacherClasses.map((c) => c.id);
 
         // Get all spelling lists for these classes (current week first)
         const lists = await db

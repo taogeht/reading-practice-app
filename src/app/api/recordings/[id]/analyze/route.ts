@@ -5,6 +5,7 @@ import { recordings, assignments } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { aiGradingEnabled, reanalyzeRecordingById } from '@/lib/grading/analyze-recording';
+import { userCanManageRecording } from '@/lib/auth/class-access';
 
 export const runtime = 'nodejs';
 
@@ -29,13 +30,14 @@ export async function POST(
     }
 
     const { id } = await params;
+    if (!(await userCanManageRecording(user.id, user.role, id))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    // Verify the recording belongs to an AI-graded assignment owned by this teacher
     const rows = await db
       .select({
         recordingId: recordings.id,
         recordingMode: assignments.recordingMode,
-        teacherId: assignments.teacherId,
       })
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
@@ -44,9 +46,6 @@ export async function POST(
 
     if (!rows.length) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
-    }
-    if (user.role !== 'admin' && rows[0].teacherId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (rows[0].recordingMode !== 'ai_graded') {
       return NextResponse.json(

@@ -5,6 +5,7 @@ import { recordings, assignments } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError, createRequestContext } from '@/lib/logger';
+import { userCanManageRecording } from '@/lib/auth/class-access';
 
 export async function GET(
   request: NextRequest,
@@ -17,20 +18,14 @@ export async function GET(
     }
 
     const { id } = await params;
+    if (!(await userCanManageRecording(user.id, user.role, id))) {
+      return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
+    }
 
-    // Get the recording and verify teacher has access to it
     const recording = await db
-      .select({
-        id: recordings.id,
-        audioUrl: recordings.audioUrl,
-        assignmentId: recordings.assignmentId,
-      })
+      .select({ id: recordings.id, audioUrl: recordings.audioUrl })
       .from(recordings)
-      .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
-      .where(and(
-        eq(recordings.id, id),
-        eq(assignments.teacherId, user.id)
-      ))
+      .where(eq(recordings.id, id))
       .limit(1);
 
     if (!recording.length) {
