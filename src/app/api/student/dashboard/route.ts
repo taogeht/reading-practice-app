@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
-import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -79,8 +79,11 @@ export async function GET(request: NextRequest) {
       .innerJoin(stories, eq(assignments.storyId, stories.id))
       .innerJoin(classes, eq(assignments.classId, classes.id))
       .innerJoin(classEnrollments, eq(classEnrollments.classId, classes.id))
+      // Archived assignments disappear from the student's view entirely —
+      // when the teacher hits "mark complete" they don't want students still
+      // seeing the row, regardless of whether the student finished it.
       .where(and(
-        inArray(assignments.status, ['published', 'archived']),
+        eq(assignments.status, 'published'),
         eq(classEnrollments.studentId, user.id)
       ))
       .orderBy(desc(assignments.assignedAt));

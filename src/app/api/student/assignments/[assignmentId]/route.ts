@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
-import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { normalizeTtsAudio } from '@/types/story';
 import { r2Client } from '@/lib/storage/r2-client';
@@ -78,9 +78,11 @@ export async function GET(
         eq(classEnrollments.classId, classes.id),
         eq(classEnrollments.studentId, user.id)
       ))
+      // Archived assignments are hidden from students entirely; a stale
+      // bookmark to one returns 404.
       .where(and(
         eq(assignments.id, assignmentId),
-        inArray(assignments.status, ['published', 'archived'])
+        eq(assignments.status, 'published')
       ))
       .limit(1);
 
