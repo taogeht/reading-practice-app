@@ -22,18 +22,41 @@ interface PhonicsBlock {
   chant?: string[];
 }
 
-// Plays the given word via the browser's built-in speech synthesis. We use
-// the en-US voice when available so chants/word lists sound consistent. No
-// audio files to host or generate — works offline once the voice is loaded.
-function speakWord(word: string) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  // Cancel any in-flight speech first so rapid taps don't queue up.
+// Plays the given word. If a Google TTS audio URL is available (the unit
+// loader pre-fetched it from /api/student/phonics), an HTMLAudioElement plays
+// the cached MP3 — same Journey-F voice in every classroom. If not, falls
+// back to the browser's Web Speech API so playback never silently fails.
+//
+// We keep a single Audio instance across calls so rapid taps stop the prior
+// playback instead of overlapping. The fallback path also cancels any
+// queued utterances before speaking.
+let cachedAudio: HTMLAudioElement | null = null;
+
+function speakWord(word: string, audioUrls?: Record<string, string>) {
+  const url = audioUrls?.[word];
+  if (typeof window === 'undefined') return;
+
+  if (url) {
+    if (!cachedAudio) cachedAudio = new Audio();
+    try {
+      cachedAudio.pause();
+      cachedAudio.src = url;
+      cachedAudio.currentTime = 0;
+      void cachedAudio.play().catch(() => fallbackSpeak(word));
+      return;
+    } catch {
+      // Fall through to Web Speech.
+    }
+  }
+  fallbackSpeak(word);
+}
+
+function fallbackSpeak(word: string) {
+  if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(word);
   utter.lang = 'en-US';
   utter.rate = 0.85;
-  // Prefer a female en-US voice — sounds more like the target audience's
-  // teacher in most browsers' default voice list.
   const voices = window.speechSynthesis.getVoices();
   const preferred =
     voices.find((v) => v.lang === 'en-US' && /female|samantha|google/i.test(v.name)) ??
@@ -60,20 +83,21 @@ function highlightRhyme(word: string, family: string): React.ReactNode {
 interface FlipCardProps {
   word: PhonicsWord;
   family: string;
+  audioUrls: Record<string, string>;
 }
 
-function FlipCard({ word, family }: FlipCardProps) {
+function FlipCard({ word, family, audioUrls }: FlipCardProps) {
   const [flipped, setFlipped] = useState(false);
 
   const handleClick = () => {
     const next = !flipped;
     setFlipped(next);
-    if (next) speakWord(word.word);
+    if (next) speakWord(word.word, audioUrls);
   };
 
   const replay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    speakWord(word.word);
+    speakWord(word.word, audioUrls);
   };
 
   return (
@@ -136,6 +160,7 @@ export function PhonicsDeck() {
   const [phonics, setPhonics] = useState<PhonicsBlock | null>(null);
   const [unit, setUnit] = useState<number | null>(null);
   const [availableUnits, setAvailableUnits] = useState<AvailableUnit[]>([]);
+  const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Voices on some browsers (especially Chrome) load asynchronously after
@@ -171,6 +196,7 @@ export function PhonicsDeck() {
       setPhonics(data.phonics);
       setUnit(data.unit);
       setAvailableUnits(data.availableUnits ?? []);
+      setAudioUrls(data.audioUrls ?? {});
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     } finally {
@@ -294,7 +320,11 @@ export function PhonicsDeck() {
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => family.words.forEach((w, i) => setTimeout(() => speakWord(w.word), i * 700))}
+              onClick={() =>
+                family.words.forEach((w, i) =>
+                  setTimeout(() => speakWord(w.word, audioUrls), i * 900),
+                )
+              }
               className="h-7 text-xs gap-1 text-amber-700 hover:text-amber-900"
               title="Hear all words in this family"
             >
@@ -304,7 +334,12 @@ export function PhonicsDeck() {
           </div>
           <div className="grid grid-cols-3 gap-3">
             {family.words.map((w) => (
-              <FlipCard key={w.word} word={w} family={family.family} />
+              <FlipCard
+                key={w.word}
+                word={w}
+                family={family.family}
+                audioUrls={audioUrls}
+              />
             ))}
           </div>
         </div>
@@ -323,7 +358,7 @@ export function PhonicsDeck() {
                 variant="outline"
                 onClick={() =>
                   phonics.chant!.forEach((line, i) =>
-                    setTimeout(() => speakWord(line), i * 1400),
+                    setTimeout(() => speakWord(line, audioUrls), i * 1400),
                   )
                 }
                 className="h-7 text-xs"

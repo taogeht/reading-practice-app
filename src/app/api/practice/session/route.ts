@@ -9,6 +9,7 @@ import {
   practiceQuestions,
 } from '@/lib/db/schema';
 import { isAvailablePracticeUnit } from '@/lib/practice/units';
+import { ensurePhonicsAudioBatch } from '@/lib/tts/phonics-audio';
 
 export const runtime = 'nodejs';
 
@@ -242,6 +243,20 @@ export async function GET(request: NextRequest) {
     .set({ timesServed: sql`${practiceQuestions.timesServed} + 1` })
     .where(inArray(practiceQuestions.id, selectedIds));
 
+  // Pre-generate (or fetch from R2 cache) Google TTS audio for every
+  // phonics-listen question's word so the student renderer can play the
+  // same Journey-F voice as the deck. Cached words return instantly; new
+  // words add ~200–600ms each, parallelized.
+  const listenWords = finalOrder
+    .filter((c) => {
+      if (c.q.questionType !== 'phonics') return false;
+      const p = c.q.payload as { kind?: string; audioWord?: string } | null;
+      return p?.kind === 'listen' && typeof p.audioWord === 'string';
+    })
+    .map((c) => (c.q.payload as { audioWord: string }).audioWord);
+  const listenAudioUrls =
+    listenWords.length > 0 ? await ensurePhonicsAudioBatch(listenWords) : {};
+
   // Do NOT return correctAnswer to the client — grading happens server-side.
   // For sentence_builder, prompt IS the answer, so omit it from the response and
   // return shuffled tokens instead of choices. For phonics, expose `payload`
@@ -257,6 +272,12 @@ export async function GET(request: NextRequest) {
         tokens: shuffle(tokens),
       };
     }
+    let payload = c.q.questionType === 'phonics' ? c.q.payload : null;
+    if (payload && (payload as { kind?: string }).kind === 'listen') {
+      const audioWord = (payload as { audioWord?: string }).audioWord;
+      const audioUrl = audioWord ? listenAudioUrls[audioWord] ?? null : null;
+      payload = { ...(payload as Record<string, unknown>), audioUrl };
+    }
     return {
       id: c.q.id,
       questionType: c.q.questionType,
@@ -265,7 +286,7 @@ export async function GET(request: NextRequest) {
       choices: shuffle([c.q.correctAnswer, ...c.q.distractors]),
       // Only forward phonics payload — other types' payloads are
       // server-side bookkeeping the client doesn't need.
-      payload: c.q.questionType === 'phonics' ? c.q.payload : null,
+      payload,
     };
   });
 

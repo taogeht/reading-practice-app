@@ -7,6 +7,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { logError } from '@/lib/logger';
 import { DEFAULT_BOOK_SLUG } from '@/lib/practice/books';
+import { ensurePhonicsAudioBatch } from '@/lib/tts/phonics-audio';
 
 export const runtime = 'nodejs';
 
@@ -119,13 +120,25 @@ export async function GET(request: NextRequest) {
       const contents = await readFile(jsonPath, 'utf-8');
       curriculum = JSON.parse(contents);
     } catch {
-      return NextResponse.json({ unit, phonics: null, availableUnits });
+      return NextResponse.json({ unit, phonics: null, availableUnits, audioUrls: {} });
     }
+
+    // Pre-generate (or fetch from R2 cache) the Google TTS audio for every
+    // phonics word — and every chant line — in this unit. Cached entries
+    // return in milliseconds; uncached ones add ~200–600ms each
+    // (parallelized). Failures silently drop from the map and the client
+    // falls back to Web Speech.
+    const wordsInUnit = (curriculum.phonics?.word_families ?? []).flatMap((f) =>
+      f.words.map((w) => w.word),
+    );
+    const chantLines = curriculum.phonics?.chant ?? [];
+    const audioUrls = await ensurePhonicsAudioBatch([...wordsInUnit, ...chantLines]);
 
     return NextResponse.json({
       unit,
       phonics: curriculum.phonics ?? null,
       availableUnits,
+      audioUrls,
     });
   } catch (error) {
     logError(error, 'api/student/phonics');

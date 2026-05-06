@@ -11,9 +11,13 @@ type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder' | 'phon
 
 // `kind` is server-set on phonics questions; the renderer uses it to decide
 // whether to show a Play button (listen) vs a plain MCQ (rhyme / sound).
+// `audioUrl` is added by the session route for listen-kind questions —
+// points at the Google TTS Journey-F MP3 cached in R2. Falls back to Web
+// Speech when missing.
 type PhonicsPayload = {
   kind?: 'rhyme' | 'sound' | 'listen';
   audioWord?: string;
+  audioUrl?: string | null;
   targetEmoji?: string | null;
   correctEmoji?: string | null;
   sound?: string;
@@ -33,10 +37,31 @@ type Question = {
   payload?: PhonicsPayload | null;
 };
 
-// Speaks the given word using the browser's built-in speech synthesis.
-// No audio files needed; same approach as the phonics flashcard deck.
-function speakWord(word: string) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+// Plays a phonics-listen audio clip. Prefers the cached Google TTS Journey-F
+// MP3 (passed in as `url` from the question payload) for a consistent voice
+// across every device. Falls back to the browser's Web Speech API if the
+// URL is missing or playback fails.
+let cachedAudioElement: HTMLAudioElement | null = null;
+
+function speakWord(word: string, url?: string | null) {
+  if (typeof window === 'undefined') return;
+  if (url) {
+    if (!cachedAudioElement) cachedAudioElement = new Audio();
+    try {
+      cachedAudioElement.pause();
+      cachedAudioElement.src = url;
+      cachedAudioElement.currentTime = 0;
+      void cachedAudioElement.play().catch(() => fallbackSpeak(word));
+      return;
+    } catch {
+      // Fall through.
+    }
+  }
+  fallbackSpeak(word);
+}
+
+function fallbackSpeak(word: string) {
+  if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(word);
   utter.lang = 'en-US';
@@ -103,7 +128,7 @@ export function PracticeSession() {
     const payload = q.payload as PhonicsPayload | null | undefined;
     if (payload?.kind === 'listen' && payload.audioWord) {
       // Small delay so voices have time to load on first question.
-      const t = setTimeout(() => speakWord(payload.audioWord!), 250);
+      const t = setTimeout(() => speakWord(payload.audioWord!, payload.audioUrl), 250);
       return () => clearTimeout(t);
     }
   }, [view]);
@@ -390,7 +415,7 @@ export function PracticeSession() {
               <div className="flex flex-col items-center gap-3 py-4">
                 <button
                   type="button"
-                  onClick={() => speakWord(phonics.audioWord!)}
+                  onClick={() => speakWord(phonics.audioWord!, phonics.audioUrl)}
                   className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-amber-100 hover:bg-amber-200 active:scale-95 transition border-4 border-amber-300 flex items-center justify-center shadow-md"
                   aria-label="Hear the word"
                 >
