@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Pull the unit's active question pool. Bounded — units are sized in tens, not thousands.
-  const allQuestions: QuestionRow[] = await db
+  const allQuestionsRaw: QuestionRow[] = await db
     .select({
       id: practiceQuestions.id,
       questionType: practiceQuestions.questionType,
@@ -106,6 +106,14 @@ export async function GET(request: NextRequest) {
     })
     .from(practiceQuestions)
     .where(and(eq(practiceQuestions.unit, unit), eq(practiceQuestions.active, true)));
+
+  // Phonics questions are gated behind a feature flag while the deck UI is
+  // still being polished. Until enabled, filter them out so any rows a
+  // teacher generated for testing don't reach students mid-session.
+  const phonicsEnabled = process.env.NEXT_PUBLIC_ENABLE_STUDENT_PHONICS === 'true';
+  const allQuestions = phonicsEnabled
+    ? allQuestionsRaw
+    : allQuestionsRaw.filter((q) => q.questionType !== 'phonics');
 
   if (allQuestions.length === 0) {
     return NextResponse.json(

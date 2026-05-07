@@ -626,33 +626,43 @@ export default function StudentDashboardPage() {
           </TabsContent>
 
           <TabsContent value="practice" className="mt-6 space-y-4">
-            {/* Quiz keeps the existing per-unit MCQ flow; Phonics adds a
-                flip-card deck for the unit's CVC sound families. */}
-            <Tabs defaultValue="quiz" className="w-full">
-              <TabsList className="grid grid-cols-2 w-full max-w-sm bg-white/60 border border-gray-200">
-                <TabsTrigger
-                  value="quiz"
-                  className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 gap-2"
-                >
-                  <Trophy className="w-4 h-4" />
-                  Quiz
-                </TabsTrigger>
-                <TabsTrigger
-                  value="phonics"
-                  className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 gap-2"
-                >
-                  <SmilePlus className="w-4 h-4" />
-                  Phonics
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="quiz" className="mt-4 space-y-6">
+            {/* Phonics deck is gated behind NEXT_PUBLIC_ENABLE_STUDENT_PHONICS
+                until it's polished — when off, the Practice tab renders the
+                original Quiz flow directly with no sub-tabs. Flip the flag
+                on locally to keep iterating on the deck without exposing it
+                to students. */}
+            {process.env.NEXT_PUBLIC_ENABLE_STUDENT_PHONICS === 'true' ? (
+              <Tabs defaultValue="quiz" className="w-full">
+                <TabsList className="grid grid-cols-2 w-full max-w-sm bg-white/60 border border-gray-200">
+                  <TabsTrigger
+                    value="quiz"
+                    className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 gap-2"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    Quiz
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="phonics"
+                    className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 gap-2"
+                  >
+                    <SmilePlus className="w-4 h-4" />
+                    Phonics
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="quiz" className="mt-4 space-y-6">
+                  <PracticeStatsCard />
+                  <PracticeSession />
+                </TabsContent>
+                <TabsContent value="phonics" className="mt-4">
+                  <PhonicsDeck />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="space-y-6">
                 <PracticeStatsCard />
                 <PracticeSession />
-              </TabsContent>
-              <TabsContent value="phonics" className="mt-4">
-                <PhonicsDeck />
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
