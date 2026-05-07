@@ -165,6 +165,7 @@ export async function GET(request: NextRequest) {
         transcript: recordings.transcript,
         analysisJson: recordings.analysisJson,
         recordingMode: assignments.recordingMode,
+        maxAttempts: assignments.maxAttempts,
         storyContent: stories.content,
         teacherReplyAudioUrl: recordings.teacherReplyAudioUrl,
         teacherReplyDurationSeconds: recordings.teacherReplyDurationSeconds,

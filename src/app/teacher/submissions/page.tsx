@@ -5,12 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Play, Pause, Volume2, FileText, Calendar, User, Clock, Star, AlertCircle, Trash2, Users, Sparkles } from "lucide-react";
+import { ArrowLeft, Volume2, FileText, Calendar, User, Clock, Star, Trash2, Users, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AIAnalysisPanel } from "@/components/grading/ai-analysis-panel";
 import { TeacherReplyRecorder } from "@/components/recordings/teacher-reply-recorder";
+import { RecordingAudioPlayer } from "@/components/recordings/recording-audio-player";
 
 interface Recording {
   id: string;
@@ -34,8 +34,24 @@ interface Recording {
   transcript: string | null;
   analysisJson: Record<string, unknown> | null;
   recordingMode: 'teacher_review' | 'ai_graded';
+  maxAttempts: number | null;
   teacherReplyAudioUrl: string | null;
   teacherReplyDurationSeconds: number | null;
+}
+
+interface AttemptGroup {
+  key: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  studentId: string;
+  studentFirstName: string;
+  studentLastName: string;
+  classId: string;
+  className: string;
+  recordingMode: 'teacher_review' | 'ai_graded';
+  maxAttempts: number;
+  attempts: Recording[];
+  latestSubmittedAt: string;
 }
 
 export default function TeacherSubmissionsPage() {
@@ -43,10 +59,6 @@ export default function TeacherSubmissionsPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const [audioErrors, setAudioErrors] = useState<Set<string>>(new Set());
-  const [presignedUrls, setPresignedUrls] = useState<Map<string, string>>(new Map());
-  const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'flagged'>('all');
   const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState<string>('');
@@ -76,78 +88,14 @@ export default function TeacherSubmissionsPage() {
     }
   };
 
-  const getPresignedUrl = async (recordingId: string): Promise<string | null> => {
+  const fetchPresignedUrl = async (recordingId: string): Promise<string | null> => {
     try {
-      setLoadingAudio(prev => new Set([...prev, recordingId]));
-
       const response = await fetch(`/api/recordings/${recordingId}/download-url`);
-      if (!response.ok) {
-        throw new Error('Failed to get download URL');
-      }
-
+      if (!response.ok) throw new Error('Failed to get download URL');
       const { downloadUrl } = await response.json();
-      setPresignedUrls(prev => new Map(prev).set(recordingId, downloadUrl));
       return downloadUrl;
-    } catch (error) {
-      setAudioErrors(prev => new Set([...prev, recordingId]));
+    } catch {
       return null;
-    } finally {
-      setLoadingAudio(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(recordingId);
-        return newSet;
-      });
-    }
-  };
-
-  const playAudio = async (recordingId: string) => {
-    if (playingAudio === recordingId) {
-      // Pause current audio
-      const audio = document.getElementById(`audio-${recordingId}`) as HTMLAudioElement;
-      if (audio) {
-        audio.pause();
-      }
-      setPlayingAudio(null);
-      return;
-    }
-
-    // Stop any currently playing audio
-    if (playingAudio) {
-      const currentAudio = document.getElementById(`audio-${playingAudio}`) as HTMLAudioElement;
-      if (currentAudio) {
-        currentAudio.pause();
-      }
-    }
-
-    let audioUrl = presignedUrls.get(recordingId);
-
-    if (!audioUrl) {
-      audioUrl = await getPresignedUrl(recordingId);
-      if (!audioUrl) {
-        alert('Unable to load recording. Please try again.');
-        return;
-      }
-    }
-
-    // Get the audio element and update its source
-    const audio = document.getElementById(`audio-${recordingId}`) as HTMLAudioElement;
-    if (audio) {
-      setPlayingAudio(recordingId);
-
-      // Update audio source with presigned URL
-      const sources = audio.querySelectorAll('source');
-      sources.forEach(source => {
-        source.src = audioUrl;
-      });
-
-      audio.load(); // Reload the audio element with new source
-
-      try {
-        await audio.play();
-      } catch (error) {
-        setPlayingAudio(null);
-        setAudioErrors(prev => new Set([...prev, recordingId]));
-      }
     }
   };
 
@@ -179,7 +127,6 @@ export default function TeacherSubmissionsPage() {
         throw new Error('Failed to submit feedback');
       }
 
-      // Update the recording in local state
       setRecordings(prev =>
         prev.map(recording =>
           recording.id === recordingId
@@ -188,7 +135,6 @@ export default function TeacherSubmissionsPage() {
         )
       );
 
-      // Reset feedback form
       setFeedbackMode(null);
       setFeedbackText('');
       setSelectedRating(null);
@@ -234,8 +180,8 @@ export default function TeacherSubmissionsPage() {
     }
   };
 
-  const deleteRecording = async (recordingId: string, studentName: string) => {
-    const confirmed = confirm(`Are you sure you want to delete the recording by ${studentName}? This action cannot be undone.`);
+  const deleteRecording = async (recordingId: string, studentName: string, attemptNumber: number) => {
+    const confirmed = confirm(`Delete attempt #${attemptNumber} by ${studentName}? This cannot be undone.`);
     if (!confirmed) return;
 
     try {
@@ -247,9 +193,7 @@ export default function TeacherSubmissionsPage() {
         throw new Error('Failed to delete recording');
       }
 
-      // Refresh recordings list
       await fetchRecordings();
-      alert('Recording deleted successfully');
     } catch (error) {
       console.error('Error deleting recording:', error);
       alert('Failed to delete recording. Please try again.');
@@ -269,7 +213,6 @@ export default function TeacherSubmissionsPage() {
         throw new Error('Failed to delete recordings');
       }
 
-      // Refresh recordings list
       await fetchRecordings();
       alert(`All recordings from class "${className}" have been deleted`);
     } catch (error) {
@@ -278,24 +221,60 @@ export default function TeacherSubmissionsPage() {
     }
   };
 
-  const filteredRecordings = recordings.filter(recording => {
-    if (filter === 'all') return true;
-    return recording.status === filter;
-  });
-
-  // Group recordings by class
-  const recordingsByClass = filteredRecordings.reduce((acc, recording) => {
-    const classKey = recording.classId;
-    if (!acc[classKey]) {
-      acc[classKey] = {
-        className: recording.className,
-        classId: recording.classId,
-        recordings: []
-      };
+  // Build one group per (assignment × student), keeping all attempts together.
+  // A group is included if ANY of its attempts matches the active filter.
+  const groupsByClass = (() => {
+    const groupMap = new Map<string, AttemptGroup>();
+    for (const r of recordings) {
+      const key = `${r.assignmentId}__${r.studentId}`;
+      let group = groupMap.get(key);
+      if (!group) {
+        group = {
+          key,
+          assignmentId: r.assignmentId,
+          assignmentTitle: r.assignmentTitle,
+          studentId: r.studentId,
+          studentFirstName: r.studentFirstName,
+          studentLastName: r.studentLastName,
+          classId: r.classId,
+          className: r.className,
+          recordingMode: r.recordingMode,
+          maxAttempts: r.maxAttempts ?? 3,
+          attempts: [],
+          latestSubmittedAt: r.submittedAt,
+        };
+        groupMap.set(key, group);
+      }
+      group.attempts.push(r);
+      if (new Date(r.submittedAt) > new Date(group.latestSubmittedAt)) {
+        group.latestSubmittedAt = r.submittedAt;
+      }
     }
-    acc[classKey].recordings.push(recording);
-    return acc;
-  }, {} as Record<string, { className: string; classId: string; recordings: Recording[] }>);
+
+    const filteredGroups: AttemptGroup[] = [];
+    for (const group of groupMap.values()) {
+      group.attempts.sort((a, b) => (a.attemptNumber || 0) - (b.attemptNumber || 0));
+      const matchesFilter =
+        filter === 'all' || group.attempts.some(a => a.status === filter);
+      if (matchesFilter) filteredGroups.push(group);
+    }
+
+    // Group by class
+    const byClass: Record<string, { className: string; classId: string; groups: AttemptGroup[] }> = {};
+    for (const g of filteredGroups) {
+      if (!byClass[g.classId]) {
+        byClass[g.classId] = { className: g.className, classId: g.classId, groups: [] };
+      }
+      byClass[g.classId].groups.push(g);
+    }
+    // Sort groups within each class by latest submission desc
+    for (const bucket of Object.values(byClass)) {
+      bucket.groups.sort(
+        (a, b) => new Date(b.latestSubmittedAt).getTime() - new Date(a.latestSubmittedAt).getTime()
+      );
+    }
+    return byClass;
+  })();
 
   const pendingCount = recordings.filter(r => r.status === 'pending').length;
   const reviewedCount = recordings.filter(r => r.status === 'reviewed').length;
@@ -311,7 +290,6 @@ export default function TeacherSubmissionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -332,7 +310,6 @@ export default function TeacherSubmissionsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card
             className={`cursor-pointer transition-colors ${filter === 'all' ? 'ring-2 ring-blue-500' : 'hover:bg-gray-50'}`}
@@ -380,7 +357,7 @@ export default function TeacherSubmissionsPage() {
           </Card>
         )}
 
-        {Object.keys(recordingsByClass).length === 0 ? (
+        {Object.keys(groupsByClass).length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
@@ -397,16 +374,15 @@ export default function TeacherSubmissionsPage() {
           </Card>
         ) : (
           <div className="space-y-8">
-            {Object.values(recordingsByClass).map(({ className, classId, recordings }) => (
+            {Object.values(groupsByClass).map(({ className, classId, groups }) => (
               <div key={classId} className="space-y-4">
-                {/* Class Header */}
                 <div className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm">
                   <div className="flex items-center gap-3">
                     <Users className="w-5 h-5 text-blue-600" />
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">{className}</h2>
                       <p className="text-sm text-gray-600">
-                        {recordings.length} submission{recordings.length !== 1 ? 's' : ''}
+                        {groups.length} student submission{groups.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
@@ -421,245 +397,219 @@ export default function TeacherSubmissionsPage() {
                   </Button>
                 </div>
 
-                {/* Class Recordings */}
                 <div className="space-y-4 ml-4">
-                  {recordings.map((recording) => (
-                    <Card key={recording.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2 flex-wrap">
-                              <CardTitle className="text-lg">{recording.assignmentTitle}</CardTitle>
-                              <Badge className={getStatusColor(recording.status)}>
-                                {recording.status}
-                              </Badge>
-                              {recording.recordingMode === 'ai_graded' && (
-                                <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-300 flex items-center gap-1">
-                                  <Sparkles className="w-3 h-3" />
-                                  AI-graded
-                                </Badge>
-                              )}
-                              {recording.recordingMode === 'ai_graded' && recording.letterGrade && (
-                                <Badge variant="outline" className="flex items-center gap-1 font-semibold">
-                                  {recording.letterGrade}
-                                </Badge>
-                              )}
-                              {recording.accuracyScore && (
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                  <Star className="w-3 h-3" />
-                                  {recording.accuracyScore}%
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span className="flex items-center gap-1">
-                                <User className="w-4 h-4" />
-                                {recording.studentFirstName} {recording.studentLastName}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {format(new Date(recording.submittedAt), 'MMM d, yyyy \'at\' h:mm a')}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                Attempt #{recording.attemptNumber}
-                              </span>
-                              {recording.audioDurationSeconds && (
-                                <span className="flex items-center gap-1">
-                                  <Volume2 className="w-4 h-4" />
-                                  {Math.floor(recording.audioDurationSeconds / 60)}:{(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteRecording(recording.id, `${recording.studentFirstName} ${recording.studentLastName}`)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => playAudio(recording.id)}
-                              disabled={loadingAudio.has(recording.id)}
-                            >
-                              {playingAudio === recording.id ? (
-                                <Pause className="w-4 h-4 mr-1" />
-                              ) : loadingAudio.has(recording.id) ? (
-                                <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                              ) : (
-                                <Play className="w-4 h-4 mr-1" />
-                              )}
-                              {loadingAudio.has(recording.id) ? 'Loading...' :
-                               playingAudio === recording.id ? 'Pause' : 'Listen to Recording'}
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                let downloadUrl = presignedUrls.get(recording.id);
-                                if (!downloadUrl) {
-                                  downloadUrl = await getPresignedUrl(recording.id);
-                                }
-                                if (downloadUrl) {
-                                  window.open(downloadUrl, '_blank');
-                                } else {
-                                  alert('Unable to generate download link. Please try again.');
-                                }
-                              }}
-                              title="Download recording"
-                              disabled={loadingAudio.has(recording.id)}
-                            >
-                              📥 Download
-                            </Button>
-
-                            <audio
-                              id={`audio-${recording.id}`}
-                              onEnded={() => setPlayingAudio(null)}
-                              onPause={() => setPlayingAudio(null)}
-                              onError={() => {
-                                setPlayingAudio(null);
-                                setAudioErrors(prev => new Set([...prev, recording.id]));
-                              }}
-                              onLoadedData={() => {
-                                // Audio loaded successfully
-                              }}
-                              onLoadStart={() => {
-                                // Audio loading started
-                              }}
-                              preload="none"
-                              controls={false}
-                              style={{ display: 'none' }}
-                            >
-                              <source type="audio/webm; codecs=opus" />
-                              <source type="audio/webm" />
-                              <source type="audio/mp4" />
-                              <source type="audio/mpeg" />
-                              Your browser does not support the audio element.
-                            </audio>
-                          </div>
-
-                          <div className="flex gap-2">
-                            {feedbackMode === recording.id ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  onClick={() => submitFeedback(recording.id)}
-                                  disabled={submittingFeedback || !feedbackText.trim()}
-                                >
-                                  {submittingFeedback ? 'Saving...' : 'Save Feedback'}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={cancelFeedback}
-                                  disabled={submittingFeedback}
-                                >
-                                  Cancel
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
-                                >
-                                  {recording.teacherFeedback ? 'Edit Feedback' : 'Add Feedback'}
-                                </Button>
-                                {recording.status === 'pending' && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
-                                  >
-                                    Provide Feedback
-                                  </Button>
+                  {groups.map((group) => {
+                    const studentName = `${group.studentFirstName} ${group.studentLastName}`;
+                    const visibleAttempts =
+                      filter === 'all'
+                        ? group.attempts
+                        : group.attempts.filter(a => a.status === filter);
+                    return (
+                      <Card key={group.key} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                <CardTitle className="text-lg">{group.assignmentTitle}</CardTitle>
+                                {group.recordingMode === 'ai_graded' && (
+                                  <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-300 flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" />
+                                    AI-graded
+                                  </Badge>
                                 )}
-                              </>
-                            )}
+                                <Badge variant="outline" className="font-medium">
+                                  {group.attempts.length} of {group.maxAttempts} attempt{group.maxAttempts !== 1 ? 's' : ''} used
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                                <span className="flex items-center gap-1">
+                                  <User className="w-4 h-4" />
+                                  {studentName}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  Latest: {format(new Date(group.latestSubmittedAt), 'MMM d, yyyy \'at\' h:mm a')}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-
-                        {recording.recordingMode === 'ai_graded' && (
-                          <AIAnalysisPanel
-                            recordingId={recording.id}
-                            letterGrade={recording.letterGrade}
-                            accuracyScore={recording.accuracyScore !== null ? Number(recording.accuracyScore) : null}
-                            wpmScore={recording.wpmScore !== null ? Number(recording.wpmScore) : null}
-                            transcript={recording.transcript}
-                            analysisJson={recording.analysisJson as never}
-                            onReanalyzed={fetchRecordings}
-                          />
-                        )}
-
-                        {feedbackMode === recording.id && (
-                          <div className="mt-4 p-4 bg-gray-50 border rounded-lg space-y-3">
-                            <label className="block text-sm font-medium text-gray-700">
-                              Quick Rating
-                            </label>
-                            <div className="flex gap-2 flex-wrap">
-                              {QUICK_RATINGS.map((rating) => (
-                                <button
-                                  key={rating.emoji}
-                                  type="button"
-                                  onClick={() => selectRating(rating)}
-                                  disabled={submittingFeedback}
-                                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                                    selectedRating === rating.emoji
-                                      ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200'
-                                      : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-700'
-                                  }`}
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {visibleAttempts.map((recording, idx) => (
+                            <div
+                              key={recording.id}
+                              className={`rounded-lg border bg-gray-50/40 p-4 space-y-3 ${
+                                idx > 0 ? 'mt-2' : ''
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3 flex-wrap">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="outline" className="font-semibold">
+                                    Attempt #{recording.attemptNumber}
+                                  </Badge>
+                                  <Badge className={getStatusColor(recording.status)}>
+                                    {recording.status}
+                                  </Badge>
+                                  {recording.letterGrade && (
+                                    <Badge variant="outline" className="font-semibold">
+                                      Grade: {recording.letterGrade}
+                                    </Badge>
+                                  )}
+                                  {recording.accuracyScore && (
+                                    <Badge variant="outline" className="flex items-center gap-1">
+                                      <Star className="w-3 h-3" />
+                                      {recording.accuracyScore}%
+                                    </Badge>
+                                  )}
+                                  <span className="flex items-center gap-1 text-xs text-gray-600">
+                                    <Calendar className="w-3 h-3" />
+                                    {format(new Date(recording.submittedAt), 'MMM d, h:mm a')}
+                                  </span>
+                                  {recording.audioDurationSeconds && (
+                                    <span className="flex items-center gap-1 text-xs text-gray-600">
+                                      <Volume2 className="w-3 h-3" />
+                                      {Math.floor(recording.audioDurationSeconds / 60)}:{(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
+                                    </span>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteRecording(recording.id, studentName, recording.attemptNumber)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title={`Delete attempt #${recording.attemptNumber}`}
                                 >
-                                  <span className="text-lg">{rating.emoji}</span>
-                                  {rating.label}
-                                </button>
-                              ))}
-                            </div>
-                            <div>
-                              <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                Message <span className="font-normal text-gray-400">(edit or write your own)</span>
-                              </label>
-                              <Textarea
-                                id={`feedback-${recording.id}`}
-                                value={feedbackText}
-                                onChange={(e) => setFeedbackText(e.target.value)}
-                                placeholder="Pick a rating above or type your own feedback..."
-                                rows={3}
-                                disabled={submittingFeedback}
-                                className="w-full"
-                              />
-                            </div>
-                            <TeacherReplyRecorder
-                              recordingId={recording.id}
-                              initialAudioUrl={recording.teacherReplyAudioUrl}
-                              initialDurationSeconds={recording.teacherReplyDurationSeconds}
-                              onChange={fetchRecordings}
-                              disabled={submittingFeedback}
-                            />
-                            <p className="text-xs text-gray-500">
-                              This feedback will be visible to the student and will mark the recording as reviewed.
-                            </p>
-                          </div>
-                        )}
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
 
-                        {recording.teacherFeedback && feedbackMode !== recording.id && (
-                          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h4 className="font-medium text-blue-800 mb-1">Your Feedback:</h4>
-                            <p className="text-blue-700 text-sm">{recording.teacherFeedback}</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                              <div className="flex items-center gap-3 flex-wrap">
+                                <div className="flex-1 min-w-[280px]">
+                                  <RecordingAudioPlayer
+                                    recordingId={recording.id}
+                                    fallbackDurationSeconds={recording.audioDurationSeconds}
+                                  />
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    const downloadUrl = await fetchPresignedUrl(recording.id);
+                                    if (downloadUrl) {
+                                      window.open(downloadUrl, '_blank');
+                                    } else {
+                                      alert('Unable to generate download link. Please try again.');
+                                    }
+                                  }}
+                                  title="Download recording"
+                                >
+                                  📥 Download
+                                </Button>
+                                <div className="flex gap-2">
+                                  {feedbackMode === recording.id ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => submitFeedback(recording.id)}
+                                        disabled={submittingFeedback || !feedbackText.trim()}
+                                      >
+                                        {submittingFeedback ? 'Saving...' : 'Save Feedback'}
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={cancelFeedback}
+                                        disabled={submittingFeedback}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
+                                    >
+                                      {recording.teacherFeedback ? 'Edit Feedback' : 'Add Feedback'}
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {recording.recordingMode === 'ai_graded' && (
+                                <AIAnalysisPanel
+                                  recordingId={recording.id}
+                                  letterGrade={recording.letterGrade}
+                                  accuracyScore={recording.accuracyScore !== null ? Number(recording.accuracyScore) : null}
+                                  wpmScore={recording.wpmScore !== null ? Number(recording.wpmScore) : null}
+                                  transcript={recording.transcript}
+                                  analysisJson={recording.analysisJson as never}
+                                  onReanalyzed={fetchRecordings}
+                                />
+                              )}
+
+                              {feedbackMode === recording.id && (
+                                <div className="p-4 bg-white border rounded-lg space-y-3">
+                                  <label className="block text-sm font-medium text-gray-700">
+                                    Quick Rating
+                                  </label>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {QUICK_RATINGS.map((rating) => (
+                                      <button
+                                        key={rating.emoji}
+                                        type="button"
+                                        onClick={() => selectRating(rating)}
+                                        disabled={submittingFeedback}
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                                          selectedRating === rating.emoji
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200'
+                                            : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-700'
+                                        }`}
+                                      >
+                                        <span className="text-lg">{rating.emoji}</span>
+                                        {rating.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <div>
+                                    <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-1">
+                                      Message <span className="font-normal text-gray-400">(edit or write your own)</span>
+                                    </label>
+                                    <Textarea
+                                      id={`feedback-${recording.id}`}
+                                      value={feedbackText}
+                                      onChange={(e) => setFeedbackText(e.target.value)}
+                                      placeholder="Pick a rating above or type your own feedback..."
+                                      rows={3}
+                                      disabled={submittingFeedback}
+                                      className="w-full"
+                                    />
+                                  </div>
+                                  <TeacherReplyRecorder
+                                    recordingId={recording.id}
+                                    initialAudioUrl={recording.teacherReplyAudioUrl}
+                                    initialDurationSeconds={recording.teacherReplyDurationSeconds}
+                                    onChange={fetchRecordings}
+                                    disabled={submittingFeedback}
+                                  />
+                                  <p className="text-xs text-gray-500">
+                                    This feedback applies to attempt #{recording.attemptNumber} and will mark it as reviewed.
+                                  </p>
+                                </div>
+                              )}
+
+                              {recording.teacherFeedback && feedbackMode !== recording.id && (
+                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                  <h4 className="font-medium text-blue-800 mb-1 text-sm">Feedback for Attempt #{recording.attemptNumber}:</h4>
+                                  <p className="text-blue-700 text-sm">{recording.teacherFeedback}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             ))}
