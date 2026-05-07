@@ -55,6 +55,7 @@ interface Class {
   id: string;
   name: string;
   description: string | null;
+  slug: string | null;
   gradeLevel: number | null;
   academicYear: string | null;
   active: boolean;
@@ -98,7 +99,9 @@ export default function ClassDetailPage() {
     active: true,
     showPracticeStories: false,
     trackLoginActivity: true,
+    slug: "",
   });
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     if (classId) {
@@ -122,6 +125,7 @@ export default function ClassDetailPage() {
           active: data.class.active,
           showPracticeStories: data.class.showPracticeStories || false,
           trackLoginActivity: data.class.trackLoginActivity ?? true,
+          slug: data.class.slug || "",
         });
       } else {
         console.error('Failed to fetch class data');
@@ -136,6 +140,7 @@ export default function ClassDetailPage() {
   };
 
   const handleSaveChanges = async () => {
+    setEditError(null);
     try {
       const response = await fetch(`/api/teacher/classes/${classId}`, {
         method: 'PUT',
@@ -150,6 +155,11 @@ export default function ClassDetailPage() {
           active: editForm.active,
           showPracticeStories: editForm.showPracticeStories,
           trackLoginActivity: editForm.trackLoginActivity,
+          // Only send slug when it actually differs from the current value —
+          // empty string from the form means "leave as-is".
+          ...(editForm.slug && editForm.slug !== (classData?.slug ?? '')
+            ? { slug: editForm.slug }
+            : {}),
         }),
       });
 
@@ -157,10 +167,17 @@ export default function ClassDetailPage() {
         await fetchClassData();
         setIsEditing(false);
       } else {
-        console.error('Failed to update class');
+        const data = await response.json().catch(() => ({}));
+        // 409 = slug collision. Drop the suggested fallback into the field
+        // so the teacher can save again with one click.
+        if (response.status === 409 && data.suggestion) {
+          setEditForm((prev) => ({ ...prev, slug: data.suggestion }));
+        }
+        setEditError(data.error || 'Failed to update class');
       }
     } catch (error) {
       console.error('Error updating class:', error);
+      setEditError('Failed to update class');
     }
   };
 
@@ -222,6 +239,7 @@ export default function ClassDetailPage() {
 
   const cancelEdit = () => {
     setIsEditing(false);
+    setEditError(null);
     setEditForm({
       name: classData?.name || "",
       description: classData?.description || "",
@@ -230,13 +248,23 @@ export default function ClassDetailPage() {
       active: classData?.active || true,
       showPracticeStories: classData?.showPracticeStories || false,
       trackLoginActivity: classData?.trackLoginActivity ?? true,
+      slug: classData?.slug || "",
     });
   };
+
+  // Friendly URL when a slug exists; falls back to the raw UUID URL so the
+  // QR + copy buttons keep working for any class created before slugs landed
+  // and not yet backfilled.
+  const studentLoginUrl =
+    typeof window !== 'undefined' && classData
+      ? classData.slug
+        ? `${window.location.origin}/c/${classData.slug}`
+        : `${window.location.origin}/student-login/${classId}`
+      : '';
 
   const generateQRCode = async () => {
     setIsGeneratingQR(true);
     try {
-      const studentLoginUrl = `${window.location.origin}/student-login/${classId}`;
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(studentLoginUrl)}`;
       setQrCodeUrl(qrApiUrl);
     } catch (error) {
@@ -247,8 +275,7 @@ export default function ClassDetailPage() {
   };
 
   const copyToClipboard = () => {
-    const studentLoginUrl = `${window.location.origin}/student-login/${classId}`;
-    navigator.clipboard.writeText(studentLoginUrl);
+    if (studentLoginUrl) navigator.clipboard.writeText(studentLoginUrl);
   };
 
   const downloadQRCode = () => {
@@ -300,72 +327,90 @@ export default function ClassDetailPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-start gap-3 mb-3 flex-wrap">
             <button
               onClick={() => router.push('/teacher/dashboard')}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors mt-1"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-blue-600" />
-              {classData.name}
-              {!classData.active && (
-                <Badge variant="secondary">Inactive</Badge>
-              )}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="ml-1 text-gray-400 hover:text-blue-600 transition-colors">
-                    <Info className="w-4 h-4" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80" align="start">
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-sm">Class Information</h4>
-                    {classData.description && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500">Description</p>
-                        <p className="text-sm text-gray-900">{classData.description}</p>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      {classData.gradeLevel && (
-                        <div className="flex items-center gap-1.5">
-                          <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="text-sm">Grade {classData.gradeLevel}</span>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                <BookOpen className="w-6 h-6 text-blue-600" />
+                {classData.name}
+                {!classData.active && (
+                  <Badge variant="secondary">Inactive</Badge>
+                )}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="ml-1 text-gray-400 hover:text-blue-600 transition-colors">
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="start">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">Class Information</h4>
+                      {classData.description && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">Description</p>
+                          <p className="text-sm text-gray-900">{classData.description}</p>
                         </div>
                       )}
-                      {classData.academicYear && (
+                      <div className="grid grid-cols-2 gap-3">
+                        {classData.gradeLevel && (
+                          <div className="flex items-center gap-1.5">
+                            <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm">Grade {classData.gradeLevel}</span>
+                          </div>
+                        )}
+                        {classData.academicYear && (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm">{classData.academicYear}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="text-sm">{classData.academicYear}</span>
+                          <Users className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="text-sm">{classData.studentCount} students</span>
                         </div>
-                      )}
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-sm">{classData.studentCount} students</span>
+                        <div>
+                          <Badge variant={classData.active ? "default" : "secondary"} className="text-xs">
+                            {classData.active ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
                       </div>
                       <div>
-                        <Badge variant={classData.active ? "default" : "secondary"} className="text-xs">
-                          {classData.active ? "Active" : "Inactive"}
+                        <p className="text-xs font-medium text-gray-500 mb-1">Practice Stories</p>
+                        <Badge variant={classData.showPracticeStories ? "default" : "secondary"} className="text-xs">
+                          {classData.showPracticeStories ? "Enabled" : "Hidden"}
                         </Badge>
                       </div>
+                      <div className="pt-2 border-t">
+                        <p className="text-xs font-medium text-gray-500 mb-2">Schedule</p>
+                        <ScheduleSection classId={classId} compact={true} />
+                      </div>
+                      <p className="text-xs text-gray-400">Created {formatDate(classData.createdAt)}</p>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Practice Stories</p>
-                      <Badge variant={classData.showPracticeStories ? "default" : "secondary"} className="text-xs">
-                        {classData.showPracticeStories ? "Enabled" : "Hidden"}
-                      </Badge>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <p className="text-xs font-medium text-gray-500 mb-2">Schedule</p>
-                      <ScheduleSection classId={classId} compact={true} />
-                    </div>
-                    <p className="text-xs text-gray-400">Created {formatDate(classData.createdAt)}</p>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </h1>
+                  </PopoverContent>
+                </Popover>
+              </h1>
+              {classData.slug && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (studentLoginUrl) navigator.clipboard.writeText(studentLoginUrl);
+                  }}
+                  title={`Click to copy ${studentLoginUrl}`}
+                  className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-blue-700 transition-colors group"
+                >
+                  <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+                  <span className="font-mono">/c/{classData.slug}</span>
+                  <span className="text-[10px] text-gray-400 group-hover:text-blue-500">
+                    (click to copy)
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={() => setShowStudentsSheet(true)} variant="outline" size="sm">
@@ -585,6 +630,27 @@ export default function ClassDetailPage() {
                 />
               </div>
             </div>
+            <div>
+              <Label htmlFor="slug">Class URL</Label>
+              <Input
+                id="slug"
+                value={editForm.slug}
+                onChange={(e) => setEditForm(prev => ({ ...prev, slug: e.target.value }))}
+                placeholder="e.g., grade-1-2026"
+                spellCheck={false}
+                autoComplete="off"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Students log in at{' '}
+                <span className="font-mono text-gray-700">/c/{editForm.slug || classData?.slug || '…'}</span>.
+                Lowercase letters, numbers, and hyphens only.
+              </p>
+            </div>
+            {editError && (
+              <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {editError}
+              </div>
+            )}
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -678,8 +744,13 @@ export default function ClassDetailPage() {
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-xs text-gray-500 mb-1">Student Login URL:</p>
               <p className="text-sm font-mono break-all text-gray-700">
-                {typeof window !== 'undefined' ? `${window.location.origin}/student-login/${classId}` : ''}
+                {studentLoginUrl}
               </p>
+              {classData?.slug && (
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Easy to type — students just need <span className="font-mono">/c/{classData.slug}</span>.
+                </p>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -705,7 +776,6 @@ export default function ClassDetailPage() {
                 variant="outline"
                 className="flex-1"
                 onClick={() => {
-                  const studentLoginUrl = `${window.location.origin}/student-login/${classId}`;
                   if (navigator.share) {
                     navigator.share({
                       title: `${classData?.name} - Student Login`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GRADE_LEVELS_EXTENDED } from "@/lib/grade-levels";
+import { Link as LinkIcon } from "lucide-react";
 
 interface CreateClassDialogProps {
   open: boolean;
@@ -15,18 +16,59 @@ interface CreateClassDialogProps {
   onSuccess: () => void;
 }
 
+// Mirror of the server-side suggestSlug. Kept lightweight here so the input
+// can update live as the teacher types name + year. The server is the source
+// of truth on save (it'll re-suggest if the input is empty, and validate
+// + dedupe regardless).
+function suggestSlugClient(name: string, year: string): string {
+  const raw = `${name}-${year}`;
+  let slug = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (slug.length > 60) slug = slug.slice(0, 60).replace(/-+$/g, '');
+  return slug;
+}
+
 export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClassDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     gradeLevel: "",
     academicYear: "",
+    slug: "",
   });
+  // Tracks whether the teacher has manually typed in the slug field. Once
+  // they have, auto-suggestion stops so we don't clobber their custom value.
+  const [slugTouched, setSlugTouched] = useState(false);
+
+  // Keep the slug field in sync with name + year while the teacher hasn't
+  // touched it yet.
+  useEffect(() => {
+    if (slugTouched) return;
+    const suggested = suggestSlugClient(formData.name, formData.academicYear);
+    setFormData((prev) => (prev.slug === suggested ? prev : { ...prev, slug: suggested }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.name, formData.academicYear, slugTouched]);
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      gradeLevel: "",
+      academicYear: "",
+      slug: "",
+    });
+    setSlugTouched(false);
+    setError(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       const response = await fetch('/api/teacher/classes', {
@@ -39,27 +81,26 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
           description: formData.description || null,
           gradeLevel: formData.gradeLevel ? parseInt(formData.gradeLevel) : null,
           academicYear: formData.academicYear || null,
+          slug: formData.slug.trim() || undefined,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        // 409 = slug collision. Server returns a `suggestion` we can drop into
+        // the field for the teacher.
+        if (response.status === 409 && errorData.suggestion) {
+          setSlugTouched(true);
+          setFormData((prev) => ({ ...prev, slug: errorData.suggestion }));
+        }
         throw new Error(errorData.error || 'Failed to create class');
       }
 
-      // Reset form
-      setFormData({
-        name: "",
-        description: "",
-        gradeLevel: "",
-        academicYear: "",
-      });
-
+      resetForm();
       onSuccess();
       onOpenChange(false);
-    } catch (error) {
-      console.error('Error creating class:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create class');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create class');
     } finally {
       setLoading(false);
     }
@@ -73,8 +114,14 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) resetForm();
+        onOpenChange(o);
+      }}
+    >
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Create New Class</DialogTitle>
         </DialogHeader>
@@ -139,7 +186,38 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
             </Select>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="space-y-2">
+            <Label htmlFor="slug" className="flex items-center gap-1.5">
+              <LinkIcon className="w-3.5 h-3.5" />
+              Class URL
+            </Label>
+            <Input
+              id="slug"
+              value={formData.slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setFormData({ ...formData, slug: e.target.value });
+              }}
+              placeholder="auto-suggested from name + year"
+              spellCheck={false}
+              autoComplete="off"
+            />
+            <p className="text-xs text-gray-500">
+              Students will type{' '}
+              <span className="font-mono text-gray-700">
+                /c/{formData.slug || '…'}
+              </span>{' '}
+              to log in. Lowercase letters, numbers, and hyphens.
+            </p>
+          </div>
+
+          {error && (
+            <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-2 pt-2">
             <Button
               type="button"
               variant="outline"

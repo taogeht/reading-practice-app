@@ -5,6 +5,7 @@ import { classes, classEnrollments, users, students } from '@/lib/db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 import { userCanManageClass, userIsClassPrimary } from '@/lib/auth/class-access';
+import { findUniqueSlug, isSlugAvailable, isValidSlug } from '@/lib/classes/slug';
 
 export const runtime = 'nodejs';
 
@@ -33,6 +34,7 @@ export async function GET(
         id: classes.id,
         name: classes.name,
         description: classes.description,
+        slug: classes.slug,
         gradeLevel: classes.gradeLevel,
         academicYear: classes.academicYear,
         active: classes.active,
@@ -107,7 +109,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
     const body = await request.json();
-    const { name, description, gradeLevel, academicYear, active, showPracticeStories, trackLoginActivity } = body;
+    const {
+      name,
+      description,
+      gradeLevel,
+      academicYear,
+      active,
+      showPracticeStories,
+      trackLoginActivity,
+      slug: requestedSlug,
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -129,6 +140,33 @@ export async function PUT(
       );
     }
 
+    // Validate the slug if the teacher edited it. An empty/whitespace value
+    // means "leave as-is" (we never wipe the slug to null after a class has one).
+    let slugUpdate: string | undefined;
+    if (typeof requestedSlug === 'string' && requestedSlug.trim()) {
+      const trimmed = requestedSlug.trim().toLowerCase();
+      if (!isValidSlug(trimmed)) {
+        return NextResponse.json(
+          {
+            error:
+              'Invalid URL slug. Use 3–60 characters: lowercase letters, numbers, and hyphens only (must contain at least one letter).',
+          },
+          { status: 400 },
+        );
+      }
+      if (!(await isSlugAvailable(trimmed, classId))) {
+        const suggestion = await findUniqueSlug(trimmed, classId);
+        return NextResponse.json(
+          {
+            error: `That URL is already taken. Try "${suggestion}" instead.`,
+            suggestion,
+          },
+          { status: 409 },
+        );
+      }
+      slugUpdate = trimmed;
+    }
+
     // Update class
     const updatedClass = await db
       .update(classes)
@@ -140,6 +178,7 @@ export async function PUT(
         active: active !== undefined ? active : true,
         showPracticeStories: showPracticeStories !== undefined ? showPracticeStories : false,
         trackLoginActivity: trackLoginActivity !== undefined ? trackLoginActivity : true,
+        ...(slugUpdate !== undefined ? { slug: slugUpdate } : {}),
         updatedAt: new Date(),
       })
       .where(eq(classes.id, classId))

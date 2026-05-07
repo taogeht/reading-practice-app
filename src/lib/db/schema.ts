@@ -118,6 +118,11 @@ export const classes = pgTable('classes', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
+  // Memorable URL identifier for student logins. Auto-suggested from name +
+  // academicYear at create time, teacher-editable, globally unique. Resolves
+  // via /c/<slug>. Nullable so existing rows aren't blocked before backfill;
+  // new rows always get a value.
+  slug: varchar('slug', { length: 60 }).unique(),
   teacherId: uuid('teacher_id').notNull().references(() => teachers.id, { onDelete: 'cascade' }),
   schoolId: uuid('school_id').notNull().references(() => schools.id, { onDelete: 'cascade' }),
   gradeLevel: integer('grade_level'),

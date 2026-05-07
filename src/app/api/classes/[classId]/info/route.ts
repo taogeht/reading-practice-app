@@ -22,6 +22,7 @@ export async function GET(
       .select({
         id: classes.id,
         name: classes.name,
+        slug: classes.slug,
         teacherFirstName: users.firstName,
         teacherLastName: users.lastName,
         active: classes.active,

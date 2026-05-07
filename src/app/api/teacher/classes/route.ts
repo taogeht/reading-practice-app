@@ -5,6 +5,12 @@ import { classes, schools, schoolMemberships, teachers, classEnrollments } from 
 import { eq, and, count, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 import { accessibleClassIds } from '@/lib/auth/class-access';
+import {
+  findUniqueSlug,
+  isSlugAvailable,
+  isValidSlug,
+  suggestSlug,
+} from '@/lib/classes/slug';
 
 export const runtime = 'nodejs';
 
@@ -29,6 +35,7 @@ export async function GET(request: NextRequest) {
         id: classes.id,
         name: classes.name,
         description: classes.description,
+        slug: classes.slug,
         gradeLevel: classes.gradeLevel,
         academicYear: classes.academicYear,
         active: classes.active,
@@ -78,13 +85,43 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, gradeLevel, academicYear } = body;
+    const { name, description, gradeLevel, academicYear, slug: requestedSlug } = body;
 
     if (!name) {
       return NextResponse.json(
         { error: 'Class name is required' },
         { status: 400 }
       );
+    }
+
+    // Resolve the slug. If the teacher typed one, validate + check uniqueness;
+    // on collision, suggest the next available variant so the dialog can show
+    // it. If they didn't, auto-suggest from name + year.
+    let slug: string;
+    if (typeof requestedSlug === 'string' && requestedSlug.trim()) {
+      const trimmed = requestedSlug.trim().toLowerCase();
+      if (!isValidSlug(trimmed)) {
+        return NextResponse.json(
+          {
+            error:
+              'Invalid URL slug. Use 3–60 characters: lowercase letters, numbers, and hyphens only (must contain at least one letter).',
+          },
+          { status: 400 },
+        );
+      }
+      if (!(await isSlugAvailable(trimmed))) {
+        const suggestion = await findUniqueSlug(trimmed);
+        return NextResponse.json(
+          {
+            error: `That URL is already taken. Try "${suggestion}" instead.`,
+            suggestion,
+          },
+          { status: 409 },
+        );
+      }
+      slug = trimmed;
+    } else {
+      slug = await findUniqueSlug(suggestSlug(name, academicYear));
     }
 
     // Ensure teacher record exists
@@ -150,6 +187,7 @@ export async function POST(request: NextRequest) {
         academicYear: academicYear?.trim() || null,
         teacherId: user.id,
         schoolId: teacherSchool[0].schoolId,
+        slug,
       })
       .returning();
 
