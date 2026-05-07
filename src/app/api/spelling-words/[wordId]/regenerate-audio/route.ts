@@ -129,7 +129,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 const result = await db.execute(sql`
                     UPDATE spelling_words sw
                     SET audio_url = ${audioUrl}
-                    WHERE sw.spelling_list_id = ANY(${allowedIds})
+                    WHERE sw.spelling_list_id IN ${allowedIds}
                       AND LOWER(sw.word) = LOWER(${word.word})
                       AND sw.id != ${word.id}
                 `);
