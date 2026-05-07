@@ -109,6 +109,21 @@ export async function GET(request: NextRequest) {
     // Build assignment data with attempt information
     const assignmentsWithStatus = studentAssignments.map(assignment => {
       const assignmentRecordings = studentRecordings.filter(r => r.assignmentId === assignment.id);
+      const attemptsList = [...assignmentRecordings]
+        .sort((a, b) => (a.attemptNumber || 0) - (b.attemptNumber || 0))
+        .map(r => ({
+          attemptNumber: r.attemptNumber,
+          status: r.status,
+          accuracyScore: r.accuracyScore !== null && r.accuracyScore !== undefined
+            ? Math.round(Number(r.accuracyScore))
+            : null,
+          letterGrade: r.letterGrade || null,
+          submittedAt: r.submittedAt?.toISOString() || null,
+          reviewedAt: r.reviewedAt?.toISOString() || null,
+          teacherFeedback: r.teacherFeedback || null,
+          teacherReplyAudioUrl: r.teacherReplyAudioUrl || null,
+          teacherReplyDurationSeconds: r.teacherReplyDurationSeconds ?? null,
+        }));
       const completedRecordings = assignmentRecordings.filter(r => r.status === 'reviewed' || r.status === 'submitted');
       const bestRecording = completedRecordings.reduce<typeof completedRecordings[0] | null>((best, r) => {
         const score = Number(r.accuracyScore) || 0;
@@ -167,6 +182,7 @@ export async function GET(request: NextRequest) {
         hasTeacherFeedback:
           !!latestRecordingWithFeedback?.teacherFeedback ||
           !!latestRecordingWithFeedback?.teacherReplyAudioUrl,
+        attemptsList,
       };
     });
 

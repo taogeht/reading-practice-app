@@ -58,6 +58,17 @@ type Assignment = {
   teacherReplyDurationSeconds: number | null;
   reviewedAt: string | null;
   hasTeacherFeedback: boolean;
+  attemptsList: Array<{
+    attemptNumber: number | null;
+    status: 'pending' | 'reviewed' | 'flagged' | 'submitted';
+    accuracyScore: number | null;
+    letterGrade: string | null;
+    submittedAt: string | null;
+    reviewedAt: string | null;
+    teacherFeedback: string | null;
+    teacherReplyAudioUrl: string | null;
+    teacherReplyDurationSeconds: number | null;
+  }>;
 };
 
 type DashboardData = {
@@ -495,25 +506,55 @@ export default function StudentDashboardPage() {
                             </div>
                           </div>
 
-                          {(assignment.teacherFeedback || assignment.teacherReplyAudioUrl) && (
-                            <div className="mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-md space-y-2">
-                              <p className="text-xs font-medium text-blue-700 mb-0.5">Teacher feedback:</p>
-                              {assignment.teacherFeedback && (
-                                <p className="text-sm text-blue-900 leading-snug">&ldquo;{assignment.teacherFeedback}&rdquo;</p>
-                              )}
-                              {assignment.teacherReplyAudioUrl && (
-                                <div className="space-y-1">
-                                  <p className="text-xs font-medium text-blue-700 flex items-center gap-1">
-                                    <Mic className="w-3 h-3" />
-                                    Voice message from your teacher
-                                  </p>
-                                  <audio
-                                    src={assignment.teacherReplyAudioUrl}
-                                    controls
-                                    className="w-full h-9"
-                                  />
+                          {assignment.attemptsList.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {assignment.attemptsList.map((att) => (
+                                <div
+                                  key={att.attemptNumber ?? Math.random()}
+                                  className="bg-white border border-gray-200 rounded-md p-2"
+                                >
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                                      Attempt #{att.attemptNumber}
+                                    </Badge>
+                                    {att.letterGrade && (
+                                      <Badge className="bg-purple-600 text-white text-[10px] px-1.5 py-0 h-5 font-bold">
+                                        {att.letterGrade}
+                                      </Badge>
+                                    )}
+                                    {att.accuracyScore !== null && (
+                                      <Badge className="bg-green-600 text-[10px] px-1.5 py-0 h-5">
+                                        {att.accuracyScore}%
+                                      </Badge>
+                                    )}
+                                    {(att.teacherFeedback || att.teacherReplyAudioUrl) && (
+                                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0 h-5">
+                                        Feedback
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {(att.teacherFeedback || att.teacherReplyAudioUrl) && (
+                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded space-y-1.5">
+                                      {att.teacherFeedback && (
+                                        <p className="text-xs text-blue-900 leading-snug">&ldquo;{att.teacherFeedback}&rdquo;</p>
+                                      )}
+                                      {att.teacherReplyAudioUrl && (
+                                        <div className="space-y-1">
+                                          <p className="text-[10px] font-medium text-blue-700 flex items-center gap-1">
+                                            <Mic className="w-3 h-3" />
+                                            Voice message from your teacher
+                                          </p>
+                                          <audio
+                                            src={att.teacherReplyAudioUrl}
+                                            controls
+                                            className="w-full h-8"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                              ))}
                             </div>
                           )}
                         </div>
