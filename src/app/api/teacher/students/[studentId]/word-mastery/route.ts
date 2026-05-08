@@ -51,6 +51,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         won: spellingGameResults.won,
         wrongGuesses: spellingGameResults.wrongGuesses,
         timeSeconds: spellingGameResults.timeSeconds,
+        activityType: spellingGameResults.activityType,
+        createdAt: spellingGameResults.createdAt,
       })
       .from(spellingGameResults)
       .innerJoin(spellingWords, eq(spellingGameResults.spellingWordId, spellingWords.id))
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             )
           : eq(spellingGameResults.studentId, studentId)
       )
-      .orderBy(spellingWords.word, desc(spellingGameResults.createdAt));
+      .orderBy(desc(spellingGameResults.createdAt));
 
     const listMap = new Map<string, { id: string; title: string; weekNumber: number | null }>();
     for (const r of results) {
@@ -136,12 +138,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const totalAttempts = wordMastery.reduce((sum, w) => sum + w.totalAttempts, 0);
     const totalWins = wordMastery.reduce((sum, w) => sum + w.wins, 0);
 
+    const attempts = results.map((r) => ({
+      wordId: r.wordId,
+      word: r.word,
+      listTitle: r.listTitle,
+      listWeek: r.listWeek,
+      won: r.won,
+      wrongGuesses: r.wrongGuesses,
+      timeSeconds: r.timeSeconds,
+      activityType: r.activityType,
+      createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+    }));
+
     return NextResponse.json({
       studentId,
       totalAttempts,
       overallWinRate: totalAttempts > 0 ? Math.round((totalWins / totalAttempts) * 100) : 0,
       spellingLists: spellingListsResp,
       wordMastery,
+      attempts,
     });
   } catch (error) {
     console.error('[GET /api/teacher/students/[studentId]/word-mastery] Error:', error);
