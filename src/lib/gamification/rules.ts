@@ -58,6 +58,61 @@ export function xpProgressToNextLevel(totalXp: number): {
   return { currentLevel, xpInLevel, xpForNextLevel, fraction };
 }
 
+// Human-readable metadata for each student-visible XP event. Powers the
+// "How XP Works" guide. Streak/login bonuses are excluded here — streaks have
+// their own section in the guide, and `daily_login` is shown as a free bonus.
+export type XpEventIcon = 'mic' | 'book' | 'spell' | 'star' | 'login';
+
+export const XP_EVENT_LABELS: Array<{
+  eventType: XpEventType;
+  label: string;
+  description: string;
+  icon: XpEventIcon;
+}> = [
+  {
+    eventType: 'recording_submitted',
+    label: 'Submit a recording',
+    description: 'Record yourself reading an assignment story.',
+    icon: 'mic',
+  },
+  {
+    eventType: 'spelling_won',
+    label: 'Win a spelling game',
+    description: 'Spell the word correctly in Snowman, Listen & Spell, and friends.',
+    icon: 'spell',
+  },
+  {
+    eventType: 'spelling_lost',
+    label: 'Try a spelling game',
+    description: 'Effort credit even when the snowman melts.',
+    icon: 'spell',
+  },
+  {
+    eventType: 'practice_correct',
+    label: 'Answer a practice question',
+    description: 'Each correct answer in the Practice tab.',
+    icon: 'star',
+  },
+  {
+    eventType: 'practice_first_try_bonus',
+    label: 'First-try bonus',
+    description: 'Bonus on your first correct practice answer of the day.',
+    icon: 'star',
+  },
+  {
+    eventType: 'practice_wrong_first_attempt',
+    label: 'Try a practice question',
+    description: 'Effort credit on your first attempt at a question, even if it’s wrong.',
+    icon: 'star',
+  },
+  {
+    eventType: 'daily_login',
+    label: 'Log in today',
+    description: 'Free bonus the first time you do anything each day.',
+    icon: 'login',
+  },
+];
+
 // Streak milestones — when current_streak_days hits one of these on increment,
 // fire the matching bonus event + unlock the matching badge.
 export const STREAK_MILESTONES: Array<{ days: number; eventType: XpEventType; badgeKey: string }> = [
@@ -67,16 +122,16 @@ export const STREAK_MILESTONES: Array<{ days: number; eventType: XpEventType; ba
 ];
 
 // Animal collection — each level-up unlocks the next entry in this list.
-// First 8 reuse Unit 11 vocab so we have images already on disk; expand later.
+// Custom-illustrated avatars live in public/images/avatars/.
 export const ANIMAL_UNLOCK_ORDER: Array<{ key: string; displayName: string; image: string }> = [
-  { key: 'monkey',     displayName: 'Monkey',     image: '/images/unit-11/monkey.png' },
-  { key: 'parrot',     displayName: 'Parrot',     image: '/images/unit-11/parrot.png' },
-  { key: 'seal',       displayName: 'Seal',       image: '/images/unit-11/seal.png' },
-  { key: 'snake',      displayName: 'Snake',      image: '/images/unit-11/snake.png' },
-  { key: 'tiger',      displayName: 'Tiger',      image: '/images/unit-11/tiger.png' },
-  { key: 'elephant',   displayName: 'Elephant',   image: '/images/unit-11/elephant.png' },
-  { key: 'giraffe',    displayName: 'Giraffe',    image: '/images/unit-11/giraffe.png' },
-  { key: 'polar-bear', displayName: 'Polar Bear', image: '/images/unit-11/polar-bear.png' },
+  { key: 'monkey',     displayName: 'Monkey',     image: '/images/avatars/monkey.png' },
+  { key: 'parrot',     displayName: 'Parrot',     image: '/images/avatars/parrot.png' },
+  { key: 'seal',       displayName: 'Seal',       image: '/images/avatars/seal.png' },
+  { key: 'snake',      displayName: 'Snake',      image: '/images/avatars/snake.png' },
+  { key: 'tiger',      displayName: 'Tiger',      image: '/images/avatars/tiger.png' },
+  { key: 'elephant',   displayName: 'Elephant',   image: '/images/avatars/elephant.png' },
+  { key: 'giraffe',    displayName: 'Giraffe',    image: '/images/avatars/giraffe.png' },
+  { key: 'polar-bear', displayName: 'Polar Bear', image: '/images/avatars/polarbear.png' },
 ];
 
 // The student's "current avatar" is the highest-level animal they've unlocked.

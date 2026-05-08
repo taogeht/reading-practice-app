@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Sparkles } from "lucide-react";
+import { HelpCircle, Loader2, Sparkles } from "lucide-react";
+import { XpGuideDialog } from "@/components/gamification/xp-guide-dialog";
 
 interface ProgressionData {
     totalXp: number;
@@ -21,6 +22,7 @@ interface ProgressionData {
 export function StudentProgressionCard() {
     const [data, setData] = useState<ProgressionData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [guideOpen, setGuideOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -56,7 +58,16 @@ export function StudentProgressionCard() {
     const pct = Math.min(100, Math.round(data.fractionToNextLevel * 100));
 
     return (
-        <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-md overflow-hidden">
+        <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-md overflow-hidden relative">
+            <button
+                type="button"
+                aria-label="How XP works"
+                onClick={() => setGuideOpen(true)}
+                className="absolute top-2 right-2 sm:top-3 sm:right-3 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/80 hover:bg-white border border-amber-200 text-amber-700 text-xs font-semibold shadow-sm transition-colors"
+            >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">How XP works</span>
+            </button>
             <CardContent className="p-5 sm:p-6">
                 <div className="flex items-center gap-4 sm:gap-6">
                     {/* Animal avatar — the star of the card */}
@@ -71,7 +82,7 @@ export function StudentProgressionCard() {
 
                     <div className="flex-1 min-w-0">
                         {/* Level + XP row */}
-                        <div className="flex items-baseline gap-2 flex-wrap">
+                        <div className="flex items-baseline gap-2 flex-wrap pr-8 sm:pr-0">
                             <span className="text-2xl sm:text-3xl font-extrabold text-amber-700">
                                 Level {data.currentLevel}
                             </span>
@@ -111,6 +122,13 @@ export function StudentProgressionCard() {
                     </div>
                 </div>
             </CardContent>
+            <XpGuideDialog
+                open={guideOpen}
+                onOpenChange={setGuideOpen}
+                currentLevel={data.currentLevel}
+                totalXp={data.totalXp}
+                currentStreakDays={data.currentStreakDays}
+            />
         </Card>
     );
 }
