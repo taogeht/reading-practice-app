@@ -218,6 +218,13 @@
       "when": 1778122150827,
       "tag": "0030_fair_deadpool",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1778216630115,
+      "tag": "0031_curvy_miracleman",
+      "breakpoints": true
     }
   ]
 }

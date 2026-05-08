@@ -1,0 +1,1 @@
+ALTER TABLE "classes" ADD COLUMN "weekly_recap_enabled" boolean DEFAULT true NOT NULL;

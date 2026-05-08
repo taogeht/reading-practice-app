@@ -25,12 +25,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Find the student's class memberships.
+    // Find the student's class memberships. Skip classes whose teacher has
+    // turned the recap off — those students should never see a recap card,
+    // even if a draft/published row exists from before the toggle was flipped.
     const enrollments = await db
       .select({ classId: classEnrollments.classId, className: classes.name })
       .from(classEnrollments)
       .innerJoin(classes, eq(classEnrollments.classId, classes.id))
-      .where(eq(classEnrollments.studentId, user.id));
+      .where(
+        and(
+          eq(classEnrollments.studentId, user.id),
+          eq(classes.weeklyRecapEnabled, true),
+        ),
+      );
     if (enrollments.length === 0) {
       return NextResponse.json({ recap: null, entry: null, history: [] });
     }

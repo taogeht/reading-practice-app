@@ -138,6 +138,10 @@ export const classes = pgTable('classes', {
   // Useful for classes (e.g. kindergarten) used only for attendance/syllabus
   // tracking where students never log in themselves.
   trackLoginActivity: boolean('track_login_activity').default(true).notNull(),
+  // When false, students enrolled in this class won't see the "This week"
+  // recap tab/content for it. Default true to keep existing classes working
+  // as-is until the teacher opts out.
+  weeklyRecapEnabled: boolean('weekly_recap_enabled').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

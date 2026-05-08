@@ -40,6 +40,7 @@ export async function GET(
         active: classes.active,
         showPracticeStories: classes.showPracticeStories,
         trackLoginActivity: classes.trackLoginActivity,
+        weeklyRecapEnabled: classes.weeklyRecapEnabled,
         createdAt: classes.createdAt,
       })
       .from(classes)
@@ -117,6 +118,7 @@ export async function PUT(
       active,
       showPracticeStories,
       trackLoginActivity,
+      weeklyRecapEnabled,
       slug: requestedSlug,
     } = body;
 
@@ -178,6 +180,7 @@ export async function PUT(
         active: active !== undefined ? active : true,
         showPracticeStories: showPracticeStories !== undefined ? showPracticeStories : false,
         trackLoginActivity: trackLoginActivity !== undefined ? trackLoginActivity : true,
+        weeklyRecapEnabled: weeklyRecapEnabled !== undefined ? weeklyRecapEnabled : true,
         ...(slugUpdate !== undefined ? { slug: slugUpdate } : {}),
         updatedAt: new Date(),
       })

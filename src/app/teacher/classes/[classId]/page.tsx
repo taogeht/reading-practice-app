@@ -61,6 +61,7 @@ interface Class {
   active: boolean;
   showPracticeStories: boolean;
   trackLoginActivity: boolean;
+  weeklyRecapEnabled: boolean;
   createdAt: string;
   studentCount: number;
   students: Student[];
@@ -99,6 +100,7 @@ export default function ClassDetailPage() {
     active: true,
     showPracticeStories: false,
     trackLoginActivity: true,
+    weeklyRecapEnabled: true,
     slug: "",
   });
   const [editError, setEditError] = useState<string | null>(null);
@@ -125,6 +127,7 @@ export default function ClassDetailPage() {
           active: data.class.active,
           showPracticeStories: data.class.showPracticeStories || false,
           trackLoginActivity: data.class.trackLoginActivity ?? true,
+          weeklyRecapEnabled: data.class.weeklyRecapEnabled ?? true,
           slug: data.class.slug || "",
         });
       } else {
@@ -155,6 +158,7 @@ export default function ClassDetailPage() {
           active: editForm.active,
           showPracticeStories: editForm.showPracticeStories,
           trackLoginActivity: editForm.trackLoginActivity,
+          weeklyRecapEnabled: editForm.weeklyRecapEnabled,
           // Only send slug when it actually differs from the current value —
           // empty string from the form means "leave as-is".
           ...(editForm.slug && editForm.slug !== (classData?.slug ?? '')
@@ -248,6 +252,7 @@ export default function ClassDetailPage() {
       active: classData?.active || true,
       showPracticeStories: classData?.showPracticeStories || false,
       trackLoginActivity: classData?.trackLoginActivity ?? true,
+      weeklyRecapEnabled: classData?.weeklyRecapEnabled ?? true,
       slug: classData?.slug || "",
     });
   };
@@ -688,6 +693,21 @@ export default function ClassDetailPage() {
                 <div>
                   <div>Track Student Login Activity</div>
                   <p className="text-xs text-gray-600 font-normal">Turn off for classes where students never log in (e.g. attendance-only classes). Hides them from the login activity dashboard.</p>
+                </div>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="weeklyRecapEnabled"
+                checked={editForm.weeklyRecapEnabled}
+                onChange={(e) => setEditForm(prev => ({ ...prev, weeklyRecapEnabled: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="weeklyRecapEnabled">
+                <div>
+                  <div>Show Weekly Recap to Students</div>
+                  <p className="text-xs text-gray-600 font-normal">When off, students in this class won&rsquo;t see the &ldquo;This week&rdquo; recap tab. Drafts and published recaps stay saved.</p>
                 </div>
               </Label>
             </div>
