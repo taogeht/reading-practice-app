@@ -95,12 +95,15 @@ export async function GET(request: NextRequest) {
         attemptNumber: recordings.attemptNumber,
         status: recordings.status,
         accuracyScore: recordings.accuracyScore,
+        wpmScore: recordings.wpmScore,
         letterGrade: recordings.letterGrade,
         submittedAt: recordings.submittedAt,
         teacherFeedback: recordings.teacherFeedback,
         teacherReplyAudioUrl: recordings.teacherReplyAudioUrl,
         teacherReplyDurationSeconds: recordings.teacherReplyDurationSeconds,
         reviewedAt: recordings.reviewedAt,
+        transcript: recordings.transcript,
+        analysisJson: recordings.analysisJson,
       })
       .from(recordings)
       .where(eq(recordings.studentId, user.id))
@@ -117,12 +120,17 @@ export async function GET(request: NextRequest) {
           accuracyScore: r.accuracyScore !== null && r.accuracyScore !== undefined
             ? Math.round(Number(r.accuracyScore))
             : null,
+          wpmScore: r.wpmScore !== null && r.wpmScore !== undefined
+            ? Math.round(Number(r.wpmScore))
+            : null,
           letterGrade: r.letterGrade || null,
           submittedAt: r.submittedAt?.toISOString() || null,
           reviewedAt: r.reviewedAt?.toISOString() || null,
           teacherFeedback: r.teacherFeedback || null,
           teacherReplyAudioUrl: r.teacherReplyAudioUrl || null,
           teacherReplyDurationSeconds: r.teacherReplyDurationSeconds ?? null,
+          transcript: r.transcript || null,
+          analysisJson: r.analysisJson ?? null,
         }));
       const completedRecordings = assignmentRecordings.filter(r => r.status === 'reviewed' || r.status === 'submitted');
       const bestRecording = completedRecordings.reduce<typeof completedRecordings[0] | null>((best, r) => {
