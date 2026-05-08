@@ -7,6 +7,7 @@ import {
   timestamp,
   date,
   integer,
+  smallint,
   pgEnum,
   jsonb,
   decimal,
@@ -23,6 +24,34 @@ export const assignmentStatusEnum = pgEnum('assignment_status', ['draft', 'publi
 export const recordingStatusEnum = pgEnum('recording_status', ['pending', 'submitted', 'reviewed', 'flagged']);
 export const visualPasswordTypeEnum = pgEnum('visual_password_type', ['animal', 'object']);
 export const mediaTypeEnum = pgEnum('media_type', ['video', 'photo', 'audio']);
+
+// Reading-feature enums (Raz-Kids-style reading practice).
+// `partOfSpeech` covers the major English POS the validator/generator needs.
+// `afFLevel` mirrors the school's American Family & Friends curriculum
+// progression (Starter → Grade 6). `cefrLevel` is the standard CEFR scale
+// used as a generation guard rail for non-target vocabulary.
+export const partOfSpeechEnum = pgEnum('part_of_speech', [
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'pronoun',
+  'preposition',
+  'conjunction',
+  'interjection',
+  'determiner',
+  'other',
+]);
+export const afFLevelEnum = pgEnum('af_f_level', [
+  'starter',
+  'grade1',
+  'grade2',
+  'grade3',
+  'grade4',
+  'grade5',
+  'grade6',
+]);
+export const cefrLevelEnum = pgEnum('cefr_level', ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 
 // Core tables
 export const users = pgTable(
@@ -871,6 +900,41 @@ export const practiceAttemptsRelations = relations(practiceAttempts, ({ one }) =
   student: one(users, { fields: [practiceAttempts.studentId], references: [users.id] }),
   question: one(practiceQuestions, { fields: [practiceAttempts.questionId], references: [practiceQuestions.id] }),
 }));
+
+// ----- Reading practice (Raz-Kids-style) -----
+// Vocabulary master table — the spine for the reading-passage feature.
+// Every word the generator and validator know about lives here, tagged with
+// AF&F level/unit, CEFR, part of speech, and any phonics pattern it
+// introduces. `word` is unique case-insensitively; the application layer
+// is responsible for lower-casing on insert (no citext extension installed).
+export const vocabulary = pgTable(
+  'vocabulary',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    word: text('word').notNull().unique(),
+    partOfSpeech: partOfSpeechEnum('part_of_speech').notNull(),
+    // Nullable when the curriculum mapping isn't known yet — keeps importing
+    // partial datasets cheap.
+    afFLevel: afFLevelEnum('af_f_level'),
+    afFUnit: smallint('af_f_unit'),
+    cefrLevel: cefrLevelEnum('cefr_level'),
+    exampleSentence: text('example_sentence'),
+    mandarinTranslation: text('mandarin_translation'),
+    // Free-text tag like "th-digraph" or "long-a-CVCe". Story generation can
+    // hint the phonics focus to weave these in.
+    introducesPhonicsPattern: text('introduces_phonics_pattern'),
+    // Function words (articles, auxiliaries, basic pronouns/preps) are
+    // exempt from the per-story frequency-cap rules — without this flag the
+    // validator would punish stories that naturally repeat "the" or "is".
+    isFunctionWord: boolean('is_function_word').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    afFLevelUnitIdx: index('idx_vocabulary_aff_level_unit').on(table.afFLevel, table.afFUnit),
+    cefrIdx: index('idx_vocabulary_cefr').on(table.cefrLevel),
+  }),
+);
 
 // Simple sessions table for authentication
 export const session = pgTable('session', {
