@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Home,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -403,14 +404,31 @@ export default function StudentReadingPassagePage({
       {/* Header */}
       <header className="bg-white/80 backdrop-blur sticky top-0 z-30 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-3 py-3 flex items-center gap-3">
-          <Link
-            href="/student/reading"
-            className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 active:scale-95"
-            aria-label="Back to library"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm font-medium hidden sm:inline">Library</span>
-          </Link>
+          {/* Two left-side links so a kid mid-reader has both the
+              "go back to the list" affordance (← Library) and a
+              direct one-tap home button. The Home icon is always
+              visible; the "Library" label hides on mobile to save
+              width but the arrow stays. */}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/student/dashboard"
+              className="inline-flex items-center text-blue-700 hover:text-blue-900 active:scale-95"
+              aria-label="Back to dashboard"
+            >
+              <Home className="w-5 h-5" />
+            </Link>
+            <span className="text-gray-300" aria-hidden>
+              |
+            </span>
+            <Link
+              href="/student/reading"
+              className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 active:scale-95"
+              aria-label="Back to library"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium hidden sm:inline">Library</span>
+            </Link>
+          </div>
           <div className="flex-1 min-w-0 text-center">
             <p className="text-sm text-gray-500 truncate">{data.passage.title}</p>
             {phase === 'reader' && (

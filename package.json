@@ -22,6 +22,7 @@
     "promote:core": "tsx scripts/promote-core-vocabulary.ts",
     "mark:unpicturable": "tsx scripts/mark-unpicturable-vocab.ts",
     "cleanup:drafts": "tsx scripts/cleanup-draft-passages.ts",
+    "migrate:passages": "tsx scripts/migrate-passages-to-prod.ts",
     "test:plan": "tsx scripts/test-plan-generation.ts",
     "test:prose": "tsx scripts/test-prose-generation.ts",
     "test:regen": "tsx scripts/test-regen.ts",
