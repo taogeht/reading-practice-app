@@ -24,7 +24,8 @@ import { PhonicsDeck } from "@/components/practice/phonics-deck";
 import { WeeklyRecapView } from "@/components/recap/weekly-recap-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy, Layers, CalendarDays } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy, Layers, CalendarDays, Library } from "lucide-react";
+import { ReadingLibrary } from "@/components/reading/reading-library";
 import { useRouter } from "next/navigation";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 
@@ -384,10 +385,14 @@ export default function StudentDashboardPage() {
           {/* Five tabs in a single row at every width. On mobile each tab
               stacks the icon over the label (text-[10px]) so we don't wrap to
               a second row that would overflow on top of the content below. */}
-          <TabsList className="w-full grid grid-cols-5 h-auto p-1 bg-white/60 border border-gray-200 gap-1">
+          <TabsList className="w-full grid grid-cols-6 h-auto p-1 bg-white/60 border border-gray-200 gap-1">
             <TabsTrigger value="reading" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
               <BookOpen className="w-4 h-4 shrink-0" />
               Reading
+            </TabsTrigger>
+            <TabsTrigger value="stories" className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
+              <Library className="w-4 h-4 shrink-0" />
+              Stories
             </TabsTrigger>
             <TabsTrigger value="this-week" className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-[10px] sm:text-sm leading-tight">
               <CalendarDays className="w-4 h-4 shrink-0" />
@@ -569,6 +574,22 @@ export default function StudentDashboardPage() {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="stories" className="mt-6">
+            {/* Pass the dashboard's already-loaded student slim shape
+                so the embedded library doesn't refetch the same
+                /api/student/dashboard payload. */}
+            <ReadingLibrary
+              student={
+                dashboardData?.student
+                  ? {
+                      firstName: dashboardData.student.firstName,
+                      readingLevel: dashboardData.student.readingLevel,
+                    }
+                  : undefined
+              }
+            />
           </TabsContent>
 
           <TabsContent value="this-week" className="mt-6">
