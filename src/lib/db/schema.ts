@@ -15,6 +15,7 @@ import {
   inet,
   index,
   uniqueIndex,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
@@ -52,6 +53,34 @@ export const afFLevelEnum = pgEnum('af_f_level', [
   'grade6',
 ]);
 export const cefrLevelEnum = pgEnum('cefr_level', ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
+
+// Reading-passage lifecycle. `draft` = pipeline output not yet reviewed;
+// `review` = waiting on a teacher to approve; `published` = visible to
+// students; `archived` = hidden but kept for analytics.
+export const passageStatusEnum = pgEnum('passage_status', [
+  'draft',
+  'review',
+  'published',
+  'archived',
+]);
+
+// Reading comprehension question types. `mcq_comprehension` = single best
+// answer with an evidence quote. `vocab_matching` = drag word→meaning.
+// `sequence_order` = arrange story events in order.
+export const readingQuestionTypeEnum = pgEnum('reading_question_type', [
+  'mcq_comprehension',
+  'vocab_matching',
+  'sequence_order',
+]);
+
+// Reading session state. `in_progress` = student is mid-read; `completed`
+// = all pages + all questions done; `abandoned` = left mid-read (heartbeat
+// gone or explicitly closed).
+export const readingSessionStatusEnum = pgEnum('reading_session_status', [
+  'in_progress',
+  'completed',
+  'abandoned',
+]);
 
 // Core tables
 export const users = pgTable(
@@ -927,6 +956,29 @@ export const vocabulary = pgTable(
     // exempt from the per-story frequency-cap rules — without this flag the
     // validator would punish stories that naturally repeat "the" or "is".
     isFunctionWord: boolean('is_function_word').default(false).notNull(),
+    // Open-class words the AF&F curriculum doesn't formally introduce but
+    // implicitly assumes (basic action verbs like "see"/"want"/"sit",
+    // common adjectives like "happy"/"nice", locative prepositions like
+    // "behind"/"near"). Seeded separately via scripts/seed-scaffold-vocabulary.
+    // Mutually exclusive with both is_function_word and curriculum tagging
+    // (af_f_level set) — the seed scripts enforce that invariant.
+    isScaffold: boolean('is_scaffold').default(false).notNull(),
+    // Curriculum-tagged words that are universally available regardless of
+    // the (af_f_level, af_f_unit) cap. Promoted via
+    // scripts/promote-core-vocabulary for a curated set of K/G1 verbs the
+    // textbook formally introduces in late units (look, run, go, give,
+    // draw, etc.) but every kid knows at any unit. Independent of
+    // is_function_word and is_scaffold; can co-exist with af_f_level.
+    isCoreVocabulary: boolean('is_core_vocabulary').default(false).notNull(),
+    // Whether the word has a clear, unambiguous picture-card referent.
+    // Read by the vocab_matching target-selection filter: numbers, abstract
+    // evaluatives ("good"/"bad"), and discourse markers ("here"/"too") all
+    // produce confusing or ambiguous Gemini illustrations and are flagged
+    // false. Default true keeps existing rows opt-in only for the curated
+    // exclusion list (scripts/mark-unpicturable-vocab.ts). Independent of
+    // function/scaffold/core flags — a curriculum noun like "elephant" is
+    // picturable; a function word like "the" is not.
+    isPicturable: boolean('is_picturable').default(true).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -935,6 +987,348 @@ export const vocabulary = pgTable(
     cefrIdx: index('idx_vocabulary_cefr').on(table.cefrLevel),
   }),
 );
+
+// ----- Reading passages, pages, questions, and student interaction -----
+// Six tables that together model the Raz-Kids-style reading library:
+//   reading_passages      → story header (title, level, status, gen meta)
+//   story_pages           → per-page text + image + tts audio
+//   reading_questions     → comprehension/vocab/sequence questions per passage
+//   student_reading_sessions   → session header (one per (student, attempt))
+//   student_reading_answers    → per-question detail rows
+//   student_vocabulary_mastery → rolled-up per-(student, word) score
+//
+// V1 has NO class-assignment binding — passages live in a shared library
+// filtered by reading level. Class binding will be a separate task.
+
+// Payload shapes for reading_questions.payload (jsonb). Each question
+// type has its own shape; the discriminated union ReadingQuestionPayload
+// pairs each shape with its question_type discriminator so callers can
+// narrow on a fetched row.
+
+export interface McqComprehensionPayload {
+  /** Exactly four answer options. */
+  options: string[];
+  /** Index into options[] of the correct answer (0–3). */
+  correctIndex: number;
+}
+
+/** Legacy (V1) vocab_matching payload — word→text-meaning. Kept as a
+ *  type for the validator's structural detection of pre-V2 questions
+ *  in the DB; the validator emits `legacy_vocab_matching_format` when
+ *  it sees one of these. New code should never write this shape. */
+export interface VocabMatchingPayloadV1 {
+  pairs: Array<{ word: string; meaning: string; vocabId: string }>;
+}
+
+/** V2 vocab_matching payload — word→picture. Each pair carries the R2
+ *  key (under story-images/{passageId}/vocab-{vocabId}.png) for an image
+ *  the student tap-matches to the word. `version: 2` is the explicit
+ *  discriminator: legacy V1 rows lack the field and are rejected by
+ *  the validator. */
+export interface VocabMatchingPayloadV2 {
+  version: 2;
+  pairs: Array<{ word: string; vocabId: string; imageKey: string }>;
+}
+
+/** The current (V2) vocab_matching payload. The exported type
+ *  references V2 directly so all new generation/persistence paths
+ *  produce V2; the legacy V1 type stays defined above for detection. */
+export type VocabMatchingPayload = VocabMatchingPayloadV2;
+
+export interface SequenceOrderPayload {
+  /** Story events in correct order; the UI shuffles for display. */
+  events: string[];
+}
+
+/** The raw jsonb shape sitting in reading_questions.payload — one of three. */
+export type ReadingQuestionPayloadJson =
+  | McqComprehensionPayload
+  | VocabMatchingPayload
+  | SequenceOrderPayload;
+
+/** Discriminated union for narrowing a fetched (questionType, payload) pair. */
+export type ReadingQuestionPayload =
+  | { questionType: 'mcq_comprehension'; payload: McqComprehensionPayload }
+  | { questionType: 'vocab_matching'; payload: VocabMatchingPayload }
+  | { questionType: 'sequence_order'; payload: SequenceOrderPayload };
+
+/** Generation provenance attached to each reading_passages row.
+ *  Filled progressively as the pipeline stages complete; every field is
+ *  optional so an in-flight passage row stays valid. The jsonb column
+ *  is permissive — these fields are the typed surface the orchestrator
+ *  populates; future work can extend without a migration. */
+export interface PassageGenerationMeta {
+  /** Concise label of the underlying models, e.g.
+   *  "claude-sonnet-4-6 + gemini-2.5-flash-image". */
+  model?: string;
+  promptVersion?: string;
+  generatedAt?: string;
+  generationDurationMs?: number;
+  costUsd?: number;
+  /** When this passage is a regeneration of another, the parent's id. */
+  parentPassageId?: string;
+  /** Number of prose-generation attempts (1 = clean first pass; up to
+   *  the regen wrapper's maxAttempts). */
+  proseAttemptCount?: number;
+  /** Number of Gemini image-generation calls (≈ pages.length). */
+  imageCallCount?: number;
+  /** Aggregate Claude tokens across plan + prose (incl. regen attempts) +
+   *  questions. Image generation is tracked as a separate call count. */
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
+  /** Per-stage quality + the orchestrator's final passageReady verdict. */
+  qualityReport?: {
+    proseScore: number;
+    questionsScore: number;
+    imagesValid: boolean;
+    passageReady: boolean;
+  };
+  /** Frozen copy of the Stage 1 plan. Required for per-page and per-
+   *  question regeneration — those endpoints need character descriptions,
+   *  scene descriptions, and beats from the original plan. Stored as
+   *  unstructured jsonb here (TS shape lives in
+   *  src/lib/reading/generate/types.ts as PassagePlan); the DB doesn't
+   *  enforce the inner shape. Existing rows from before this field
+   *  was added will simply have plan undefined; the regen endpoints
+   *  return 400 in that case. */
+  plan?: unknown;
+}
+
+export const readingPassages = pgTable(
+  'reading_passages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    // Reading level id (1..5) from src/lib/reading/levels.ts. Levels live
+    // in code, not a DB table — the app validates the value on insert.
+    readingLevel: smallint('reading_level').notNull(),
+    // Vocabulary.id UUIDs the passage targets. Multi-word vocab entries
+    // (e.g. "teddy bear") are referenced identically to single-word ones;
+    // the future tokeniser will need longest-first matching when scanning
+    // story text against the cumulative vocab set.
+    targetVocabIds: jsonb('target_vocab_ids')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    // Denormalised count of story_pages rows for cheap library listing —
+    // app layer keeps it in sync on insert/update of pages.
+    pageCount: smallint('page_count').notNull(),
+    status: passageStatusEnum('status').default('draft').notNull(),
+    generationMeta: jsonb('generation_meta')
+      .$type<PassageGenerationMeta>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    reviewedBy: uuid('reviewed_by').references(() => users.id),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    summary: text('summary'),
+    coverImageKey: text('cover_image_key'),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    statusLevelIdx: index('idx_reading_passages_status_level').on(
+      table.status,
+      table.readingLevel,
+    ),
+    statusActiveIdx: index('idx_reading_passages_status_active').on(
+      table.status,
+      table.isActive,
+    ),
+  }),
+);
+
+export type ReadingPassage = typeof readingPassages.$inferSelect;
+export type NewReadingPassage = typeof readingPassages.$inferInsert;
+
+export const storyPages = pgTable(
+  'story_pages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    passageId: uuid('passage_id')
+      .notNull()
+      .references(() => readingPassages.id, { onDelete: 'cascade' }),
+    pageNumber: smallint('page_number').notNull(),
+    text: text('text').notNull(),
+    imageKey: text('image_key'),
+    imagePromptUsed: text('image_prompt_used'),
+    ttsAudioKey: text('tts_audio_key'),
+    ttsVoice: text('tts_voice'),
+    /** Set when the page text was last manually edited from the review
+     *  queue (PATCH /api/teacher/reading/passages/.../pages/...). NULL
+     *  means the text is still as the model generated it. The pair
+     *  (editedAt, editedBy) is the single most-recent edit only — no
+     *  history. The review UI surfaces this as a "Edited by … on …"
+     *  line so reviewers know the prose is no longer purely model
+     *  output. */
+    editedAt: timestamp('edited_at', { withTimezone: true }),
+    editedBy: uuid('edited_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Unique on (passage, page) doubles as the lookup index for
+    // "list pages of passage X" — no separate passage_id index needed.
+    uniquePassagePage: uniqueIndex('unique_story_page').on(
+      table.passageId,
+      table.pageNumber,
+    ),
+  }),
+);
+
+export type StoryPage = typeof storyPages.$inferSelect;
+export type NewStoryPage = typeof storyPages.$inferInsert;
+
+export const readingQuestions = pgTable(
+  'reading_questions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    passageId: uuid('passage_id')
+      .notNull()
+      .references(() => readingPassages.id, { onDelete: 'cascade' }),
+    questionType: readingQuestionTypeEnum('question_type').notNull(),
+    questionText: text('question_text').notNull(),
+    orderIndex: smallint('order_index').notNull(),
+    payload: jsonb('payload').$type<ReadingQuestionPayloadJson>().notNull(),
+    vocabWordId: uuid('vocab_word_id').references(() => vocabulary.id),
+    // For mcq_comprehension only: a substring of one of the passage's
+    // pages that supports the correct answer. The validator enforces the
+    // substring invariant; the UI can highlight the quote on review.
+    evidenceQuote: text('evidence_quote'),
+    evidencePageNumber: smallint('evidence_page_number'),
+    // 1–5 difficulty calibrated from empirical accuracy data. Null until
+    // we have enough attempts to compute it.
+    difficulty: smallint('difficulty'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    passageIdIdx: index('idx_reading_questions_passage_id').on(table.passageId),
+  }),
+);
+
+export type ReadingQuestion = typeof readingQuestions.$inferSelect;
+export type NewReadingQuestion = typeof readingQuestions.$inferInsert;
+
+export const studentReadingSessions = pgTable(
+  'student_reading_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => students.id, { onDelete: 'cascade' }),
+    passageId: uuid('passage_id')
+      .notNull()
+      .references(() => readingPassages.id),
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    pagesViewed: smallint('pages_viewed').default(0).notNull(),
+    questionsAnswered: smallint('questions_answered').default(0).notNull(),
+    questionsCorrect: smallint('questions_correct').default(0).notNull(),
+    completionStatus: readingSessionStatusEnum('completion_status')
+      .default('in_progress')
+      .notNull(),
+    timeSecondsTotal: integer('time_seconds_total'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Plain ASC btree — Postgres scans backwards efficiently for the
+    // `ORDER BY started_at DESC` query.
+    studentPassageStartIdx: index('idx_student_reading_sessions_recent').on(
+      table.studentId,
+      table.passageId,
+      table.startedAt,
+    ),
+    studentStatusIdx: index('idx_student_reading_sessions_status').on(
+      table.studentId,
+      table.completionStatus,
+    ),
+    // At most ONE in_progress session per (student, passage). A
+    // partial unique index — completed/abandoned rows are exempt so
+    // historical sessions can co-exist. Powers the atomic
+    // INSERT … ON CONFLICT DO NOTHING in the start endpoint, which
+    // closes a check-then-insert race that previously let StrictMode
+    // double-mount or rapid clicks create duplicates.
+    oneInProgressPerStudentPassage: uniqueIndex(
+      'idx_one_in_progress_per_student_passage',
+    )
+      .on(table.studentId, table.passageId)
+      .where(sql`${table.completionStatus} = 'in_progress'`),
+  }),
+);
+
+export type StudentReadingSession = typeof studentReadingSessions.$inferSelect;
+export type NewStudentReadingSession = typeof studentReadingSessions.$inferInsert;
+
+export const studentReadingAnswers = pgTable(
+  'student_reading_answers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => studentReadingSessions.id, { onDelete: 'cascade' }),
+    questionId: uuid('question_id')
+      .notNull()
+      .references(() => readingQuestions.id),
+    // Type-specific shape per the matching question's questionType:
+    //   mcq_comprehension → number (chosen options[] index)
+    //   vocab_matching    → Record<vocabId, chosenMeaning>
+    //   sequence_order    → string[] (events in user's order)
+    // Schema is intentionally permissive; the API validates against the
+    // question's declared type.
+    answerGiven: jsonb('answer_given').notNull(),
+    isCorrect: boolean('is_correct').notNull(),
+    timeSeconds: integer('time_seconds').notNull(),
+    answeredAt: timestamp('answered_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Unique on (session, question) doubles as the lookup index for
+    // "answers in session X" — no separate session_id index needed.
+    uniqueSessionQuestion: uniqueIndex('unique_session_question').on(
+      table.sessionId,
+      table.questionId,
+    ),
+    questionIdIdx: index('idx_student_reading_answers_question_id').on(table.questionId),
+  }),
+);
+
+export type StudentReadingAnswer = typeof studentReadingAnswers.$inferSelect;
+export type NewStudentReadingAnswer = typeof studentReadingAnswers.$inferInsert;
+
+// Per-(student, vocabulary) mastery rollup. Mirrors how studentProgression
+// rolls up studentXpEvents — the source events for this rollup live in
+// studentReadingAnswers (via questions tagged with vocabWordId) and in
+// passage exposure (story_pages text scanned for vocab matches at session
+// completion). The recompute job is a later task. Composite PK rather than
+// a synthetic id since (student_id, vocabulary_id) is naturally unique.
+export const studentVocabularyMastery = pgTable(
+  'student_vocabulary_mastery',
+  {
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => students.id, { onDelete: 'cascade' }),
+    vocabularyId: uuid('vocabulary_id')
+      .notNull()
+      .references(() => vocabulary.id, { onDelete: 'cascade' }),
+    exposures: integer('exposures').default(0).notNull(),
+    successes: integer('successes').default(0).notNull(),
+    failures: integer('failures').default(0).notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+    // Decay-weighted, 0.000–1.000. Stored as numeric(4,3) so we can
+    // express e.g. 0.875 without float drift; Drizzle returns it as a
+    // string at the JS boundary.
+    masteryScore: decimal('mastery_score', { precision: 4, scale: 3 })
+      .default('0')
+      .notNull(),
+    masteryUpdatedAt: timestamp('mastery_updated_at', { withTimezone: true }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.studentId, table.vocabularyId] }),
+  }),
+);
+
+export type StudentVocabularyMastery = typeof studentVocabularyMastery.$inferSelect;
+export type NewStudentVocabularyMastery = typeof studentVocabularyMastery.$inferInsert;
 
 // Simple sessions table for authentication
 export const session = pgTable('session', {

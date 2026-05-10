@@ -1,0 +1,132 @@
+{
+  "generatedAt": "2026-05-09T08:36:12.018Z",
+  "mode": "write",
+  "totals": {
+    "candidatesBeforeDedupe": 203,
+    "uniqueAfterDedupe": 195,
+    "duplicatesCollapsed": 8,
+    "skipped": 0
+  },
+  "bySourceFile": {
+    "unit-0.json": 17,
+    "unit-1.json": 10,
+    "unit-2.json": 10,
+    "unit-3.json": 10,
+    "unit-4.json": 10,
+    "unit-5.json": 10,
+    "unit-6.json": 9,
+    "unit-7.json": 10,
+    "unit-8.json": 10,
+    "unit-9.json": 11,
+    "unit-10.json": 11,
+    "unit-11.json": 11,
+    "unit-12.json": 12,
+    "unit-13.json": 19,
+    "unit-14.json": 13,
+    "unit-15.json": 22,
+    "<narrative-audit>": 8
+  },
+  "byAfFLevel": {
+    "grade1": 195
+  },
+  "byCefrLevel": {
+    "null": 195
+  },
+  "byPartOfSpeech": {
+    "other": 20,
+    "adjective": 17,
+    "noun": 134,
+    "preposition": 3,
+    "verb": 19,
+    "adverb": 2
+  },
+  "topAmbiguous": [
+    {
+      "word": "cook",
+      "detail": "kept unit-4.json#vocabulary as noun; later seen in unit-14.json#vocabulary as verb — review if you want the later POS instead"
+    }
+  ],
+  "topMultiWord": [
+    {
+      "word": "teddy bear",
+      "detail": "from unit-2.json#vocabulary, unit 2, POS=noun"
+    },
+    {
+      "word": "police officer",
+      "detail": "from unit-4.json#vocabulary, unit 4, POS=noun"
+    },
+    {
+      "word": "jungle gym",
+      "detail": "from unit-5.json#vocabulary, unit 5, POS=noun"
+    },
+    {
+      "word": "ice cream",
+      "detail": "from unit-5.json#vocabulary, unit 5, POS=noun"
+    },
+    {
+      "word": "dining room",
+      "detail": "from unit-8.json#vocabulary, unit 8, POS=noun"
+    },
+    {
+      "word": "living room",
+      "detail": "from unit-8.json#vocabulary, unit 8, POS=noun"
+    },
+    {
+      "word": "polar bear",
+      "detail": "from unit-11.json#vocabulary, unit 11, POS=noun"
+    },
+    {
+      "word": "hot chocolate",
+      "detail": "from unit-12.json#vocabulary, unit 12, POS=noun"
+    },
+    {
+      "word": "ice pop",
+      "detail": "from unit-15.json#vocabulary, unit 15, POS=noun"
+    }
+  ],
+  "duplicates": [
+    {
+      "word": "cook",
+      "detail": "kept unit-4.json#vocabulary as noun; later seen in unit-14.json#vocabulary as verb — review if you want the later POS instead"
+    },
+    {
+      "word": "ball",
+      "detail": "kept unit-2.json#vocabulary (unit 2); also seen in unit-15.json#vocabulary (unit 15)"
+    },
+    {
+      "word": "ice cream",
+      "detail": "kept unit-5.json#vocabulary (unit 5); also seen in unit-15.json#vocabulary (unit 15)"
+    },
+    {
+      "word": "kite",
+      "detail": "kept unit-2.json#vocabulary (unit 2); also seen in unit-15.json#vocabulary (unit 15)"
+    },
+    {
+      "word": "frisbee",
+      "detail": "kept unit-5.json#vocabulary (unit 5); also seen in unit-15.json#vocabulary (unit 15)"
+    },
+    {
+      "word": "play",
+      "detail": "kept unit-14.json#vocabulary (unit 14); also seen in unit-15.json#verbs (unit 15)"
+    },
+    {
+      "word": "swim",
+      "detail": "kept unit-14.json#vocabulary (unit 14); also seen in unit-15.json#verbs (unit 15)"
+    },
+    {
+      "word": "walk",
+      "detail": "kept unit-14.json#vocabulary (unit 14); also seen in unit-15.json#verbs (unit 15)"
+    }
+  ],
+  "skipped": [],
+  "functionWordCollisions": [
+    {
+      "word": "in",
+      "detail": "seeded as POS=preposition from unit-13.json#prepositions; is_function_word=true on insert"
+    },
+    {
+      "word": "on",
+      "detail": "seeded as POS=preposition from unit-13.json#prepositions; is_function_word=true on insert"
+    }
+  ]
+}

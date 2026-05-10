@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-05-09T09:08:35.715Z",
+  "mode": "write",
+  "totals": {
+    "candidates": 13,
+    "toPromote": 13,
+    "alreadyPromoted": 0,
+    "skippedMissing": 0,
+    "skippedWrongState": 0
+  },
+  "toPromote": [
+    {
+      "word": "look",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "run",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "go",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=15, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "give",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=13, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "draw",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "drink",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=15, partOfSpeech=noun) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "walk",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "play",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "read",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "write",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "find",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=15, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "make",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=15, partOfSpeech=verb) → set is_core_vocabulary=true"
+    },
+    {
+      "word": "swim",
+      "detail": "curriculum row (af_f_level=grade1, af_f_unit=14, partOfSpeech=verb) → set is_core_vocabulary=true"
+    }
+  ],
+  "alreadyPromoted": [],
+  "skippedMissing": [],
+  "skippedWrongState": []
+}

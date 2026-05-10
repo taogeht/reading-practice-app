@@ -1,0 +1,1 @@
+ALTER TABLE "vocabulary" ADD COLUMN "is_core_vocabulary" boolean DEFAULT false NOT NULL;

@@ -9,6 +9,30 @@ import {
   DeleteObjectsCommand
 } from "@aws-sdk/client-s3";
 
+// Reject path-traversal vectors and embedded slashes for any caller-supplied
+// value that becomes a path segment in an R2 key. Used by the story-asset key
+// helpers; older helpers (spelling/practice/etc.) trust their callers because
+// their inputs are constrained DB IDs or admin-curated values.
+function assertSafePathSegment(value: string, name: string): void {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${name} must be a non-empty string`);
+  }
+  if (
+    value.includes('/') ||
+    value.includes('\\') ||
+    value === '.' ||
+    value === '..'
+  ) {
+    throw new Error(`${name} contains invalid path characters: ${JSON.stringify(value)}`);
+  }
+}
+
+function assertPositiveInt(n: number, name: string): void {
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(`${name} must be a positive integer, got: ${n}`);
+  }
+}
+
 class R2Client {
   private client: S3Client;
   private bucketName: string;
@@ -237,6 +261,76 @@ class R2Client {
    */
   generatePracticeImageKey(unit: number, questionId: string): string {
     return `practice-images/unit-${unit}/${questionId}.png`;
+  }
+
+  /**
+   * Generate a file key for a reading-passage page illustration.
+   * Layout: story-images/{passageId}/page-{pageNumber}.png
+   */
+  generateStoryImageKey(passageId: string, pageNumber: number): string {
+    assertSafePathSegment(passageId, 'passageId');
+    assertPositiveInt(pageNumber, 'pageNumber');
+    return `story-images/${passageId}/page-${pageNumber}.png`;
+  }
+
+  /**
+   * Versioned variant of generateStoryImageKey for per-page regeneration.
+   * Layout: story-images/{passageId}/page-{pageNumber}.v{version}.png
+   *
+   * The image proxy at /api/images/[...key] sets Cache-Control:
+   * public, max-age=31536000, immutable. Overwriting a key would leave
+   * stale images in client caches for up to a year — versioned keys
+   * sidestep that. Old versions are orphaned in R2 and swept by a
+   * separate janitor job (not in scope here).
+   */
+  generateStoryImageKeyVersioned(
+    passageId: string,
+    pageNumber: number,
+    version: number,
+  ): string {
+    assertSafePathSegment(passageId, 'passageId');
+    assertPositiveInt(pageNumber, 'pageNumber');
+    assertPositiveInt(version, 'version');
+    return `story-images/${passageId}/page-${pageNumber}.v${version}.png`;
+  }
+
+  /**
+   * Generate a file key for a reading-passage page narration.
+   * Layout: story-audio/{passageId}/page-{pageNumber}/{voiceId}.mp3
+   *
+   * voiceId is part of the path so we can regenerate one voice's audio
+   * without invalidating the others, and can cache multiple voices per
+   * page side-by-side.
+   */
+  generateStoryAudioKey(passageId: string, pageNumber: number, voiceId: string): string {
+    assertSafePathSegment(passageId, 'passageId');
+    assertPositiveInt(pageNumber, 'pageNumber');
+    assertSafePathSegment(voiceId, 'voiceId');
+    return `story-audio/${passageId}/page-${pageNumber}/${voiceId}.mp3`;
+  }
+
+  /**
+   * Generate a file key for a reading passage's library-thumbnail cover.
+   * The cover may be a copy of page 1's image or a separately generated
+   * thumbnail; either way it lives at this stable key.
+   * Layout: story-images/{passageId}/cover.png
+   */
+  generateStoryCoverImageKey(passageId: string): string {
+    assertSafePathSegment(passageId, 'passageId');
+    return `story-images/${passageId}/cover.png`;
+  }
+
+  /**
+   * Generate a file key for a vocab_matching pair illustration. One image
+   * per (passage, vocabulary word) — drives the V2 word→picture matching
+   * format. The key is stable: regenerating the same pair in the same
+   * passage overwrites in place.
+   * Layout: story-images/{passageId}/vocab-{vocabId}.png
+   */
+  generateStoryVocabImageKey(passageId: string, vocabId: string): string {
+    assertSafePathSegment(passageId, 'passageId');
+    assertSafePathSegment(vocabId, 'vocabId');
+    return `story-images/${passageId}/vocab-${vocabId}.png`;
   }
 
   /**

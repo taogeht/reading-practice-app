@@ -7,6 +7,15 @@ export type XpEventType =
   | 'practice_first_try_bonus'
   | 'practice_wrong_first_attempt'
   | 'recording_submitted'
+  // Reading feature events — values calibrated against the existing
+  // spelling/practice scale so a kid who finishes a story feels
+  // comparably rewarded to one who wins a spelling round.
+  | 'reading_page_finished'
+  | 'reading_question_correct'
+  | 'reading_question_first_try_correct'
+  | 'reading_story_completed'
+  | 'reading_perfect_score'
+  | 'vocab_word_mastered'
   | 'daily_login'
   | 'streak_7_bonus'
   | 'streak_30_bonus'
@@ -22,6 +31,21 @@ export const XP_VALUES: Record<XpEventType, number> = {
   // answers on the same question.
   practice_wrong_first_attempt: 1,
   recording_submitted: 20,
+  // Reading XP. Page-finished is intentionally tiny (1 XP) — pages are
+  // easy and fire often; we don't want them to overwhelm the
+  // higher-effort milestones. Question-correct mirrors spelling_won
+  // (5). First-try bonus mirrors practice_first_try_bonus (2). Story
+  // completed mirrors recording_submitted (20) — both are
+  // session-level milestones. Perfect-score is the "rare" reward
+  // (25), in line with streak_7_bonus. Word-mastered (10) sits
+  // between question-correct and story-completed since crossing the
+  // threshold is meaningful but not session-rare.
+  reading_page_finished: 1,
+  reading_question_correct: 5,
+  reading_question_first_try_correct: 2,
+  reading_story_completed: 20,
+  reading_perfect_score: 25,
+  vocab_word_mastered: 10,
   daily_login: 10,
   streak_7_bonus: 25,
   streak_30_bonus: 100,
@@ -103,6 +127,42 @@ export const XP_EVENT_LABELS: Array<{
     eventType: 'practice_wrong_first_attempt',
     label: 'Try a practice question',
     description: 'Effort credit on your first attempt at a question, even if it’s wrong.',
+    icon: 'star',
+  },
+  {
+    eventType: 'reading_page_finished',
+    label: 'Read a page',
+    description: 'A small bonus for each new page you read in a story.',
+    icon: 'book',
+  },
+  {
+    eventType: 'reading_question_correct',
+    label: 'Answer a story question',
+    description: 'Each correct comprehension question after a reading.',
+    icon: 'book',
+  },
+  {
+    eventType: 'reading_question_first_try_correct',
+    label: 'First-try story bonus',
+    description: 'Bonus when you get a story question right on your first try.',
+    icon: 'book',
+  },
+  {
+    eventType: 'reading_story_completed',
+    label: 'Finish a story',
+    description: 'Big bonus the first time you finish a story (reading + questions).',
+    icon: 'book',
+  },
+  {
+    eventType: 'reading_perfect_score',
+    label: 'Perfect story score',
+    description: 'Rare bonus for getting every question right on a story.',
+    icon: 'star',
+  },
+  {
+    eventType: 'vocab_word_mastered',
+    label: 'Master a word',
+    description: 'Awarded the first time you reach mastery on a vocabulary word.',
     icon: 'star',
   },
   {

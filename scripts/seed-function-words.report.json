@@ -1,0 +1,363 @@
+{
+  "generatedAt": "2026-05-09T03:15:12.590Z",
+  "mode": "write",
+  "totals": {
+    "candidates": 87,
+    "toInsert": 84,
+    "toUpdate": 0,
+    "skipped": 3
+  },
+  "toInsert": [
+    {
+      "word": "a",
+      "detail": "new determiner"
+    },
+    {
+      "word": "an",
+      "detail": "new determiner"
+    },
+    {
+      "word": "the",
+      "detail": "new determiner"
+    },
+    {
+      "word": "am",
+      "detail": "new verb"
+    },
+    {
+      "word": "is",
+      "detail": "new verb"
+    },
+    {
+      "word": "are",
+      "detail": "new verb"
+    },
+    {
+      "word": "was",
+      "detail": "new verb"
+    },
+    {
+      "word": "were",
+      "detail": "new verb"
+    },
+    {
+      "word": "be",
+      "detail": "new verb"
+    },
+    {
+      "word": "been",
+      "detail": "new verb"
+    },
+    {
+      "word": "being",
+      "detail": "new verb"
+    },
+    {
+      "word": "do",
+      "detail": "new verb"
+    },
+    {
+      "word": "does",
+      "detail": "new verb"
+    },
+    {
+      "word": "did",
+      "detail": "new verb"
+    },
+    {
+      "word": "have",
+      "detail": "new verb"
+    },
+    {
+      "word": "has",
+      "detail": "new verb"
+    },
+    {
+      "word": "had",
+      "detail": "new verb"
+    },
+    {
+      "word": "will",
+      "detail": "new verb"
+    },
+    {
+      "word": "would",
+      "detail": "new verb"
+    },
+    {
+      "word": "can",
+      "detail": "new verb"
+    },
+    {
+      "word": "could",
+      "detail": "new verb"
+    },
+    {
+      "word": "should",
+      "detail": "new verb"
+    },
+    {
+      "word": "may",
+      "detail": "new verb"
+    },
+    {
+      "word": "might",
+      "detail": "new verb"
+    },
+    {
+      "word": "must",
+      "detail": "new verb"
+    },
+    {
+      "word": "shall",
+      "detail": "new verb"
+    },
+    {
+      "word": "i",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "you",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "he",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "she",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "it",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "we",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "they",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "me",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "him",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "her",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "us",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "them",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "my",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "your",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "his",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "its",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "our",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "their",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "this",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "that",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "these",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "those",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "who",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "what",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "where",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "when",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "why",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "how",
+      "detail": "new pronoun"
+    },
+    {
+      "word": "at",
+      "detail": "new preposition"
+    },
+    {
+      "word": "of",
+      "detail": "new preposition"
+    },
+    {
+      "word": "to",
+      "detail": "new preposition"
+    },
+    {
+      "word": "for",
+      "detail": "new preposition"
+    },
+    {
+      "word": "from",
+      "detail": "new preposition"
+    },
+    {
+      "word": "with",
+      "detail": "new preposition"
+    },
+    {
+      "word": "by",
+      "detail": "new preposition"
+    },
+    {
+      "word": "about",
+      "detail": "new preposition"
+    },
+    {
+      "word": "as",
+      "detail": "new preposition"
+    },
+    {
+      "word": "into",
+      "detail": "new preposition"
+    },
+    {
+      "word": "onto",
+      "detail": "new preposition"
+    },
+    {
+      "word": "up",
+      "detail": "new preposition"
+    },
+    {
+      "word": "down",
+      "detail": "new preposition"
+    },
+    {
+      "word": "over",
+      "detail": "new preposition"
+    },
+    {
+      "word": "through",
+      "detail": "new preposition"
+    },
+    {
+      "word": "before",
+      "detail": "new preposition"
+    },
+    {
+      "word": "after",
+      "detail": "new preposition"
+    },
+    {
+      "word": "between",
+      "detail": "new preposition"
+    },
+    {
+      "word": "among",
+      "detail": "new preposition"
+    },
+    {
+      "word": "and",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "or",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "but",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "so",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "if",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "because",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "while",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "although",
+      "detail": "new conjunction"
+    },
+    {
+      "word": "not",
+      "detail": "new adverb"
+    },
+    {
+      "word": "no",
+      "detail": "new adverb"
+    },
+    {
+      "word": "never",
+      "detail": "new adverb"
+    }
+  ],
+  "toUpdate": [],
+  "skipped": [
+    {
+      "word": "in",
+      "detail": "existing curriculum row (af_f_level=grade1, af_f_unit=13, partOfSpeech=preposition) — not promoting to function word"
+    },
+    {
+      "word": "on",
+      "detail": "existing curriculum row (af_f_level=grade1, af_f_unit=13, partOfSpeech=preposition) — not promoting to function word"
+    },
+    {
+      "word": "under",
+      "detail": "existing curriculum row (af_f_level=grade1, af_f_unit=13, partOfSpeech=preposition) — not promoting to function word"
+    }
+  ]
+}

@@ -15,7 +15,20 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/lib/db/seed.ts"
+    "db:seed": "tsx src/lib/db/seed.ts",
+    "seed:vocab": "tsx scripts/seed-vocabulary.ts",
+    "seed:function-words": "tsx scripts/seed-function-words.ts",
+    "seed:scaffold": "tsx scripts/seed-scaffold-vocabulary.ts",
+    "promote:core": "tsx scripts/promote-core-vocabulary.ts",
+    "mark:unpicturable": "tsx scripts/mark-unpicturable-vocab.ts",
+    "cleanup:drafts": "tsx scripts/cleanup-draft-passages.ts",
+    "test:plan": "tsx scripts/test-plan-generation.ts",
+    "test:prose": "tsx scripts/test-prose-generation.ts",
+    "test:regen": "tsx scripts/test-regen.ts",
+    "test:questions": "tsx scripts/test-questions.ts",
+    "test:images": "tsx scripts/test-images.ts",
+    "test:passage": "tsx scripts/test-passage.ts",
+    "bulk:passage": "tsx scripts/bulk-passage-run.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

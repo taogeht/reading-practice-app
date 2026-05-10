@@ -12,6 +12,7 @@ import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building, ExternalLi
 import { TeacherMediaSection } from "@/components/student-media/teacher-media-section";
 import { TeacherStudentPracticeSection } from "@/components/practice/teacher-student-practice-section";
 import { StudentWordMasterySection } from "@/components/spelling/student-word-mastery-section";
+import { StudentReadingMasterySection } from "@/components/reading/student-reading-mastery-section";
 
 interface StudentClass {
   id: string;
@@ -235,6 +236,8 @@ export default function TeacherStudentProfilePage() {
         {studentId && <TeacherStudentPracticeSection studentId={studentId} />}
 
         {studentId && <StudentWordMasterySection studentId={studentId} />}
+
+        {studentId && <StudentReadingMasterySection studentId={studentId} />}
 
         <Card>
           <CardHeader>

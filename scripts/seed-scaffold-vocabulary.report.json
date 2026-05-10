@@ -1,0 +1,417 @@
+{
+  "generatedAt": "2026-05-10T03:16:25.580Z",
+  "mode": "write",
+  "totals": {
+    "candidates": 100,
+    "toInsert": 12,
+    "toUpdate": 88,
+    "skippedCurriculum": 0,
+    "skippedFunction": 0
+  },
+  "toInsert": [
+    {
+      "word": "throw",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "hit",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "clap",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "pop",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "park",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "paper",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "time",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "song",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "wind",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "line",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "ice",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "together",
+      "detail": "new adverb (scaffold)"
+    }
+  ],
+  "toUpdate": [
+    {
+      "word": "see",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "smile",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "point",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "want",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "need",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "hope",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "come",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "get",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "take",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "put",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "jump",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "eat",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "sit",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "stand",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "fall",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "open",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "close",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "stop",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "help",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "show",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "ask",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "tell",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "say",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "happy",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "sad",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "nice",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "pretty",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "bad",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "behind",
+      "detail": "existing untagged row (partOfSpeech=preposition, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "in front of",
+      "detail": "existing untagged row (partOfSpeech=preposition, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "next to",
+      "detail": "existing untagged row (partOfSpeech=preposition, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "near",
+      "detail": "existing untagged row (partOfSpeech=preposition, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "too",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "also",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "very",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "desk",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "cup",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "room",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "table",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "hair",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "picture",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "grass",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "sky",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "tail",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "spot",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "wave",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "fast",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "warm",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "fun",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "hold",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "roll",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "feel",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "count",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "now",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "far",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "out",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "which",
+      "detail": "existing untagged row (partOfSpeech=pronoun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "many",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "much",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "more",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "less",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "most",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "match",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "choose",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "pick",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "word",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "meaning",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "sentence",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "story",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "page",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "order",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "number",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "event",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "part",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "group",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "set",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "true",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "false",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "correct",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "right",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "wrong",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "same",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "different",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "both",
+      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "then",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "next",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "first",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "last",
+      "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
+    }
+  ],
+  "skippedCurriculum": [],
+  "skippedFunction": []
+}

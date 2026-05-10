@@ -42,6 +42,9 @@ export const READING_LEVELS = [
       maxClausesPerSentence: 1,
     },
     targetVocabPerStory: 4,
+    // Sequence ordering is too cognitively demanding at this level —
+    // dropped here, reintroduced from Level 3. Total stays at 5.
+    questionTypeMix: { mcq_comprehension: 4, vocab_matching: 1, sequence_order: 0 },
   },
   {
     id: 2,
@@ -76,6 +79,8 @@ export const READING_LEVELS = [
       maxClausesPerSentence: 1,
     },
     targetVocabPerStory: 5,
+    // Same as Level 1 — sequence ordering deferred until Level 3.
+    questionTypeMix: { mcq_comprehension: 4, vocab_matching: 1, sequence_order: 0 },
   },
   {
     id: 3,
@@ -110,6 +115,9 @@ export const READING_LEVELS = [
       maxClausesPerSentence: 2,
     },
     targetVocabPerStory: 6,
+    // Sequence ordering returns at Level 3 — kids can hold a 4-event
+    // narrative in working memory and reorder it.
+    questionTypeMix: { mcq_comprehension: 3, vocab_matching: 1, sequence_order: 1 },
   },
   {
     id: 4,
@@ -145,6 +153,7 @@ export const READING_LEVELS = [
       maxClausesPerSentence: 2,
     },
     targetVocabPerStory: 6,
+    questionTypeMix: { mcq_comprehension: 3, vocab_matching: 1, sequence_order: 1 },
   },
   {
     id: 5,
@@ -180,11 +189,23 @@ export const READING_LEVELS = [
       maxClausesPerSentence: 3,
     },
     targetVocabPerStory: 7,
+    questionTypeMix: { mcq_comprehension: 3, vocab_matching: 1, sequence_order: 1 },
   },
 ] as const;
 
 export type ReadingLevel = (typeof READING_LEVELS)[number];
 export type ReadingLevelId = ReadingLevel['id'];
+
+/** Per-level question-type mix. The three counts must sum to 5 (total
+ *  questions per passage). Sequence ordering is dropped at Levels 1-2
+ *  because reordering 4-5 narrative events demands more working memory
+ *  than a Grade 1 ESL student reliably has; it returns at Level 3 once
+ *  short-text-comprehension fluency is established. */
+export interface QuestionTypeMix {
+  mcq_comprehension: number;
+  vocab_matching: number;
+  sequence_order: number;
+}
 
 export function getReadingLevel(id: number): ReadingLevel {
   const level = READING_LEVELS.find((l) => l.id === id);
@@ -192,6 +213,13 @@ export function getReadingLevel(id: number): ReadingLevel {
     throw new Error(`Unknown reading level id: ${id}`);
   }
   return level;
+}
+
+/** Sugar wrapper around getReadingLevel — pulls the questionTypeMix
+ *  field. Both Stage 4 (generation) and Stage 5 (validation) consume
+ *  this so neither has to re-derive the mix. */
+export function getQuestionTypeMix(levelId: number): QuestionTypeMix {
+  return getReadingLevel(levelId).questionTypeMix;
 }
 
 // AF&F levels above Grade 4 (grade5, grade6) currently have no reading-level

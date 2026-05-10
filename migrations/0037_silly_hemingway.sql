@@ -1,0 +1,1 @@
+ALTER TABLE "vocabulary" ADD COLUMN "is_picturable" boolean DEFAULT true NOT NULL;
