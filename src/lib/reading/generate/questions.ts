@@ -19,9 +19,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import {
+  applyOverridesToLevel,
   getReadingLevel,
   type QuestionTypeMix,
-  type ReadingLevel,
+  type EffectiveReadingLevel,
 } from '@/lib/reading/levels';
 import { geminiImageClient } from '@/lib/image/gemini-client';
 import { r2Client } from '@/lib/storage/r2-client';
@@ -78,7 +79,7 @@ OUTPUT
 
 `;
 
-function buildSystemPrompt(level: ReadingLevel): string {
+function buildSystemPrompt(level: EffectiveReadingLevel): string {
   const mix = level.questionTypeMix;
   // Build a human-readable breakdown listing only the non-zero counts
   // so the model isn't confused by "0 sequence_order" being a thing.
@@ -253,7 +254,12 @@ export async function generateQuestions(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
-  const level = getReadingLevel(input.readingLevelId);
+  // Effective level honors overrides (especially questionTypeMix) so
+  // the per-call output schema enforces the teacher's chosen mix.
+  const level = applyOverridesToLevel(
+    getReadingLevel(input.readingLevelId),
+    input.overrides,
+  );
 
   if (input.pages.length === 0) {
     throw new Error('generateQuestions: pages[] is empty');

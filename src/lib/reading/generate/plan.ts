@@ -17,7 +17,11 @@
 //     the raw text logged on parse failure.
 
 import Anthropic from '@anthropic-ai/sdk';
-import { getReadingLevel, type ReadingLevel } from '@/lib/reading/levels';
+import {
+  applyOverridesToLevel,
+  getReadingLevel,
+  type EffectiveReadingLevel,
+} from '@/lib/reading/levels';
 import { logInfo } from '@/lib/logger';
 import {
   PassagePlanSchema,
@@ -137,7 +141,7 @@ const PASSAGE_PLAN_JSON_SCHEMA = {
 
 // ---------- Prompt builders ----------
 
-function buildLevelConstraintsBlock(level: ReadingLevel): string {
+function buildLevelConstraintsBlock(level: EffectiveReadingLevel): string {
   const yn = (b: boolean) => (b ? 'YES' : 'NO');
   const grammar = level.grammarConstraints;
   const vocabLimits = level.vocabConstraints;
@@ -195,7 +199,11 @@ function buildCumulativeBlock(cumulative: CumulativeRow[]): string {
   return lines.join('\n');
 }
 
-function buildTargetBlock(targets: TargetRow[], seedTheme: string | undefined): string {
+function buildTargetBlock(
+  targets: TargetRow[],
+  seedTheme: string | undefined,
+  setting: string | undefined,
+): string {
   const lines: string[] = [
     'TARGET VOCABULARY (introduce ALL of these in the story; multiple words may land on the same page if natural):',
     '',
@@ -203,6 +211,10 @@ function buildTargetBlock(targets: TargetRow[], seedTheme: string | undefined): 
   for (const t of targets) {
     const example = t.exampleSentence ? `  e.g. "${t.exampleSentence}"` : '';
     lines.push(`- "${t.word}" (${t.partOfSpeech})${example}`);
+  }
+  if (setting) {
+    lines.push('');
+    lines.push(`SETTING (use this specific setting unless impossible): ${setting}`);
   }
   if (seedTheme) {
     lines.push('');
@@ -221,8 +233,11 @@ export async function generatePassagePlan(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
-  // 1. Validate reading level (throws for unknown id).
-  const level = getReadingLevel(input.readingLevel);
+  // 1. Validate reading level (throws for unknown id). Then merge in
+  //    any teacher overrides so the prompt + downstream stages all
+  //    read from one effective config.
+  const baseLevel = getReadingLevel(input.readingLevel);
+  const level = applyOverridesToLevel(baseLevel, input.overrides);
 
   // 2. Pull target rows + reject function words / missing IDs.
   const targetRows = await fetchTargetVocab(input.targetVocabIds);
@@ -234,7 +249,11 @@ export async function generatePassagePlan(
   //    so repeated calls at the same (level, vocab cap) reuse the cache.
   const levelBlock = buildLevelConstraintsBlock(level);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
-  const targetBlock = buildTargetBlock(targetRows, input.seedTheme);
+  const targetBlock = buildTargetBlock(
+    targetRows,
+    input.seedTheme,
+    input.overrides?.setting,
+  );
 
   const userContent: Anthropic.ContentBlockParam[] = [
     { type: 'text', text: levelBlock, cache_control: { type: 'ephemeral' } },

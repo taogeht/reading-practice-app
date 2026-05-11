@@ -71,6 +71,7 @@ export async function generateValidatedProse(
             plan: input.plan,
             readingLevelId: input.readingLevelId,
             cumulativeVocabIds: input.cumulativeVocabIds,
+            overrides: input.overrides,
           },
           lastFeedback,
         )
@@ -78,6 +79,7 @@ export async function generateValidatedProse(
           plan: input.plan,
           readingLevelId: input.readingLevelId,
           cumulativeVocabIds: input.cumulativeVocabIds,
+          overrides: input.overrides,
         });
 
     const validation = validatePagesProse(
@@ -86,6 +88,7 @@ export async function generateValidatedProse(
       input.readingLevelId,
       cumulativeIdentities,
       targetIdentities,
+      input.overrides,
     );
 
     const record: AttemptRecord = {

@@ -14,7 +14,11 @@
 //   user block 2  (NOT cached) — the plan + per-call instruction
 
 import Anthropic from '@anthropic-ai/sdk';
-import { getReadingLevel, type ReadingLevel } from '@/lib/reading/levels';
+import {
+  applyOverridesToLevel,
+  getReadingLevel,
+  type EffectiveReadingLevel,
+} from '@/lib/reading/levels';
 import { logInfo } from '@/lib/logger';
 import {
   PagesProseOutputSchema,
@@ -65,7 +69,7 @@ OUTPUT
 
 `;
 
-function buildSystemPrompt(level: ReadingLevel): string {
+function buildSystemPrompt(level: EffectiveReadingLevel): string {
   const grammar = level.grammarConstraints;
   const yn = (b: boolean) => (b ? 'YES' : 'NO');
   const grammarLines: string[] = [];
@@ -218,7 +222,10 @@ export async function generatePagesProse(
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
   // 1. Reading level config (throws on bad id).
-  const level = getReadingLevel(input.readingLevelId);
+  const level = applyOverridesToLevel(
+    getReadingLevel(input.readingLevelId),
+    input.overrides,
+  );
 
   // 2. Re-derive target rows from the plan's targetVocabUsed UUIDs so the
   //    model gets words rather than UUIDs in the per-page hints. Pulling
@@ -349,7 +356,10 @@ export async function generatePagesProseWithFeedback(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
-  const level = getReadingLevel(input.readingLevelId);
+  const level = applyOverridesToLevel(
+    getReadingLevel(input.readingLevelId),
+    input.overrides,
+  );
 
   const targetIds = uniqueIdsFromPlan(input.plan);
   if (targetIds.length === 0) {
@@ -452,7 +462,7 @@ export async function generatePagesProseWithFeedback(
  *  preamble changes. Top 10 unknown words by occurrence are listed —
  *  beyond that the model has plenty of signal already and the prompt
  *  starts to bloat. */
-function buildFeedbackBlock(feedback: ProseFeedback, level: ReadingLevel): string {
+function buildFeedbackBlock(feedback: ProseFeedback, level: EffectiveReadingLevel): string {
   // Pre-split each bucket by severity so we can render two top-level
   // sections: "YOU MUST FIX" (errors) and "Try to fix if possible"
   // (warnings). The unknown-word bucket has a single set-wide severity
@@ -571,7 +581,7 @@ function appendUnknownWords(
 function appendSentencesTooLong(
   lines: string[],
   items: ProseFeedback['issuesByType']['sentencesTooLong'],
-  level: ReadingLevel,
+  level: EffectiveReadingLevel,
 ): void {
   if (items.length === 0) return;
   lines.push(`Sentences too long (max ${level.maxSentenceWords} words per sentence):`);
@@ -586,7 +596,7 @@ function appendSentencesTooLong(
 function appendPagesOutOfRange(
   lines: string[],
   items: ProseFeedback['issuesByType']['pagesOutOfRange'],
-  level: ReadingLevel,
+  level: EffectiveReadingLevel,
 ): void {
   if (items.length === 0) return;
   lines.push(

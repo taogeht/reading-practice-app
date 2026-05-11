@@ -54,6 +54,55 @@ export interface GenerationCallMeta {
   durationMs: number;
 }
 
+/**
+ * Teacher-controlled overrides for a generation. Each field is optional;
+ * undefined means "use the level's default."
+ *
+ * The intent is to let teachers shape a passage for a specific lesson
+ * plan WITHOUT giving them access to validator thresholds, vocabulary
+ * CEFR caps, or other technical knobs that exist to protect pedagogical
+ * coherence. What's overridable here is roughly "length, shape, what to
+ * practice, what tense/voice"; what's NOT overridable is the cumulative
+ * vocabulary cap (Grade-3 words don't sneak into Level-2 stories).
+ */
+export interface GenerateOverrides {
+  // Length & shape
+  pageCount?: number;
+  maxSentenceWords?: number;
+  wordsPerPageMin?: number;
+  wordsPerPageMax?: number;
+
+  // Target vocabulary
+  targetVocabCount?: number;
+  targetVocabSelectionMode?: 'random_level' | 'random_unit' | 'specific';
+  targetVocabUnit?: number;
+  targetVocabIds?: string[];
+
+  // Grammar toggles (loosen the level's defaults; we don't tighten here)
+  allowPastTense?: boolean;
+  allowContractions?: boolean;
+  allowPhrasalVerbs?: boolean;
+  allowFutureTense?: boolean;
+
+  // Setting & tone — both surface to plan.ts as soft hints.
+  seedTheme?: string;
+  setting?: string;
+
+  /** strict (default): every word must be in cumulative vocab. permissive:
+   *  the unknown-word warning tier bumps so 1-4 unknowns are warnings
+   *  rather than errors — lets the model introduce stretch vocab in
+   *  context without failing the run. */
+  vocabStrictness?: 'strict' | 'permissive';
+
+  // Questions
+  questionCount?: number;
+  questionTypeMix?: {
+    mcq_comprehension: number;
+    vocab_matching: number;
+    sequence_order: number;
+  };
+}
+
 export interface GeneratePassagePlanInput {
   /** 1..5 — the id from src/lib/reading/levels.ts. */
   readingLevel: number;
@@ -65,6 +114,10 @@ export interface GeneratePassagePlanInput {
   cumulativeVocabIds?: string[];
   /** Optional creative nudge ("garden", "lost toy"). Model picks if omitted. */
   seedTheme?: string;
+  /** Teacher overrides — see GenerateOverrides. Threaded from the
+   *  orchestrator. Stage 1 (plan.ts) consumes the length/grammar/
+   *  setting fields; cumulative-vocab fields are still untouched. */
+  overrides?: GenerateOverrides;
 }
 
 export interface GeneratePassagePlanResult {
@@ -99,6 +152,9 @@ export interface GeneratePagesProseInput {
    *  set Stage 1 would have. Keep explicit if you want both stages to see
    *  exactly the same allowlist. */
   cumulativeVocabIds?: string[];
+  /** Same teacher overrides surface used in Stage 1. Stage 2 honors
+   *  pageCount / maxSentenceWords / wordsPerPage / grammar toggles. */
+  overrides?: GenerateOverrides;
 }
 
 export interface GeneratePagesProseResult {
@@ -215,6 +271,9 @@ export interface GenerateValidatedProseInput {
   /** Maximum number of generation attempts (1 = no regen, 3 = up to two
    *  retries after the first attempt). Default 3. */
   maxAttempts?: number;
+  /** Threaded into every prose call + the validator so the regen
+   *  loop honors the teacher's overrides on retries too. */
+  overrides?: GenerateOverrides;
 }
 
 export interface AttemptRecord {
@@ -358,6 +417,9 @@ export interface GenerateQuestionsInput {
    *  the V2 payload shape stays valid and the validator can recognise
    *  the deliberate skip. Production paths leave this undefined. */
   skipImages?: boolean;
+  /** Teacher overrides — Stage 4 honors questionTypeMix overrides so
+   *  the per-call output schema enforces the right counts. */
+  overrides?: GenerateOverrides;
 }
 
 export interface GenerateQuestionsResult {

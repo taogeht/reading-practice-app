@@ -36,6 +36,7 @@ import type {
   GeneratedPageImage,
   GeneratedPageProse,
   GeneratedQuestion,
+  GenerateOverrides,
   ImageValidationIssue,
   QuestionValidationIssue,
   ValidationIssue,
@@ -130,6 +131,10 @@ export interface GeneratePassageInput {
   targetVocabIds: string[];
   seedTheme?: string;
   maxProseAttempts?: number;
+  /** Teacher-controlled overrides (length, sentence cap, grammar
+   *  toggles, vocab strictness, setting, question mix). Threaded into
+   *  every stage that needs to read constraint values. */
+  overrides?: GenerateOverrides;
   /** Test-pipeline shortcut: skip both page-image generation (Stage 5)
    *  AND vocab-pair image generation in Stage 4. The DB row is still
    *  written but with status='draft', NULL coverImageKey, NULL
@@ -251,6 +256,7 @@ export async function generatePassage(
       readingLevel: input.readingLevelId,
       targetVocabIds: input.targetVocabIds,
       seedTheme: input.seedTheme,
+      overrides: input.overrides,
     });
     timing.planMs = Date.now() - t0;
     plan = r.plan;
@@ -278,6 +284,7 @@ export async function generatePassage(
       plan,
       readingLevelId: input.readingLevelId,
       maxAttempts: input.maxProseAttempts ?? DEFAULT_MAX_PROSE_ATTEMPTS,
+      overrides: input.overrides,
     });
     timing.proseMs = Date.now() - t0;
     pages = r.finalPages;
@@ -330,6 +337,7 @@ export async function generatePassage(
       readingLevelId: input.readingLevelId,
       passageId,
       skipImages: input.skipImages,
+      overrides: input.overrides,
     });
     questions = qResult.questions;
     vocabImages = qResult.vocabImages;

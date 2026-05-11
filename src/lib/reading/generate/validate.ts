@@ -19,7 +19,8 @@
 //   target_word_missing — always error.
 //   forbidden_construction — always error.
 
-import { getReadingLevel } from '@/lib/reading/levels';
+import { applyOverridesToLevel, getReadingLevel } from '@/lib/reading/levels';
+import type { GenerateOverrides } from './types';
 import { tokenizeStoryText } from './tokenize';
 import type {
   GeneratedPageProse,
@@ -34,7 +35,8 @@ interface VocabIdentity {
   word: string;
 }
 
-const UNKNOWN_WORD_WARNING_TIER = 2; // 1-2 distinct unknowns = warning; 3+ = error
+const UNKNOWN_WORD_WARNING_TIER_STRICT = 2; // 1-2 distinct unknowns = warning; 3+ = error
+const UNKNOWN_WORD_WARNING_TIER_PERMISSIVE = 4; // teacher opted in to stretch vocab
 const SENTENCE_OVER_WARNING_TIER = 2; // 1-2 words over = warning; 3+ = error
 const PAGE_RANGE_WARNING_PCT = 0.2;   // within 20% of the cap = warning
 
@@ -44,8 +46,17 @@ export function validatePagesProse(
   readingLevelId: number,
   cumulativeVocabRows: VocabIdentity[],
   targetVocabRows: VocabIdentity[],
+  overrides?: GenerateOverrides,
 ): ValidationResult {
-  const level = getReadingLevel(readingLevelId);
+  const level = applyOverridesToLevel(getReadingLevel(readingLevelId), overrides);
+  // Bump the unknown-word severity tier when the teacher chose
+  // permissive strictness — 1-4 unknowns become warnings instead of
+  // 1-2, so the model can introduce a few stretch words without
+  // failing the whole regen loop.
+  const unknownWarningTier =
+    overrides?.vocabStrictness === 'permissive'
+      ? UNKNOWN_WORD_WARNING_TIER_PERMISSIVE
+      : UNKNOWN_WORD_WARNING_TIER_STRICT;
 
   // Augment the known-vocab set with character names (proper nouns the
   // model is allowed to use). They have no DB id, but the tokenizer
@@ -177,7 +188,7 @@ export function validatePagesProse(
   // unknown_word: severity is set-wide based on distinct unknowns.
   const distinctUnknowns = new Set(rawUnknownFindings.map((f) => f.word)).size;
   const unknownSeverity: IssueSeverity =
-    distinctUnknowns <= UNKNOWN_WORD_WARNING_TIER ? 'warning' : 'error';
+    distinctUnknowns <= unknownWarningTier ? 'warning' : 'error';
   for (const f of rawUnknownFindings) {
     issues.push({
       type: 'unknown_word',

@@ -228,3 +228,249 @@ export function getQuestionTypeMix(levelId: number): QuestionTypeMix {
 export function getLevelByAfFLevel(afFLevel: string): ReadingLevel | undefined {
   return READING_LEVELS.find((l) => l.targetAfFLevel === afFLevel);
 }
+
+// ---------- Override application ----------
+//
+// The teacher-facing generation page accepts overrides for length,
+// sentence cap, grammar toggles, and so on. We model the effective
+// configuration the rest of the pipeline reads as a level-shaped
+// object — the unchanged fields come from the canonical level, the
+// overridden fields are swapped in. Everything downstream
+// (plan/prose/validate) reads from this object as if it were the
+// level. Avoids threading individual overrides through every
+// signature.
+//
+// What stays canonical regardless of overrides:
+//   - vocabConstraints (CEFR cap, allowed parts of speech) — these
+//     are the pedagogical guarantee of leveled reading.
+//   - id / name / targetAfFLevel / avgSentenceWords — identity +
+//     soft targets the model treats as hints.
+
+import type { GenerateOverrides } from './generate/types';
+
+/** Level-shaped object with overridden fields applied. The literal
+ *  types from `as const READING_LEVELS` are widened here so callers
+ *  can write to them. Otherwise structurally identical to ReadingLevel
+ *  — the rest of the pipeline reads from these fields exactly as
+ *  before and doesn't care it's a synthetic level. */
+export interface EffectiveReadingLevel {
+  id: number;
+  name: string;
+  targetAfFLevel: string;
+  maxSentenceWords: number;
+  avgSentenceWords: number;
+  pageCount: { min: number; max: number };
+  wordsPerPage: { min: number; max: number };
+  vocabConstraints: {
+    cumulativeCefrCap: string;
+    allowedPartsOfSpeech: readonly string[];
+  };
+  grammarConstraints: {
+    allowContractions: boolean;
+    allowPastTense: boolean;
+    allowFutureTense: boolean;
+    allowConditionals: boolean;
+    allowPhrasalVerbs: boolean;
+    maxClausesPerSentence: number;
+  };
+  targetVocabPerStory: number;
+  questionTypeMix: {
+    mcq_comprehension: number;
+    vocab_matching: number;
+    sequence_order: number;
+  };
+}
+
+export function applyOverridesToLevel(
+  level: ReadingLevel,
+  overrides: GenerateOverrides | undefined,
+): EffectiveReadingLevel {
+  // Spread-clone is shallow; nested objects (pageCount, wordsPerPage,
+  // grammarConstraints, questionTypeMix) need their own copies so we
+  // don't mutate the canonical READING_LEVELS entry.
+  const out: EffectiveReadingLevel = {
+    ...level,
+    pageCount: { ...level.pageCount },
+    wordsPerPage: { ...level.wordsPerPage },
+    grammarConstraints: { ...level.grammarConstraints },
+    questionTypeMix: { ...level.questionTypeMix },
+    vocabConstraints: { ...level.vocabConstraints },
+  };
+  if (!overrides) return out;
+
+  if (typeof overrides.pageCount === 'number') {
+    // Lock both ends to the single value the teacher chose so the
+    // prose stage gets an exact target rather than a range.
+    out.pageCount = { min: overrides.pageCount, max: overrides.pageCount };
+  }
+  if (typeof overrides.maxSentenceWords === 'number') {
+    out.maxSentenceWords = overrides.maxSentenceWords;
+  }
+  if (typeof overrides.wordsPerPageMin === 'number') {
+    out.wordsPerPage.min = overrides.wordsPerPageMin;
+  }
+  if (typeof overrides.wordsPerPageMax === 'number') {
+    out.wordsPerPage.max = overrides.wordsPerPageMax;
+  }
+  if (typeof overrides.allowPastTense === 'boolean') {
+    out.grammarConstraints.allowPastTense = overrides.allowPastTense;
+  }
+  if (typeof overrides.allowContractions === 'boolean') {
+    out.grammarConstraints.allowContractions = overrides.allowContractions;
+  }
+  if (typeof overrides.allowPhrasalVerbs === 'boolean') {
+    out.grammarConstraints.allowPhrasalVerbs = overrides.allowPhrasalVerbs;
+  }
+  if (typeof overrides.allowFutureTense === 'boolean') {
+    out.grammarConstraints.allowFutureTense = overrides.allowFutureTense;
+  }
+  if (typeof overrides.targetVocabCount === 'number') {
+    out.targetVocabPerStory = overrides.targetVocabCount;
+  }
+  if (overrides.questionTypeMix) {
+    out.questionTypeMix = { ...overrides.questionTypeMix };
+  }
+  return out;
+}
+
+// ---------- Override validation ----------
+//
+// Returned to the API endpoint so the teacher gets human-readable
+// errors before any generation kicks off. Bounds are universal
+// (across all levels) and deliberately loose — teachers know their
+// classes, so we trust them to set, say, "max 25 words per sentence
+// at Level 1" if that's what their lesson needs.
+
+interface OverrideValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+const PAGE_COUNT_MIN = 3;
+const PAGE_COUNT_MAX = 20;
+const MAX_SENTENCE_WORDS_MIN = 4;
+const MAX_SENTENCE_WORDS_MAX = 25;
+const TARGET_VOCAB_COUNT_MIN = 2;
+const TARGET_VOCAB_COUNT_MAX = 10;
+const WORDS_PER_PAGE_MIN = 5;
+const WORDS_PER_PAGE_MAX = 60;
+const QUESTION_COUNT_MIN = 3;
+const QUESTION_COUNT_MAX = 8;
+
+export function validateOverrides(
+  levelId: number,
+  overrides: GenerateOverrides,
+): OverrideValidationResult {
+  const errors: string[] = [];
+
+  // Reject unknown level early; otherwise the rest of validation has
+  // nothing to reference.
+  try {
+    getReadingLevel(levelId);
+  } catch {
+    errors.push(`Reading level ${levelId} is not valid.`);
+    return { valid: false, errors };
+  }
+
+  if (overrides.pageCount !== undefined) {
+    if (
+      !Number.isInteger(overrides.pageCount) ||
+      overrides.pageCount < PAGE_COUNT_MIN ||
+      overrides.pageCount > PAGE_COUNT_MAX
+    ) {
+      errors.push(
+        `Page count must be a whole number between ${PAGE_COUNT_MIN} and ${PAGE_COUNT_MAX}.`,
+      );
+    }
+  }
+  if (overrides.maxSentenceWords !== undefined) {
+    if (
+      !Number.isInteger(overrides.maxSentenceWords) ||
+      overrides.maxSentenceWords < MAX_SENTENCE_WORDS_MIN ||
+      overrides.maxSentenceWords > MAX_SENTENCE_WORDS_MAX
+    ) {
+      errors.push(
+        `Sentence length cap must be between ${MAX_SENTENCE_WORDS_MIN} and ${MAX_SENTENCE_WORDS_MAX} words.`,
+      );
+    }
+  }
+  if (overrides.targetVocabCount !== undefined) {
+    if (
+      !Number.isInteger(overrides.targetVocabCount) ||
+      overrides.targetVocabCount < TARGET_VOCAB_COUNT_MIN ||
+      overrides.targetVocabCount > TARGET_VOCAB_COUNT_MAX
+    ) {
+      errors.push(
+        `Target vocab count must be between ${TARGET_VOCAB_COUNT_MIN} and ${TARGET_VOCAB_COUNT_MAX}.`,
+      );
+    }
+  }
+  const wppMinSet = overrides.wordsPerPageMin !== undefined;
+  const wppMaxSet = overrides.wordsPerPageMax !== undefined;
+  if (wppMinSet || wppMaxSet) {
+    const min = overrides.wordsPerPageMin ?? WORDS_PER_PAGE_MIN;
+    const max = overrides.wordsPerPageMax ?? WORDS_PER_PAGE_MAX;
+    if (
+      !Number.isFinite(min) ||
+      !Number.isFinite(max) ||
+      min < WORDS_PER_PAGE_MIN ||
+      max > WORDS_PER_PAGE_MAX
+    ) {
+      errors.push(
+        `Words per page must be between ${WORDS_PER_PAGE_MIN} and ${WORDS_PER_PAGE_MAX}.`,
+      );
+    } else if (min > max) {
+      errors.push(`Words per page minimum (${min}) cannot exceed maximum (${max}).`);
+    }
+  }
+  if (overrides.questionCount !== undefined) {
+    if (
+      !Number.isInteger(overrides.questionCount) ||
+      overrides.questionCount < QUESTION_COUNT_MIN ||
+      overrides.questionCount > QUESTION_COUNT_MAX
+    ) {
+      errors.push(
+        `Question count must be between ${QUESTION_COUNT_MIN} and ${QUESTION_COUNT_MAX}.`,
+      );
+    }
+  }
+  if (overrides.questionTypeMix) {
+    const mix = overrides.questionTypeMix;
+    const sum =
+      mix.mcq_comprehension + mix.vocab_matching + mix.sequence_order;
+    const expected = overrides.questionCount ?? 5;
+    if (sum !== expected) {
+      errors.push(
+        `Question type counts must add up to ${expected} (got ${sum}: ${mix.mcq_comprehension} MCQ + ${mix.vocab_matching} vocab matching + ${mix.sequence_order} sequence order).`,
+      );
+    }
+    if (
+      mix.mcq_comprehension < 0 ||
+      mix.vocab_matching < 0 ||
+      mix.sequence_order < 0
+    ) {
+      errors.push('Question type counts cannot be negative.');
+    }
+  }
+  if (
+    overrides.targetVocabSelectionMode === 'specific' &&
+    (!overrides.targetVocabIds || overrides.targetVocabIds.length === 0)
+  ) {
+    errors.push(
+      'Specific-words mode requires at least one selected vocabulary word.',
+    );
+  }
+  if (
+    overrides.targetVocabSelectionMode === 'random_unit' &&
+    overrides.targetVocabUnit === undefined
+  ) {
+    errors.push('Random-from-unit mode requires a unit number.');
+  }
+
+  // Note: target-vocab-must-be-picturable when vocab_matching > 0 is
+  // checked in the API endpoint (it needs DB access to look up
+  // is_picturable on the supplied UUIDs). We document the contract here
+  // so the UI knows to grey out unpicturable words pre-submission.
+
+  return { valid: errors.length === 0, errors };
+}

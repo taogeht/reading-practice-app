@@ -66,4 +66,5 @@ export {
   type GeneratePassageImagesResult,
   type ImageValidationIssue,
   type ImageValidationResult,
+  type GenerateOverrides,
 } from './types';
