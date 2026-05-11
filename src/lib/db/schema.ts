@@ -82,6 +82,16 @@ export const readingSessionStatusEnum = pgEnum('reading_session_status', [
   'abandoned',
 ]);
 
+// Lifecycle of a teacher-initiated batch passage generation. `queued`
+// is the brief window between the row being inserted and the
+// background loop picking it up; `running` covers actual generation;
+// `completed` means at least one passage in the batch succeeded;
+// `failed` means every passage in the batch failed.
+export const readingGenerationJobStatusEnum = pgEnum(
+  'reading_generation_job_status',
+  ['queued', 'running', 'completed', 'failed'],
+);
+
 // Core tables
 export const users = pgTable(
   'users',
@@ -1329,6 +1339,63 @@ export const studentVocabularyMastery = pgTable(
 
 export type StudentVocabularyMastery = typeof studentVocabularyMastery.$inferSelect;
 export type NewStudentVocabularyMastery = typeof studentVocabularyMastery.$inferInsert;
+
+// Record of every teacher-initiated batch generation run. Powers the
+// "Recent jobs" panel + the per-job detail/retry flow on
+// /teacher/reading/generate. The row lives the whole lifecycle of the
+// queueMicrotask background loop — inserted up front so the response
+// can return an id that survives a serverless instance dying, and
+// updated as each passage in the batch finishes.
+//
+// `passages_results` is an append-only jsonb array of per-passage
+// outcomes (passageId + status + qualityReport + optional failure
+// info). Stored as raw jsonb rather than its own table because a
+// generation never produces more than ~5 passages and queries always
+// fetch the full job row anyway.
+//
+// `parent_job_id` is set when this row was created via the retry
+// endpoint — points back at the job whose settings we cloned. Used
+// for the "this is a retry of …" link on the detail page.
+export const readingGenerationJobs = pgTable(
+  'reading_generation_jobs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    teacherId: uuid('teacher_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    parentJobId: uuid('parent_job_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    readingLevelId: smallint('reading_level_id').notNull(),
+    countRequested: smallint('count_requested').notNull(),
+    /** Full GenerateOverrides object the teacher submitted. Used by
+     *  the retry path to re-fire with identical settings. */
+    overridesUsed: jsonb('overrides_used').notNull().default({}),
+    /** Union of vocabulary.id UUIDs used across the batch. For
+     *  specific-mode jobs, this equals the teacher's pick. For
+     *  random-mode jobs, it's whatever the picker chose — preserved
+     *  for visibility, not retry. */
+    targetVocabIds: jsonb('target_vocab_ids').notNull().default([]),
+    status: readingGenerationJobStatusEnum('status').notNull().default('queued'),
+    passagesSucceeded: smallint('passages_succeeded').notNull().default(0),
+    passagesFailed: smallint('passages_failed').notNull().default(0),
+    /** Append-only array of per-passage results; shape lives in
+     *  TS-only (StoredPassageResult) so the column stays permissive. */
+    passagesResults: jsonb('passages_results').notNull().default([]),
+  },
+  (table) => ({
+    // Powers the recent-jobs list — most-recent first, scoped to a
+    // teacher. Postgres uses a forward scan + LIMIT for DESC reads
+    // off this index.
+    teacherRecentIdx: index('idx_reading_generation_jobs_teacher_recent').on(
+      table.teacherId,
+      table.createdAt,
+    ),
+  }),
+);
+
+export type ReadingGenerationJob = typeof readingGenerationJobs.$inferSelect;
+export type NewReadingGenerationJob = typeof readingGenerationJobs.$inferInsert;
 
 // Simple sessions table for authentication
 export const session = pgTable('session', {

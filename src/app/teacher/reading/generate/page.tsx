@@ -8,6 +8,7 @@
 // rather than waiting for results.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -268,41 +269,22 @@ export default function TeacherGeneratePage() {
   };
 
   // ---- "Generation started" panel ------------------------------------
+  // Replaced the static "started" card with a live polling card so the
+  // teacher sees per-passage outcomes as they land rather than having
+  // to bounce to the review queue blind.
   if (jobResult) {
     return (
       <div className="min-h-screen bg-gray-50">
         <PageHeader />
         <div className="max-w-3xl mx-auto px-4 py-8">
-          <Card className="border-green-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-700">
-                <Sparkles className="w-5 h-5" />
-                Generation started
-              </CardTitle>
-              <CardDescription>{jobResult.message}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-700">
-                You can leave this page — generation continues in the background.
-                Approve or reject each passage from the review queue once it lands.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={() => router.push('/teacher/reading/review')}>
-                  Go to review queue
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setJobResult(null);
-                    setSubmitError(null);
-                  }}
-                >
-                  Generate more
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <JobStatusCard
+            jobId={jobResult.jobId}
+            initialMessage={jobResult.message}
+            onGenerateMore={() => {
+              setJobResult(null);
+              setSubmitError(null);
+            }}
+          />
         </div>
       </div>
     );
@@ -521,6 +503,8 @@ export default function TeacherGeneratePage() {
             )}
           </Button>
         </div>
+
+        <RecentJobsPanel />
       </div>
     </div>
   );
@@ -1235,5 +1219,317 @@ function Stepper({
         <p className="text-[10px] text-gray-400 mt-1">{disabledHint}</p>
       )}
     </div>
+  );
+}
+
+// ---- JobStatusCard ----------------------------------------------------
+// Replaces the static "Generation started" panel. Polls
+// /api/teacher/reading/jobs/[id] every 5s while the job is not
+// terminal; stops on completed/failed OR after 15 minutes of
+// polling so a stuck-mid-loop job (e.g. serverless instance killed)
+// doesn't keep us polling indefinitely.
+
+const POLL_INTERVAL_MS = 5_000;
+const POLL_MAX_DURATION_MS = 15 * 60 * 1_000;
+
+interface JobStatusDetail {
+  id: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  countRequested: number;
+  passagesSucceeded: number;
+  passagesFailed: number;
+  passagesResults: Array<{
+    passageId: string;
+    status: 'review' | 'draft' | 'failed';
+    failure?: { teacherMessage: string; technicalDetails: string; failureStage: string };
+  }>;
+  hasRetry: boolean;
+}
+
+function JobStatusCard({
+  jobId,
+  initialMessage,
+  onGenerateMore,
+}: {
+  jobId: string;
+  initialMessage: string;
+  onGenerateMore: () => void;
+}) {
+  const router = useRouter();
+  const [job, setJob] = useState<JobStatusDetail | null>(null);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    async function pollOnce() {
+      try {
+        const res = await fetch(`/api/teacher/reading/jobs/${jobId}`);
+        if (!res.ok) return;
+        const body = (await res.json()) as { job: JobStatusDetail };
+        if (cancelled) return;
+        setJob(body.job);
+      } catch {
+        // Best-effort poll; failures retry next tick.
+      }
+    }
+
+    // Fire one immediately so the card stops showing "Starting…" as
+    // soon as the row is queryable.
+    void pollOnce();
+
+    const interval = setInterval(() => {
+      if (cancelled) return;
+      if (Date.now() - startedAt > POLL_MAX_DURATION_MS) {
+        setPollTimedOut(true);
+        clearInterval(interval);
+        return;
+      }
+      void pollOnce();
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [jobId]);
+
+  // Stop the interval as soon as we observe a terminal status. The
+  // last poll lands the final state; subsequent polls would just
+  // burn requests.
+  useEffect(() => {
+    if (job?.status === 'completed' || job?.status === 'failed') {
+      // No-op — we deliberately don't clear via state; the interval
+      // closure above re-checks via pollOnce on each tick but
+      // setJob keeps rendering the latest. Polling stops naturally
+      // when the component unmounts (e.g. "Generate more" clicked).
+    }
+  }, [job?.status]);
+
+  const isTerminal = job?.status === 'completed' || job?.status === 'failed';
+  const allSucceeded =
+    job &&
+    isTerminal &&
+    job.passagesFailed === 0 &&
+    job.passagesSucceeded === job.countRequested;
+  const allFailed =
+    job && isTerminal && job.passagesSucceeded === 0;
+  const mixed = job && isTerminal && !allSucceeded && !allFailed;
+
+  const onRetry = async () => {
+    setRetrying(true);
+    try {
+      const res = await fetch(`/api/teacher/reading/jobs/${jobId}/retry`, {
+        method: 'POST',
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as { jobId: string };
+      router.push(`/teacher/reading/jobs/${body.jobId}`);
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  // Headline + colour drive off the terminal state when we have it,
+  // else show the running spinner.
+  let headline = 'Generation started';
+  let headlineCls = 'text-green-700';
+  let icon = <Sparkles className="w-5 h-5" />;
+  let description = initialMessage;
+  if (!isTerminal && job) {
+    headline = job.status === 'queued' ? 'Queued' : 'Generating…';
+    headlineCls = 'text-blue-700';
+    icon = <Loader2 className="w-5 h-5 animate-spin" />;
+    description = `${job.passagesSucceeded + job.passagesFailed} of ${job.countRequested} done so far.`;
+  }
+  if (allSucceeded && job) {
+    headline = 'Generation complete';
+    headlineCls = 'text-green-700';
+    icon = <Sparkles className="w-5 h-5" />;
+    description = `${job.passagesSucceeded} ${job.passagesSucceeded === 1 ? 'passage' : 'passages'} ready in the review queue.`;
+  } else if (mixed && job) {
+    headline = 'Generation finished with issues';
+    headlineCls = 'text-amber-700';
+    icon = <Sparkles className="w-5 h-5" />;
+    description = `${job.passagesSucceeded} of ${job.countRequested} succeeded. The rest failed — see details below.`;
+  } else if (allFailed && job) {
+    headline = 'Generation failed';
+    headlineCls = 'text-red-700';
+    icon = <Sparkles className="w-5 h-5" />;
+    description = 'No passages were created. Retry the same settings, or adjust and try again.';
+  }
+  if (pollTimedOut) {
+    headline = 'Still running';
+    headlineCls = 'text-amber-700';
+    description =
+      "Generation is taking longer than expected. It may still be running — refresh the page or open the job from Recent generations below.";
+  }
+
+  return (
+    <Card className={allFailed ? 'border-red-200' : allSucceeded ? 'border-green-200' : 'border-blue-200'}>
+      <CardHeader>
+        <CardTitle className={`flex items-center gap-2 ${headlineCls}`}>{icon} {headline}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {mixed && job && (
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            className="inline-flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900"
+          >
+            {showDetails ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+            {showDetails ? 'Hide per-passage results' : 'See details'}
+          </button>
+        )}
+        {(mixed || allFailed) && showDetails && job && (
+          <ul className="space-y-2 text-sm">
+            {job.passagesResults.map((p, i) => (
+              <li
+                key={`${p.passageId}-${i}`}
+                className={`rounded border p-2 ${p.status === 'failed' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}
+              >
+                <span className="font-medium">Passage {i + 1}:</span>{' '}
+                {p.status === 'failed'
+                  ? (p.failure?.teacherMessage ?? 'Failed — try again.')
+                  : 'Succeeded.'}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex flex-wrap gap-3">
+          {allSucceeded && (
+            <Button onClick={() => router.push('/teacher/reading/review')}>
+              Go to review queue
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+          {(mixed || allFailed) && (
+            <>
+              <Button
+                onClick={() => void onRetry()}
+                disabled={retrying}
+              >
+                {retrying ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Retrying…
+                  </>
+                ) : (
+                  <>Retry with same settings</>
+                )}
+              </Button>
+              <Button variant="outline" onClick={onGenerateMore}>
+                Adjust and try again
+              </Button>
+            </>
+          )}
+          {!isTerminal && !pollTimedOut && (
+            <Button variant="outline" onClick={onGenerateMore}>
+              Start another batch
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/teacher/reading/jobs/${jobId}`)}
+          >
+            See full job details
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---- RecentJobsPanel --------------------------------------------------
+
+interface RecentJobRow {
+  id: string;
+  createdAt: string;
+  readingLevelId: number;
+  countRequested: number;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  passagesSucceeded: number;
+  passagesFailed: number;
+  hasRetry: boolean;
+}
+
+function RecentJobsPanel() {
+  const [jobs, setJobs] = useState<RecentJobRow[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/teacher/reading/jobs');
+        if (!res.ok) return;
+        const body = (await res.json()) as { jobs: RecentJobRow[] };
+        if (!cancelled) setJobs(body.jobs.slice(0, 5));
+      } catch {
+        /* best-effort */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!jobs) return null;
+  if (jobs.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Your recent generations</CardTitle>
+        <CardDescription>
+          Latest 5 batch runs. Click a row for per-passage details + retry.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {jobs.map((j) => {
+          const statusCls = {
+            queued: 'border-gray-300 text-gray-700 bg-gray-50',
+            running: 'border-blue-300 text-blue-700 bg-blue-50',
+            completed:
+              j.passagesFailed === 0
+                ? 'border-green-300 text-green-700 bg-green-50'
+                : 'border-amber-300 text-amber-700 bg-amber-50',
+            failed: 'border-red-300 text-red-700 bg-red-50',
+          }[j.status];
+          const statusLabel = {
+            queued: 'Queued',
+            running: 'Running',
+            completed: j.passagesFailed === 0 ? '✓ All done' : '⚠ Mixed',
+            failed: '✕ Failed',
+          }[j.status];
+          return (
+            <Link
+              key={j.id}
+              href={`/teacher/reading/jobs/${j.id}`}
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
+            >
+              <Badge variant="outline" className={statusCls + ' text-xs'}>
+                {statusLabel}
+              </Badge>
+              <span className="text-sm text-gray-800">
+                Level {j.readingLevelId}, {j.countRequested}{' '}
+                {j.countRequested === 1 ? 'story' : 'stories'} —{' '}
+                {j.passagesSucceeded} succeeded, {j.passagesFailed} failed
+              </span>
+              <span className="ml-auto text-xs text-gray-500">
+                {new Date(j.createdAt).toLocaleString()}
+              </span>
+            </Link>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
