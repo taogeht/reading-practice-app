@@ -13,22 +13,36 @@ export async function GET(
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || !['teacher', 'admin'].includes(user.role)) {
+    if (!user || !['teacher', 'admin', 'student'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
-    if (!(await userCanManageRecording(user.id, user.role, id))) {
-      return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
-    }
 
+    // Load the recording row up front so we can do BOTH the student
+    // self-access check (studentId === user.id) and the teacher path
+    // (userCanManageRecording) against the same row, with one SELECT.
     const recording = await db
-      .select({ id: recordings.id, audioUrl: recordings.audioUrl })
+      .select({
+        id: recordings.id,
+        audioUrl: recordings.audioUrl,
+        studentId: recordings.studentId,
+      })
       .from(recordings)
       .where(eq(recordings.id, id))
       .limit(1);
 
     if (!recording.length) {
+      return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
+    }
+
+    // Students may only fetch THEIR own recording. Teachers/admins go
+    // through the existing class-scoped permission check.
+    if (user.role === 'student') {
+      if (recording[0].studentId !== user.id) {
+        return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
+      }
+    } else if (!(await userCanManageRecording(user.id, user.role, id))) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
 

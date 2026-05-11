@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
     // Get student's recordings/attempts for each assignment
     const studentRecordings = await db
       .select({
+        id: recordings.id,
         assignmentId: recordings.assignmentId,
         attemptNumber: recordings.attemptNumber,
         status: recordings.status,
@@ -104,6 +105,9 @@ export async function GET(request: NextRequest) {
         reviewedAt: recordings.reviewedAt,
         transcript: recordings.transcript,
         analysisJson: recordings.analysisJson,
+        // Fed to RecordingAudioPlayer's fallbackDurationSeconds so
+        // the seek bar shows the right length before metadata loads.
+        audioDurationSeconds: recordings.audioDurationSeconds,
       })
       .from(recordings)
       .where(eq(recordings.studentId, user.id))
@@ -115,6 +119,7 @@ export async function GET(request: NextRequest) {
       const attemptsList = [...assignmentRecordings]
         .sort((a, b) => (a.attemptNumber || 0) - (b.attemptNumber || 0))
         .map(r => ({
+          id: r.id,
           attemptNumber: r.attemptNumber,
           status: r.status,
           accuracyScore: r.accuracyScore !== null && r.accuracyScore !== undefined
@@ -129,6 +134,7 @@ export async function GET(request: NextRequest) {
           teacherFeedback: r.teacherFeedback || null,
           teacherReplyAudioUrl: r.teacherReplyAudioUrl || null,
           teacherReplyDurationSeconds: r.teacherReplyDurationSeconds ?? null,
+          audioDurationSeconds: r.audioDurationSeconds ?? null,
           transcript: r.transcript || null,
           analysisJson: r.analysisJson ?? null,
         }));

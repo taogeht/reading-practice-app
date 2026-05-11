@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { RecordingAudioPlayer } from "@/components/recordings/recording-audio-player";
 import {
   ChevronDown,
   ChevronRight,
@@ -28,6 +29,11 @@ interface AnalysisJson {
 }
 
 export interface AttemptCardData {
+  /** recordings.id — used to fetch the presigned download URL for
+   *  playback. Optional only for back-compat with callers that
+   *  haven't been updated to pass it; when missing, the audio
+   *  player is hidden. */
+  id?: string;
   attemptNumber: number | null;
   status: "pending" | "reviewed" | "flagged" | "submitted";
   accuracyScore: number | null;
@@ -38,6 +44,8 @@ export interface AttemptCardData {
   teacherFeedback: string | null;
   teacherReplyAudioUrl: string | null;
   teacherReplyDurationSeconds: number | null;
+  /** Stored duration for the seek bar before metadata loads. */
+  audioDurationSeconds?: number | null;
   transcript: string | null;
   analysisJson: AnalysisJson | null;
 }
@@ -56,7 +64,11 @@ export function StudentAttemptCard({ attempt }: { attempt: AttemptCardData }) {
   const hasAnalysis =
     !!analysis && (!!analysis.expectedView?.length || analysis.matched !== undefined);
   const hasFeedback = !!attempt.teacherFeedback || !!attempt.teacherReplyAudioUrl;
-  const expandable = hasAnalysis || !!attempt.transcript || hasFeedback;
+  // The student can play back their own audio whenever a recording id
+  // is on the card — independent of AI analysis / teacher feedback,
+  // so even a still-pending submission opens to a "listen back" view.
+  const hasAudio = !!attempt.id;
+  const expandable = hasAudio || hasAnalysis || !!attempt.transcript || hasFeedback;
 
   const [open, setOpen] = useState(false);
 
@@ -112,6 +124,21 @@ export function StudentAttemptCard({ attempt }: { attempt: AttemptCardData }) {
 
       {open && expandable && (
         <div className="border-t border-gray-200 bg-gray-50 px-3 py-3 space-y-3">
+          {hasAudio && attempt.id && (
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold text-gray-700 flex items-center gap-1">
+                <Mic className="w-3 h-3 text-gray-500" />
+                Listen back to your recording
+              </p>
+              <div className="bg-white rounded p-2 border">
+                <RecordingAudioPlayer
+                  recordingId={attempt.id}
+                  fallbackDurationSeconds={attempt.audioDurationSeconds ?? null}
+                />
+              </div>
+            </div>
+          )}
+
           {hasAnalysis && analysis && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-purple-900">

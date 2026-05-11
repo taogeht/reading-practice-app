@@ -61,6 +61,7 @@ type Assignment = {
   reviewedAt: string | null;
   hasTeacherFeedback: boolean;
   attemptsList: Array<{
+    id: string;
     attemptNumber: number | null;
     status: 'pending' | 'reviewed' | 'flagged' | 'submitted';
     accuracyScore: number | null;
@@ -71,6 +72,7 @@ type Assignment = {
     teacherFeedback: string | null;
     teacherReplyAudioUrl: string | null;
     teacherReplyDurationSeconds: number | null;
+    audioDurationSeconds: number | null;
     transcript: string | null;
     analysisJson: Record<string, unknown> | null;
   }>;
