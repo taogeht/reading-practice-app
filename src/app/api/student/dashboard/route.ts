@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
-import { eq, and, desc, count, sql } from 'drizzle-orm';
+import { eq, and, desc, count, inArray, sql } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -59,7 +59,15 @@ export async function GET(request: NextRequest) {
 
     const showPracticeStories = classWithPracticeStories.length > 0;
 
-    // Get student's assignments with story details
+    // Get student's assignments with story details.
+    // The query pulls BOTH published and archived rows so we can split
+    // them into two buckets on the response — "active" assignments
+    // drive the kid's main Reading view, while archived ones go into
+    // a separate "past stories" bucket the kid can open to revisit
+    // old recordings + feedback. Without this split a teacher
+    // archiving an assignment would also hide the kid's recorded
+    // history of it, which surprised more than one student in field
+    // testing.
     const studentAssignments = await db
       .select({
         id: assignments.id,
@@ -79,11 +87,11 @@ export async function GET(request: NextRequest) {
       .innerJoin(stories, eq(assignments.storyId, stories.id))
       .innerJoin(classes, eq(assignments.classId, classes.id))
       .innerJoin(classEnrollments, eq(classEnrollments.classId, classes.id))
-      // Archived assignments disappear from the student's view entirely —
-      // when the teacher hits "mark complete" they don't want students still
-      // seeing the row, regardless of whether the student finished it.
       .where(and(
-        eq(assignments.status, 'published'),
+        // Either active or archived — split downstream. Draft
+        // assignments stay hidden since the teacher hasn't sent
+        // them out yet.
+        inArray(assignments.status, ['published', 'archived']),
         eq(classEnrollments.studentId, user.id)
       ))
       .orderBy(desc(assignments.assignedAt));
@@ -113,7 +121,11 @@ export async function GET(request: NextRequest) {
       .where(eq(recordings.studentId, user.id))
       .orderBy(desc(recordings.submittedAt));
 
-    // Build assignment data with attempt information
+    // Build assignment data with attempt information. The map runs
+    // over BOTH active and archived rows; the response splits them
+    // into two top-level fields so the dashboard's main flow
+    // ignores archived (drives stats, headers, etc.) and the
+    // "Past stories" section can pick them up separately.
     const assignmentsWithStatus = studentAssignments.map(assignment => {
       const assignmentRecordings = studentRecordings.filter(r => r.assignmentId === assignment.id);
       const attemptsList = [...assignmentRecordings]
@@ -181,6 +193,13 @@ export async function GET(request: NextRequest) {
         storyId: assignment.storyId,
         storyTitle: assignment.storyTitle,
         dueAt: assignment.dueAt?.toISOString() || null,
+        // `status` (below) is the kid-facing rollup of THIS student's
+        // recording state (pending/submitted/completed). Distinct from
+        // the assignment-row status the teacher controls; we surface
+        // the latter here so the response splitter downstream can
+        // route archived rows into pastAssignments without mistaking
+        // them for "completed by the kid".
+        assignmentStatus: assignment.status,
         status,
         attempts: assignmentRecordings.length,
         maxAttempts: assignment.maxAttempts || 3,
@@ -200,10 +219,15 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Calculate statistics
-    const pendingAssignments = assignmentsWithStatus.filter(a => a.status === 'pending');
-    const submittedAssignments = assignmentsWithStatus.filter(a => a.status === 'submitted');
-    const completedAssignments = assignmentsWithStatus.filter(a => a.status === 'completed');
+    // Calculate statistics. Archived rows are excluded so "pending
+    // assignments = 3" reflects what's actually on the kid's active
+    // board, not lingering counts from teacher-archived work.
+    const activeAssignments = assignmentsWithStatus.filter(
+      (a) => a.assignmentStatus !== 'archived',
+    );
+    const pendingAssignments = activeAssignments.filter((a) => a.status === 'pending');
+    const submittedAssignments = activeAssignments.filter((a) => a.status === 'submitted');
+    const completedAssignments = activeAssignments.filter((a) => a.status === 'completed');
 
     const dashboardData = {
       student: {
@@ -216,9 +240,22 @@ export async function GET(request: NextRequest) {
         oupEmail: student.oupEmail,
         oupPassword: student.oupPassword,
       },
-      assignments: assignmentsWithStatus,
+      // Top-level split: `assignments` is the kid's active list (used
+      // by every existing UI block — pending/submitted/completed
+      // counters, the Reading tab's Assignment History sub-tabs,
+      // stats etc.), while `pastAssignments` is the bucket the new
+      // "Past stories" section renders. Splitting on the assignment-
+      // row status (not the recording status) preserves the
+      // teacher's intent: archived = "off the active board, but the
+      // kid's history of it is still revisitable."
+      assignments: assignmentsWithStatus.filter(
+        (a) => a.assignmentStatus !== 'archived',
+      ),
+      pastAssignments: assignmentsWithStatus.filter(
+        (a) => a.assignmentStatus === 'archived',
+      ),
       stats: {
-        totalAssignments: assignmentsWithStatus.length,
+        totalAssignments: activeAssignments.length,
         pendingAssignments: pendingAssignments.length,
         submittedAssignments: submittedAssignments.length,
         completedAssignments: completedAssignments.length,

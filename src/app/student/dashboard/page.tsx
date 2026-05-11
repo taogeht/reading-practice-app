@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { AvatarPickerDialog } from "@/components/students/avatar-picker-dialog";
 import { StudentSpellingSection } from "@/components/spelling/student-spelling-section";
 import { SnowmanGame } from "@/components/spelling/snowman-game";
@@ -81,6 +82,10 @@ type Assignment = {
 type DashboardData = {
   student: Student;
   assignments: Assignment[];
+  /** Archived assignments. Same shape as `assignments`; rendered in
+   *  the collapsible "Past stories" section so the kid can revisit
+   *  old work + listen back to their recordings. */
+  pastAssignments: Assignment[];
   stats: {
     totalAssignments: number;
     pendingAssignments: number;
@@ -193,6 +198,10 @@ export default function StudentDashboardPage() {
   }
 
   const { student, assignments, stats, showPracticeStories } = dashboardData;
+  // Older API responses won't include pastAssignments; fall back to []
+  // so a stale client doesn't crash on the missing field while the
+  // server rolls out.
+  const pastAssignments = dashboardData.pastAssignments ?? [];
   const pendingAssignments = assignments.filter(a => a.status === 'pending');
   const submittedAssignments = assignments.filter(a => a.status === 'submitted');
   const completedAssignments = assignments.filter(a => a.status === 'completed');
@@ -541,6 +550,77 @@ export default function StudentDashboardPage() {
               </Tabs>
             </CardContent>
           </Card>
+        )}
+
+        {/* Past stories — assignments the teacher has archived. We
+            keep the recordings visible (collapsible, default closed)
+            so a kid can still go back and listen to themselves on
+            old work. Named "Past stories" rather than "Archived" so
+            6–10-year-olds know what it means at a glance. */}
+        {pastAssignments.length > 0 && (
+          <CollapsibleCard
+            title="Past stories"
+            description="Old reading homework you've finished — tap to listen back."
+            defaultOpen={false}
+            storageKey="student-dashboard.past-stories"
+            headerAccessory={
+              <Badge variant="outline" className="text-xs">
+                {pastAssignments.length}
+              </Badge>
+            }
+          >
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+              {pastAssignments.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="border border-gray-200 bg-gray-50 rounded-lg p-3"
+                >
+                  <div className="flex items-center justify-between mb-1 gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-medium text-sm text-gray-900 truncate">
+                        {assignment.title}
+                      </h4>
+                      <p className="text-xs text-gray-600 truncate">
+                        {assignment.storyTitle}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {assignment.letterGrade && (
+                        <Badge
+                          variant="default"
+                          className="bg-purple-600 text-white text-[10px] px-1.5 py-0 h-5 font-bold"
+                        >
+                          {assignment.letterGrade}
+                        </Badge>
+                      )}
+                      {assignment.bestScore && (
+                        <Badge variant="default" className="bg-green-600 text-[10px] px-1.5 py-0 h-5">
+                          {assignment.bestScore}%
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {assignment.attemptsList.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      {assignment.attemptsList.map((att) => (
+                        <StudentAttemptCard
+                          key={att.attemptNumber ?? Math.random()}
+                          attempt={{
+                            ...att,
+                            analysisJson: att.analysisJson as never,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-2 italic">
+                      No recordings on this assignment.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CollapsibleCard>
         )}
 
         {/* Student Media Gallery - only shows if teacher has uploaded media */}
