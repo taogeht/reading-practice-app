@@ -200,6 +200,10 @@ export default function TeacherDashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => router.push('/teacher/reading')}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Reading Practice
+              </Button>
               <Button variant="outline" onClick={() => router.push('/teacher/spelling-lists')}>
                 <BookOpen className="w-4 h-4 mr-2" />
                 Manage Spelling Lists

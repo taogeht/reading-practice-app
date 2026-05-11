@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,7 +76,19 @@ export default function ReadingReviewListPage() {
   const [passages, setPassages] = useState<PassageRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('review');
+  // Read an optional `?status=` deep-link so the /teacher/reading hub
+  // can drop the user into this page with a specific filter pre-set
+  // ("Browse library" → ?status=published). Unknown values fall back
+  // to the default of 'review' so a typo can't render an empty page.
+  const searchParams = useSearchParams();
+  const initialStatus: StatusFilter = (() => {
+    const q = searchParams?.get('status');
+    if (q === 'review' || q === 'draft' || q === 'published' || q === 'archived' || q === 'all') {
+      return q;
+    }
+    return 'review';
+  })();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [sort, setSort] = useState<SortKey>('quality');
 
