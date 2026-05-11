@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Volume2, FileText, Calendar, User, Clock, Star, Trash2, Users, Sparkles } from "lucide-react";
+import { ArrowLeft, Volume2, FileText, Calendar, ChevronDown, ChevronUp, User, Clock, Star, Trash2, Users, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AIAnalysisPanel } from "@/components/grading/ai-analysis-panel";
@@ -64,10 +64,57 @@ export default function TeacherSubmissionsPage() {
   const [feedbackText, setFeedbackText] = useState<string>('');
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
+  // Per-class expand/collapse. Each page load starts every class
+  // collapsed so a teacher with many classes lands on a quiet,
+  // overview page; tapping a class header expands its content.
+  const [expandedClassIds, setExpandedClassIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  // Hide groups whose attempts have all been reviewed. Defaults ON to
+  // keep the page focused on actionable work; persisted to
+  // localStorage so the teacher's preference sticks across navigations.
+  // Bypassed when the active filter is 'reviewed' (otherwise the page
+  // would render empty).
+  const [hideReviewed, setHideReviewed] = useState<boolean>(true);
 
   useEffect(() => {
     fetchRecordings();
   }, []);
+
+  // Hydrate hide-reviewed preference from localStorage on mount.
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem('teacher-submissions.hide-reviewed');
+      if (v === 'off') setHideReviewed(false);
+      else if (v === 'on') setHideReviewed(true);
+    } catch {
+      /* private-mode safe */
+    }
+  }, []);
+
+  const toggleHideReviewed = () => {
+    setHideReviewed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(
+          'teacher-submissions.hide-reviewed',
+          next ? 'on' : 'off',
+        );
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
+  const toggleClassExpanded = (classId: string) => {
+    setExpandedClassIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(classId)) next.delete(classId);
+      else next.add(classId);
+      return next;
+    });
+  };
 
   const fetchRecordings = async () => {
     try {
@@ -256,7 +303,19 @@ export default function TeacherSubmissionsPage() {
       group.attempts.sort((a, b) => (a.attemptNumber || 0) - (b.attemptNumber || 0));
       const matchesFilter =
         filter === 'all' || group.attempts.some(a => a.status === filter);
-      if (matchesFilter) filteredGroups.push(group);
+      if (!matchesFilter) continue;
+      // Hide-reviewed: skip groups whose every attempt is reviewed
+      // already. Bypassed when the active filter is 'reviewed' so
+      // the teacher can still explicitly browse them.
+      if (
+        hideReviewed &&
+        filter !== 'reviewed' &&
+        group.attempts.length > 0 &&
+        group.attempts.every((a) => a.status === 'reviewed')
+      ) {
+        continue;
+      }
+      filteredGroups.push(group);
     }
 
     // Group by class
@@ -349,6 +408,31 @@ export default function TeacherSubmissionsPage() {
           </Card>
         </div>
 
+        {/* Hide-reviewed toggle. The data stays in the DB; this is a
+            purely client-side filter so the teacher can declutter
+            without losing history. Disabled (visually muted) when the
+            active filter is 'reviewed' so the teacher doesn't get
+            an empty page. */}
+        <div className="mb-6 flex items-center justify-end">
+          <label
+            className={`inline-flex items-center gap-2 text-sm select-none ${
+              filter === 'reviewed' ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 cursor-pointer'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={hideReviewed}
+              onChange={toggleHideReviewed}
+              disabled={filter === 'reviewed'}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            Hide reviewed submissions
+            <span className="text-xs text-gray-400">
+              (kept in records, just hidden here)
+            </span>
+          </label>
+        </div>
+
         {error && (
           <Card className="mb-6">
             <CardContent className="p-6">
@@ -374,22 +458,68 @@ export default function TeacherSubmissionsPage() {
           </Card>
         ) : (
           <div className="space-y-8">
-            {Object.values(groupsByClass).map(({ className, classId, groups }) => (
+            {Object.values(groupsByClass).map(({ className, classId, groups }) => {
+              const expanded = expandedClassIds.has(classId);
+              const pendingInClass = groups.reduce(
+                (n, g) => n + g.attempts.filter((a) => a.status === 'pending').length,
+                0,
+              );
+              const flaggedInClass = groups.reduce(
+                (n, g) => n + g.attempts.filter((a) => a.status === 'flagged').length,
+                0,
+              );
+              return (
               <div key={classId} className="space-y-4">
-                <div className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm">
+                {/* Clickable class header — toggles the per-class
+                    body. The Delete button stops propagation so the
+                    teacher can't accidentally fire the destroy
+                    action while expanding the class. */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggleClassExpanded(classId)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleClassExpanded(classId);
+                    }
+                  }}
+                  className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm cursor-pointer select-none hover:bg-gray-50"
+                  aria-expanded={expanded}
+                >
                   <div className="flex items-center gap-3">
+                    {expanded ? (
+                      <ChevronUp className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-500" />
+                    )}
                     <Users className="w-5 h-5 text-blue-600" />
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">{className}</h2>
-                      <p className="text-sm text-gray-600">
-                        {groups.length} student submission{groups.length !== 1 ? 's' : ''}
+                      <p className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
+                        <span>
+                          {groups.length} student submission{groups.length !== 1 ? 's' : ''}
+                        </span>
+                        {pendingInClass > 0 && (
+                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-800 border-yellow-300">
+                            {pendingInClass} pending
+                          </Badge>
+                        )}
+                        {flaggedInClass > 0 && (
+                          <Badge variant="outline" className="text-xs bg-red-50 text-red-800 border-red-300">
+                            {flaggedInClass} flagged
+                          </Badge>
+                        )}
                       </p>
                     </div>
                   </div>
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => deleteAllClassRecordings(classId, className)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteAllClassRecordings(classId, className);
+                    }}
                     className="bg-red-600 hover:bg-red-700"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -397,6 +527,7 @@ export default function TeacherSubmissionsPage() {
                   </Button>
                 </div>
 
+                {expanded && (
                 <div className="space-y-4 ml-4">
                   {groups.map((group) => {
                     const studentName = `${group.studentFirstName} ${group.studentLastName}`;
@@ -611,8 +742,10 @@ export default function TeacherSubmissionsPage() {
                     );
                   })}
                 </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

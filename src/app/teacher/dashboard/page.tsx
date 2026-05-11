@@ -10,6 +10,7 @@ import { CreateStoryDialog } from "@/components/stories/create-story-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
 import { TeacherLoginActivityCard } from "@/components/activity/teacher-login-activity-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -400,14 +401,19 @@ export default function TeacherDashboardPage() {
           {/* Left Column - Recent Activity */}
           <div className="lg:col-span-1 space-y-6">
             {/* Recent Submissions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Submissions</CardTitle>
-                <CardDescription>
-                  Latest student recordings to review
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <CollapsibleCard
+              title="Recent Submissions"
+              description="Latest student recordings to review"
+              storageKey="teacher-dashboard.recent-submissions"
+              headerAccessory={
+                recentSubmissions.length > 0 ? (
+                  <Badge variant="outline" className="text-xs">
+                    {recentSubmissions.length}
+                  </Badge>
+                ) : null
+              }
+              bodyClassName="space-y-4"
+            >
                 {recentSubmissions.map((submission) => (
                   <div key={submission.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer">
                     <div className="flex items-start justify-between mb-2">
@@ -458,8 +464,7 @@ export default function TeacherDashboardPage() {
                 >
                   View All Submissions
                 </Button>
-              </CardContent>
-            </Card>
+            </CollapsibleCard>
 
             {/* Assignment Progress */}
             <Card>
@@ -592,22 +597,18 @@ export default function TeacherDashboardPage() {
 
           {/* Right Column - Story Library */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Story Library</CardTitle>
-                <CardDescription>
-                  Manage your reading materials and create assignments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <StoryLibrary
-                  variant="grid"
-                  showCreateButton={true}
-                  selectable={true}
-                  onCreateStory={() => setShowCreateStory(true)}
-                />
-              </CardContent>
-            </Card>
+            <CollapsibleCard
+              title="Story Library"
+              description="Manage your reading materials and create assignments"
+              storageKey="teacher-dashboard.story-library"
+            >
+              <StoryLibrary
+                variant="grid"
+                showCreateButton={true}
+                selectable={true}
+                onCreateStory={() => setShowCreateStory(true)}
+              />
+            </CollapsibleCard>
           </div>
         </div>
       </div>
