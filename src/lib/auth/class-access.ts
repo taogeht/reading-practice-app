@@ -35,6 +35,31 @@ export async function userCanManageClass(
   return rows.length > 0;
 }
 
+// True iff the user is a co-teacher only — owns zero classes but appears on
+// at least one class_teachers row. Used to trim owner-only sections from the
+// teacher dashboard (story library, archived stories, quick actions). Mixed
+// users (own one class, co-teach another) are NOT co-teacher-only and still
+// see the full dashboard; class-detail gating handles them per-class via
+// userIsClassPrimary.
+export async function isCoTeacherOnly(
+  userId: string,
+  role: string,
+): Promise<boolean> {
+  if (role !== 'teacher') return false;
+  const owned = await db
+    .select({ id: classes.id })
+    .from(classes)
+    .where(eq(classes.teacherId, userId))
+    .limit(1);
+  if (owned.length > 0) return false;
+  const coTaught = await db
+    .select({ classId: classTeachers.classId })
+    .from(classTeachers)
+    .where(eq(classTeachers.teacherId, userId))
+    .limit(1);
+  return coTaught.length > 0;
+}
+
 // True iff the user is the primary teacher of the class. Used by actions only
 // the primary should perform (delete class, manage co-teachers).
 export async function userIsClassPrimary(

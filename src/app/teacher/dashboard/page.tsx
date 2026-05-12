@@ -73,6 +73,10 @@ type AssignmentSummary = {
 
 type DashboardData = {
   teacher: Teacher;
+  /** True when the user owns zero classes but co-teaches at least one.
+   *  Hides Story Library, Archived Stories, and the Quick Actions card —
+   *  all of which expose owner-only actions. */
+  isCoTeacherOnly: boolean;
   stats: Stats;
   recentSubmissions: Submission[];
   assignmentsSummary: AssignmentSummary[];
@@ -540,80 +544,86 @@ export default function TeacherDashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setShowCreateAssignment(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Assignment
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setShowCreateClass(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Class
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setShowCreateStudent(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Student
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => router.push('/teacher/classes')}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Manage Classes & Students
-                </Button>
-              </CardContent>
-            </Card>
+            {/* Quick Actions — owner-only, hidden for pure co-teachers. */}
+            {!dashboardData.isCoTeacherOnly && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setShowCreateAssignment(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Assignment
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setShowCreateClass(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Class
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setShowCreateStudent(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add New Student
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => router.push('/teacher/classes')}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Manage Classes & Students
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Archived Stories Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Archived Stories</CardTitle>
-                <CardDescription>
-                  Stories you've archived - not visible to students
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            {/* Archived Stories — owner-only. */}
+            {!dashboardData.isCoTeacherOnly && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Archived Stories</CardTitle>
+                  <CardDescription>
+                    Stories you've archived - not visible to students
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StoryLibrary
+                    variant="compact"
+                    archivedOnly={true}
+                    selectable={true}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Right Column - Story Library (owner-only). */}
+          {!dashboardData.isCoTeacherOnly && (
+            <div className="lg:col-span-2">
+              <CollapsibleCard
+                title="Story Library"
+                description="Manage your reading materials and create assignments"
+                storageKey="teacher-dashboard.story-library"
+              >
                 <StoryLibrary
-                  variant="compact"
-                  archivedOnly={true}
+                  variant="grid"
+                  showCreateButton={true}
                   selectable={true}
+                  onCreateStory={() => setShowCreateStory(true)}
                 />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Story Library */}
-          <div className="lg:col-span-2">
-            <CollapsibleCard
-              title="Story Library"
-              description="Manage your reading materials and create assignments"
-              storageKey="teacher-dashboard.story-library"
-            >
-              <StoryLibrary
-                variant="grid"
-                showCreateButton={true}
-                selectable={true}
-                onCreateStory={() => setShowCreateStory(true)}
-              />
-            </CollapsibleCard>
-          </div>
+              </CollapsibleCard>
+            </div>
+          )}
         </div>
       </div>
 

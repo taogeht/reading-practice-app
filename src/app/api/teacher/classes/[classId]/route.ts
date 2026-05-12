@@ -74,12 +74,22 @@ export async function GET(
       .where(eq(classEnrollments.classId, classId))
       .orderBy(users.firstName, users.lastName);
 
+    // Whether the calling user is the primary teacher of this class.
+    // Admins read as primary so they keep their full toolbox. Drives
+    // UI gating on the class detail page (advanced settings, progress,
+    // weekly recap, syllabus import — primary-only sections).
+    const callerIsPrimary =
+      user.role === 'admin'
+        ? true
+        : await userIsClassPrimary(user.id, classId);
+
     return NextResponse.json({
       class: {
         ...classData[0],
         studentCount: enrolledStudents.length,
         students: enrolledStudents,
-      }
+      },
+      isPrimary: callerIsPrimary,
     }, { status: 200 });
 
   } catch (error) {

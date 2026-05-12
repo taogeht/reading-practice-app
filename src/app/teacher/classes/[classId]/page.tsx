@@ -82,6 +82,12 @@ export default function ClassDetailPage() {
   const classId = params.classId as string;
 
   const [classData, setClassData] = useState<Class | null>(null);
+  // Whether the current user is the primary teacher of this class.
+  // false → user is a co-teacher; hide owner-only sections (advanced
+  // settings, syllabus import, class progress / weekly-recap shortcuts).
+  // Server enforces all the destructive endpoints separately; this is
+  // strictly UI gating.
+  const [isPrimary, setIsPrimary] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
@@ -119,6 +125,7 @@ export default function ClassDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setClassData(data.class);
+        setIsPrimary(data.isPrimary !== false);
         setEditForm({
           name: data.class.name,
           description: data.class.description || "",
@@ -430,30 +437,34 @@ export default function ClassDetailPage() {
               <FileText className="w-4 h-4 mr-1.5" />
               Assignments
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/teacher/classes/${classId}/progress`)}
-            >
-              <BookOpen className="w-4 h-4 mr-1.5" />
-              Class Progress
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/teacher/classes/${classId}/weekly-recap`)}
-            >
-              <CalendarDays className="w-4 h-4 mr-1.5" />
-              Weekly Recap
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSyllabusImport(true)}
-            >
-              <FileSpreadsheet className="w-4 h-4 mr-1.5" />
-              Import Syllabus
-            </Button>
+            {isPrimary && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/teacher/classes/${classId}/progress`)}
+                >
+                  <BookOpen className="w-4 h-4 mr-1.5" />
+                  Class Progress
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/teacher/classes/${classId}/weekly-recap`)}
+                >
+                  <CalendarDays className="w-4 h-4 mr-1.5" />
+                  Weekly Recap
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSyllabusImport(true)}
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-1.5" />
+                  Import Syllabus
+                </Button>
+              </>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -487,54 +498,57 @@ export default function ClassDetailPage() {
             {/* Login Activity */}
             <LoginActivitySection classId={classId} defaultExpanded={false} />
 
-            {/* Advanced Settings - Collapsible */}
-            <details className="group">
-              <summary className="cursor-pointer list-none p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <Settings className="w-4 h-4" />
-                    <span className="text-sm">Advanced Settings</span>
+            {/* Advanced Settings - Collapsible — primary-only (contains
+                class edit + delete; co-teachers don't own this class). */}
+            {isPrimary && (
+              <details className="group">
+                <summary className="cursor-pointer list-none p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <Settings className="w-4 h-4" />
+                      <span className="text-sm">Advanced Settings</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" />
                   </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" />
-                </div>
-              </summary>
-              <div className="mt-2 space-y-3">
-                <div className="p-4 border rounded-lg bg-white">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit Class
-                  </Button>
-                </div>
-                <div className="p-4 border border-red-200 rounded-lg bg-red-50/50">
-                  <h4 className="text-red-600 font-medium flex items-center gap-2 mb-2">
-                    <Trash2 className="w-4 h-4" />
-                    Danger Zone
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Irreversible actions for this class
-                  </p>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteClass}
-                    size="sm"
-                    disabled={classData.studentCount > 0}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Class
-                  </Button>
-                  {classData.studentCount > 0 && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Remove all students first
+                </summary>
+                <div className="mt-2 space-y-3">
+                  <div className="p-4 border rounded-lg bg-white">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit3 className="w-4 h-4 mr-2" />
+                      Edit Class
+                    </Button>
+                  </div>
+                  <div className="p-4 border border-red-200 rounded-lg bg-red-50/50">
+                    <h4 className="text-red-600 font-medium flex items-center gap-2 mb-2">
+                      <Trash2 className="w-4 h-4" />
+                      Danger Zone
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Irreversible actions for this class
                     </p>
-                  )}
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteClass}
+                      size="sm"
+                      disabled={classData.studentCount > 0}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Class
+                    </Button>
+                    {classData.studentCount > 0 && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        Remove all students first
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </details>
+              </details>
+            )}
           </div>
 
           {/* Right Column - Main Content (drag to reorder) */}

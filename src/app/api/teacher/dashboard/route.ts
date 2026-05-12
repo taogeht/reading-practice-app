@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { accessibleClassIds } from '@/lib/auth/class-access';
+import { accessibleClassIds, isCoTeacherOnly } from '@/lib/auth/class-access';
 import {
   classes,
   assignments,
@@ -201,6 +201,11 @@ export async function GET(request: NextRequest) {
       completedStudents: Number(row.completedStudents ?? 0),
     }));
 
+    // True when the user owns zero classes but co-teaches at least one.
+    // Drives dashboard-level UI gating; per-class gating still uses
+    // userIsClassPrimary so mixed users see full controls on owned classes.
+    const coTeacherOnly = await isCoTeacherOnly(user.id, user.role);
+
     const dashboardData = {
       teacher: {
         id: user.id,
@@ -214,6 +219,7 @@ export async function GET(request: NextRequest) {
           recentActivity: 0, // We'll calculate this per class if needed
         }))
       },
+      isCoTeacherOnly: coTeacherOnly,
       stats: {
         totalStudents,
         activeAssignments: activeAssignmentsResult[0]?.count || 0,
