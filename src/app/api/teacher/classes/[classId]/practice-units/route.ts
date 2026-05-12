@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, inArray } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { userCanManageClass, userIsClassPrimary } from '@/lib/auth/class-access';
 import { db } from '@/lib/db';
 import { classes, classPracticeUnits } from '@/lib/db/schema';
 import { isAvailablePracticeUnit, AVAILABLE_PRACTICE_UNITS } from '@/lib/practice/units';
@@ -20,15 +21,16 @@ export async function GET(
 
     const { classId } = await params;
 
+    // Read is open to any class member (primary or co-teacher).
+    if (!(await userCanManageClass(user.id, user.role, classId))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
     const classRow = await db.query.classes.findFirst({
         where: eq(classes.id, classId),
-        columns: { id: true, teacherId: true },
+        columns: { id: true },
     });
     if (!classRow) {
         return NextResponse.json({ error: 'Class not found' }, { status: 404 });
-    }
-    if (user.role !== 'admin' && classRow.teacherId !== user.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const rows = await db
@@ -55,15 +57,18 @@ export async function PUT(
 
     const { classId } = await params;
 
+    // Settings change → primary teacher (or admin) only.
+    const allowed =
+        user.role === 'admin' || (await userIsClassPrimary(user.id, classId));
+    if (!allowed) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
     const classRow = await db.query.classes.findFirst({
         where: eq(classes.id, classId),
-        columns: { id: true, teacherId: true },
+        columns: { id: true },
     });
     if (!classRow) {
         return NextResponse.json({ error: 'Class not found' }, { status: 404 });
-    }
-    if (user.role !== 'admin' && classRow.teacherId !== user.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     let body: { units?: unknown };
