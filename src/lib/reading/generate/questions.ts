@@ -391,11 +391,12 @@ export async function generateQuestions(
   const questions: GeneratedQuestion[] = [];
   for (const q of intermediate) {
     if (q.type === 'mcq_comprehension') {
+      const shuffled = shuffleMcqOptions(q.payload.options, q.payload.correctIndex);
       questions.push({
         type: 'mcq_comprehension',
         questionText: q.questionText,
         orderIndex: q.orderIndex,
-        payload: q.payload,
+        payload: shuffled,
         evidenceQuote: q.evidenceQuote,
         evidencePageNumber: q.evidencePageNumber,
       });
@@ -513,18 +514,52 @@ export async function generateQuestions(
   return { questions, meta, vocabImages, vocabImageCallCount };
 }
 
+/** Fisher–Yates shuffle for MCQ options. The model has a strong bias
+ *  toward putting the correct answer in position 0 — without this, every
+ *  story's first MCQ has answer "A", which lets students game the quiz.
+ *  Reshuffles until the new correctIndex !== the input correctIndex so
+ *  we never accidentally land back on the model's choice. (Exported so
+ *  regen-question.ts can call the same routine on single-question
+ *  regeneration paths.) */
+export function shuffleMcqOptions(
+  options: string[],
+  correctIndex: number,
+): { options: string[]; correctIndex: number } {
+  if (options.length <= 1) return { options: [...options], correctIndex };
+  const correctOption = options[correctIndex]!;
+  // Run Fisher–Yates; loop if the correct answer landed in the same slot.
+  // Bounded retries so a degenerate options set (duplicates) can't spin
+  // forever — 8 attempts is comfortably above any practical bad luck.
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const shuffled = [...options];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    }
+    const newIdx = shuffled.indexOf(correctOption);
+    if (newIdx !== correctIndex) {
+      return { options: shuffled, correctIndex: newIdx };
+    }
+  }
+  // Fallback: deterministic rotation so we never return the model's order.
+  const rotated = [...options.slice(1), options[0]!];
+  const rotatedIdx = rotated.indexOf(correctOption);
+  return { options: rotated, correctIndex: rotatedIdx };
+}
+
 /** Vocab image prompt — single object, white background, no character.
  *  Distinct from page-image prompts (which describe a scene with the
- *  story's cast); these stand alone as picture-card art. */
+ *  story's cast); these stand alone as picture-card art.
+ *
+ *  Leads with a declarative sentence so Gemini commits instead of
+ *  asking "what would you like illustrated" — fragment-style prompts
+ *  caused conversational replies for abstract nouns like "rectangle". */
 function buildVocabImagePrompt(word: string): string {
   return [
-    `${word}`,
-    'simple kid-friendly illustration',
-    'watercolor style',
-    'soft pastel colors',
-    'single object centered',
-    'white background',
-    'no text, no letters, no numbers',
-    'age 6-10',
-  ].join(', ');
+    `An illustration of a ${word}.`,
+    `The ${word} is the only subject, centered on a clean white background.`,
+    'Simple kid-friendly art, watercolor style, soft pastel colors.',
+    'No text, no letters, no numbers in the image.',
+    'Style: picture book for ages 6–10.',
+  ].join(' ');
 }

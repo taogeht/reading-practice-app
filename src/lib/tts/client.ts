@@ -27,6 +27,24 @@ export interface TTSGenerationResult {
 
 const { TextToSpeechClient } = textToSpeech;
 
+/** Normalise a PEM private key read from an env var. Handles:
+ *   1. Surrounding double or single quotes that some env loaders leave in.
+ *   2. Literal `\n` (backslash + n) → real newline.
+ *   3. Windows `\r\n` line endings → unix `\n`.
+ *   4. Leading / trailing whitespace.
+ *  Returns a string OpenSSL can parse as PEM. */
+function normalizePemKey(input: string): string {
+  let s = input.trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1);
+  }
+  s = s.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+  return s.trim();
+}
+
 const DEFAULT_VOICES: TTSVoice[] = [
   // Journey voices — Google's most natural, conversational voices
   {
@@ -129,7 +147,7 @@ class GoogleTtsClient {
       return;
     }
 
-    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
+    const privateKey = normalizePemKey(privateKeyRaw);
 
     try {
       this.client = new TextToSpeechClient({

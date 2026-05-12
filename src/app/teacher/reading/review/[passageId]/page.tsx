@@ -20,6 +20,7 @@ import {
   Pencil,
   RefreshCw,
   Sparkles,
+  Volume2,
   X,
 } from "lucide-react";
 import { READING_LEVELS } from "@/lib/reading/levels";
@@ -50,6 +51,11 @@ interface PageRow {
   text: string;
   imageKey: string | null;
   imagePromptUsed: string | null;
+  /** R2 key for the cached per-page TTS audio. NULL until the teacher
+   *  generates audio via the audio panel. */
+  ttsAudioKey: string | null;
+  /** Voice id used for the cached audio (e.g. "en-US-Journey-F"). */
+  ttsVoice: string | null;
   /** ISO timestamp of the most recent manual edit; null if never edited. */
   editedAt: string | null;
   editedBy: string | null;
@@ -122,6 +128,12 @@ export default function ReadingReviewFocusPage() {
   const [error, setError] = useState<string | null>(null);
   const [action, setAction] = useState<null | 'approving' | 'rejecting' | string>(null);
   const [zoomImageKey, setZoomImageKey] = useState<string | null>(null);
+  // Audio generation panel — voice + speed are local state; "generating"
+  // disables the button while the per-page TTS calls run server-side.
+  const [audioVoice, setAudioVoice] = useState<string>('en-US-Journey-F');
+  const [audioRate, setAudioRate] = useState<number>(1.0);
+  const [audioBusy, setAudioBusy] = useState<boolean>(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const [edit, setEdit] = useState<EditState>({
     pageNumber: null,
     draft: '',
@@ -274,6 +286,28 @@ export default function ReadingReviewFocusPage() {
     }
   };
 
+  const onGenerateAudio = async () => {
+    if (!passageId) return;
+    setAudioBusy(true);
+    setAudioError(null);
+    try {
+      const res = await fetch(`/api/teacher/reading/passages/${passageId}/audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceId: audioVoice, speakingRate: audioRate }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      await load();
+    } catch (err) {
+      setAudioError(err instanceof Error ? err.message : 'Failed');
+    } finally {
+      setAudioBusy(false);
+    }
+  };
+
   const onRegenQuestion = async (questionId: string) => {
     if (!passageId) return;
     setAction(`regen-q-${questionId}`);
@@ -394,6 +428,90 @@ export default function ReadingReviewFocusPage() {
           </Card>
         )}
 
+        {/* Audio generation panel */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Volume2 className="w-4 h-4 text-blue-600" />
+              Narration audio
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Voice
+                </label>
+                <select
+                  value={audioVoice}
+                  onChange={(e) => setAudioVoice(e.target.value)}
+                  disabled={audioBusy}
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                >
+                  <optgroup label="Journey (most natural; ignores speed)">
+                    <option value="en-US-Journey-F">Journey Female</option>
+                    <option value="en-US-Journey-D">Journey Male</option>
+                    <option value="en-US-Journey-O">Journey Child</option>
+                  </optgroup>
+                  <optgroup label="Studio (professional; honors speed)">
+                    <option value="en-US-Studio-O">Studio Female</option>
+                    <option value="en-US-Studio-Q">Studio Male</option>
+                  </optgroup>
+                  <optgroup label="Neural2 (clear; honors speed)">
+                    <option value="en-US-Neural2-F">Neural2 Female</option>
+                    <option value="en-US-Neural2-D">Neural2 Male</option>
+                    <option value="en-GB-Neural2-A">UK Narrator (Female)</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Speed: {audioRate.toFixed(2)}× {audioVoice.includes('Journey') && '(Journey ignores)'}
+                </label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="1.5"
+                  step="0.05"
+                  value={audioRate}
+                  onChange={(e) => setAudioRate(parseFloat(e.target.value))}
+                  disabled={audioBusy}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-gray-500 mt-0.5">
+                  <span>0.5×</span>
+                  <span>1.0×</span>
+                  <span>1.5×</span>
+                </div>
+              </div>
+              <Button onClick={onGenerateAudio} disabled={audioBusy}>
+                {audioBusy ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-4 h-4 mr-2" />
+                    Generate audio
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Generates one audio clip per page using Google Cloud TTS. Overwrites
+              any prior cached audio for this passage. Journey voices are the most
+              natural but ignore the speed slider — pick Studio or Neural2 if you
+              need slower playback.
+            </p>
+            {audioError && (
+              <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-sm text-red-800">
+                {audioError}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Pages */}
         <Card>
           <CardHeader>
@@ -437,6 +555,21 @@ export default function ReadingReviewFocusPage() {
                       </>
                     )}
                   </Button>
+                  {p.ttsAudioKey && (
+                    <div className="text-xs text-gray-600">
+                      <audio
+                        controls
+                        preload="none"
+                        src={`/api/audio/${p.ttsAudioKey}`}
+                        className="w-full"
+                      />
+                      {p.ttsVoice && (
+                        <p className="text-[10px] text-gray-500 mt-1">
+                          {p.ttsVoice}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center justify-between gap-2">

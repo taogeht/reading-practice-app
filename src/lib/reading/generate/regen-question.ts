@@ -20,6 +20,7 @@ import {
   type GenerationCallMeta,
   type PassagePlan,
 } from './types';
+import { shuffleMcqOptions } from './questions';
 
 const MODEL = 'claude-sonnet-4-6';
 const TEMPERATURE = 0.5;
@@ -214,14 +215,15 @@ export async function generateSingleQuestion(
 
   let question: GeneratedQuestion;
   if (result.data.type === 'mcq_comprehension') {
+    const shuffled = shuffleMcqOptions(
+      result.data.payload.options,
+      result.data.payload.correctIndex,
+    );
     question = {
       type: 'mcq_comprehension',
       questionText: result.data.questionText,
       orderIndex: input.orderIndex,
-      payload: {
-        options: result.data.payload.options,
-        correctIndex: result.data.payload.correctIndex,
-      },
+      payload: shuffled,
       evidenceQuote: result.data.evidenceQuote,
       evidencePageNumber: result.data.evidencePageNumber,
     };
@@ -411,13 +413,10 @@ function buildTaskBlock(
  *  prompt template is small and stable). */
 function buildVocabImagePromptForRegen(word: string): string {
   return [
-    `${word}`,
-    'simple kid-friendly illustration',
-    'watercolor style',
-    'soft pastel colors',
-    'single object centered',
-    'white background',
-    'no text, no letters, no numbers',
-    'age 6-10',
-  ].join(', ');
+    `An illustration of a ${word}.`,
+    `The ${word} is the only subject, centered on a clean white background.`,
+    'Simple kid-friendly art, watercolor style, soft pastel colors.',
+    'No text, no letters, no numbers in the image.',
+    'Style: picture book for ages 6–10.',
+  ].join(' ');
 }
