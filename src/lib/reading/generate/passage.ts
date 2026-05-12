@@ -24,6 +24,7 @@ import {
   type PassageGenerationMeta,
 } from '@/lib/db/schema';
 import { r2Client } from '@/lib/storage/r2-client';
+import { applyOverridesToLevel, getReadingLevel } from '@/lib/reading/levels';
 import {
   generatePassagePlan,
   generatePassageImages,
@@ -348,6 +349,14 @@ export async function generatePassage(
     // the cost budget reflects the full per-passage spend.
     cost.imageCallsCount += qResult.vocabImageCallCount;
 
+    // Effective level mirrors what generateQuestions used internally to
+    // build the system prompt + zod refine — passing it to the validator
+    // keeps both enforcement points in sync when overrides change the
+    // question mix or sentence-length cap.
+    const effectiveLevel = applyOverridesToLevel(
+      getReadingLevel(input.readingLevelId),
+      input.overrides,
+    );
     questionsValidation = validateQuestions(
       questions,
       pages,
@@ -355,6 +364,7 @@ export async function generatePassage(
       cumulativeVocabRows,
       input.readingLevelId,
       passageId,
+      effectiveLevel,
     );
     timing.questionsMs = Date.now() - t0;
     for (const issue of questionsValidation.issues) {

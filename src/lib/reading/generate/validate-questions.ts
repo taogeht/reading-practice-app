@@ -22,7 +22,10 @@
 // also gives us character names "for free" so question-vocab checks
 // don't flag "Mei" as unknown.
 
-import { getReadingLevel, getQuestionTypeMix } from '@/lib/reading/levels';
+import {
+  getReadingLevel,
+  type EffectiveReadingLevel,
+} from '@/lib/reading/levels';
 import { tokenizeStoryText } from './tokenize';
 import type {
   GeneratedPageProse,
@@ -70,8 +73,13 @@ export function validateQuestions(
   cumulativeVocabRows: VocabIdentity[],
   readingLevelId: number,
   passageId: string,
+  /** Effective level with overrides applied — when present, drives the
+   *  type-mix and sentence-length checks. Without this, the validator
+   *  uses the base level and disagrees with Stage 4's schema whenever a
+   *  teacher overrode questionTypeMix or maxSentenceWords. */
+  effectiveLevel?: EffectiveReadingLevel,
 ): QuestionValidationResult {
-  const level = getReadingLevel(readingLevelId);
+  const level = effectiveLevel ?? getReadingLevel(readingLevelId);
   const issues: QuestionValidationIssue[] = [];
 
   // ---- Type distribution checks (run first; nothing else makes sense
@@ -93,10 +101,10 @@ export function validateQuestions(
     });
   }
 
-  // Per-level expected mix. Sequence ordering is dropped at Levels 1-2
-  // (getQuestionTypeMix(1).sequence_order === 0); the validator emits
-  // wrong_type_distribution if the actual counts don't match.
-  const expectedMix = getQuestionTypeMix(readingLevelId);
+  // Per-level expected mix. Reads from the effective level so teacher
+  // overrides to questionTypeMix flow through; falls back to the base
+  // level via getReadingLevel above when no effective level is passed.
+  const expectedMix = level.questionTypeMix;
   if (
     typeCounts.mcq_comprehension !== expectedMix.mcq_comprehension ||
     typeCounts.vocab_matching !== expectedMix.vocab_matching ||
