@@ -375,14 +375,16 @@ export default function TeacherDashboardPage() {
                   </div>
                 </button>
               ))}
-              {/* Add Class Button */}
-              <button
-                onClick={() => setShowCreateClass(true)}
-                className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 rounded-xl p-5 text-left transition-all flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
-              >
-                <Plus className="w-8 h-8 mb-1" />
-                <span className="font-medium">Add Class</span>
-              </button>
+              {/* Add Class — owner-only. Co-teachers don't create classes. */}
+              {!dashboardData.isCoTeacherOnly && (
+                <button
+                  onClick={() => setShowCreateClass(true)}
+                  className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 rounded-xl p-5 text-left transition-all flex flex-col items-center justify-center text-gray-500 hover:text-blue-600"
+                >
+                  <Plus className="w-8 h-8 mb-1" />
+                  <span className="font-medium">Add Class</span>
+                </button>
+              )}
             </div>
           </div>
         )}
