@@ -245,7 +245,7 @@ export default function TeacherDashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -268,30 +268,6 @@ export default function TeacherDashboardPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Active Assignments</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.activeAssignments}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="w-8 h-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pendingReviews}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Volume2 className="w-8 h-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Need TTS Audio</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.storiesWithoutAudio}</p>
                 </div>
               </div>
             </CardContent>
@@ -549,49 +525,6 @@ export default function TeacherDashboardPage() {
                 </Button>
               </CardContent>
             </Card>
-
-            {/* Quick Actions — owner-only, hidden for pure co-teachers. */}
-            {!dashboardData.isCoTeacherOnly && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => setShowCreateAssignment(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Assignment
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => setShowCreateClass(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Class
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => setShowCreateStudent(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add New Student
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => router.push('/teacher/classes')}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Manage Classes & Students
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Archived Stories — owner-only. */}
             {!dashboardData.isCoTeacherOnly && (

@@ -16,6 +16,7 @@ interface RosterEntry {
     currentLevel: number;
     totalXp: number;
     weekXp: number;
+    monthXp: number;
     currentStreakDays: number;
     lastActivityDate: string | null;
 }
@@ -24,7 +25,11 @@ interface EngagementResponse {
     students: RosterEntry[];
     leaderboardEnabled: boolean;
     weekTotalXp: number;
+    monthTotalXp: number;
+    allTimeTotalXp: number;
 }
+
+type TimeWindow = 'week' | 'month' | 'all';
 
 interface ClassEngagementSectionProps {
     classId: string;
@@ -38,6 +43,10 @@ export function ClassEngagementSection({ classId, defaultExpanded = false }: Cla
     const [loading, setLoading] = useState(true);
     const [savingToggle, setSavingToggle] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Which time window drives the per-student XP value + sort order +
+    // the headline class total. Defaults to "week" so existing teachers
+    // see no behavior change on load.
+    const [timeWindow, setTimeWindow] = useState<TimeWindow>('week');
 
     useEffect(() => {
         let cancelled = false;
@@ -78,7 +87,24 @@ export function ClassEngagementSection({ classId, defaultExpanded = false }: Cla
         }
     };
 
-    const totalActive = data?.students.filter((s) => s.weekXp > 0).length ?? 0;
+    /** Pick the right XP value for a student given the current toggle. */
+    const xpFor = (s: RosterEntry) =>
+        timeWindow === 'all' ? s.totalXp : timeWindow === 'month' ? s.monthXp : s.weekXp;
+
+    const sortedStudents = data
+        ? [...data.students].sort((a, b) => xpFor(b) - xpFor(a))
+        : [];
+
+    const totalActive = sortedStudents.filter((s) => xpFor(s) > 0).length;
+    const windowTotalXp = data
+        ? timeWindow === 'all'
+            ? data.allTimeTotalXp
+            : timeWindow === 'month'
+                ? data.monthTotalXp
+                : data.weekTotalXp
+        : 0;
+    const windowLabel =
+        timeWindow === 'all' ? 'all time' : timeWindow === 'month' ? 'this month' : 'this week';
 
     return (
         <Card className={`transition-all ${isExpanded ? "" : "hover:bg-gray-50"}`}>
@@ -94,7 +120,7 @@ export function ClassEngagementSection({ classId, defaultExpanded = false }: Cla
                             {loading
                                 ? "Loading…"
                                 : data
-                                    ? `${totalActive} active this week · ${data.weekTotalXp} class XP earned`
+                                    ? `${totalActive} active ${windowLabel} · ${windowTotalXp} class XP earned`
                                     : "Engagement unavailable"}
                         </p>
                     </div>
@@ -118,6 +144,34 @@ export function ClassEngagementSection({ classId, defaultExpanded = false }: Cla
 
                     {!loading && !error && data && (
                         <>
+                            {/* Time-window toggle — switches per-student XP
+                                displayed + sort order + class total. Pure
+                                client-side; the API returned all three
+                                buckets in a single response. */}
+                            <div
+                                className="inline-flex rounded-md border border-gray-200 overflow-hidden text-xs"
+                                role="tablist"
+                                aria-label="Time window"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {(['week', 'month', 'all'] as TimeWindow[]).map((w) => (
+                                    <button
+                                        key={w}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={timeWindow === w}
+                                        onClick={() => setTimeWindow(w)}
+                                        className={`px-3 py-1.5 transition-colors ${
+                                            timeWindow === w
+                                                ? 'bg-amber-100 text-amber-800 font-medium'
+                                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                                        } ${w !== 'all' ? 'border-r border-gray-200' : ''}`}
+                                    >
+                                        {w === 'week' ? 'This week' : w === 'month' ? 'This month' : 'All time'}
+                                    </button>
+                                ))}
+                            </div>
+
                             {/* Leaderboard toggle */}
                             <div className="flex items-start justify-between gap-3 mt-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
                                 <div className="flex-1">
@@ -136,12 +190,12 @@ export function ClassEngagementSection({ classId, defaultExpanded = false }: Cla
                                 </Button>
                             </div>
 
-                            {/* Roster */}
-                            {data.students.length === 0 ? (
+                            {/* Roster — sorted by the active time window. */}
+                            {sortedStudents.length === 0 ? (
                                 <p className="text-sm text-gray-500 py-4 text-center">No students enrolled yet.</p>
                             ) : (
                                 <div className="space-y-1.5">
-                                    {data.students.map((s, i) => (
+                                    {sortedStudents.map((s, i) => (
                                         <button
                                             key={s.studentId}
                                             onClick={() => router.push(`/teacher/students/${s.studentId}`)}
@@ -170,9 +224,11 @@ export function ClassEngagementSection({ classId, defaultExpanded = false }: Cla
                                             <div className="text-right shrink-0">
                                                 <div className="text-sm font-semibold text-amber-700 flex items-center gap-1">
                                                     <Sparkles className="w-3 h-3" />
-                                                    {s.weekXp}
+                                                    {xpFor(s)}
                                                 </div>
-                                                <div className="text-[10px] text-gray-400">{s.totalXp} total</div>
+                                                <div className="text-[10px] text-gray-400">
+                                                    {timeWindow === 'all' ? `Lvl ${s.currentLevel}` : `${s.totalXp} total`}
+                                                </div>
                                             </div>
                                         </button>
                                     ))}

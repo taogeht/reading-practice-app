@@ -61,6 +61,8 @@ export async function GET(
                 students: [],
                 leaderboardEnabled: classRow.leaderboardEnabled,
                 weekTotalXp: 0,
+                monthTotalXp: 0,
+                allTimeTotalXp: 0,
             });
         }
 
@@ -72,27 +74,49 @@ export async function GET(
             .where(inArray(studentProgression.studentId, studentIds));
         const progressionByStudent = new Map(progressionRows.map((p) => [p.studentId, p]));
 
-        // Week-XP rollup — grouped sum from the start of this week (Monday).
+        // Time windows: week starts Monday 00:00 local-ish; month starts on
+        // the 1st of the current month. Both computed once and reused across
+        // the two grouped sums.
         const startOfWeek = new Date();
         const day = startOfWeek.getDay();
         const diffToMonday = day === 0 ? 6 : day - 1;
         startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
         startOfWeek.setHours(0, 0, 0, 0);
 
-        const weekRows = await db
-            .select({
-                studentId: studentXpEvents.studentId,
-                weekXp: sql<number>`COALESCE(SUM(${studentXpEvents.points}), 0)`,
-            })
-            .from(studentXpEvents)
-            .where(
-                and(
-                    inArray(studentXpEvents.studentId, studentIds),
-                    gte(studentXpEvents.createdAt, startOfWeek)
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const [weekRows, monthRows] = await Promise.all([
+            db
+                .select({
+                    studentId: studentXpEvents.studentId,
+                    xp: sql<number>`COALESCE(SUM(${studentXpEvents.points}), 0)`,
+                })
+                .from(studentXpEvents)
+                .where(
+                    and(
+                        inArray(studentXpEvents.studentId, studentIds),
+                        gte(studentXpEvents.createdAt, startOfWeek)
+                    )
                 )
-            )
-            .groupBy(studentXpEvents.studentId);
-        const weekXpByStudent = new Map(weekRows.map((r) => [r.studentId, Number(r.weekXp)]));
+                .groupBy(studentXpEvents.studentId),
+            db
+                .select({
+                    studentId: studentXpEvents.studentId,
+                    xp: sql<number>`COALESCE(SUM(${studentXpEvents.points}), 0)`,
+                })
+                .from(studentXpEvents)
+                .where(
+                    and(
+                        inArray(studentXpEvents.studentId, studentIds),
+                        gte(studentXpEvents.createdAt, startOfMonth)
+                    )
+                )
+                .groupBy(studentXpEvents.studentId),
+        ]);
+        const weekXpByStudent = new Map(weekRows.map((r) => [r.studentId, Number(r.xp)]));
+        const monthXpByStudent = new Map(monthRows.map((r) => [r.studentId, Number(r.xp)]));
 
         const studentsPayload = enrolled.map((s) => {
             const p = progressionByStudent.get(s.studentId);
@@ -106,20 +130,26 @@ export async function GET(
                 currentLevel: level,
                 totalXp: p?.totalXp ?? 0,
                 weekXp: weekXpByStudent.get(s.studentId) ?? 0,
+                monthXp: monthXpByStudent.get(s.studentId) ?? 0,
                 currentStreakDays: p?.currentStreakDays ?? 0,
                 lastActivityDate: p?.lastActivityDate ?? null,
             };
         });
 
-        // Default sort: this week's XP descending
+        // Default sort kept on week XP — the component re-sorts client-side
+        // when the teacher switches the time-window toggle.
         studentsPayload.sort((a, b) => b.weekXp - a.weekXp);
 
         const weekTotalXp = studentsPayload.reduce((sum, s) => sum + s.weekXp, 0);
+        const monthTotalXp = studentsPayload.reduce((sum, s) => sum + s.monthXp, 0);
+        const allTimeTotalXp = studentsPayload.reduce((sum, s) => sum + s.totalXp, 0);
 
         return NextResponse.json({
             students: studentsPayload,
             leaderboardEnabled: classRow.leaderboardEnabled,
             weekTotalXp,
+            monthTotalXp,
+            allTimeTotalXp,
         });
     } catch (error) {
         console.error('[GET /api/teacher/classes/[classId]/engagement] Error:', error);
