@@ -204,30 +204,36 @@ export default function TeacherDashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => router.push('/teacher/reading')}>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Reading Practice
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/teacher/spelling-lists')}>
-                <BookOpen className="w-4 h-4 mr-2" />
-                Manage Spelling Lists
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/teacher/practice-questions')}>
-                <Trophy className="w-4 h-4 mr-2" />
-                Practice Questions
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/teacher/helper')}>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Sunny Preview
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
-                <List className="w-4 h-4 mr-2" />
-                Manage Assignments
-              </Button>
-              <Button onClick={() => setShowCreateAssignment(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Assignment
-              </Button>
+              {/* Owner-only authoring shortcuts. Co-teachers don't author
+                  content; they review submissions on classes they share. */}
+              {!dashboardData.isCoTeacherOnly && (
+                <>
+                  <Button variant="outline" onClick={() => router.push('/teacher/reading')}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Reading Practice
+                  </Button>
+                  <Button variant="outline" onClick={() => router.push('/teacher/spelling-lists')}>
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Manage Spelling Lists
+                  </Button>
+                  <Button variant="outline" onClick={() => router.push('/teacher/practice-questions')}>
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Practice Questions
+                  </Button>
+                  <Button variant="outline" onClick={() => router.push('/teacher/helper')}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Sunny Preview
+                  </Button>
+                  <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
+                    <List className="w-4 h-4 mr-2" />
+                    Manage Assignments
+                  </Button>
+                  <Button onClick={() => setShowCreateAssignment(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Assignment
+                  </Button>
+                </>
+              )}
               <Button variant="outline" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
