@@ -6,8 +6,9 @@
 // students enrolled in one of their own classes (admins bypass).
 
 import { NextRequest, NextResponse } from 'next/server';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 import { db } from '@/lib/db';
 import {
   classEnrollments,
@@ -32,6 +33,10 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const { studentId } = await params;
 
     if (user.role === 'teacher') {
+      const allowedClassIds = await accessibleClassIds(user.id, user.role);
+      if (allowedClassIds.length === 0) {
+        return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+      }
       const enrollment = await db
         .select({ id: classes.id })
         .from(classEnrollments)
@@ -39,7 +44,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         .where(
           and(
             eq(classEnrollments.studentId, studentId),
-            eq(classes.teacherId, user.id),
+            inArray(classes.id, allowedClassIds),
           ),
         )
         .limit(1);

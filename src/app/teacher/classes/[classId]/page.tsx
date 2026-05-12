@@ -559,7 +559,7 @@ export default function ClassDetailPage() {
                 ...(hasSpelling ? [
                   {
                     id: "spelling",
-                    node: <SpellingWordsSection classId={classId} defaultExpanded={true} />,
+                    node: <SpellingWordsSection classId={classId} defaultExpanded={false} />,
                   },
                 ] : []),
                 {

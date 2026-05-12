@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 import { db } from '@/lib/db';
 import { studentMedia, users, classEnrollments, classes } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
 
@@ -26,15 +27,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
-    // Teachers can only view media for students in their classes
+    // Teachers can only view media for students in their accessible
+    // classes (primary OR co-taught).
     if (user.role === 'teacher') {
+      const allowedClassIds = await accessibleClassIds(user.id, user.role);
+      if (allowedClassIds.length === 0) {
+        return NextResponse.json({ error: 'Student is not in your classes' }, { status: 403 });
+      }
       const enrollment = await db
         .select({ id: classEnrollments.id })
         .from(classEnrollments)
         .innerJoin(classes, eq(classEnrollments.classId, classes.id))
         .where(and(
           eq(classEnrollments.studentId, studentId),
-          eq(classes.teacherId, user.id)
+          inArray(classes.id, allowedClassIds)
         ))
         .limit(1);
 

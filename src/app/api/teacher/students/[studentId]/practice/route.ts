@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { accessibleClassIds } from '@/lib/auth/class-access';
 import { db } from '@/lib/db';
 import { classEnrollments, classes } from '@/lib/db/schema';
 
@@ -38,13 +39,18 @@ export async function GET(
 
   const { studentId } = await params;
 
-  // Confirm this teacher has the student in one of their classes.
+  // Confirm this teacher has the student in one of their accessible classes
+  // (primary-owned OR co-taught).
+  const allowedClassIds = await accessibleClassIds(user.id, user.role);
+  if (allowedClassIds.length === 0) {
+    return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+  }
   const enrollment = await db
     .select({ id: classes.id })
     .from(classEnrollments)
     .innerJoin(classes, eq(classes.id, classEnrollments.classId))
     .where(
-      and(eq(classEnrollments.studentId, studentId), eq(classes.teacherId, user.id))
+      and(eq(classEnrollments.studentId, studentId), inArray(classes.id, allowedClassIds))
     )
     .limit(1);
 

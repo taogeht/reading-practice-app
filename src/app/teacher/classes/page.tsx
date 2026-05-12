@@ -47,6 +47,9 @@ interface Student {
 export default function TeacherClassesPage() {
   const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
+  // True when the user is a co-teacher only (no owned classes). Hides
+  // Create Class / Add Student CTAs that wouldn't apply to them.
+  const [isCoTeacherOnly, setIsCoTeacherOnly] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [showCreateClass, setShowCreateClass] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
@@ -65,6 +68,7 @@ export default function TeacherClassesPage() {
       if (response.ok) {
         const data = await response.json();
         setClasses(data.classes || []);
+        setIsCoTeacherOnly(Boolean(data.isCoTeacherOnly));
       } else {
         console.error('Failed to fetch classes');
       }
@@ -150,16 +154,20 @@ export default function TeacherClassesPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button onClick={() => setShowCreateStudent(true)} variant="outline">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add Student
-              </Button>
-              <Button onClick={() => setShowCreateClass(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Class
-              </Button>
-            </div>
+            {/* Owner-only creation CTAs — co-teachers don't author classes
+                or students from this page. */}
+            {!isCoTeacherOnly && (
+              <div className="flex items-center gap-3">
+                <Button onClick={() => setShowCreateStudent(true)} variant="outline">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Student
+                </Button>
+                <Button onClick={() => setShowCreateClass(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Class
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -171,12 +179,16 @@ export default function TeacherClassesPage() {
               <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No classes yet</h3>
               <p className="text-gray-600 mb-6">
-                Create your first class to start managing students and assignments
+                {isCoTeacherOnly
+                  ? 'You have not been added as a co-teacher to any class yet.'
+                  : 'Create your first class to start managing students and assignments'}
               </p>
-              <Button onClick={() => setShowCreateClass(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Your First Class
-              </Button>
+              {!isCoTeacherOnly && (
+                <Button onClick={() => setShowCreateClass(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Class
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (

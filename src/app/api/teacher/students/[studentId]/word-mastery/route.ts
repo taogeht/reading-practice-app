@@ -8,7 +8,8 @@ import {
   classes,
 } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq, and, desc } from 'drizzle-orm';
+import { accessibleClassIds } from '@/lib/auth/class-access';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -28,12 +29,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const listId = searchParams.get('listId');
 
     if (user.role === 'teacher') {
+      const allowedClassIds = await accessibleClassIds(user.id, user.role);
+      if (allowedClassIds.length === 0) {
+        return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+      }
       const enrollment = await db
         .select({ id: classes.id })
         .from(classEnrollments)
         .innerJoin(classes, eq(classes.id, classEnrollments.classId))
         .where(
-          and(eq(classEnrollments.studentId, studentId), eq(classes.teacherId, user.id))
+          and(eq(classEnrollments.studentId, studentId), inArray(classes.id, allowedClassIds))
         )
         .limit(1);
       if (enrollment.length === 0) {

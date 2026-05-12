@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { classes, schools, schoolMemberships, teachers, classEnrollments } from '@/lib/db/schema';
 import { eq, and, count, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
-import { accessibleClassIds } from '@/lib/auth/class-access';
+import { accessibleClassIds, isCoTeacherOnly } from '@/lib/auth/class-access';
 import {
   findUniqueSlug,
   isSlugAvailable,
@@ -27,8 +27,12 @@ export async function GET(request: NextRequest) {
 
     // Classes the user can manage = primary OR co-teacher (admin = all).
     const allowedIds = await accessibleClassIds(user.id, user.role);
+    const coTeacherOnly = await isCoTeacherOnly(user.id, user.role);
     if (allowedIds.length === 0 && user.role !== 'admin') {
-      return NextResponse.json({ classes: [] }, { status: 200 });
+      return NextResponse.json(
+        { classes: [], isCoTeacherOnly: coTeacherOnly },
+        { status: 200 },
+      );
     }
     const teacherClasses = await db
       .select({
@@ -62,7 +66,10 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({ classes: classesWithCounts }, { status: 200 });
+    return NextResponse.json(
+      { classes: classesWithCounts, isCoTeacherOnly: coTeacherOnly },
+      { status: 200 },
+    );
 
   } catch (error) {
     logError(error, 'api/teacher/classes');
