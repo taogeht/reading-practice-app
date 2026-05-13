@@ -23,6 +23,13 @@ interface AudioRecorderProps {
   showLivePreview?: boolean;
   disabled?: boolean;
   assignmentId?: string;
+  /** Optional custom upload handler. When provided, the recorder
+   *  delegates upload entirely to this callback and skips the built-in
+   *  `/api/recordings/upload` path. Used by the per-page recording panel
+   *  on the passage reader, which targets a different endpoint and form
+   *  shape. The callback owns the network call and any progress UI; the
+   *  recorder just shows the result via `onRecordingComplete`. */
+  customUpload?: (blob: Blob) => Promise<{ success: boolean; publicUrl?: string; key?: string; error?: string }>;
 }
 
 export function AudioRecorder({
@@ -31,6 +38,7 @@ export function AudioRecorder({
   showLivePreview = true,
   disabled = false,
   assignmentId,
+  customUpload,
 }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -188,6 +196,27 @@ export function AudioRecorder({
 
   const uploadRecording = async () => {
     if (!audioBlob) return;
+
+    // Caller-supplied upload always wins. Used by the passage reader's
+    // per-page recording panel; it targets a different endpoint than the
+    // built-in assignment flow.
+    if (customUpload) {
+      setIsUploading(true);
+      setError('');
+      try {
+        const result = await customUpload(audioBlob);
+        setUploadResult(result);
+        onRecordingComplete?.(result);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Upload failed';
+        setError(msg);
+        setUploadResult({ success: false, error: msg });
+        onRecordingComplete?.({ success: false, error: msg });
+      } finally {
+        setIsUploading(false);
+      }
+      return;
+    }
 
     // Always use assignment-specific upload path if assignmentId is provided
     if (assignmentId) {

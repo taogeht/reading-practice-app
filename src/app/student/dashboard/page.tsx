@@ -19,6 +19,7 @@ import { StudentHomeworkSection } from "@/components/student/student-homework-se
 import { StudentAttemptCard } from "@/components/student/student-attempt-card";
 import { StudentProgressionCard } from "@/components/gamification/student-progression-card";
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
+import { RecordedPassagesSection } from "@/components/recordings/recorded-passages-section";
 import { PracticeSession } from "@/components/practice/practice-session";
 import { PracticeStatsCard } from "@/components/practice/practice-stats-card";
 import { PhonicsDeck } from "@/components/practice/phonics-deck";
@@ -622,6 +623,12 @@ export default function StudentDashboardPage() {
             </div>
           </CollapsibleCard>
         )}
+
+        {/* Reading passages this student has recorded page-audio on.
+            Self-renders nothing when the student hasn't recorded any
+            page yet, so the dashboard layout stays unchanged for new
+            students. */}
+        <RecordedPassagesSection />
 
         {/* Student Media Gallery - only shows if teacher has uploaded media */}
         <StudentMediaGallery studentId={student.id} />

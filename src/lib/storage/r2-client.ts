@@ -413,6 +413,21 @@ export function generateRecordingKey(
   return `audio/recordings/${studentId}/${assignmentId}/attempt-${attemptNumber}-${timestamp}.${extension}`;
 }
 
+// Per-page recordings on a reading passage. Lives in a separate bucket prefix
+// from per-assignment recordings so it's easy to inspect / clean up
+// independently. {pageNumber} segment is human-readable; the canonical
+// (page_id, attempt) identifier still lives in the DB row.
+export function generatePassageRecordingKey(
+  studentId: string,
+  passageId: string,
+  pageNumber: number,
+  attemptNumber: number,
+  extension: string = 'webm'
+): string {
+  const timestamp = Date.now();
+  return `audio/passage-recordings/${studentId}/${passageId}/page-${pageNumber}/attempt-${attemptNumber}-${timestamp}.${extension}`;
+}
+
 export async function uploadRecordingToR2(
   key: string,
   body: Buffer | Uint8Array,

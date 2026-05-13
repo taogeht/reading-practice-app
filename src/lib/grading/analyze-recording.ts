@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { recordings, assignments, stories } from '@/lib/db/schema';
+import { recordings, assignments, stories, passagePageRecordings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { r2Client } from '@/lib/storage/r2-client';
 import { transcribeAudio, WhisperError } from './whisper-client';
@@ -88,40 +88,76 @@ async function persistFailure(recordingId: string, error: string): Promise<void>
     .where(eq(recordings.id, recordingId));
 }
 
-async function analyze(ctx: RecordingContext): Promise<AnalysisStored> {
-  const filename = `recording.${ctx.audioExtension}`;
-  const whisper = await transcribeAudio(ctx.audioBuffer, filename, ctx.audioMime);
+// Pure analyzer: Whisper + grade + assemble the analysis_json blob. No DB
+// writes — both the recordings flow and the passage_page_recordings flow
+// wrap this and persist into their own table.
+export interface RawAnalysis {
+  transcript: string;
+  durationSec: number;
+  letterGrade: string | null;
+  accuracyScore: number;
+  wpmScore: number;
+  hallucinationSuspected: boolean;
+  analysisJson: Record<string, unknown>;
+}
+
+export async function analyzeAudioBuffer(opts: {
+  audioBuffer: Buffer;
+  audioMime: string;
+  audioExtension: string;
+  storyText: string;
+}): Promise<RawAnalysis> {
+  const filename = `recording.${opts.audioExtension}`;
+  const whisper = await transcribeAudio(opts.audioBuffer, filename, opts.audioMime);
   const grade = gradeRecording({
-    storyText: ctx.storyText,
+    storyText: opts.storyText,
     transcript: whisper.text,
     durationSec: whisper.duration,
+  });
+  return {
+    transcript: whisper.text,
+    durationSec: whisper.duration,
+    letterGrade: grade.letterGrade,
+    accuracyScore: grade.accuracyScore,
+    wpmScore: grade.wpmScore,
+    hallucinationSuspected: grade.hallucinationSuspected,
+    analysisJson: {
+      ...grade.breakdown,
+      durationSec: whisper.duration,
+      model: 'whisper-1',
+      processedAt: new Date().toISOString(),
+      hallucinationSuspected: grade.hallucinationSuspected,
+    },
+  };
+}
+
+async function analyze(ctx: RecordingContext): Promise<AnalysisStored> {
+  const raw = await analyzeAudioBuffer({
+    audioBuffer: ctx.audioBuffer,
+    audioMime: ctx.audioMime,
+    audioExtension: ctx.audioExtension,
+    storyText: ctx.storyText,
   });
 
   await db
     .update(recordings)
     .set({
-      transcript: whisper.text,
-      letterGrade: grade.letterGrade,
-      accuracyScore: grade.accuracyScore.toFixed(2),
-      wpmScore: grade.wpmScore.toFixed(2),
-      audioDurationSeconds: Math.round(whisper.duration),
-      analysisJson: {
-        ...grade.breakdown,
-        durationSec: whisper.duration,
-        model: 'whisper-1',
-        processedAt: new Date().toISOString(),
-        hallucinationSuspected: grade.hallucinationSuspected,
-      },
+      transcript: raw.transcript,
+      letterGrade: raw.letterGrade,
+      accuracyScore: raw.accuracyScore.toFixed(2),
+      wpmScore: raw.wpmScore.toFixed(2),
+      audioDurationSeconds: Math.round(raw.durationSec),
+      analysisJson: raw.analysisJson,
       updatedAt: new Date(),
     })
     .where(eq(recordings.id, ctx.recordingId));
 
   return {
     recordingId: ctx.recordingId,
-    letterGrade: grade.letterGrade,
-    accuracyScore: grade.accuracyScore,
-    wpmScore: grade.wpmScore,
-    hallucinationSuspected: grade.hallucinationSuspected,
+    letterGrade: raw.letterGrade,
+    accuracyScore: raw.accuracyScore,
+    wpmScore: raw.wpmScore,
+    hallucinationSuspected: raw.hallucinationSuspected,
   };
 }
 
@@ -202,5 +238,91 @@ export function analyzeRecordingInBackground(opts: {
   // failure-mode notes in the plan; the re-analyze button is the recovery.
   queueMicrotask(() => {
     void analyzeRecordingFromBuffer(opts);
+  });
+}
+
+// -------------------------------------------------------------
+// Passage-page recordings — sibling pipeline writing to the new
+// passage_page_recordings table.
+// -------------------------------------------------------------
+
+async function persistPageFailure(recordingId: string, error: string): Promise<void> {
+  await db
+    .update(passagePageRecordings)
+    .set({
+      analysisJson: {
+        error,
+        processedAt: new Date().toISOString(),
+        model: 'whisper-1',
+      },
+      updatedAt: new Date(),
+    })
+    .where(eq(passagePageRecordings.id, recordingId));
+}
+
+export async function analyzePageRecordingFromBuffer(opts: {
+  recordingId: string;
+  audioBuffer: Buffer;
+  audioMime: string;
+  audioExtension: string;
+  pageText: string;
+}): Promise<AnalysisStored> {
+  try {
+    const raw = await analyzeAudioBuffer({
+      audioBuffer: opts.audioBuffer,
+      audioMime: opts.audioMime,
+      audioExtension: opts.audioExtension,
+      storyText: opts.pageText,
+    });
+
+    await db
+      .update(passagePageRecordings)
+      .set({
+        transcript: raw.transcript,
+        letterGrade: raw.letterGrade,
+        accuracyScore: raw.accuracyScore.toFixed(2),
+        wpmScore: raw.wpmScore.toFixed(2),
+        audioDurationSeconds: raw.durationSec.toFixed(2),
+        analysisJson: raw.analysisJson,
+        updatedAt: new Date(),
+      })
+      .where(eq(passagePageRecordings.id, opts.recordingId));
+
+    return {
+      recordingId: opts.recordingId,
+      letterGrade: raw.letterGrade,
+      accuracyScore: raw.accuracyScore,
+      wpmScore: raw.wpmScore,
+      hallucinationSuspected: raw.hallucinationSuspected,
+    };
+  } catch (err) {
+    const msg =
+      err instanceof WhisperError
+        ? `Whisper: ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : 'Unknown error during analysis';
+    console.error('[analyzePageRecordingFromBuffer]', opts.recordingId, msg);
+    await persistPageFailure(opts.recordingId, msg).catch(() => {});
+    return {
+      recordingId: opts.recordingId,
+      letterGrade: null,
+      accuracyScore: 0,
+      wpmScore: 0,
+      hallucinationSuspected: false,
+      error: msg,
+    };
+  }
+}
+
+export function analyzePageRecordingInBackground(opts: {
+  recordingId: string;
+  audioBuffer: Buffer;
+  audioMime: string;
+  audioExtension: string;
+  pageText: string;
+}): void {
+  queueMicrotask(() => {
+    void analyzePageRecordingFromBuffer(opts);
   });
 }

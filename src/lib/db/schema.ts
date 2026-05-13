@@ -1397,6 +1397,67 @@ export const readingGenerationJobs = pgTable(
 export type ReadingGenerationJob = typeof readingGenerationJobs.$inferSelect;
 export type NewReadingGenerationJob = typeof readingGenerationJobs.$inferInsert;
 
+// Per-page audio recordings against a published reading_passage. Mirrors
+// the AI-graded columns from `recordings` but is keyed on (page, student,
+// attempt) instead of (assignment, student, attempt). Separate table on
+// purpose — the original recordings table is tightly bound to assignments
+// and to studentProgress rollups, and mixing in nullable passageId/pageId
+// would make every aggregation branchy.
+//
+// Grading columns are nullable on insert; the analyzer populates them
+// asynchronously after Whisper returns.
+export const passagePageRecordings = pgTable(
+  'passage_page_recordings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    passageId: uuid('passage_id')
+      .notNull()
+      .references(() => readingPassages.id, { onDelete: 'cascade' }),
+    pageId: uuid('page_id')
+      .notNull()
+      .references(() => storyPages.id, { onDelete: 'cascade' }),
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => students.id, { onDelete: 'cascade' }),
+    attemptNumber: smallint('attempt_number').notNull(),
+    audioUrl: varchar('audio_url', { length: 500 }).notNull(),
+    fileSizeBytes: bigint('file_size_bytes', { mode: 'number' }),
+    audioDurationSeconds: decimal('audio_duration_seconds', { precision: 5, scale: 2 }),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }).defaultNow().notNull(),
+    // Populated async by the analyzer after Whisper transcription.
+    transcript: text('transcript'),
+    letterGrade: varchar('letter_grade', { length: 2 }),
+    accuracyScore: decimal('accuracy_score', { precision: 5, scale: 2 }),
+    wpmScore: decimal('wpm_score', { precision: 5, scale: 2 }),
+    analysisJson: jsonb('analysis_json'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // One row per (page, student, attempt). Doubles as the lookup
+    // index for "next attempt number".
+    uniqueAttempt: uniqueIndex('idx_passage_page_recordings_unique_attempt').on(
+      table.pageId,
+      table.studentId,
+      table.attemptNumber,
+    ),
+    // Recent-first reads for the student dashboard + teacher per-student
+    // section.
+    studentRecentIdx: index('idx_passage_page_recordings_student_recent').on(
+      table.studentId,
+      table.submittedAt,
+    ),
+    // Per-passage rollup ("how many pages has this student recorded").
+    passageStudentIdx: index('idx_passage_page_recordings_passage_student').on(
+      table.passageId,
+      table.studentId,
+    ),
+  }),
+);
+
+export type PassagePageRecording = typeof passagePageRecordings.$inferSelect;
+export type NewPassagePageRecording = typeof passagePageRecordings.$inferInsert;
+
 // Simple sessions table for authentication
 export const session = pgTable('session', {
   id: varchar('id', { length: 255 }).primaryKey(),

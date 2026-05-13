@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import { useHeartbeat } from '@/hooks/use-heartbeat';
+import { PageRecordingPanel } from '@/components/recordings/page-recording-panel';
 
 // ---------- Types ----------
 
@@ -479,6 +480,7 @@ export default function StudentReadingPassagePage({
       >
         {phase === 'reader' && (
           <ReaderView
+            passageId={passageId}
             page={data.pages[currentPageIndex]!}
             currentIndex={currentPageIndex}
             totalPages={data.pages.length}
@@ -523,6 +525,7 @@ export default function StudentReadingPassagePage({
 // ---------- Reader sub-view ----------
 
 function ReaderView({
+  passageId,
   page,
   currentIndex,
   totalPages,
@@ -530,6 +533,7 @@ function ReaderView({
   onPrev,
   onNext,
 }: {
+  passageId: string;
   page: PageRow;
   currentIndex: number;
   totalPages: number;
@@ -562,6 +566,10 @@ function ReaderView({
         <p className="mt-6 text-lg sm:text-xl lg:text-2xl leading-relaxed text-gray-900 max-w-2xl mx-auto whitespace-pre-wrap">
           {page.text}
         </p>
+      </div>
+
+      <div className="max-w-2xl mx-auto">
+        <PageRecordingPanel passageId={passageId} pageNumber={page.pageNumber} />
       </div>
 
       <nav className="flex items-center justify-between pt-4 max-w-2xl mx-auto">

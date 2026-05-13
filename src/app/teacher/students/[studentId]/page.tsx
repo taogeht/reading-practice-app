@@ -13,6 +13,7 @@ import { TeacherMediaSection } from "@/components/student-media/teacher-media-se
 import { TeacherStudentPracticeSection } from "@/components/practice/teacher-student-practice-section";
 import { StudentWordMasterySection } from "@/components/spelling/student-word-mastery-section";
 import { StudentReadingMasterySection } from "@/components/reading/student-reading-mastery-section";
+import { StudentPassageRecordingsSection } from "@/components/recordings/student-passage-recordings-section";
 
 interface StudentClass {
   id: string;
@@ -238,6 +239,8 @@ export default function TeacherStudentProfilePage() {
         {studentId && <StudentWordMasterySection studentId={studentId} />}
 
         {studentId && <StudentReadingMasterySection studentId={studentId} />}
+
+        {studentId && <StudentPassageRecordingsSection studentId={studentId} />}
 
         <Card>
           <CardHeader>
