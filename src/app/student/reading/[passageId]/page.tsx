@@ -37,6 +37,10 @@ interface PageRow {
   pageNumber: number;
   text: string;
   imageUrl: string;
+  /** Empty string if the teacher hasn't generated TTS narration for
+   *  this passage yet. The reader renders a play button only when this
+   *  is non-empty. */
+  audioUrl: string;
 }
 interface MCQQuestion {
   id: string;
@@ -566,6 +570,20 @@ function ReaderView({
         <p className="mt-6 text-lg sm:text-xl lg:text-2xl leading-relaxed text-gray-900 max-w-2xl mx-auto whitespace-pre-wrap">
           {page.text}
         </p>
+        {page.audioUrl && (
+          <div className="mt-4 max-w-2xl mx-auto flex justify-center">
+            {/* Keyed by page.audioUrl so navigating to a new page mounts
+                a fresh element — browsers don't reliably restart playback
+                on a src change alone. */}
+            <audio
+              key={page.audioUrl}
+              controls
+              preload="none"
+              src={page.audioUrl}
+              className="w-full max-w-md"
+            />
+          </div>
+        )}
       </div>
 
       <div className="max-w-2xl mx-auto">

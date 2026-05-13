@@ -66,6 +66,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         pageNumber: storyPages.pageNumber,
         text: storyPages.text,
         imageKey: storyPages.imageKey,
+        ttsAudioKey: storyPages.ttsAudioKey,
       })
       .from(storyPages)
       .where(eq(storyPages.passageId, passageId))
@@ -87,6 +88,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       pageNumber: p.pageNumber,
       text: p.text,
       imageUrl: p.imageKey ? `/api/images/${p.imageKey}` : '',
+      // Narration audio is optional — only present when a teacher
+      // generated TTS for this passage via /teacher/reading/review.
+      audioUrl: p.ttsAudioKey ? `/api/audio/${p.ttsAudioKey}` : '',
     }));
 
     const questions = questionRows.map((q) => {
