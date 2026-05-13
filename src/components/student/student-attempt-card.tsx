@@ -34,6 +34,12 @@ export interface AttemptCardData {
    *  haven't been updated to pass it; when missing, the audio
    *  player is hidden. */
   id?: string;
+  /** Direct audio URL override. When set, the card plays this URL
+   *  via a native <audio> element instead of calling the recordings
+   *  presigned-URL endpoint. Used by the passage-page recording
+   *  flow, which serves audio through the /api/audio/[...key]
+   *  proxy and doesn't need a recordings.id. */
+  audioUrl?: string;
   attemptNumber: number | null;
   status: "pending" | "reviewed" | "flagged" | "submitted";
   accuracyScore: number | null;
@@ -65,9 +71,10 @@ export function StudentAttemptCard({ attempt }: { attempt: AttemptCardData }) {
     !!analysis && (!!analysis.expectedView?.length || analysis.matched !== undefined);
   const hasFeedback = !!attempt.teacherFeedback || !!attempt.teacherReplyAudioUrl;
   // The student can play back their own audio whenever a recording id
-  // is on the card — independent of AI analysis / teacher feedback,
-  // so even a still-pending submission opens to a "listen back" view.
-  const hasAudio = !!attempt.id;
+  // or a direct audioUrl is on the card — independent of AI analysis /
+  // teacher feedback, so even a still-pending submission opens to a
+  // "listen back" view.
+  const hasAudio = !!attempt.id || !!attempt.audioUrl;
   const expandable = hasAudio || hasAnalysis || !!attempt.transcript || hasFeedback;
 
   const [open, setOpen] = useState(false);
@@ -124,17 +131,26 @@ export function StudentAttemptCard({ attempt }: { attempt: AttemptCardData }) {
 
       {open && expandable && (
         <div className="border-t border-gray-200 bg-gray-50 px-3 py-3 space-y-3">
-          {hasAudio && attempt.id && (
+          {hasAudio && (
             <div className="space-y-1">
               <p className="text-[11px] font-semibold text-gray-700 flex items-center gap-1">
                 <Mic className="w-3 h-3 text-gray-500" />
                 Listen back to your recording
               </p>
               <div className="bg-white rounded p-2 border">
-                <RecordingAudioPlayer
-                  recordingId={attempt.id}
-                  fallbackDurationSeconds={attempt.audioDurationSeconds ?? null}
-                />
+                {attempt.audioUrl ? (
+                  <audio
+                    controls
+                    preload="none"
+                    src={attempt.audioUrl}
+                    className="w-full"
+                  />
+                ) : attempt.id ? (
+                  <RecordingAudioPlayer
+                    recordingId={attempt.id}
+                    fallbackDurationSeconds={attempt.audioDurationSeconds ?? null}
+                  />
+                ) : null}
               </div>
             </div>
           )}

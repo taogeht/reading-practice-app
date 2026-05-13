@@ -58,6 +58,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         letterGrade: passagePageRecordings.letterGrade,
         accuracyScore: passagePageRecordings.accuracyScore,
         wpmScore: passagePageRecordings.wpmScore,
+        analysisJson: passagePageRecordings.analysisJson,
       })
       .from(passagePageRecordings)
       .innerJoin(storyPages, eq(storyPages.id, passagePageRecordings.pageId))
@@ -101,6 +102,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
             letterGrade: a.letterGrade,
             accuracyScore: a.accuracyScore == null ? null : Number(a.accuracyScore),
             wpmScore: a.wpmScore == null ? null : Number(a.wpmScore),
+            // expectedView / heardView / op-counts power the
+            // word-level diff in StudentAttemptCard.
+            analysisJson: a.analysisJson,
           })),
           best: best
             ? {

@@ -9,6 +9,7 @@ import { CreateStudentDialog } from "@/components/students/create-student-dialog
 import { CreateStoryDialog } from "@/components/stories/create-story-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
 import { TeacherLoginActivityCard } from "@/components/activity/teacher-login-activity-card";
+import { TeacherActivityFeed } from "@/components/activity/teacher-activity-feed";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Button } from "@/components/ui/button";
@@ -346,6 +347,10 @@ export default function TeacherDashboardPage() {
 
         {/* Student Login Activity — combined birds-eye view across all classes */}
         <TeacherLoginActivityCard />
+
+        {/* Recent class activity — collapsible feed of last 20 student
+            milestones across all classes the teacher can manage. */}
+        <TeacherActivityFeed />
 
         {/* Class Selection - Prominent Buttons */}
         {teacher.classes.length > 0 && (

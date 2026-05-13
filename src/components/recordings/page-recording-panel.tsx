@@ -1,12 +1,14 @@
 "use client";
 
 // Per-page recording panel for the reading-passage reader. Shows
-// attempts-used / 3, the best grade (once Whisper has graded), and an
-// inline recorder UI. Skipping is fine — the panel is purely additive.
+// attempts-used / 3, every attempt as an expandable card with
+// transcript + word-level diff, and an inline recorder UI. Skipping
+// is fine — the panel is purely additive.
 
 import { useCallback, useEffect, useState } from "react";
 import { Mic, Loader2 } from "lucide-react";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
+import { StudentAttemptCard } from "@/components/student/student-attempt-card";
 
 interface Attempt {
   id: string;
@@ -17,6 +19,7 @@ interface Attempt {
   letterGrade: string | null;
   accuracyScore: number | null;
   wpmScore: number | null;
+  analysisJson?: unknown;
 }
 
 interface PagePayload {
@@ -148,6 +151,10 @@ export function PageRecordingPanel({
   const attemptsLeft = Math.max(maxAttempts - attemptsUsed, 0);
   const best = page?.best ?? null;
   const canRecord = attemptsLeft > 0;
+  // Attempts come back from the API newest-first (sorted by attempt
+  // number desc on the server). Reverse for display so the kid sees
+  // their progression top-to-bottom.
+  const attemptsAscending = page ? [...page.attempts].sort((a, b) => a.attemptNumber - b.attemptNumber) : [];
 
   return (
     <div className="mt-3 mb-3 rounded-lg border border-gray-200 bg-white p-3">
@@ -189,6 +196,39 @@ export function PageRecordingPanel({
           {open ? "Hide recorder" : canRecord ? "Open recorder" : "No attempts left"}
         </button>
       </div>
+
+      {/* Per-attempt cards. Each is tap-to-expand and shows the
+          transcript + a word-level diff against the page text. Reusing
+          the StudentAttemptCard pattern from the assignment flow keeps
+          the highlighting style consistent for kids. */}
+      {attemptsAscending.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {attemptsAscending.map((a) => (
+            <StudentAttemptCard
+              key={a.id}
+              attempt={{
+                audioUrl: a.audioUrl,
+                attemptNumber: a.attemptNumber,
+                status: 'submitted',
+                accuracyScore:
+                  a.accuracyScore == null ? null : Math.round(a.accuracyScore),
+                wpmScore: a.wpmScore == null ? null : Math.round(a.wpmScore),
+                letterGrade: a.letterGrade,
+                submittedAt: a.submittedAt,
+                reviewedAt: null,
+                teacherFeedback: null,
+                teacherReplyAudioUrl: null,
+                teacherReplyDurationSeconds: null,
+                transcript: a.transcript,
+                // The card narrowly types analysisJson; cast through
+                // unknown because the page-recordings endpoint surfaces
+                // it as `unknown` to avoid a duplicate type alias.
+                analysisJson: a.analysisJson as never,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {open && canRecord && (
         <div className="mt-3">
