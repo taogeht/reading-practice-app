@@ -17,6 +17,7 @@ export const ANIMALS: VisualPasswordOption[] = [
   { id: 'monkey', name: 'Monkey', emoji: '🐵' },
   { id: 'elephant', name: 'Elephant', emoji: '🐘' },
   { id: 'pig', name: 'Pig', emoji: '🐷' },
+  { id: 'frog', name: 'Frog', emoji: '🐸' },
 ];
 
 export const OBJECTS: VisualPasswordOption[] = [

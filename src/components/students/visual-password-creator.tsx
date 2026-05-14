@@ -4,33 +4,24 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ANIMALS as ANIMAL_OPTIONS,
+  OBJECTS as OBJECT_OPTIONS,
+} from "@/components/auth/visual-password-options";
 
 interface VisualPasswordCreatorProps {
   onPasswordChange: (type: string, data: any) => void;
   value?: { type: string; data: any } | null;
 }
 
-const ANIMALS = [
-  { name: "Cat", value: "cat", emoji: "🐱" },
-  { name: "Dog", value: "dog", emoji: "🐶" },
-  { name: "Elephant", value: "elephant", emoji: "🐘" },
-  { name: "Lion", value: "lion", emoji: "🦁" },
-  { name: "Monkey", value: "monkey", emoji: "🐵" },
-  { name: "Bear", value: "bear", emoji: "🐻" },
-  { name: "Rabbit", value: "rabbit", emoji: "🐰" },
-  { name: "Frog", value: "frog", emoji: "🐸" },
-];
-
-const OBJECTS = [
-  { name: "Ball", value: "ball", emoji: "⚽" },
-  { name: "Car", value: "car", emoji: "🚗" },
-  { name: "House", value: "house", emoji: "🏠" },
-  { name: "Tree", value: "tree", emoji: "🌳" },
-  { name: "Flower", value: "flower", emoji: "🌸" },
-  { name: "Apple", value: "apple", emoji: "🍎" },
-  { name: "Book", value: "book", emoji: "📚" },
-  { name: "Sun", value: "sun", emoji: "☀️" },
-];
+// Source-of-truth catalog lives in visual-password-options.ts (consumed
+// by the student-login screen and the login-cards lookup). This local
+// shape rename keeps the existing `value`-based markup below intact
+// while guaranteeing the picker and the login surfaces stay in sync —
+// previously a Frog option here broke the login because Frog wasn't on
+// the canonical list.
+const ANIMALS = ANIMAL_OPTIONS.map((o) => ({ name: o.name, value: o.id, emoji: o.emoji }));
+const OBJECTS = OBJECT_OPTIONS.map((o) => ({ name: o.name, value: o.id, emoji: o.emoji }));
 
 export function VisualPasswordCreator({ onPasswordChange, value }: VisualPasswordCreatorProps) {
   const [passwordType, setPasswordType] = useState<string>(value?.type || "");
