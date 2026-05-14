@@ -92,3 +92,48 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+const MAX_TITLE_LEN = 200;
+
+/** PATCH /api/teacher/reading/passages/[passageId]
+ *  Updates editable metadata on a passage. Currently only `title`.
+ *  Auth: teacher or admin (same surface as GET / approve / reject —
+ *  passages are platform-wide assets, not class-scoped). */
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
+    const { passageId } = await params;
+
+    const body = (await request.json().catch(() => null)) as { title?: unknown } | null;
+    if (!body || typeof body.title !== 'string') {
+      return NextResponse.json({ error: 'title (string) is required' }, { status: 400 });
+    }
+    const title = body.title.trim();
+    if (title.length === 0) {
+      return NextResponse.json({ error: 'Title cannot be empty' }, { status: 400 });
+    }
+    if (title.length > MAX_TITLE_LEN) {
+      return NextResponse.json(
+        { error: `Title must be ${MAX_TITLE_LEN} characters or fewer` },
+        { status: 400 },
+      );
+    }
+
+    const [updated] = await db
+      .update(readingPassages)
+      .set({ title, updatedAt: new Date() })
+      .where(eq(readingPassages.id, passageId))
+      .returning({ id: readingPassages.id, title: readingPassages.title });
+    if (!updated) {
+      return NextResponse.json({ error: 'Passage not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ id: updated.id, title: updated.title });
+  } catch (error) {
+    logError(error, 'api/teacher/reading/passages/[passageId] PATCH');
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

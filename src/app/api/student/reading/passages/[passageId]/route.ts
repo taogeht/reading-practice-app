@@ -67,6 +67,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         text: storyPages.text,
         imageKey: storyPages.imageKey,
         ttsAudioKey: storyPages.ttsAudioKey,
+        updatedAt: storyPages.updatedAt,
       })
       .from(storyPages)
       .where(eq(storyPages.passageId, passageId))
@@ -90,7 +91,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       imageUrl: p.imageKey ? `/api/images/${p.imageKey}` : '',
       // Narration audio is optional — only present when a teacher
       // generated TTS for this passage via /teacher/reading/review.
-      audioUrl: p.ttsAudioKey ? `/api/audio/${p.ttsAudioKey}` : '',
+      // ?v=<updatedAt> defeats the audio proxy's 1-year cache header
+      // so regenerated audio plays immediately for kids who had the
+      // old version cached locally.
+      audioUrl: p.ttsAudioKey
+        ? `/api/audio/${p.ttsAudioKey}?v=${encodeURIComponent(p.updatedAt.toISOString())}`
+        : '',
     }));
 
     const questions = questionRows.map((q) => {

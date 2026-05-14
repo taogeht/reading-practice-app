@@ -61,6 +61,11 @@ interface PageRow {
   editedBy: string | null;
   /** "First Last" of the editor; null if never edited. */
   editorName: string | null;
+  /** ISO timestamp of the page row's last update. Used as a cache-bust
+   *  query param on the audio URL so freshly-generated audio actually
+   *  plays without a hard refresh — the /api/audio proxy caches its
+   *  responses for a year. */
+  updatedAt: string;
 }
 
 interface PageValidationIssue {
@@ -128,6 +133,11 @@ export default function ReadingReviewFocusPage() {
   const [error, setError] = useState<string | null>(null);
   const [action, setAction] = useState<null | 'approving' | 'rejecting' | string>(null);
   const [zoomImageKey, setZoomImageKey] = useState<string | null>(null);
+  // Title editing — local state; toggled by the pencil button next to the
+  // h1. Saves via PATCH /api/teacher/reading/passages/[id].
+  const [titleEdit, setTitleEdit] = useState<{ open: boolean; draft: string; saving: boolean }>(
+    { open: false, draft: '', saving: false },
+  );
   // Audio generation panel — voice + speed are local state; "generating"
   // disables the button while the per-page TTS calls run server-side.
   const [audioVoice, setAudioVoice] = useState<string>('en-US-Journey-F');
@@ -287,7 +297,17 @@ export default function ReadingReviewFocusPage() {
   };
 
   const onGenerateAudio = async () => {
-    if (!passageId) return;
+    if (!passageId || !data) return;
+    // If any page already has audio, confirm overwrite. The R2 object
+    // gets replaced under the same key on every regen, so this is a
+    // one-way operation — the previous audio is gone after.
+    const hasExisting = data.pages.some((p) => !!p.ttsAudioKey);
+    if (hasExisting) {
+      const ok = window.confirm(
+        'This passage already has narration audio. Generating again will replace it for every page. Continue?',
+      );
+      if (!ok) return;
+    }
     setAudioBusy(true);
     setAudioError(null);
     try {
@@ -305,6 +325,39 @@ export default function ReadingReviewFocusPage() {
       setAudioError(err instanceof Error ? err.message : 'Failed');
     } finally {
       setAudioBusy(false);
+    }
+  };
+
+  const onStartTitleEdit = () => {
+    if (!data) return;
+    setTitleEdit({ open: true, draft: data.passage.title, saving: false });
+  };
+  const onCancelTitleEdit = () => {
+    setTitleEdit({ open: false, draft: '', saving: false });
+  };
+  const onSaveTitle = async () => {
+    if (!passageId) return;
+    const next = titleEdit.draft.trim();
+    if (!next) {
+      alert('Title cannot be empty.');
+      return;
+    }
+    setTitleEdit((s) => ({ ...s, saving: true }));
+    try {
+      const res = await fetch(`/api/teacher/reading/passages/${passageId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: next }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      await load();
+      setTitleEdit({ open: false, draft: '', saving: false });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save title');
+      setTitleEdit((s) => ({ ...s, saving: false }));
     }
   };
 
@@ -357,10 +410,50 @@ export default function ReadingReviewFocusPage() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to queue
               </Button>
-              <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
-                  {passage.title}
-                </h1>
+              <div className="min-w-0 flex-1">
+                {titleEdit.open ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={titleEdit.draft}
+                      onChange={(e) =>
+                        setTitleEdit((s) => ({ ...s, draft: e.target.value }))
+                      }
+                      disabled={titleEdit.saving}
+                      autoFocus
+                      maxLength={200}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void onSaveTitle();
+                        if (e.key === 'Escape') onCancelTitleEdit();
+                      }}
+                      className="text-2xl sm:text-3xl font-bold text-gray-900 border-b-2 border-blue-400 focus:outline-none flex-1 min-w-0"
+                    />
+                    <Button size="sm" onClick={() => void onSaveTitle()} disabled={titleEdit.saving}>
+                      {titleEdit.saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Save'
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onCancelTitleEdit}
+                      disabled={titleEdit.saving}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <h1
+                    className="text-2xl sm:text-3xl font-bold text-gray-900 truncate cursor-pointer hover:text-blue-700 inline-flex items-center gap-2 group"
+                    onClick={onStartTitleEdit}
+                    title="Click to edit"
+                  >
+                    {passage.title}
+                    <Pencil className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </h1>
+                )}
                 <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mt-1">
                   <span>{levelLabel(passage.readingLevel)}</span>
                   <span>•</span>
@@ -560,7 +653,9 @@ export default function ReadingReviewFocusPage() {
                       <audio
                         controls
                         preload="none"
-                        src={`/api/audio/${p.ttsAudioKey}`}
+                        // ?v=<updatedAt> defeats the proxy's 1-year cache
+                        // header so regenerated audio plays immediately.
+                        src={`/api/audio/${p.ttsAudioKey}?v=${encodeURIComponent(p.updatedAt)}`}
                         className="w-full"
                       />
                       {p.ttsVoice && (
