@@ -30,6 +30,7 @@ import {
   type GeneratePassagePlanResult,
   type PassagePlan,
 } from './types';
+import { APPROVED_CHARACTER_NAMES, isApprovedCharacterName } from '@/lib/reading/names';
 import {
   fetchTargetVocab,
   resolveCumulativeVocab,
@@ -73,8 +74,14 @@ STRUCTURE
 - Every page advances the story by exactly one beat.
 - 1 to 3 named characters. Each character description must be concrete enough that an image generator can render the same character consistently across pages — name, approximate age, hair, signature outfit details.
 
+CHARACTER NAMES
+- Character names MUST come from this exact list: ${APPROVED_CHARACTER_NAMES.join(', ')}.
+- Do NOT invent other names, do NOT use names from other languages, do NOT use nicknames. If you need two characters, pick two different names from the list.
+- The names use the exact casing shown above (e.g. "Sally", not "sally" or "SALLY").
+- This is a non-negotiable hard rule. Off-list names will cause the generation to be rejected and retried.
+
 FIELD SEMANTICS
-- "beat" is a SUMMARY of what happens on the page, not the prose itself. Example beat: "Mei sees the cat run into the night market." NOT: "Mei said, 'Oh, look at the cat!'"
+- "beat" is a SUMMARY of what happens on the page, not the prose itself. Example beat: "Sally sees the cat run into the night market." NOT: "Sally said, 'Oh, look at the cat!'"
 - "sceneDescription" is art direction for the page's image — describe what should appear in the picture concretely (subjects, setting, action, key props), and reference character outfits so the same characters look the same on every page.
 - "targetVocabUsed" lists which TARGET VOCABULARY words land on this page. Use the EXACT words from the TARGET VOCABULARY list given in the user message — match case and spelling. Every target word must be introduced on at least one page. A page may have an empty list.
 
@@ -305,6 +312,20 @@ export async function generatePassagePlan(
       .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
       .join('; ');
     throw new Error(`PassagePlan validation failed: ${issues}`);
+  }
+
+  // Approved-name guardrail. The system prompt forbids off-list names, but
+  // models occasionally drift on creative tasks; failing fast here lets the
+  // orchestrator's retry loop pick the bad run up and re-roll. PassagePlanSchema
+  // itself stays permissive so legacy stored plans (which may contain "Mei")
+  // still round-trip through it during backfill / read paths.
+  const offList = result.data.characters
+    .map((c) => c.name)
+    .filter((n) => !isApprovedCharacterName(n));
+  if (offList.length > 0) {
+    throw new Error(
+      `PassagePlan validation failed: character names not in approved list: ${offList.join(', ')}. Allowed: ${APPROVED_CHARACTER_NAMES.join(', ')}.`,
+    );
   }
 
   // 7. Map words → vocabulary.id UUIDs in targetVocabUsed. The model is told

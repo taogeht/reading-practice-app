@@ -145,7 +145,7 @@ export function tryMorphologicalMatch(
       ? { lemma, vocabId: vocabByWord.get(lemma), rule }
       : null;
 
-  // Pre-step: possessives. "Mei's" → try "Mei" before any other rule
+  // Pre-step: possessives. "Sally's" → try "Sally" before any other rule
   // so proper-noun owners are recovered cleanly.
   if (token.endsWith("'s") && token.length > 2) {
     const r = hit(token.slice(0, -2), 'possessive');
@@ -370,7 +370,7 @@ export function runMorphologyTests(): void {
     { id: 'v-go', word: 'go' },
     { id: 'v-child', word: 'child' },
     { id: 'v-tomato', word: 'tomato' },
-    { id: 'v-mei', word: 'Mei' },
+    { id: 'v-sally', word: 'Sally' },
     { id: 'v-cat', word: 'cat' },
   ];
 

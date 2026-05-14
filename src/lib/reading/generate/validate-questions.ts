@@ -20,7 +20,7 @@
 // story" rule depends on knowing which words actually appear in the
 // prose. We collect that set by lowercasing every prose token; that
 // also gives us character names "for free" so question-vocab checks
-// don't flag "Mei" as unknown.
+// don't flag "Sally" as unknown.
 
 import {
   getReadingLevel,
