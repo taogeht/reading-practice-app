@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, role, firstName, lastName, schoolId } = body;
+    const { email, password, role, firstName, lastName, schoolId, canGenerateReadingContent } = body;
 
     // Validate required fields
     if (!email || !password || !role || !firstName || !lastName) {
@@ -168,7 +168,10 @@ export async function POST(request: NextRequest) {
     if (role === 'teacher') {
       await db
         .insert(teachers)
-        .values({ id: newUser.id })
+        .values({
+          id: newUser.id,
+          canGenerateReadingContent: Boolean(canGenerateReadingContent),
+        })
         .onConflictDoNothing();
 
       if (resolvedSchoolId) {
@@ -198,6 +201,7 @@ export async function POST(request: NextRequest) {
         firstName,
         lastName,
         schoolId: resolvedSchoolId,
+        canGenerateReadingContent: role === 'teacher' ? Boolean(canGenerateReadingContent) : undefined,
       },
       request,
     });

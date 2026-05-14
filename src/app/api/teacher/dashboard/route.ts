@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { accessibleClassIds, isCoTeacherOnly } from '@/lib/auth/class-access';
+import { canGenerateReadingContent } from '@/lib/auth/reading-content';
 import {
   classes,
   assignments,
@@ -220,6 +221,7 @@ export async function GET(request: NextRequest) {
         }))
       },
       isCoTeacherOnly: coTeacherOnly,
+      canGenerateReadingContent: await canGenerateReadingContent(user),
       stats: {
         totalStudents,
         activeAssignments: activeAssignmentsResult[0]?.count || 0,

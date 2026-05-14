@@ -43,6 +43,7 @@ export async function GET(
         passwordHash: users.passwordHash,
         primarySchoolId: primaryMembership.schoolId,
         primarySchoolName: schools.name,
+        canGenerateReadingContent: teachers.canGenerateReadingContent,
       })
       .from(users)
       .leftJoin(
@@ -53,6 +54,7 @@ export async function GET(
         ),
       )
       .leftJoin(schools, eq(primaryMembership.schoolId, schools.id))
+      .leftJoin(teachers, eq(teachers.id, users.id))
       .where(eq(users.id, userId))
       .limit(1);
 
@@ -85,7 +87,7 @@ export async function PUT(
 
     const { id: userId } = await params;
     const body = await request.json();
-    const { email, password, role, firstName, lastName, active, schoolId } = body;
+    const { email, password, role, firstName, lastName, active, schoolId, canGenerateReadingContent } = body;
 
     const [existingUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!existingUser) {
@@ -176,10 +178,24 @@ export async function PUT(
       .returning();
 
     if (nextRole === 'teacher') {
+      const nextCanGenerate = canGenerateReadingContent === undefined
+        ? undefined
+        : Boolean(canGenerateReadingContent);
+
       await db
         .insert(teachers)
-        .values({ id: userId })
+        .values({
+          id: userId,
+          canGenerateReadingContent: nextCanGenerate ?? false,
+        })
         .onConflictDoNothing();
+
+      if (nextCanGenerate !== undefined) {
+        await db
+          .update(teachers)
+          .set({ canGenerateReadingContent: nextCanGenerate })
+          .where(eq(teachers.id, userId));
+      }
 
       if (resolvedSchoolId) {
         await db
@@ -213,6 +229,10 @@ export async function PUT(
         active,
         schoolId: resolvedSchoolId ?? null,
         passwordChanged: Boolean(password),
+        canGenerateReadingContent:
+          nextRole === 'teacher' && canGenerateReadingContent !== undefined
+            ? Boolean(canGenerateReadingContent)
+            : undefined,
       },
       request,
     });

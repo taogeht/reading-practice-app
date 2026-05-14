@@ -21,6 +21,7 @@ interface User {
   role: 'student' | 'teacher' | 'admin';
   active?: boolean;
   primarySchoolId?: string | null;
+  canGenerateReadingContent?: boolean;
 }
 
 interface SchoolOption {
@@ -55,6 +56,7 @@ export default function UserForm({
     role: (user?.role ?? DEFAULT_ROLE) as User['role'],
     active: user?.active ?? true,
     schoolId: user?.primarySchoolId ?? '',
+    canGenerateReadingContent: user?.canGenerateReadingContent ?? false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -68,6 +70,7 @@ export default function UserForm({
       role: (user?.role ?? DEFAULT_ROLE) as User['role'],
       active: user?.active ?? true,
       schoolId: user?.primarySchoolId ?? '',
+      canGenerateReadingContent: user?.canGenerateReadingContent ?? false,
     });
     setErrors({});
   }, [user]);
@@ -223,6 +226,24 @@ export default function UserForm({
             </p>
           )}
           {errors.schoolId && <p className="text-sm text-red-500 mt-1">{errors.schoolId}</p>}
+        </div>
+      )}
+
+      {formData.role === 'teacher' && (
+        <div className="flex items-start space-x-2">
+          <Switch
+            id="canGenerateReadingContent"
+            checked={formData.canGenerateReadingContent}
+            onCheckedChange={(checked) => handleChange('canGenerateReadingContent', checked)}
+          />
+          <div className="space-y-0.5">
+            <Label htmlFor="canGenerateReadingContent">
+              Can generate reading content
+            </Label>
+            <p className="text-xs text-gray-500">
+              Grants access to the Reading Practice hub: generating stories, page audio, images, and questions.
+            </p>
+          </div>
         </div>
       )}
 

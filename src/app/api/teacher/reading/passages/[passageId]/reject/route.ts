@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { canGenerateReadingContent } from '@/lib/auth/reading-content';
 import { db } from '@/lib/db';
 import { readingPassages } from '@/lib/db/schema';
 import { logError } from '@/lib/logger';
@@ -16,6 +17,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const user = await getCurrentUser();
     if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
+    if (!(await canGenerateReadingContent(user))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { passageId } = await params;

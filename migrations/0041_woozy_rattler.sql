@@ -1,0 +1,1 @@
+ALTER TABLE "teachers" ADD COLUMN "can_generate_reading_content" boolean DEFAULT false NOT NULL;

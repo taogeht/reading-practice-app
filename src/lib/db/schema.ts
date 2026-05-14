@@ -154,6 +154,7 @@ export const teachers = pgTable('teachers', {
   employeeId: varchar('employee_id', { length: 100 }),
   department: varchar('department', { length: 100 }),
   subjects: text('subjects').array(),
+  canGenerateReadingContent: boolean('can_generate_reading_content').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

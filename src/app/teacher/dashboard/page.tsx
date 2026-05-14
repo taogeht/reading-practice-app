@@ -78,6 +78,8 @@ type DashboardData = {
    *  Hides Story Library, Archived Stories, and the Quick Actions card —
    *  all of which expose owner-only actions. */
   isCoTeacherOnly: boolean;
+  /** Admin-granted capability gating /teacher/reading. */
+  canGenerateReadingContent: boolean;
   stats: Stats;
   recentSubmissions: Submission[];
   assignmentsSummary: AssignmentSummary[];
@@ -209,10 +211,12 @@ export default function TeacherDashboardPage() {
                   content; they review submissions on classes they share. */}
               {!dashboardData.isCoTeacherOnly && (
                 <>
-                  <Button variant="outline" onClick={() => router.push('/teacher/reading')}>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Reading Practice
-                  </Button>
+                  {dashboardData.canGenerateReadingContent && (
+                    <Button variant="outline" onClick={() => router.push('/teacher/reading')}>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Reading Practice
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={() => router.push('/teacher/spelling-lists')}>
                     <BookOpen className="w-4 h-4 mr-2" />
                     Manage Spelling Lists

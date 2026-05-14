@@ -288,6 +288,13 @@
       "when": 1778643865514,
       "tag": "0040_special_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1778797549094,
+      "tag": "0041_woozy_rattler",
+      "breakpoints": true
     }
   ]
 }

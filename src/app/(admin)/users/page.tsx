@@ -46,6 +46,7 @@ interface User {
   updatedAt: string;
   primarySchoolId?: string | null;
   primarySchoolName?: string | null;
+  canGenerateReadingContent?: boolean;
 }
 
 interface School {
@@ -203,8 +204,20 @@ export default function UserManagementPage() {
     setIsDialogOpen(true);
   };
 
-  const handleEditUser = (user: User) => {
-    setEditingUser(user);
+  const handleEditUser = async (user: User) => {
+    // List rows omit teacher-only fields (canGenerateReadingContent). Fetch
+    // the detail so the form hydrates accurately when editing a teacher.
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setEditingUser({ ...user, ...data.user });
+      } else {
+        setEditingUser(user);
+      }
+    } catch {
+      setEditingUser(user);
+    }
     setIsDialogOpen(true);
   };
 
