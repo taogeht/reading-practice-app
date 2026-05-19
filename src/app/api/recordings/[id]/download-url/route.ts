@@ -46,18 +46,24 @@ export async function GET(
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
 
-    // Extract the key from the audioUrl
+    // Extract the R2 key from the stored audioUrl. Audio is uploaded via
+    // r2Client.uploadFile() which returns the proxy URL form
+    // (`/api/audio/<key>`) — everything written by the app since the proxy
+    // landed uses that. The legacy direct-R2-URL form
+    // (`https://<bucket>.r2.cloudflarestorage.com/<key>`) may still exist on
+    // very old rows, so fall through to the original parser there.
     const audioUrl = recording[0].audioUrl;
-    console.log('Original audio URL:', audioUrl);
-
-    // Extract the key from the URL - everything after the domain
-    const urlParts = audioUrl.split('/');
-    const domainIndex = urlParts.findIndex(part => part.includes('.r2.cloudflarestorage.com'));
-    if (domainIndex === -1) {
-      throw new Error('Invalid R2 URL format');
+    let key: string | null = null;
+    if (audioUrl.startsWith('/api/audio/')) {
+      key = audioUrl.slice('/api/audio/'.length);
+    } else if (audioUrl.includes('.r2.cloudflarestorage.com')) {
+      const urlParts = audioUrl.split('/');
+      const domainIndex = urlParts.findIndex(part => part.includes('.r2.cloudflarestorage.com'));
+      key = urlParts.slice(domainIndex + 1).join('/');
     }
-    const key = urlParts.slice(domainIndex + 1).join('/');
-    console.log('Extracted key:', key);
+    if (!key) {
+      throw new Error(`Unrecognized audio URL format: ${audioUrl.slice(0, 80)}`);
+    }
 
     // Generate presigned download URL (valid for 1 hour)
     const presignedUrl = await r2Client.generatePresignedDownloadUrl(key, 3600);
