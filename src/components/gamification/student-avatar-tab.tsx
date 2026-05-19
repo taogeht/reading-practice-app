@@ -269,6 +269,27 @@ export function StudentAvatarTab({ onGoToShop }: Props) {
         return scenes;
     }, [inventory]);
 
+    // Memoize the canvas snapshot the parent hands to AvatarCanvas so that
+    // unrelated re-renders (e.g. setPendingSave / setSavedFlash toggles) don't
+    // produce a new object reference. Without this, AvatarCanvas's useEffect
+    // re-syncs to the stale server state mid-drag and the item appears to
+    // snap back to its prior position until the save round-trip completes.
+    const canvasInitialState: BareCanvasState | null = useMemo(() => {
+        if (!avatar) return null;
+        return {
+            items: avatar.canvas.items.map((i) => ({
+                itemId: i.itemId,
+                category: i.category,
+                x: i.x,
+                y: i.y,
+                scale: i.scale,
+                rotation: i.rotation,
+                zIndex: i.zIndex,
+            })),
+            character: avatar.canvas.character,
+        };
+    }, [avatar?.canvas]);
+
     if (loading) {
         return (
             <div className="flex items-center gap-2 text-gray-500 py-8 justify-center">
@@ -397,18 +418,6 @@ export function StudentAvatarTab({ onGoToShop }: Props) {
     }
 
     // Has avatar — canvas editor.
-    const initialState: BareCanvasState = {
-        items: avatar.canvas.items.map((i) => ({
-            itemId: i.itemId,
-            category: i.category,
-            x: i.x,
-            y: i.y,
-            scale: i.scale,
-            rotation: i.rotation,
-            zIndex: i.zIndex,
-        })),
-        character: avatar.canvas.character,
-    };
     const isLegacy = avatar.characterId === null;
 
     return (
@@ -465,7 +474,7 @@ export function StudentAvatarTab({ onGoToShop }: Props) {
             )}
 
             <AvatarCanvas
-                initialState={initialState}
+                initialState={canvasInitialState ?? { items: [], character: { x: 0.5, y: 0.6, scale: 1, rotation: 0, zIndex: 0 } }}
                 character={{
                     characterType: avatar.characterType,
                     baseAssetUrl: avatar.baseAssetUrl,

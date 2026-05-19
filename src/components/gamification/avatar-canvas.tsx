@@ -29,7 +29,7 @@ const MIN_SCALE = 0.2;
 const MAX_SCALE = 3;
 const LONG_PRESS_MS = 500;
 const MOVE_THRESHOLD_PX = 8;
-const SAVE_DEBOUNCE_MS = 1500;
+const SAVE_DEBOUNCE_MS = 3000;
 
 const DEFAULT_HEIGHT_FRACTION: Record<string, number> = {
     character: 0.7,
@@ -130,8 +130,10 @@ export function AvatarCanvas({
     const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Re-sync if the parent hands us a fresh server state (e.g. after reroll).
-    // We compare on the items array length + character coords as a cheap heuristic.
+    // Re-sync if the parent hands us a fresh server state (e.g. after reroll
+    // or first load). The parent is expected to memoize initialState so the
+    // reference only changes when the server-side avatar actually changes —
+    // unrelated parent re-renders shouldn't wipe in-progress local edits.
     useEffect(() => {
         setState(initialState);
     }, [initialState]);
