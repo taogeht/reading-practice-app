@@ -38,7 +38,9 @@ const BilingualLineSchema = z.object({
 
 const ProsodySchema = z.object({
     phrasing_notes: z.string(),
+    phrasing_notes_zh: z.string(),
     smoothness_notes: z.string(),
+    smoothness_notes_zh: z.string(),
     strengths: z.array(BilingualLineSchema),
     focus_areas: z.array(BilingualLineSchema),
 });
@@ -66,7 +68,9 @@ export interface BilingualLine {
 
 export interface ClaudeProsody {
     phrasingNotes: string;
+    phrasingNotesZh: string;
     smoothnessNotes: string;
+    smoothnessNotesZh: string;
     strengths: BilingualLine[];
     focusAreas: BilingualLine[];
 }
@@ -125,8 +129,10 @@ Return this exact JSON shape. Length limits are STRICT — write more and the pa
     }
   ],
   "prosody": {
-    "phrasing_notes": "...",          // <= 2 sentences, English only (internal)
-    "smoothness_notes": "...",        // <= 2 sentences, English only (internal)
+    "phrasing_notes": "...",          // 1-2 sentences observing how the reader grouped phrases
+    "phrasing_notes_zh": "...",       // Traditional Mandarin translation of phrasing_notes
+    "smoothness_notes": "...",        // 1-2 sentences on flow / hesitations
+    "smoothness_notes_zh": "...",     // Traditional Mandarin translation of smoothness_notes
     "strengths": [
       { "en": "...", "zh": "..." }    // each item: ONE sentence English + Traditional Mandarin
     ],
@@ -140,10 +146,11 @@ Return this exact JSON shape. Length limits are STRICT — write more and the pa
 
 CONSTRAINTS:
 - teacher_summary: exactly ONE sentence. teacher_summary_zh: exactly ONE sentence in Traditional Mandarin.
+- phrasing_notes / smoothness_notes: 1-2 sentences each. Provide a Traditional Mandarin translation for each (phrasing_notes_zh, smoothness_notes_zh).
 - strengths: at least 1 entry, each ONE sentence. Pair every English line with a Traditional Mandarin translation.
 - focus_areas: 1-2 entries, each ONE sentence. Pair every English line with a Traditional Mandarin translation.
 - Use Traditional characters (繁體中文), NOT Simplified (简体中文). The audience is in Taiwan.
-- If a sentence runs long, rewrite it shorter — do not split into two sentences.`;
+- If a sentence runs long, rewrite it shorter rather than splitting into two.`;
 }
 
 // Minimal JSON schema (no minItems/maxItems — output_config rejects those per
@@ -171,7 +178,9 @@ const ANALYSIS_JSON_SCHEMA = {
             type: 'object',
             properties: {
                 phrasing_notes: { type: 'string' },
+                phrasing_notes_zh: { type: 'string' },
                 smoothness_notes: { type: 'string' },
+                smoothness_notes_zh: { type: 'string' },
                 strengths: {
                     type: 'array',
                     items: {
@@ -191,7 +200,14 @@ const ANALYSIS_JSON_SCHEMA = {
                     },
                 },
             },
-            required: ['phrasing_notes', 'smoothness_notes', 'strengths', 'focus_areas'],
+            required: [
+                'phrasing_notes',
+                'phrasing_notes_zh',
+                'smoothness_notes',
+                'smoothness_notes_zh',
+                'strengths',
+                'focus_areas',
+            ],
             additionalProperties: false,
         },
         teacher_summary: { type: 'string' },
@@ -263,7 +279,9 @@ export async function analyzeWithClaude(args: AnalyzeWithClaudeArgs): Promise<Cl
             })),
             prosody: {
                 phrasingNotes: result.data.prosody.phrasing_notes,
+                phrasingNotesZh: result.data.prosody.phrasing_notes_zh,
                 smoothnessNotes: result.data.prosody.smoothness_notes,
+                smoothnessNotesZh: result.data.prosody.smoothness_notes_zh,
                 strengths: result.data.prosody.strengths,
                 focusAreas: result.data.prosody.focus_areas,
             },

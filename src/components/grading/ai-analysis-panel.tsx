@@ -32,7 +32,9 @@ interface AnalysisJson {
   claude?: {
     prosody?: {
       phrasingNotes?: string;
+      phrasingNotesZh?: string;
       smoothnessNotes?: string;
+      smoothnessNotesZh?: string;
       strengths?: ClaudeStrengthOrFocus[];
       focusAreas?: ClaudeStrengthOrFocus[];
     };
@@ -257,12 +259,52 @@ export function AIAnalysisPanel({
                 </div>
               )}
 
-              {/* Prosody trio. Only renders when at least one score is present. */}
+              {/* Prosody trio + per-dimension Claude notes. The dot meters
+                  give the at-a-glance score; the notes underneath explain
+                  what the model heard in 1-2 sentences. Pace has no note —
+                  it's wholly derived from the WCPM band already shown above. */}
               {(phrasingScore != null || smoothnessScore != null || paceScore != null) && (
-                <div className="flex gap-4 bg-white border rounded-lg p-3 w-fit">
-                  <ProsodyMeter label="Phrasing" score={phrasingScore} />
-                  <ProsodyMeter label="Smoothness" score={smoothnessScore} />
-                  <ProsodyMeter label="Pace" score={paceScore} />
+                <div className="bg-white border rounded-lg p-3 space-y-3">
+                  <div className="flex gap-4">
+                    <ProsodyMeter label="Phrasing" score={phrasingScore} />
+                    <ProsodyMeter label="Smoothness" score={smoothnessScore} />
+                    <ProsodyMeter label="Pace" score={paceScore} />
+                  </div>
+                  {(analysisJson.claude?.prosody?.phrasingNotes ||
+                    analysisJson.claude?.prosody?.smoothnessNotes) && (
+                    <div className="space-y-2 pt-1 border-t border-gray-100">
+                      {analysisJson.claude?.prosody?.phrasingNotes && (
+                        <div className="text-sm space-y-0.5">
+                          <span className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">
+                            Phrasing
+                          </span>
+                          <p className="text-gray-800 leading-relaxed">
+                            {analysisJson.claude.prosody.phrasingNotes}
+                          </p>
+                          {analysisJson.claude.prosody.phrasingNotesZh && (
+                            <p lang="zh-Hant" className="text-xs text-gray-500 leading-relaxed">
+                              {analysisJson.claude.prosody.phrasingNotesZh}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {analysisJson.claude?.prosody?.smoothnessNotes && (
+                        <div className="text-sm space-y-0.5">
+                          <span className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">
+                            Smoothness
+                          </span>
+                          <p className="text-gray-800 leading-relaxed">
+                            {analysisJson.claude.prosody.smoothnessNotes}
+                          </p>
+                          {analysisJson.claude.prosody.smoothnessNotesZh && (
+                            <p lang="zh-Hant" className="text-xs text-gray-500 leading-relaxed">
+                              {analysisJson.claude.prosody.smoothnessNotesZh}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
