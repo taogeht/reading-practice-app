@@ -22,13 +22,34 @@ interface AnalysisJson {
   durationSec?: number;
   processedAt?: string;
   error?: string;
+  // Claude-derived prose. Renders under "Teacher notes" when present.
+  claude?: {
+    prosody?: {
+      phrasingNotes?: string;
+      smoothnessNotes?: string;
+      strengths?: string[];
+      focusAreas?: string[];
+    };
+  } | null;
 }
+
+type WcpmBand = 'concern' | 'developing' | 'on_target' | 'above_target' | null;
 
 interface Props {
   recordingId: string;
   letterGrade: string | null;
   accuracyScore: number | null;
   wpmScore: number | null;
+  // Phase 7 — all optional. When wcpm is null we render the legacy WPM row
+  // (older recordings before the fluency upgrade).
+  wcpm?: number | null;
+  fluencyScore?: number | null;
+  eslWcpmBand?: WcpmBand;
+  nativeWcpmBand?: WcpmBand;
+  phrasingScore?: number | null;
+  smoothnessScore?: number | null;
+  paceScore?: number | null;
+  teacherSummary?: string | null;
   transcript: string | null;
   analysisJson: AnalysisJson | null;
   onReanalyzed?: () => void;
@@ -43,11 +64,53 @@ function gradeColor(grade: string | null): string {
   return 'bg-red-100 text-red-800 border-red-300';
 }
 
+const BAND_LABEL: Record<NonNullable<WcpmBand>, string> = {
+  concern: 'Concern',
+  developing: 'Developing',
+  on_target: 'On Target',
+  above_target: 'Above Target',
+};
+
+const BAND_COLOR: Record<NonNullable<WcpmBand>, string> = {
+  concern: 'bg-red-100 text-red-800 border-red-300',
+  developing: 'bg-amber-100 text-amber-800 border-amber-300',
+  on_target: 'bg-green-100 text-green-800 border-green-300',
+  above_target: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+};
+
+// Renders a 1-4 prosody score as four dots. Filled dots = score value.
+function ProsodyMeter({ label, score }: { label: string; score: number | null | undefined }) {
+  if (score == null) return null;
+  return (
+    <div className="flex flex-col items-center gap-0.5 min-w-[70px]">
+      <div className="flex gap-0.5" aria-label={`${label} score: ${score} of 4`}>
+        {[1, 2, 3, 4].map((n) => (
+          <span
+            key={n}
+            className={`block w-2 h-2 rounded-full ${
+              n <= score ? 'bg-purple-600' : 'bg-purple-200'
+            }`}
+          />
+        ))}
+      </div>
+      <span className="text-[10px] text-gray-600 uppercase tracking-wide">{label}</span>
+    </div>
+  );
+}
+
 export function AIAnalysisPanel({
   recordingId,
   letterGrade,
   accuracyScore,
   wpmScore,
+  wcpm,
+  fluencyScore,
+  eslWcpmBand,
+  nativeWcpmBand,
+  phrasingScore,
+  smoothnessScore,
+  paceScore,
+  teacherSummary,
   transcript,
   analysisJson,
   onReanalyzed,
@@ -59,6 +122,9 @@ export function AIAnalysisPanel({
   const hasResults = !!letterGrade || !!analysisJson?.expectedView?.length;
   const hasError = !!analysisJson?.error;
   const isPending = !hasResults && !hasError;
+  // wcpm presence indicates a Phase-7+ analysis ran. Falls through to the
+  // legacy WPM row when null (older recordings).
+  const hasFluency = wcpm != null;
 
   const reanalyze = async () => {
     setReanalyzing(true);
@@ -85,17 +151,38 @@ export function AIAnalysisPanel({
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-purple-100/40 transition-colors"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Sparkles className="w-4 h-4 text-purple-600" />
           <span className="font-medium text-purple-900 text-sm">AI Analysis</span>
           {hasResults && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge className={`${gradeColor(letterGrade)} border`}>{letterGrade ?? '—'}</Badge>
-              {accuracyScore !== null && (
-                <span className="text-xs text-gray-700">{accuracyScore}% accuracy</span>
-              )}
-              {wpmScore !== null && (
-                <span className="text-xs text-gray-500">· {wpmScore} WPM</span>
+              {hasFluency ? (
+                <>
+                  <span className="text-xs text-gray-700">
+                    <span className="font-semibold">{wcpm}</span> WCPM
+                  </span>
+                  {accuracyScore !== null && (
+                    <span className="text-xs text-gray-500">· {accuracyScore}% accuracy</span>
+                  )}
+                  {fluencyScore != null && (
+                    <span className="text-xs text-gray-500">· Fluency {fluencyScore}/100</span>
+                  )}
+                  {eslWcpmBand && (
+                    <Badge className={`${BAND_COLOR[eslWcpmBand]} border text-[11px]`}>
+                      {BAND_LABEL[eslWcpmBand]} (ESL)
+                    </Badge>
+                  )}
+                </>
+              ) : (
+                <>
+                  {accuracyScore !== null && (
+                    <span className="text-xs text-gray-700">{accuracyScore}% accuracy</span>
+                  )}
+                  {wpmScore !== null && (
+                    <span className="text-xs text-gray-500">· {wpmScore} WPM</span>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -115,22 +202,95 @@ export function AIAnalysisPanel({
         <div className="px-4 pb-4 space-y-3 border-t border-purple-100">
           {hasResults && analysisJson && (
             <>
-              <div className="flex flex-wrap gap-2 pt-3">
+              <div className="flex flex-wrap gap-2 pt-3 items-center">
                 <Badge className={`${gradeColor(letterGrade)} border text-base px-3 py-1`}>
                   {letterGrade ?? '—'}
                 </Badge>
+                {hasFluency && (
+                  <Badge variant="outline" className="text-sm">
+                    <span className="font-semibold">{wcpm}</span>&nbsp;WCPM
+                  </Badge>
+                )}
                 <Badge variant="outline" className="text-sm">
                   {accuracyScore ?? 0}% accuracy
                 </Badge>
-                <Badge variant="outline" className="text-sm">
-                  {wpmScore ?? 0} WPM
-                </Badge>
+                {hasFluency && fluencyScore != null ? (
+                  <Badge variant="outline" className="text-sm">
+                    Fluency {fluencyScore}/100
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-sm">
+                    {wpmScore ?? 0} WPM
+                  </Badge>
+                )}
                 {analysisJson.hallucinationSuspected && (
                   <Badge variant="outline" className="text-sm bg-amber-50 text-amber-800 border-amber-300">
                     Possibly silent — re-record
                   </Badge>
                 )}
               </div>
+
+              {/* Band chip with native parenthetical for teacher reference. */}
+              {eslWcpmBand && (
+                <div className="flex items-center gap-2 flex-wrap text-sm">
+                  <Badge className={`${BAND_COLOR[eslWcpmBand]} border`}>
+                    {BAND_LABEL[eslWcpmBand]} — ESL
+                  </Badge>
+                  {nativeWcpmBand && nativeWcpmBand !== eslWcpmBand && (
+                    <span className="text-xs text-gray-600">
+                      L1 norm: <span className="font-medium">{BAND_LABEL[nativeWcpmBand]}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Prosody trio. Only renders when at least one score is present. */}
+              {(phrasingScore != null || smoothnessScore != null || paceScore != null) && (
+                <div className="flex gap-4 bg-white border rounded-lg p-3 w-fit">
+                  <ProsodyMeter label="Phrasing" score={phrasingScore} />
+                  <ProsodyMeter label="Smoothness" score={smoothnessScore} />
+                  <ProsodyMeter label="Pace" score={paceScore} />
+                </div>
+              )}
+
+              {teacherSummary && (
+                <div className="bg-white border rounded-lg p-3">
+                  <h4 className="text-xs font-medium text-gray-700 mb-1">Teacher notes</h4>
+                  <p className="text-sm text-gray-800 leading-relaxed">{teacherSummary}</p>
+                </div>
+              )}
+
+              {/* Strengths + focus areas from the Claude prosody block. Kept
+                  separate so teachers can skim quickly on the dashboard. */}
+              {(analysisJson.claude?.prosody?.strengths?.length ||
+                analysisJson.claude?.prosody?.focusAreas?.length) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  {analysisJson.claude?.prosody?.strengths?.length ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-green-800 mb-1 uppercase tracking-wide">
+                        Strengths
+                      </h4>
+                      <ul className="list-disc list-inside text-gray-800 space-y-0.5">
+                        {analysisJson.claude.prosody.strengths.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {analysisJson.claude?.prosody?.focusAreas?.length ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-amber-800 mb-1 uppercase tracking-wide">
+                        Focus areas
+                      </h4>
+                      <ul className="list-disc list-inside text-gray-800 space-y-0.5">
+                        {analysisJson.claude.prosody.focusAreas.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              )}
 
               <div className="text-xs text-gray-600">
                 {analysisJson.matched ?? 0} correct ·{' '}

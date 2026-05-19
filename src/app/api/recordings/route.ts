@@ -164,6 +164,16 @@ export async function GET(request: NextRequest) {
         letterGrade: recordings.letterGrade,
         transcript: recordings.transcript,
         analysisJson: recordings.analysisJson,
+        // Phase 7 fluency fields — surfaced to the teacher panel for ESL-aware
+        // diagnostic display (WCPM band, prosody 1-4, teacher summary).
+        wcpm: recordings.wcpm,
+        fluencyScore: recordings.fluencyScore,
+        eslWcpmBand: recordings.eslWcpmBand,
+        nativeWcpmBand: recordings.nativeWcpmBand,
+        phrasingScore: recordings.phrasingScore,
+        smoothnessScore: recordings.smoothnessScore,
+        paceScore: recordings.paceScore,
+        teacherSummary: recordings.teacherSummary,
         recordingMode: assignments.recordingMode,
         maxAttempts: assignments.maxAttempts,
         storyContent: stories.content,

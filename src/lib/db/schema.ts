@@ -299,6 +299,30 @@ export const recordings = pgTable(
     transcript: text('transcript'),
     analysisJson: jsonb('analysis_json'),
     letterGrade: varchar('letter_grade', { length: 2 }),
+    // Fluency analysis (industry-standard WCPM + ESL-adjusted bands + prosody).
+    // All nullable so legacy rows and Whisper-only failures don't break. See
+    // src/lib/grading/fluency/* for the pipeline and src/components/grading/
+    // ai-analysis-panel.tsx for the teacher render.
+    wcpm: decimal('wcpm', { precision: 6, scale: 2 }),
+    totalWords: integer('total_words'),
+    correctWords: integer('correct_words'),
+    longPauseCount: integer('long_pause_count'),
+    intrusionPauseCount: integer('intrusion_pause_count'),
+    pauseAtPunctuationPct: decimal('pause_at_punctuation_pct', { precision: 5, scale: 2 }),
+    avgPauseMs: integer('avg_pause_ms'),
+    substitutionCount: integer('substitution_count'),
+    omissionCount: integer('omission_count'),
+    insertionCount: integer('insertion_count'),
+    selfCorrectionCount: integer('self_correction_count'),
+    eslWcpmBand: varchar('esl_wcpm_band', { length: 20 }),
+    nativeWcpmBand: varchar('native_wcpm_band', { length: 20 }),
+    passageLevel: smallint('passage_level'),
+    phrasingScore: smallint('phrasing_score'),
+    smoothnessScore: smallint('smoothness_score'),
+    paceScore: smallint('pace_score'),
+    fluencyScore: decimal('fluency_score', { precision: 4, scale: 1 }),
+    fluencyVersion: integer('fluency_version'),
+    teacherSummary: text('teacher_summary'),
     // Optional voice reply from the teacher. When populated, the student's
     // feedback callout renders an audio player alongside the text feedback.
     // Re-recording overwrites: the prior R2 key is deleted, this column is
@@ -1617,6 +1641,29 @@ export const passagePageRecordings = pgTable(
     accuracyScore: decimal('accuracy_score', { precision: 5, scale: 2 }),
     wpmScore: decimal('wpm_score', { precision: 5, scale: 2 }),
     analysisJson: jsonb('analysis_json'),
+    // Fluency analysis — mirrors the columns on `recordings`. See
+    // src/lib/grading/fluency/* for the pipeline. Nullable so legacy and
+    // failed analyses don't block reads.
+    wcpm: decimal('wcpm', { precision: 6, scale: 2 }),
+    totalWords: integer('total_words'),
+    correctWords: integer('correct_words'),
+    longPauseCount: integer('long_pause_count'),
+    intrusionPauseCount: integer('intrusion_pause_count'),
+    pauseAtPunctuationPct: decimal('pause_at_punctuation_pct', { precision: 5, scale: 2 }),
+    avgPauseMs: integer('avg_pause_ms'),
+    substitutionCount: integer('substitution_count'),
+    omissionCount: integer('omission_count'),
+    insertionCount: integer('insertion_count'),
+    selfCorrectionCount: integer('self_correction_count'),
+    eslWcpmBand: varchar('esl_wcpm_band', { length: 20 }),
+    nativeWcpmBand: varchar('native_wcpm_band', { length: 20 }),
+    passageLevel: smallint('passage_level'),
+    phrasingScore: smallint('phrasing_score'),
+    smoothnessScore: smallint('smoothness_score'),
+    paceScore: smallint('pace_score'),
+    fluencyScore: decimal('fluency_score', { precision: 4, scale: 1 }),
+    fluencyVersion: integer('fluency_version'),
+    teacherSummary: text('teacher_summary'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

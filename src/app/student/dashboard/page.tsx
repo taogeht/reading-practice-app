@@ -78,6 +78,13 @@ type Assignment = {
     audioDurationSeconds: number | null;
     transcript: string | null;
     analysisJson: Record<string, unknown> | null;
+    // Phase 7 — flows straight through to StudentAttemptCard.
+    wcpm?: number | null;
+    fluencyScore?: number | null;
+    eslWcpmBand?: 'concern' | 'developing' | 'on_target' | 'above_target' | null;
+    phrasingScore?: number | null;
+    smoothnessScore?: number | null;
+    paceScore?: number | null;
   }>;
 };
 

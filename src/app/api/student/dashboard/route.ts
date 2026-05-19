@@ -116,6 +116,14 @@ export async function GET(request: NextRequest) {
         // Fed to RecordingAudioPlayer's fallbackDurationSeconds so
         // the seek bar shows the right length before metadata loads.
         audioDurationSeconds: recordings.audioDurationSeconds,
+        // Phase 7 fluency — student card only renders WCPM + ESL band.
+        // Native band is intentionally omitted from this endpoint.
+        wcpm: recordings.wcpm,
+        fluencyScore: recordings.fluencyScore,
+        eslWcpmBand: recordings.eslWcpmBand,
+        phrasingScore: recordings.phrasingScore,
+        smoothnessScore: recordings.smoothnessScore,
+        paceScore: recordings.paceScore,
       })
       .from(recordings)
       .where(eq(recordings.studentId, user.id))
@@ -149,6 +157,18 @@ export async function GET(request: NextRequest) {
           audioDurationSeconds: r.audioDurationSeconds ?? null,
           transcript: r.transcript || null,
           analysisJson: r.analysisJson ?? null,
+          // Pre-cast numerics so the client doesn't have to.
+          wcpm: r.wcpm != null ? Math.round(Number(r.wcpm)) : null,
+          fluencyScore: r.fluencyScore != null ? Math.round(Number(r.fluencyScore) * 10) / 10 : null,
+          eslWcpmBand: (r.eslWcpmBand ?? null) as
+            | 'concern'
+            | 'developing'
+            | 'on_target'
+            | 'above_target'
+            | null,
+          phrasingScore: r.phrasingScore ?? null,
+          smoothnessScore: r.smoothnessScore ?? null,
+          paceScore: r.paceScore ?? null,
         }));
       const completedRecordings = assignmentRecordings.filter(r => r.status === 'reviewed' || r.status === 'submitted');
       const bestRecording = completedRecordings.reduce<typeof completedRecordings[0] | null>((best, r) => {

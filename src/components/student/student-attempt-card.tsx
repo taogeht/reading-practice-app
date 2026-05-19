@@ -54,7 +54,31 @@ export interface AttemptCardData {
   audioDurationSeconds?: number | null;
   transcript: string | null;
   analysisJson: AnalysisJson | null;
+  // Phase 7 fluency fields — student view shows WCPM + ESL band only.
+  // Native band is NEVER surfaced to students (teacher-only diagnostic).
+  wcpm?: number | null;
+  fluencyScore?: number | null;
+  eslWcpmBand?: 'concern' | 'developing' | 'on_target' | 'above_target' | null;
+  phrasingScore?: number | null;
+  smoothnessScore?: number | null;
+  paceScore?: number | null;
 }
+
+// Kid-friendly band labels — no "concern" word on the student side. We frame
+// everything as growth-oriented.
+const STUDENT_BAND_LABEL: Record<'concern' | 'developing' | 'on_target' | 'above_target', string> = {
+  concern: 'Keep practicing',
+  developing: 'Getting there',
+  on_target: 'Great job!',
+  above_target: 'Awesome!',
+};
+
+const STUDENT_BAND_COLOR: Record<'concern' | 'developing' | 'on_target' | 'above_target', string> = {
+  concern: 'bg-orange-100 text-orange-800 border-orange-300',
+  developing: 'bg-amber-100 text-amber-800 border-amber-300',
+  on_target: 'bg-green-100 text-green-800 border-green-300',
+  above_target: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+};
 
 function gradeColor(grade: string | null): string {
   if (!grade) return "bg-gray-100 text-gray-700";
@@ -108,9 +132,18 @@ export function StudentAttemptCard({ attempt }: { attempt: AttemptCardData }) {
             {attempt.accuracyScore}%
           </Badge>
         )}
-        {attempt.wpmScore !== null && (
+        {attempt.wcpm != null ? (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+            {attempt.wcpm} WCPM
+          </Badge>
+        ) : attempt.wpmScore !== null ? (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
             {attempt.wpmScore} WPM
+          </Badge>
+        ) : null}
+        {attempt.eslWcpmBand && (
+          <Badge className={`${STUDENT_BAND_COLOR[attempt.eslWcpmBand]} border text-[10px] px-1.5 py-0 h-5`}>
+            {STUDENT_BAND_LABEL[attempt.eslWcpmBand]}
           </Badge>
         )}
         {hasFeedback && (

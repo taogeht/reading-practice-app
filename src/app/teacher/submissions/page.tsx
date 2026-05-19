@@ -33,6 +33,15 @@ interface Recording {
   letterGrade: string | null;
   transcript: string | null;
   analysisJson: Record<string, unknown> | null;
+  // Phase 7 fluency fields. All optional — null on pre-fluency rows / Whisper-only.
+  wcpm: string | number | null;
+  fluencyScore: string | number | null;
+  eslWcpmBand: 'concern' | 'developing' | 'on_target' | 'above_target' | null;
+  nativeWcpmBand: 'concern' | 'developing' | 'on_target' | 'above_target' | null;
+  phrasingScore: number | null;
+  smoothnessScore: number | null;
+  paceScore: number | null;
+  teacherSummary: string | null;
   recordingMode: 'teacher_review' | 'ai_graded';
   maxAttempts: number | null;
   teacherReplyAudioUrl: string | null;
@@ -673,6 +682,14 @@ export default function TeacherSubmissionsPage() {
                                   letterGrade={recording.letterGrade}
                                   accuracyScore={recording.accuracyScore !== null ? Number(recording.accuracyScore) : null}
                                   wpmScore={recording.wpmScore !== null ? Number(recording.wpmScore) : null}
+                                  wcpm={recording.wcpm !== null ? Number(recording.wcpm) : null}
+                                  fluencyScore={recording.fluencyScore !== null ? Number(recording.fluencyScore) : null}
+                                  eslWcpmBand={recording.eslWcpmBand}
+                                  nativeWcpmBand={recording.nativeWcpmBand}
+                                  phrasingScore={recording.phrasingScore}
+                                  smoothnessScore={recording.smoothnessScore}
+                                  paceScore={recording.paceScore}
+                                  teacherSummary={recording.teacherSummary}
                                   transcript={recording.transcript}
                                   analysisJson={recording.analysisJson as never}
                                   onReanalyzed={fetchRecordings}
