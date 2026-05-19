@@ -14,6 +14,7 @@ import { TeacherStudentPracticeSection } from "@/components/practice/teacher-stu
 import { StudentWordMasterySection } from "@/components/spelling/student-word-mastery-section";
 import { StudentReadingMasterySection } from "@/components/reading/student-reading-mastery-section";
 import { StudentPassageRecordingsSection } from "@/components/recordings/student-passage-recordings-section";
+import { TeacherStarGrantsCard } from "@/components/gamification/teacher-star-grants-card";
 
 interface StudentClass {
   id: string;
@@ -231,6 +232,8 @@ export default function TeacherStudentProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {studentId && <TeacherStarGrantsCard studentId={studentId} />}
 
         {studentId && <TeacherMediaSection studentId={studentId} />}
 

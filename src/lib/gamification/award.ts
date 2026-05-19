@@ -8,6 +8,7 @@ import {
     newAnimalUnlockOnLevelUp,
     STREAK_MILESTONES,
 } from './rules';
+import { STAR_RATES, awardStars } from './stars';
 
 export interface AwardResult {
     pointsAwarded: number;
@@ -177,6 +178,29 @@ export async function awardXp(
                     .onConflictDoNothing();
                 unlockedBadges.push(milestone.badgeKey);
             }
+        }
+
+        // Star awards — dual-fired alongside every XP write. Primary event +
+        // any bonus events (daily_login, streak milestones) each get their
+        // own row in star_transactions so the student's history reads cleanly.
+        // Level-up grants a synthetic star bonus on top.
+        const starAwardsForThisCall: Array<{ amount: number; ref: string }> = [];
+        const primaryStars = STAR_RATES[eventType];
+        if (primaryStars > 0) starAwardsForThisCall.push({ amount: primaryStars, ref: eventType });
+        for (const bonus of bonusEvents) {
+            const bonusStars = STAR_RATES[bonus.eventType];
+            if (bonusStars > 0) starAwardsForThisCall.push({ amount: bonusStars, ref: bonus.eventType });
+        }
+        if (leveledUp && STAR_RATES.level_up > 0) {
+            starAwardsForThisCall.push({ amount: STAR_RATES.level_up, ref: 'level_up' });
+        }
+        for (const award of starAwardsForThisCall) {
+            await awardStars({
+                studentId,
+                amount: award.amount,
+                sourceType: 'xp_action',
+                sourceRef: award.ref,
+            });
         }
 
         return {

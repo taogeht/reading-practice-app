@@ -18,6 +18,7 @@ import { FlashcardGame } from "@/components/spelling/flashcard-game";
 import { StudentHomeworkSection } from "@/components/student/student-homework-section";
 import { StudentAttemptCard } from "@/components/student/student-attempt-card";
 import { StudentProgressionCard } from "@/components/gamification/student-progression-card";
+import { ShopCalloutCard } from "@/components/gamification/shop-callout-card";
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
 import { RecordedPassagesSection } from "@/components/recordings/recorded-passages-section";
 import { PracticeSession } from "@/components/practice/practice-session";
@@ -264,6 +265,9 @@ export default function StudentDashboardPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         {/* Gamification — level, streak, XP, animal */}
         <StudentProgressionCard />
+
+        {/* Star shop promo — visible entry point so students discover the shop */}
+        <ShopCalloutCard />
 
         {/* Online Practice Login */}
         {student.oupEmail && student.oupPassword && (

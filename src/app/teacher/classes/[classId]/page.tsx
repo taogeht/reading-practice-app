@@ -16,6 +16,7 @@ import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { ClassPracticeSection } from "@/components/practice/class-practice-section";
 import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-units-section";
 import { ClassEngagementSection } from "@/components/gamification/class-engagement-section";
+import { ClassShopSection } from "@/components/gamification/class-shop-section";
 import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { RecapConfirmationSummary } from "@/components/recap/recap-confirmation-summary";
 import { SyllabusImportDialog } from "@/components/syllabus/syllabus-import-dialog";
@@ -581,6 +582,10 @@ export default function ClassDetailPage() {
                 {
                   id: "practice",
                   node: <ClassPracticeSection classId={classId} defaultExpanded={false} />,
+                },
+                {
+                  id: "shop",
+                  node: <ClassShopSection classId={classId} defaultExpanded={false} />,
                 },
               ]}
             />

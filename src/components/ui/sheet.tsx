@@ -13,7 +13,7 @@ interface SheetProps {
 interface SheetContentProps {
     children: React.ReactNode;
     className?: string;
-    side?: "right" | "left";
+    side?: "right" | "left" | "top" | "bottom";
 }
 
 const Sheet = ({ open = false, onOpenChange, children }: SheetProps) => {
@@ -38,16 +38,19 @@ const Sheet = ({ open = false, onOpenChange, children }: SheetProps) => {
 };
 
 const SheetContent = ({ children, className = "", side = "right" }: SheetContentProps) => {
-    const sideClasses = side === "right"
-        ? "right-0 animate-in slide-in-from-right"
-        : "left-0 animate-in slide-in-from-left";
+    // Side controls anchor + slide-in animation. Bottom + top are full-width
+    // and auto-sized; left + right are full-height with a mobile-friendly
+    // max width.
+    const layoutByside: Record<typeof side, string> = {
+        right: "right-0 top-0 h-full w-full sm:max-w-md animate-in slide-in-from-right",
+        left: "left-0 top-0 h-full w-full sm:max-w-md animate-in slide-in-from-left",
+        bottom: "bottom-0 left-0 right-0 max-h-[85vh] rounded-t-2xl animate-in slide-in-from-bottom",
+        top: "top-0 left-0 right-0 max-h-[85vh] rounded-b-2xl animate-in slide-in-from-top",
+    };
 
     return (
         <div
-            className={`
-        fixed top-0 h-full w-full sm:max-w-md bg-white shadow-lg z-50
-        ${sideClasses} ${className}
-      `}
+            className={`fixed bg-white shadow-lg z-50 overflow-y-auto ${layoutByside[side]} ${className}`}
             onClick={(e) => e.stopPropagation()}
         >
             {children}

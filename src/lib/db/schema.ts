@@ -901,6 +901,11 @@ export const studentProgression = pgTable('student_progression', {
   currentStreakDays: integer('current_streak_days').default(0).notNull(),
   longestStreakDays: integer('longest_streak_days').default(0).notNull(),
   lastActivityDate: date('last_activity_date'),
+  // Stars are a spendable currency, parallel to XP. Awarded alongside every
+  // XP event via STAR_RATES in src/lib/gamification/stars.ts. starsBalance
+  // decrements on shop spends (Phase 2+); starsLifetime never decrements.
+  starsBalance: integer('stars_balance').default(0).notNull(),
+  starsLifetime: integer('stars_lifetime').default(0).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -929,6 +934,187 @@ export const studentProgressionRelations = relations(studentProgression, ({ one 
 
 export const studentUnlocksRelations = relations(studentUnlocks, ({ one }) => ({
   student: one(users, { fields: [studentUnlocks.studentId], references: [users.id] }),
+}));
+
+export const starTransactions = pgTable(
+  'star_transactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amount: integer('amount').notNull(),
+    direction: varchar('direction', { length: 10 }).notNull(),
+    sourceType: varchar('source_type', { length: 30 }).notNull(),
+    sourceRef: text('source_ref'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    studentTimeIdx: index('idx_star_tx_student_created').on(table.studentId, table.createdAt),
+  })
+);
+
+export const teacherStarGrants = pgTable(
+  'teacher_star_grants',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    teacherId: uuid('teacher_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    studentId: uuid('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amount: integer('amount').notNull(),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    teacherTimeIdx: index('idx_grants_teacher_created').on(table.teacherId, table.createdAt),
+    studentIdx: index('idx_grants_student').on(table.studentId),
+  })
+);
+
+export const starTransactionsRelations = relations(starTransactions, ({ one }) => ({
+  student: one(users, { fields: [starTransactions.studentId], references: [users.id] }),
+}));
+
+export const teacherStarGrantsRelations = relations(teacherStarGrants, ({ one }) => ({
+  teacher: one(users, { fields: [teacherStarGrants.teacherId], references: [users.id], relationName: 'grants_by_teacher' }),
+  student: one(users, { fields: [teacherStarGrants.studentId], references: [users.id], relationName: 'grants_to_student' }),
+}));
+
+// Phase 2: Shop, per-class curation, and student inventory.
+//
+// shop_items is the catalogue (built-in items have school_id = NULL; per-school
+// items name a school). class_shop_items is opt-out — absence of a row means
+// the item is enabled in that class; presence with is_enabled=false explicitly
+// hides it. student_inventory records purchases.
+export const shopItems = pgTable(
+  'shop_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    schoolId: uuid('school_id').references(() => schools.id, { onDelete: 'cascade' }),
+    // 'avatar_cosmetic' | 'collectible'
+    type: varchar('type', { length: 30 }).notNull(),
+    // for cosmetic: 'hat' | 'outfit' | 'accessory' | 'background'
+    // for collectible: 'sticker' | 'trophy' | 'pet'
+    category: varchar('category', { length: 30 }).notNull(),
+    name: varchar('name', { length: 80 }).notNull(),
+    description: text('description'),
+    starCost: integer('star_cost').notNull(),
+    // null = universal across character types (Phase 3 concept)
+    characterType: varchar('character_type', { length: 20 }),
+    assetType: varchar('asset_type', { length: 10 }).default('css').notNull(),
+    // For css: { emoji, color, layer }. For image (Phase 3+): { url, layer }.
+    assetData: jsonb('asset_data').default(sql`'{}'::jsonb`).notNull(),
+    minLevel: integer('min_level').default(1).notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    schoolActiveSortIdx: index('idx_shop_items_school_active_sort').on(table.schoolId, table.isActive, table.sortOrder),
+    typeCategoryIdx: index('idx_shop_items_type_category').on(table.type, table.category),
+  })
+);
+
+export const classShopItems = pgTable(
+  'class_shop_items',
+  {
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    itemId: uuid('item_id').notNull().references(() => shopItems.id, { onDelete: 'cascade' }),
+    isEnabled: boolean('is_enabled').default(true).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.classId, table.itemId] }),
+    classIdx: index('idx_class_shop_items_class').on(table.classId),
+  })
+);
+
+export const studentInventory = pgTable(
+  'student_inventory',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    itemId: uuid('item_id').notNull().references(() => shopItems.id, { onDelete: 'cascade' }),
+    acquiredAt: timestamp('acquired_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    studentTimeIdx: index('idx_student_inventory_student_time').on(table.studentId, table.acquiredAt),
+    uniqueOwn: uniqueIndex('unique_student_item').on(table.studentId, table.itemId),
+  })
+);
+
+export const shopItemsRelations = relations(shopItems, ({ one, many }) => ({
+  school: one(schools, { fields: [shopItems.schoolId], references: [schools.id] }),
+  classConfigs: many(classShopItems),
+  ownedBy: many(studentInventory),
+}));
+
+export const classShopItemsRelations = relations(classShopItems, ({ one }) => ({
+  class: one(classes, { fields: [classShopItems.classId], references: [classes.id] }),
+  item: one(shopItems, { fields: [classShopItems.itemId], references: [shopItems.id] }),
+}));
+
+export const studentInventoryRelations = relations(studentInventory, ({ one }) => ({
+  student: one(users, { fields: [studentInventory.studentId], references: [users.id] }),
+  item: one(shopItems, { fields: [studentInventory.itemId], references: [shopItems.id] }),
+}));
+
+// Per-student avatar. Evolved over phases:
+//   Phase 3 — slot-keyed equipped_items map: { hat: id, background: id }
+//   Phase 5 — characterId links to base_characters; baseAssetUrl renders Gemini PNG
+//   Phase 6 — free-canvas state: equipped_items is { items: [{itemId,x,y,scale,rotation,zIndex,category}],
+//             character: {x,y,scale,rotation,zIndex} }; background moved out to its
+//             own backgroundItemId column (always full-bleed, not draggable);
+//             snapshotUrl points at a Sharp-composited PNG that's rendered
+//             everywhere outside the editor.
+export const studentAvatars = pgTable('student_avatars', {
+  studentId: uuid('student_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  characterType: varchar('character_type', { length: 20 }).notNull(),
+  characterId: uuid('character_id'),
+  equippedItems: jsonb('equipped_items').default(sql`'{}'::jsonb`).notNull(),
+  backgroundItemId: uuid('background_item_id'),
+  snapshotUrl: text('snapshot_url'),
+  // 'css' today (Phase 3 = placeholder layered emoji). 'pending'/'complete'/'failed'
+  // come online in Phase 4 when Gemini generates the base portrait.
+  generationStatus: varchar('generation_status', { length: 20 }).default('css').notNull(),
+  baseAssetUrl: text('base_asset_url'),
+  rerollCount: integer('reroll_count').default(0).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const studentAvatarsRelations = relations(studentAvatars, ({ one }) => ({
+  student: one(users, { fields: [studentAvatars.studentId], references: [users.id] }),
+  character: one(baseCharacters, {
+    fields: [studentAvatars.characterId],
+    references: [baseCharacters.id],
+  }),
+  background: one(shopItems, {
+    fields: [studentAvatars.backgroundItemId],
+    references: [shopItems.id],
+  }),
+}));
+
+// Phase 5: Gemini-generated character portraits. 9 rows (3 humans + 3 animals
+// + 3 robots), each pre-generated by admin. assetUrl populates on successful
+// generation; null while pending/failed.
+export const baseCharacters = pgTable(
+  'base_characters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    characterType: varchar('character_type', { length: 20 }).notNull(),
+    variantIndex: integer('variant_index').notNull(),
+    name: varchar('name', { length: 60 }).notNull(),
+    personality: text('personality').notNull(),
+    assetUrl: text('asset_url'),
+    generationPrompt: text('generation_prompt'),
+    generationStatus: varchar('generation_status', { length: 20 }).default('pending').notNull(),
+    generatedAt: timestamp('generated_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueVariant: uniqueIndex('unique_character_variant').on(table.characterType, table.variantIndex),
+  })
+);
+
+export const baseCharactersRelations = relations(baseCharacters, ({ many }) => ({
+  students: many(studentAvatars),
 }));
 
 export const practiceQuestionsRelations = relations(practiceQuestions, ({ one, many }) => ({
