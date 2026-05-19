@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Camera, Loader2, RefreshCw, Sparkles } from "lucide-react";
 
 type Status = "pending" | "generating" | "complete" | "failed";
 
@@ -58,6 +58,7 @@ export default function AvatarCatalogPage() {
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState<Set<string>>(new Set());
     const [bulkRunning, setBulkRunning] = useState(false);
+    const [snapshotRegen, setSnapshotRegen] = useState<{ running: boolean; started: number | null }>({ running: false, started: null });
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const load = useCallback(async () => {
@@ -264,10 +265,46 @@ export default function AvatarCatalogPage() {
                         for these — Gemini runs here, students see finished images.
                     </p>
                 </div>
-                <Button onClick={bulkGenerate} disabled={bulkRunning || pendingCount === 0}>
-                    {bulkRunning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                    Generate all pending ({pendingCount})
-                </Button>
+                <div className="flex gap-2 flex-wrap">
+                    <Button
+                        variant="outline"
+                        onClick={async () => {
+                            if (snapshotRegen.running) return;
+                            if (!confirm("Re-composite every student's avatar snapshot? Runs sequentially on the server (~1–3s per student).")) return;
+                            setSnapshotRegen({ running: true, started: null });
+                            try {
+                                const res = await fetch("/api/admin/avatar-catalog/regenerate-snapshots", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({}),
+                                });
+                                const json = await res.json().catch(() => ({}));
+                                setSnapshotRegen({ running: false, started: typeof json.started === "number" ? json.started : 0 });
+                            } catch (err) {
+                                console.error(err);
+                                setSnapshotRegen({ running: false, started: null });
+                            }
+                        }}
+                        disabled={snapshotRegen.running}
+                        title="Useful after regenerating characters/cosmetics — refreshes every student's saved snapshot in the background."
+                    >
+                        {snapshotRegen.running ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                            <Camera className="w-4 h-4 mr-2" />
+                        )}
+                        Refresh all snapshots
+                        {snapshotRegen.started !== null && (
+                            <span className="ml-2 text-xs text-gray-500">
+                                started {snapshotRegen.started}
+                            </span>
+                        )}
+                    </Button>
+                    <Button onClick={bulkGenerate} disabled={bulkRunning || pendingCount === 0}>
+                        {bulkRunning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                        Generate all pending ({pendingCount})
+                    </Button>
+                </div>
             </div>
 
             <section className="space-y-4">
