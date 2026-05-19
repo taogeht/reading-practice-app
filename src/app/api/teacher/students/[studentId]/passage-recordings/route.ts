@@ -20,6 +20,7 @@ import {
   readingPassages,
   storyPages,
 } from '@/lib/db/schema';
+import { toProxyAudioUrl } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -142,7 +143,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       page.attempts.push({
         id: r.recordingId,
         attemptNumber: r.attemptNumber,
-        audioUrl: r.audioUrl,
+        audioUrl: toProxyAudioUrl(r.audioUrl),
         submittedAt: r.submittedAt.toISOString(),
         transcript: r.transcript,
         letterGrade: r.letterGrade,

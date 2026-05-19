@@ -437,5 +437,31 @@ export async function uploadRecordingToR2(
     'artifact-type': 'student-recording',
   });
 
-  return r2Client.getPublicUrl(key);
+  // The R2 bucket is private, so direct public URLs aren't fetchable from the
+  // browser (CORB blocks the error page). Audio playback goes through the
+  // /api/audio/[...key] proxy.
+  return r2Client.getProxyUrl(key);
+}
+
+/**
+ * Normalize a stored audio URL to the /api/audio/[...key] proxy form.
+ * Handles legacy rows that were saved as direct R2 public URLs (r2.dev,
+ * R2_PUBLIC_URL, or r2.cloudflarestorage.com) before uploadRecordingToR2
+ * was fixed to return the proxy URL.
+ */
+export function toProxyAudioUrl(stored: string): string {
+  if (!stored) return stored;
+  if (stored.startsWith('/api/audio/')) return stored;
+  try {
+    const u = new URL(stored);
+    let pathname = u.pathname.replace(/^\/+/, '');
+    // r2.cloudflarestorage.com URLs include the bucket as the first segment.
+    if (u.hostname.endsWith('r2.cloudflarestorage.com')) {
+      const slash = pathname.indexOf('/');
+      pathname = slash === -1 ? pathname : pathname.slice(slash + 1);
+    }
+    return `/api/audio/${pathname}`;
+  } catch {
+    return stored;
+  }
 }
