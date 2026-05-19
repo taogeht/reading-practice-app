@@ -448,18 +448,17 @@ export async function uploadRecordingToR2(
  * Handles legacy rows that were saved as direct R2 public URLs (r2.dev,
  * R2_PUBLIC_URL, or r2.cloudflarestorage.com) before uploadRecordingToR2
  * was fixed to return the proxy URL.
+ *
+ * R2_PUBLIC_URL in this project points at the account endpoint with no
+ * bucket segment, so for every stored URL the path IS the object key —
+ * we don't strip a leading segment.
  */
 export function toProxyAudioUrl(stored: string): string {
   if (!stored) return stored;
   if (stored.startsWith('/api/audio/')) return stored;
   try {
     const u = new URL(stored);
-    let pathname = u.pathname.replace(/^\/+/, '');
-    // r2.cloudflarestorage.com URLs include the bucket as the first segment.
-    if (u.hostname.endsWith('r2.cloudflarestorage.com')) {
-      const slash = pathname.indexOf('/');
-      pathname = slash === -1 ? pathname : pathname.slice(slash + 1);
-    }
+    const pathname = u.pathname.replace(/^\/+/, '');
     return `/api/audio/${pathname}`;
   } catch {
     return stored;
