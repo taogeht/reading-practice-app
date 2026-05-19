@@ -158,6 +158,7 @@ export interface RawAnalysis {
   fluencyScore: number | null;
   fluencyVersion: number | null;
   teacherSummary: string | null;
+  teacherSummaryZh: string | null;
 }
 
 export async function analyzeAudioBuffer(opts: {
@@ -264,6 +265,7 @@ export async function analyzeAudioBuffer(opts: {
     fluencyScore,
     fluencyVersion: metrics ? FLUENCY_VERSION : null,
     teacherSummary: claude?.teacherSummary ?? null,
+    teacherSummaryZh: claude?.teacherSummaryZh ?? null,
   };
 }
 
@@ -306,6 +308,7 @@ async function analyze(ctx: RecordingContext): Promise<AnalysisStored> {
       fluencyScore: raw.fluencyScore != null ? raw.fluencyScore.toFixed(1) : null,
       fluencyVersion: raw.fluencyVersion,
       teacherSummary: raw.teacherSummary,
+      teacherSummaryZh: raw.teacherSummaryZh,
       updatedAt: new Date(),
     })
     .where(eq(recordings.id, ctx.recordingId));

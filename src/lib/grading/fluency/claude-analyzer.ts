@@ -1,11 +1,14 @@
-// Claude pass: ESL-aware error classification, prosody notes, and a short
-// teacher_summary. Runs after the deterministic metrics so its prompt can
-// receive them as already-known facts ("pre-computed metrics") rather than
+// Claude pass: ESL-aware error classification, prosody notes, a short
+// teacher_summary, and Traditional Mandarin (zh-TW) translations of the
+// teacher-facing fields. Runs after the deterministic metrics so its prompt
+// receives them as already-known facts ("pre-computed metrics") rather than
 // asking the model to re-derive them.
 //
-// Graceful degrade: any failure (missing API key, schema mismatch, network
-// error) returns null. The caller continues with the deterministic data;
-// the row just won't carry Claude-derived fields.
+// Output is tight by contract: teacher_summary, every strength, and every
+// focus area are ONE sentence each. Translations are paired with their
+// English source so we can't get array-length mismatches. The whole call
+// degrades gracefully — any failure returns null and the row keeps its
+// deterministic fields.
 
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
@@ -15,9 +18,6 @@ import type { FluencyMetrics } from './compute-metrics';
 const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 2000;
 
-// Zod schemas validate the full shape — output_config JSON schema can't
-// express constraints like enum-only string fields reliably, so we let the
-// model emit any string and reject at parse time.
 const ErrorTypeSchema = z.enum(['substitution', 'omission', 'insertion', 'self_correction']);
 
 const ErrorSchema = z.object({
@@ -29,17 +29,25 @@ const ErrorSchema = z.object({
     note: z.string().optional(),
 });
 
+// Each strength / focus area is { en, zh } — paired so we can't drift array
+// lengths between the English text and the Mandarin translation.
+const BilingualLineSchema = z.object({
+    en: z.string(),
+    zh: z.string(),
+});
+
 const ProsodySchema = z.object({
     phrasing_notes: z.string(),
     smoothness_notes: z.string(),
-    strengths: z.array(z.string()),
-    focus_areas: z.array(z.string()),
+    strengths: z.array(BilingualLineSchema),
+    focus_areas: z.array(BilingualLineSchema),
 });
 
 const ClaudeAnalysisSchema = z.object({
     errors: z.array(ErrorSchema),
     prosody: ProsodySchema,
     teacher_summary: z.string(),
+    teacher_summary_zh: z.string(),
 });
 
 export interface ClaudeError {
@@ -51,17 +59,23 @@ export interface ClaudeError {
     note?: string;
 }
 
+export interface BilingualLine {
+    en: string;
+    zh: string;
+}
+
 export interface ClaudeProsody {
     phrasingNotes: string;
     smoothnessNotes: string;
-    strengths: string[];
-    focusAreas: string[];
+    strengths: BilingualLine[];
+    focusAreas: BilingualLine[];
 }
 
 export interface ClaudeAnalysis {
     errors: ClaudeError[];
     prosody: ClaudeProsody;
     teacherSummary: string;
+    teacherSummaryZh: string;
 }
 
 const SYSTEM_PROMPT = `You are an ESL reading fluency analyst. Your student population is Taiwanese children with Mandarin as their first language.
@@ -73,7 +87,9 @@ You will receive:
 2. The Whisper transcription (what the student actually said)
 3. Pre-computed metrics (WCPM, pause data)
 
-Your job is to classify errors and assess prosody quality. Return ONLY valid JSON matching the schema. Mark errors as is_esl_pattern: true when they reflect common Chinese L1 transfer patterns — final consonant deletion ("tes" for "test"), /l/ vs /r/ confusion, vowel length errors, missing articles (a/the), plural -s omission.`;
+Your job: classify errors, assess prosody, and produce a SHORT, scannable report. Brevity is essential — teachers read these between students. Provide Traditional Mandarin (zh-TW, NOT Simplified) translations for the teacher-facing prose so Taiwanese teachers and parents can read it natively.
+
+Mark errors as is_esl_pattern: true when they reflect common Chinese L1 transfer patterns — final consonant deletion ("tes" for "test"), /l/ vs /r/ confusion, vowel length errors, missing articles (a/the), plural -s omission.`;
 
 function buildUserPrompt(args: {
     passageText: string;
@@ -95,9 +111,8 @@ PRE-COMPUTED METRICS:
 - Intrusion pauses (mid-phrase): ${metrics.intrusionPauseCount}
 - Pauses at punctuation: ${metrics.pauseAtPunctuationPct.toFixed(1)}%
 
-Classify each deviation from the target passage and assess prosody.
+Return this exact JSON shape. Length limits are STRICT — write more and the panel becomes unreadable.
 
-Return this exact JSON shape:
 {
   "errors": [
     {
@@ -110,15 +125,25 @@ Return this exact JSON shape:
     }
   ],
   "prosody": {
-    "phrasing_notes": "...",
-    "smoothness_notes": "...",
-    "strengths": ["..."],
-    "focus_areas": ["..."]
+    "phrasing_notes": "...",          // <= 2 sentences, English only (internal)
+    "smoothness_notes": "...",        // <= 2 sentences, English only (internal)
+    "strengths": [
+      { "en": "...", "zh": "..." }    // each item: ONE sentence English + Traditional Mandarin
+    ],
+    "focus_areas": [
+      { "en": "...", "zh": "..." }    // each item: ONE sentence English + Traditional Mandarin
+    ]
   },
-  "teacher_summary": "..."
+  "teacher_summary": "...",           // EXACTLY ONE sentence, English
+  "teacher_summary_zh": "..."         // EXACTLY ONE sentence, Traditional Mandarin (zh-TW)
 }
 
-Constraints: strengths array always has at least 1 entry. focus_areas has 1-2 entries. teacher_summary is 2-3 sentences in plain English.`;
+CONSTRAINTS:
+- teacher_summary: exactly ONE sentence. teacher_summary_zh: exactly ONE sentence in Traditional Mandarin.
+- strengths: at least 1 entry, each ONE sentence. Pair every English line with a Traditional Mandarin translation.
+- focus_areas: 1-2 entries, each ONE sentence. Pair every English line with a Traditional Mandarin translation.
+- Use Traditional characters (繁體中文), NOT Simplified (简体中文). The audience is in Taiwan.
+- If a sentence runs long, rewrite it shorter — do not split into two sentences.`;
 }
 
 // Minimal JSON schema (no minItems/maxItems — output_config rejects those per
@@ -147,15 +172,32 @@ const ANALYSIS_JSON_SCHEMA = {
             properties: {
                 phrasing_notes: { type: 'string' },
                 smoothness_notes: { type: 'string' },
-                strengths: { type: 'array', items: { type: 'string' } },
-                focus_areas: { type: 'array', items: { type: 'string' } },
+                strengths: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: { en: { type: 'string' }, zh: { type: 'string' } },
+                        required: ['en', 'zh'],
+                        additionalProperties: false,
+                    },
+                },
+                focus_areas: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: { en: { type: 'string' }, zh: { type: 'string' } },
+                        required: ['en', 'zh'],
+                        additionalProperties: false,
+                    },
+                },
             },
             required: ['phrasing_notes', 'smoothness_notes', 'strengths', 'focus_areas'],
             additionalProperties: false,
         },
         teacher_summary: { type: 'string' },
+        teacher_summary_zh: { type: 'string' },
     },
-    required: ['errors', 'prosody', 'teacher_summary'],
+    required: ['errors', 'prosody', 'teacher_summary', 'teacher_summary_zh'],
     additionalProperties: false,
 } as const;
 
@@ -226,6 +268,7 @@ export async function analyzeWithClaude(args: AnalyzeWithClaudeArgs): Promise<Cl
                 focusAreas: result.data.prosody.focus_areas,
             },
             teacherSummary: result.data.teacher_summary,
+            teacherSummaryZh: result.data.teacher_summary_zh,
         };
     } catch (error) {
         console.error('[fluency/claude-analyzer] failed:', error instanceof Error ? error.message : error);

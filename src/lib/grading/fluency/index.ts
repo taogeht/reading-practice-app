@@ -24,5 +24,6 @@ export type {
     ClaudeAnalysis,
     ClaudeError,
     ClaudeProsody,
+    BilingualLine,
     AnalyzeWithClaudeArgs,
 } from './claude-analyzer';

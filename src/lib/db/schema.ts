@@ -323,6 +323,7 @@ export const recordings = pgTable(
     fluencyScore: decimal('fluency_score', { precision: 4, scale: 1 }),
     fluencyVersion: integer('fluency_version'),
     teacherSummary: text('teacher_summary'),
+    teacherSummaryZh: text('teacher_summary_zh'),
     // Optional voice reply from the teacher. When populated, the student's
     // feedback callout renders an audio player alongside the text feedback.
     // Re-recording overwrites: the prior R2 key is deleted, this column is
@@ -1664,6 +1665,7 @@ export const passagePageRecordings = pgTable(
     fluencyScore: decimal('fluency_score', { precision: 4, scale: 1 }),
     fluencyVersion: integer('fluency_version'),
     teacherSummary: text('teacher_summary'),
+    teacherSummaryZh: text('teacher_summary_zh'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

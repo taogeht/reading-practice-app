@@ -42,6 +42,7 @@ interface Recording {
   smoothnessScore: number | null;
   paceScore: number | null;
   teacherSummary: string | null;
+  teacherSummaryZh: string | null;
   recordingMode: 'teacher_review' | 'ai_graded';
   maxAttempts: number | null;
   teacherReplyAudioUrl: string | null;
@@ -690,6 +691,7 @@ export default function TeacherSubmissionsPage() {
                                   smoothnessScore={recording.smoothnessScore}
                                   paceScore={recording.paceScore}
                                   teacherSummary={recording.teacherSummary}
+                                  teacherSummaryZh={recording.teacherSummaryZh}
                                   transcript={recording.transcript}
                                   analysisJson={recording.analysisJson as never}
                                   onReanalyzed={fetchRecordings}

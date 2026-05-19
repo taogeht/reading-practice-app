@@ -174,6 +174,7 @@ export async function GET(request: NextRequest) {
         smoothnessScore: recordings.smoothnessScore,
         paceScore: recordings.paceScore,
         teacherSummary: recordings.teacherSummary,
+        teacherSummaryZh: recordings.teacherSummaryZh,
         recordingMode: assignments.recordingMode,
         maxAttempts: assignments.maxAttempts,
         storyContent: stories.content,

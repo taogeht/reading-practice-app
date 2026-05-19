@@ -7,6 +7,12 @@ import { Sparkles, RotateCw, ChevronDown, ChevronUp, AlertCircle } from "lucide-
 
 // Mirror of the persisted analysis_json shape. Kept loose because we may
 // extend it; the panel only needs a few fields.
+// Claude prosody entries are bilingual { en, zh } since the Phase-7-bilingual
+// upgrade. Older rows may carry plain string[] from the original prompt; the
+// reader below normalizes both shapes so the panel never crashes on legacy
+// data. zh is a Traditional Mandarin translation for Taiwanese teachers.
+type ClaudeStrengthOrFocus = string | { en: string; zh?: string };
+
 interface AnalysisJson {
   matched?: number;
   substituted?: number;
@@ -27,10 +33,15 @@ interface AnalysisJson {
     prosody?: {
       phrasingNotes?: string;
       smoothnessNotes?: string;
-      strengths?: string[];
-      focusAreas?: string[];
+      strengths?: ClaudeStrengthOrFocus[];
+      focusAreas?: ClaudeStrengthOrFocus[];
     };
   } | null;
+}
+
+function bilingual(line: ClaudeStrengthOrFocus): { en: string; zh?: string } {
+  if (typeof line === 'string') return { en: line };
+  return { en: line.en, zh: line.zh };
 }
 
 type WcpmBand = 'concern' | 'developing' | 'on_target' | 'above_target' | null;
@@ -50,6 +61,7 @@ interface Props {
   smoothnessScore?: number | null;
   paceScore?: number | null;
   teacherSummary?: string | null;
+  teacherSummaryZh?: string | null;
   transcript: string | null;
   analysisJson: AnalysisJson | null;
   onReanalyzed?: () => void;
@@ -111,6 +123,7 @@ export function AIAnalysisPanel({
   smoothnessScore,
   paceScore,
   teacherSummary,
+  teacherSummaryZh,
   transcript,
   analysisJson,
   onReanalyzed,
@@ -254,14 +267,24 @@ export function AIAnalysisPanel({
               )}
 
               {teacherSummary && (
-                <div className="bg-white border rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-700 mb-1">Teacher notes</h4>
+                <div className="bg-white border rounded-lg p-3 space-y-1">
+                  <h4 className="text-xs font-medium text-gray-700">Teacher notes</h4>
                   <p className="text-sm text-gray-800 leading-relaxed">{teacherSummary}</p>
+                  {teacherSummaryZh && (
+                    <p
+                      lang="zh-Hant"
+                      className="text-sm text-gray-500 leading-relaxed"
+                    >
+                      {teacherSummaryZh}
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Strengths + focus areas from the Claude prosody block. Kept
-                  separate so teachers can skim quickly on the dashboard. */}
+              {/* Strengths + focus areas from the Claude prosody block. Each
+                  item is ONE sentence in English with a Traditional Mandarin
+                  translation right below it for Taiwanese teachers. Legacy
+                  string-only items still render — bilingual() handles both. */}
               {(analysisJson.claude?.prosody?.strengths?.length ||
                 analysisJson.claude?.prosody?.focusAreas?.length) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -270,10 +293,23 @@ export function AIAnalysisPanel({
                       <h4 className="text-xs font-semibold text-green-800 mb-1 uppercase tracking-wide">
                         Strengths
                       </h4>
-                      <ul className="list-disc list-inside text-gray-800 space-y-0.5">
-                        {analysisJson.claude.prosody.strengths.map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
+                      <ul className="space-y-1.5">
+                        {analysisJson.claude.prosody.strengths.map((raw, i) => {
+                          const { en, zh } = bilingual(raw);
+                          return (
+                            <li key={i} className="text-gray-800">
+                              <span className="block">• {en}</span>
+                              {zh && (
+                                <span
+                                  lang="zh-Hant"
+                                  className="block pl-3 text-xs text-gray-500"
+                                >
+                                  {zh}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   ) : null}
@@ -282,10 +318,23 @@ export function AIAnalysisPanel({
                       <h4 className="text-xs font-semibold text-amber-800 mb-1 uppercase tracking-wide">
                         Focus areas
                       </h4>
-                      <ul className="list-disc list-inside text-gray-800 space-y-0.5">
-                        {analysisJson.claude.prosody.focusAreas.map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
+                      <ul className="space-y-1.5">
+                        {analysisJson.claude.prosody.focusAreas.map((raw, i) => {
+                          const { en, zh } = bilingual(raw);
+                          return (
+                            <li key={i} className="text-gray-800">
+                              <span className="block">• {en}</span>
+                              {zh && (
+                                <span
+                                  lang="zh-Hant"
+                                  className="block pl-3 text-xs text-gray-500"
+                                >
+                                  {zh}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   ) : null}
