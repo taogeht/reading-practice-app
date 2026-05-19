@@ -7,6 +7,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { StarsProvider, useStars } from "@/components/providers/stars-provider";
 import { AvatarProvider, useAvatar } from "@/components/providers/avatar-provider";
 import { AvatarDisplay } from "@/components/gamification/avatar-display";
+import { STUDENT_SHOP_ENABLED } from "@/lib/feature-flags";
 
 interface StudentLayoutShellProps {
   user: {
@@ -89,13 +90,15 @@ export function StudentLayoutShell({ user, children }: StudentLayoutShellProps) 
                   <Headphones className="w-5 h-5" />
                   Practice
                 </Link>
-                <Link
-                  href="/student/stuff?tab=shop"
-                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  Shop
-                </Link>
+                {STUDENT_SHOP_ENABLED && (
+                  <Link
+                    href="/student/stuff?tab=shop"
+                    className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    Shop
+                  </Link>
+                )}
               </div>
 
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -131,13 +134,15 @@ export function StudentLayoutShell({ user, children }: StudentLayoutShellProps) 
                   <Headphones className="w-5 h-5" />
                   Practice
                 </Link>
-                <Link
-                  href="/student/stuff?tab=shop"
-                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium py-2"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  Shop
-                </Link>
+                {STUDENT_SHOP_ENABLED && (
+                  <Link
+                    href="/student/stuff?tab=shop"
+                    className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium py-2"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    Shop
+                  </Link>
+                )}
                 <Link
                   href="/student/stuff"
                   className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium py-2"

@@ -12,6 +12,7 @@ import { StudentInventoryTab } from "@/components/gamification/student-inventory
 import { StudentAvatarTab } from "@/components/gamification/student-avatar-tab";
 import { StudentClassmatesTab } from "@/components/gamification/student-classmates-tab";
 import { labelForTransaction } from "@/lib/gamification/labels";
+import { STUDENT_SHOP_ENABLED } from "@/lib/feature-flags";
 
 interface Transaction {
     id: string;
@@ -138,7 +139,12 @@ function WalletTab() {
     );
 }
 
-const VALID_TABS = ["avatar", "wallet", "shop", "inventory", "classmates"] as const;
+// Shop + Collection only appear when the shop feature is enabled. Valid-tab
+// list and the tabs grid width both adapt to the flag so a deep link to
+// ?tab=shop while disabled falls through to the default (avatar).
+const VALID_TABS = STUDENT_SHOP_ENABLED
+    ? (["avatar", "wallet", "shop", "inventory", "classmates"] as const)
+    : (["avatar", "wallet", "classmates"] as const);
 
 export default function StudentStuffPage() {
     // Avatar tab is the headline payoff and the default. ?tab= picks a
@@ -156,6 +162,8 @@ export default function StudentStuffPage() {
         }
     }, []);
 
+    const tabGridCols = STUDENT_SHOP_ENABLED ? "grid-cols-5" : "grid-cols-3";
+
     return (
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
                 <div className="flex items-center gap-3">
@@ -168,25 +176,38 @@ export default function StudentStuffPage() {
                 </div>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-5 h-10">
+                    <TabsList className={`grid w-full ${tabGridCols} h-10`}>
                         <TabsTrigger value="avatar">Avatar</TabsTrigger>
                         <TabsTrigger value="wallet">Wallet</TabsTrigger>
-                        <TabsTrigger value="shop">Shop</TabsTrigger>
-                        <TabsTrigger value="inventory">Collection</TabsTrigger>
+                        {STUDENT_SHOP_ENABLED && (
+                            <>
+                                <TabsTrigger value="shop">Shop</TabsTrigger>
+                                <TabsTrigger value="inventory">Collection</TabsTrigger>
+                            </>
+                        )}
                         <TabsTrigger value="classmates">Classmates</TabsTrigger>
                     </TabsList>
                     <TabsContent value="avatar" className="mt-4">
-                        <StudentAvatarTab onGoToShop={() => setActiveTab("shop")} />
+                        {/* onGoToShop only wired when the shop is enabled; the
+                            avatar editor swallows undefined and hides its
+                            "Visit the shop →" CTA. */}
+                        <StudentAvatarTab
+                            onGoToShop={STUDENT_SHOP_ENABLED ? () => setActiveTab("shop") : undefined}
+                        />
                     </TabsContent>
                     <TabsContent value="wallet" className="mt-4">
                         <WalletTab />
                     </TabsContent>
-                    <TabsContent value="shop" className="mt-4">
-                        <StudentShopTab />
-                    </TabsContent>
-                    <TabsContent value="inventory" className="mt-4">
-                        <StudentInventoryTab onGoToShop={() => setActiveTab("shop")} />
-                    </TabsContent>
+                    {STUDENT_SHOP_ENABLED && (
+                        <>
+                            <TabsContent value="shop" className="mt-4">
+                                <StudentShopTab />
+                            </TabsContent>
+                            <TabsContent value="inventory" className="mt-4">
+                                <StudentInventoryTab onGoToShop={() => setActiveTab("shop")} />
+                            </TabsContent>
+                        </>
+                    )}
                     <TabsContent value="classmates" className="mt-4">
                         <StudentClassmatesTab />
                     </TabsContent>
