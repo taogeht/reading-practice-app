@@ -86,6 +86,8 @@ type Assignment = {
     phrasingScore?: number | null;
     smoothnessScore?: number | null;
     paceScore?: number | null;
+    teacherSummary?: string | null;
+    teacherSummaryZh?: string | null;
   }>;
 };
 

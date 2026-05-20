@@ -20,6 +20,17 @@ interface Attempt {
   accuracyScore: number | null;
   wpmScore: number | null;
   analysisJson?: unknown;
+  // Phase 7 fluency — flows through to the StudentAttemptCard's expanded
+  // view so kids see WCPM, the ESL band, prosody dots, and bilingual
+  // teacher/strengths/focus-area notes on their own recordings.
+  wcpm?: number | null;
+  fluencyScore?: number | null;
+  eslWcpmBand?: 'concern' | 'developing' | 'on_target' | 'above_target' | null;
+  phrasingScore?: number | null;
+  smoothnessScore?: number | null;
+  paceScore?: number | null;
+  teacherSummary?: string | null;
+  teacherSummaryZh?: string | null;
 }
 
 interface PagePayload {
@@ -224,6 +235,14 @@ export function PageRecordingPanel({
                 // unknown because the page-recordings endpoint surfaces
                 // it as `unknown` to avoid a duplicate type alias.
                 analysisJson: a.analysisJson as never,
+                wcpm: a.wcpm ?? null,
+                fluencyScore: a.fluencyScore ?? null,
+                eslWcpmBand: a.eslWcpmBand ?? null,
+                phrasingScore: a.phrasingScore ?? null,
+                smoothnessScore: a.smoothnessScore ?? null,
+                paceScore: a.paceScore ?? null,
+                teacherSummary: a.teacherSummary ?? null,
+                teacherSummaryZh: a.teacherSummaryZh ?? null,
               }}
             />
           ))}

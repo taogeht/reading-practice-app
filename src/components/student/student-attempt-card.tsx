@@ -11,6 +11,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+// Strengths / focus_areas may arrive as a bilingual pair (new prompt) or as
+// a plain string (legacy rows from before the bilingual upgrade). The card
+// reader normalizes both shapes.
+type ClaudeBilingualLine = string | { en: string; zh?: string };
+
 interface AnalysisJson {
   matched?: number;
   substituted?: number;
@@ -26,6 +31,23 @@ interface AnalysisJson {
   durationSec?: number;
   processedAt?: string;
   error?: string;
+  // Claude-derived prose. Same shape as the teacher panel reads, so the
+  // student's card and the teacher's panel stay in sync.
+  claude?: {
+    prosody?: {
+      phrasingNotes?: string;
+      phrasingNotesZh?: string;
+      smoothnessNotes?: string;
+      smoothnessNotesZh?: string;
+      strengths?: ClaudeBilingualLine[];
+      focusAreas?: ClaudeBilingualLine[];
+    };
+  } | null;
+}
+
+function bilingualLine(line: ClaudeBilingualLine): { en: string; zh?: string } {
+  if (typeof line === "string") return { en: line };
+  return { en: line.en, zh: line.zh };
 }
 
 export interface AttemptCardData {
@@ -62,6 +84,30 @@ export interface AttemptCardData {
   phrasingScore?: number | null;
   smoothnessScore?: number | null;
   paceScore?: number | null;
+  // Bilingual teacher summary, surfaced to the student so Mandarin L1
+  // readers can understand the feedback in their first language.
+  teacherSummary?: string | null;
+  teacherSummaryZh?: string | null;
+}
+
+// Compact 1-4 prosody dot meter, sized for the student card's tighter scale.
+function StudentProsodyMeter({ label, score }: { label: string; score: number | null | undefined }) {
+  if (score == null) return null;
+  return (
+    <div className="flex flex-col items-center gap-0.5 min-w-[64px]">
+      <div className="flex gap-0.5" aria-label={`${label} ${score} of 4`}>
+        {[1, 2, 3, 4].map((n) => (
+          <span
+            key={n}
+            className={`block w-1.5 h-1.5 rounded-full ${
+              n <= score ? "bg-purple-600" : "bg-purple-200"
+            }`}
+          />
+        ))}
+      </div>
+      <span className="text-[9px] text-gray-600 uppercase tracking-wide">{label}</span>
+    </div>
+  );
 }
 
 // Kid-friendly band labels — no "concern" word on the student side. We frame
@@ -229,6 +275,123 @@ export function StudentAttemptCard({ attempt }: { attempt: AttemptCardData }) {
                 {analysis.missed ?? 0} skipped ·{" "}
                 {analysis.inserted ?? 0} extra
               </div>
+
+              {/* Prosody trio + per-dimension Claude notes for the student.
+                  Same content the teacher sees, just rendered tighter for
+                  the smaller card. Each conditional silently skips when its
+                  data isn't present so legacy rows render unchanged. */}
+              {(attempt.phrasingScore != null ||
+                attempt.smoothnessScore != null ||
+                attempt.paceScore != null) && (
+                <div className="bg-white border rounded-md p-2 space-y-2">
+                  <div className="flex gap-3">
+                    <StudentProsodyMeter label="Phrasing" score={attempt.phrasingScore} />
+                    <StudentProsodyMeter label="Smoothness" score={attempt.smoothnessScore} />
+                    <StudentProsodyMeter label="Pace" score={attempt.paceScore} />
+                  </div>
+                  {(analysis.claude?.prosody?.phrasingNotes ||
+                    analysis.claude?.prosody?.smoothnessNotes) && (
+                    <div className="space-y-1.5 pt-1 border-t border-gray-100">
+                      {analysis.claude?.prosody?.phrasingNotes && (
+                        <div className="text-xs space-y-0.5">
+                          <span className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">
+                            Phrasing
+                          </span>
+                          <p className="text-gray-800 leading-relaxed">
+                            {analysis.claude.prosody.phrasingNotes}
+                          </p>
+                          {analysis.claude.prosody.phrasingNotesZh && (
+                            <p lang="zh-Hant" className="text-[11px] text-gray-500 leading-relaxed">
+                              {analysis.claude.prosody.phrasingNotesZh}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {analysis.claude?.prosody?.smoothnessNotes && (
+                        <div className="text-xs space-y-0.5">
+                          <span className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">
+                            Smoothness
+                          </span>
+                          <p className="text-gray-800 leading-relaxed">
+                            {analysis.claude.prosody.smoothnessNotes}
+                          </p>
+                          {analysis.claude.prosody.smoothnessNotesZh && (
+                            <p lang="zh-Hant" className="text-[11px] text-gray-500 leading-relaxed">
+                              {analysis.claude.prosody.smoothnessNotesZh}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {attempt.teacherSummary && (
+                <div className="bg-white border rounded-md p-2 space-y-0.5">
+                  <span className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">
+                    Teacher notes
+                  </span>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    {attempt.teacherSummary}
+                  </p>
+                  {attempt.teacherSummaryZh && (
+                    <p lang="zh-Hant" className="text-[11px] text-gray-500 leading-relaxed">
+                      {attempt.teacherSummaryZh}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(analysis.claude?.prosody?.strengths?.length ||
+                analysis.claude?.prosody?.focusAreas?.length) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {analysis.claude?.prosody?.strengths?.length ? (
+                    <div className="bg-green-50 border border-green-200 rounded-md p-2">
+                      <span className="text-[10px] font-semibold text-green-800 uppercase tracking-wide">
+                        Strengths
+                      </span>
+                      <ul className="mt-1 space-y-1">
+                        {analysis.claude.prosody.strengths.map((raw, i) => {
+                          const { en, zh } = bilingualLine(raw);
+                          return (
+                            <li key={i} className="text-xs">
+                              <span className="block text-gray-800">• {en}</span>
+                              {zh && (
+                                <span lang="zh-Hant" className="block pl-3 text-[11px] text-gray-500">
+                                  {zh}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {analysis.claude?.prosody?.focusAreas?.length ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-md p-2">
+                      <span className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide">
+                        Practice this
+                      </span>
+                      <ul className="mt-1 space-y-1">
+                        {analysis.claude.prosody.focusAreas.map((raw, i) => {
+                          const { en, zh } = bilingualLine(raw);
+                          return (
+                            <li key={i} className="text-xs">
+                              <span className="block text-gray-800">• {en}</span>
+                              {zh && (
+                                <span lang="zh-Hant" className="block pl-3 text-[11px] text-gray-500">
+                                  {zh}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              )}
 
               {analysis.expectedView && analysis.expectedView.length > 0 && (
                 <div>

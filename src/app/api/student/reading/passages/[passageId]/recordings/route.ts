@@ -60,6 +60,17 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         accuracyScore: passagePageRecordings.accuracyScore,
         wpmScore: passagePageRecordings.wpmScore,
         analysisJson: passagePageRecordings.analysisJson,
+        // Phase 7 fluency fields — same shape as /api/student/dashboard.
+        // Drives WCPM, ESL band, prosody dots and the bilingual blocks
+        // inside the StudentAttemptCard expanded view.
+        wcpm: passagePageRecordings.wcpm,
+        fluencyScore: passagePageRecordings.fluencyScore,
+        eslWcpmBand: passagePageRecordings.eslWcpmBand,
+        phrasingScore: passagePageRecordings.phrasingScore,
+        smoothnessScore: passagePageRecordings.smoothnessScore,
+        paceScore: passagePageRecordings.paceScore,
+        teacherSummary: passagePageRecordings.teacherSummary,
+        teacherSummaryZh: passagePageRecordings.teacherSummaryZh,
       })
       .from(passagePageRecordings)
       .innerJoin(storyPages, eq(storyPages.id, passagePageRecordings.pageId))
@@ -106,6 +117,19 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
             // expectedView / heardView / op-counts power the
             // word-level diff in StudentAttemptCard.
             analysisJson: a.analysisJson,
+            wcpm: a.wcpm == null ? null : Math.round(Number(a.wcpm)),
+            fluencyScore: a.fluencyScore == null ? null : Math.round(Number(a.fluencyScore) * 10) / 10,
+            eslWcpmBand: (a.eslWcpmBand ?? null) as
+              | 'concern'
+              | 'developing'
+              | 'on_target'
+              | 'above_target'
+              | null,
+            phrasingScore: a.phrasingScore ?? null,
+            smoothnessScore: a.smoothnessScore ?? null,
+            paceScore: a.paceScore ?? null,
+            teacherSummary: a.teacherSummary ?? null,
+            teacherSummaryZh: a.teacherSummaryZh ?? null,
           })),
           best: best
             ? {

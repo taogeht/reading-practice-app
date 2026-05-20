@@ -124,6 +124,8 @@ export async function GET(request: NextRequest) {
         phrasingScore: recordings.phrasingScore,
         smoothnessScore: recordings.smoothnessScore,
         paceScore: recordings.paceScore,
+        teacherSummary: recordings.teacherSummary,
+        teacherSummaryZh: recordings.teacherSummaryZh,
       })
       .from(recordings)
       .where(eq(recordings.studentId, user.id))
@@ -169,6 +171,8 @@ export async function GET(request: NextRequest) {
           phrasingScore: r.phrasingScore ?? null,
           smoothnessScore: r.smoothnessScore ?? null,
           paceScore: r.paceScore ?? null,
+          teacherSummary: r.teacherSummary ?? null,
+          teacherSummaryZh: r.teacherSummaryZh ?? null,
         }));
       const completedRecordings = assignmentRecordings.filter(r => r.status === 'reviewed' || r.status === 'submitted');
       const bestRecording = completedRecordings.reduce<typeof completedRecordings[0] | null>((best, r) => {
