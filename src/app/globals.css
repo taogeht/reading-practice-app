@@ -133,3 +133,19 @@
 .animate-shake {
   animation: shake 0.4s ease-in-out;
 }
+
+/* Used by AIAnalysisPanel's expand + section stagger and the submissions
+   page's class-group entrance. Kept here (rather than scoped via styled-jsx)
+   so the names resolve from inline `animation:` declarations. */
+@keyframes panel-fade {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes section-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes class-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

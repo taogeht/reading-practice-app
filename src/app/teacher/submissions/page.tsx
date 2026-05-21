@@ -5,7 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Volume2, FileText, Calendar, ChevronDown, ChevronUp, User, Clock, Star, Trash2, Users, Sparkles } from "lucide-react";
+import { ArrowLeft, Volume2, FileText, Calendar, ChevronDown, User, Clock, Star, Trash2, Users, Sparkles } from "lucide-react";
+
+// Cohesion: every motion in this view uses the same curve as the AI panel,
+// so the page feels like one engineered surface instead of a stack of
+// independent components.
+const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AIAnalysisPanel } from "@/components/grading/ai-analysis-panel";
@@ -379,43 +384,35 @@ export default function TeacherSubmissionsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Filter cards. transition specifies properties explicitly so the
+            selection ring doesn't fight the bg-color fade. active:scale gives
+            instant press feedback at a frequency (tens/day) where it counts. */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'all' ? 'ring-2 ring-blue-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('all')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">{recordings.length}</div>
-              <div className="text-sm text-gray-600">Total Submissions</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'pending' ? 'ring-2 ring-yellow-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('pending')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
-              <div className="text-sm text-gray-600">Pending Review</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'reviewed' ? 'ring-2 ring-green-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('reviewed')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{reviewedCount}</div>
-              <div className="text-sm text-gray-600">Reviewed</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'flagged' ? 'ring-2 ring-red-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('flagged')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">{flaggedCount}</div>
-              <div className="text-sm text-gray-600">Flagged</div>
-            </CardContent>
-          </Card>
+          {[
+            { key: 'all', count: recordings.length, label: 'Total submissions', accent: 'text-gray-900', ring: 'ring-gray-900' },
+            { key: 'pending', count: pendingCount, label: 'Pending review', accent: 'text-amber-600', ring: 'ring-amber-500' },
+            { key: 'reviewed', count: reviewedCount, label: 'Reviewed', accent: 'text-emerald-600', ring: 'ring-emerald-500' },
+            { key: 'flagged', count: flaggedCount, label: 'Flagged', accent: 'text-rose-600', ring: 'ring-rose-500' },
+          ].map(({ key, count, label, accent, ring }) => {
+            const active = filter === key;
+            return (
+              <Card
+                key={key}
+                className={`cursor-pointer transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.98] ${
+                  active
+                    ? `ring-2 ${ring} ring-offset-1`
+                    : 'hover:bg-gray-50'
+                }`}
+                style={{ transitionTimingFunction: EASE_OUT }}
+                onClick={() => setFilter(key as typeof filter)}
+              >
+                <CardContent className="p-4 text-center">
+                  <div className={`text-2xl font-semibold tabular-nums ${accent}`}>{count}</div>
+                  <div className="text-sm text-gray-600 mt-0.5">{label}</div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Hide-reviewed toggle. The data stays in the DB; this is a
@@ -468,7 +465,7 @@ export default function TeacherSubmissionsPage() {
           </Card>
         ) : (
           <div className="space-y-8">
-            {Object.values(groupsByClass).map(({ className, classId, groups }) => {
+            {Object.values(groupsByClass).map(({ className, classId, groups }, classIndex) => {
               const expanded = expandedClassIds.has(classId);
               const pendingInClass = groups.reduce(
                 (n, g) => n + g.attempts.filter((a) => a.status === 'pending').length,
@@ -479,7 +476,16 @@ export default function TeacherSubmissionsPage() {
                 0,
               );
               return (
-              <div key={classId} className="space-y-4">
+              <div
+                key={classId}
+                className="space-y-4"
+                // Stagger class headers entering — 60ms apart, capped so a
+                // teacher with 10 classes doesn't wait through 600ms of cascade.
+                style={{
+                  animation: `class-in 300ms ${EASE_OUT} both`,
+                  animationDelay: `${Math.min(classIndex * 60, 240)}ms`,
+                }}
+              >
                 {/* Clickable class header — toggles the per-class
                     body. The Delete button stops propagation so the
                     teacher can't accidentally fire the destroy
@@ -494,46 +500,52 @@ export default function TeacherSubmissionsPage() {
                       toggleClassExpanded(classId);
                     }
                   }}
-                  className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm cursor-pointer select-none hover:bg-gray-50"
+                  className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-[0_1px_0_rgba(0,0,0,0.02)] cursor-pointer select-none transition-[background-color,transform] duration-150 hover:bg-gray-50 active:scale-[0.998] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2"
+                  style={{ transitionTimingFunction: EASE_OUT }}
                   aria-expanded={expanded}
                 >
                   <div className="flex items-center gap-3">
-                    {expanded ? (
-                      <ChevronUp className="w-5 h-5 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-500" />
-                    )}
+                    {/* Single chevron with rotation — matches the panel's
+                        chevron motion for cohesion. */}
+                    <ChevronDown
+                      className="w-5 h-5 text-gray-400"
+                      style={{
+                        transition: `transform 200ms ${EASE_OUT}`,
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      }}
+                    />
                     <Users className="w-5 h-5 text-blue-600" />
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900">{className}</h2>
-                      <p className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
+                      <h2 className="text-xl font-semibold text-gray-900 tracking-tight">{className}</h2>
+                      <p className="text-sm text-gray-600 flex items-center gap-2 flex-wrap mt-0.5">
                         <span>
                           {groups.length} student submission{groups.length !== 1 ? 's' : ''}
                         </span>
                         {pendingInClass > 0 && (
-                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-800 border-yellow-300">
+                          <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200">
                             {pendingInClass} pending
-                          </Badge>
+                          </span>
                         )}
                         {flaggedInClass > 0 && (
-                          <Badge variant="outline" className="text-xs bg-red-50 text-red-800 border-red-300">
+                          <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200">
                             {flaggedInClass} flagged
-                          </Badge>
+                          </span>
                         )}
                       </p>
                     </div>
                   </div>
                   <Button
-                    variant="destructive"
+                    variant="ghost"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteAllClassRecordings(classId, className);
                     }}
-                    className="bg-red-600 hover:bg-red-700"
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-[background-color,transform,color] duration-150 active:scale-[0.97]"
+                    style={{ transitionTimingFunction: EASE_OUT }}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete All from Class
+                    Delete all
                   </Button>
                 </div>
 
@@ -710,11 +722,15 @@ export default function TeacherSubmissionsPage() {
                                         type="button"
                                         onClick={() => selectRating(rating)}
                                         disabled={submittingFeedback}
-                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                                        // Specific properties only; transition-all
+                                        // catches unrelated style changes and
+                                        // muddies the press feedback.
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-[background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                                           selectedRating === rating.emoji
                                             ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200'
-                                            : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-700'
+                                            : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
                                         }`}
+                                        style={{ transitionTimingFunction: EASE_OUT }}
                                       >
                                         <span className="text-lg">{rating.emoji}</span>
                                         {rating.label}
