@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Volume2, FileText, Calendar, ChevronDown, ChevronUp, User, Clock, Star, Trash2, Users, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  ChevronDown,
+  Trash2,
+  Download,
+  Sparkles,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AIAnalysisPanel } from "@/components/grading/ai-analysis-panel";
@@ -33,7 +38,6 @@ interface Recording {
   letterGrade: string | null;
   transcript: string | null;
   analysisJson: Record<string, unknown> | null;
-  // Phase 7 fluency fields. All optional — null on pre-fluency rows / Whisper-only.
   wcpm: string | number | null;
   fluencyScore: string | number | null;
   eslWcpmBand: 'concern' | 'developing' | 'on_target' | 'above_target' | null;
@@ -64,34 +68,34 @@ interface AttemptGroup {
   latestSubmittedAt: string;
 }
 
+type FilterKey = 'all' | 'pending' | 'reviewed' | 'flagged';
+
+// Status rendered as a dot + low-saturation text label (Linear / Stripe
+// idiom), never a filled chip. The single rose accent carries urgency;
+// amber is the quieter warning. Reviewed sits as plain stone.
+const STATUS_TONE: Record<Recording['status'], { dot: string; text: string }> = {
+  pending: { dot: 'bg-amber-700', text: 'text-amber-800' },
+  reviewed: { dot: 'bg-stone-400', text: 'text-stone-600' },
+  flagged: { dot: 'bg-rose-700', text: 'text-rose-800' },
+};
+
 export default function TeacherSubmissionsPage() {
   const router = useRouter();
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'flagged'>('all');
+  const [filter, setFilter] = useState<FilterKey>('all');
   const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState<string>('');
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
-  // Per-class expand/collapse. Each page load starts every class
-  // collapsed so a teacher with many classes lands on a quiet,
-  // overview page; tapping a class header expands its content.
-  const [expandedClassIds, setExpandedClassIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  // Hide groups whose attempts have all been reviewed. Defaults ON to
-  // keep the page focused on actionable work; persisted to
-  // localStorage so the teacher's preference sticks across navigations.
-  // Bypassed when the active filter is 'reviewed' (otherwise the page
-  // would render empty).
+  const [expandedClassIds, setExpandedClassIds] = useState<Set<string>>(() => new Set());
   const [hideReviewed, setHideReviewed] = useState<boolean>(true);
 
   useEffect(() => {
     fetchRecordings();
   }, []);
 
-  // Hydrate hide-reviewed preference from localStorage on mount.
   useEffect(() => {
     try {
       const v = window.localStorage.getItem('teacher-submissions.hide-reviewed');
@@ -106,10 +110,7 @@ export default function TeacherSubmissionsPage() {
     setHideReviewed((prev) => {
       const next = !prev;
       try {
-        window.localStorage.setItem(
-          'teacher-submissions.hide-reviewed',
-          next ? 'on' : 'off',
-        );
+        window.localStorage.setItem('teacher-submissions.hide-reviewed', next ? 'on' : 'off');
       } catch {
         /* ignore */
       }
@@ -130,11 +131,7 @@ export default function TeacherSubmissionsPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/recordings');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch recordings');
-      }
-
+      if (!response.ok) throw new Error('Failed to fetch recordings');
       const data = await response.json();
       setRecordings(data.recordings || []);
     } catch (error) {
@@ -161,29 +158,17 @@ export default function TeacherSubmissionsPage() {
       alert('Please select a rating or enter feedback before submitting.');
       return;
     }
-
     const finalFeedback = selectedRating
       ? `${selectedRating} ${feedbackText.trim()}`
       : feedbackText.trim();
-
     try {
       setSubmittingFeedback(true);
-
       const response = await fetch(`/api/recordings/${recordingId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          teacherFeedback: finalFeedback,
-          status: 'reviewed',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherFeedback: finalFeedback, status: 'reviewed' }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit feedback');
-      }
-
+      if (!response.ok) throw new Error('Failed to submit feedback');
       setRecordings(prev =>
         prev.map(recording =>
           recording.id === recordingId
@@ -191,12 +176,10 @@ export default function TeacherSubmissionsPage() {
             : recording
         )
       );
-
       setFeedbackMode(null);
       setFeedbackText('');
       setSelectedRating(null);
-
-    } catch (error) {
+    } catch {
       alert('Failed to submit feedback. Please try again.');
     } finally {
       setSubmittingFeedback(false);
@@ -228,28 +211,12 @@ export default function TeacherSubmissionsPage() {
     setSelectedRating(null);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'reviewed': return 'bg-green-100 text-green-800';
-      case 'flagged': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const deleteRecording = async (recordingId: string, studentName: string, attemptNumber: number) => {
     const confirmed = confirm(`Delete attempt #${attemptNumber} by ${studentName}? This cannot be undone.`);
     if (!confirmed) return;
-
     try {
-      const response = await fetch(`/api/recordings/${recordingId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete recording');
-      }
-
+      const response = await fetch(`/api/recordings/${recordingId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete recording');
       await fetchRecordings();
     } catch (error) {
       console.error('Error deleting recording:', error);
@@ -258,28 +225,19 @@ export default function TeacherSubmissionsPage() {
   };
 
   const deleteAllClassRecordings = async (classId: string, className: string) => {
-    const confirmed = confirm(`Are you sure you want to delete ALL recordings from class "${className}"? This action cannot be undone.`);
+    const confirmed = confirm(`Delete ALL recordings from class "${className}"? This cannot be undone.`);
     if (!confirmed) return;
-
     try {
-      const response = await fetch(`/api/recordings?classId=${classId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete recordings');
-      }
-
+      const response = await fetch(`/api/recordings?classId=${classId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete recordings');
       await fetchRecordings();
-      alert(`All recordings from class "${className}" have been deleted`);
+      alert(`All recordings from class "${className}" have been deleted.`);
     } catch (error) {
       console.error('Error deleting class recordings:', error);
       alert('Failed to delete recordings. Please try again.');
     }
   };
 
-  // Build one group per (assignment × student), keeping all attempts together.
-  // A group is included if ANY of its attempts matches the active filter.
   const groupsByClass = (() => {
     const groupMap = new Map<string, AttemptGroup>();
     for (const r of recordings) {
@@ -311,12 +269,8 @@ export default function TeacherSubmissionsPage() {
     const filteredGroups: AttemptGroup[] = [];
     for (const group of groupMap.values()) {
       group.attempts.sort((a, b) => (a.attemptNumber || 0) - (b.attemptNumber || 0));
-      const matchesFilter =
-        filter === 'all' || group.attempts.some(a => a.status === filter);
+      const matchesFilter = filter === 'all' || group.attempts.some(a => a.status === filter);
       if (!matchesFilter) continue;
-      // Hide-reviewed: skip groups whose every attempt is reviewed
-      // already. Bypassed when the active filter is 'reviewed' so
-      // the teacher can still explicitly browse them.
       if (
         hideReviewed &&
         filter !== 'reviewed' &&
@@ -328,7 +282,6 @@ export default function TeacherSubmissionsPage() {
       filteredGroups.push(group);
     }
 
-    // Group by class
     const byClass: Record<string, { className: string; classId: string; groups: AttemptGroup[] }> = {};
     for (const g of filteredGroups) {
       if (!byClass[g.classId]) {
@@ -336,7 +289,6 @@ export default function TeacherSubmissionsPage() {
       }
       byClass[g.classId].groups.push(g);
     }
-    // Sort groups within each class by latest submission desc
     for (const bucket of Object.values(byClass)) {
       bucket.groups.sort(
         (a, b) => new Date(b.latestSubmittedAt).getTime() - new Date(a.latestSubmittedAt).getTime()
@@ -349,84 +301,105 @@ export default function TeacherSubmissionsPage() {
   const reviewedCount = recordings.filter(r => r.status === 'reviewed').length;
   const flaggedCount = recordings.filter(r => r.status === 'flagged').length;
 
+  const FILTERS: { key: FilterKey; label: string; count: number }[] = [
+    { key: 'all', label: 'All', count: recordings.length },
+    { key: 'pending', label: 'Pending', count: pendingCount },
+    { key: 'reviewed', label: 'Reviewed', count: reviewedCount },
+    { key: 'flagged', label: 'Flagged', count: flaggedCount },
+  ];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading submissions...</div>
+      <div className="min-h-[100dvh] bg-stone-50">
+        <div className="max-w-[1200px] mx-auto px-6 md:px-10 pt-12 pb-24">
+          {/* Skeleton header */}
+          <div className="space-y-2 mb-10">
+            <div className="h-6 w-32 bg-stone-200/70 rounded animate-pulse" />
+            <div className="h-4 w-72 bg-stone-200/50 rounded animate-pulse" />
+          </div>
+          <div className="flex gap-1 mb-12">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-9 w-24 bg-stone-200/60 rounded animate-pulse" />
+            ))}
+          </div>
+          {/* Skeleton class section */}
+          <div className="space-y-6">
+            {[1, 2].map((s) => (
+              <div key={s} className="space-y-3">
+                <div className="h-5 w-48 bg-stone-200/70 rounded animate-pulse" />
+                <div className="space-y-2">
+                  {[1, 2, 3].map((r) => (
+                    <div key={r} className="h-16 w-full bg-stone-100 border border-stone-200 rounded animate-pulse" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => router.push('/teacher/dashboard')}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Student Submissions</h1>
-                <p className="text-gray-600 mt-1">
-                  Review and provide feedback on student recordings
-                </p>
-              </div>
-            </div>
+    <div className="min-h-[100dvh] bg-stone-50 text-stone-900">
+      <div className="max-w-[1200px] mx-auto px-6 md:px-10 pt-10 pb-24">
+        {/* HEADER — quiet text-link back nav, page title in sans
+            font-medium (no display fonts on UI labels per product
+            register), one-line subtitle. */}
+        <header className="mb-10">
+          <button
+            type="button"
+            onClick={() => router.push('/teacher/dashboard')}
+            className="inline-flex items-center gap-1.5 text-[13px] text-stone-500 hover:text-stone-900 transition-colors duration-150 mb-6"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to dashboard
+          </button>
+          <h1 className="text-[26px] font-medium text-stone-900 tracking-[-0.01em] leading-tight">
+            Submissions
+          </h1>
+          <p className="text-[13px] text-stone-500 mt-1">
+            Recordings from your classes, grouped by section.
+          </p>
+        </header>
+
+        {/* FILTER STRIP — true segmented control: a row of pill buttons
+            with hairline border, selected fills stone-900. Counts ride
+            inline in parentheses, dimmed. Less screen real estate than
+            the hero-metric template; familiar Linear-style affordance. */}
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-10">
+          <div className="inline-flex items-center bg-white border border-stone-200 rounded-md p-0.5">
+            {FILTERS.map(({ key, label, count }) => {
+              const active = filter === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={`inline-flex items-baseline gap-1.5 px-3 py-1.5 text-[13px] rounded-[5px] transition-colors duration-150 ${
+                    active
+                      ? 'bg-stone-900 text-stone-50'
+                      : 'text-stone-700 hover:text-stone-900 hover:bg-stone-50'
+                  }`}
+                >
+                  <span>{label}</span>
+                  <span
+                    className={`tabular-nums text-[12px] ${
+                      active ? 'text-stone-400' : 'text-stone-400'
+                    }`}
+                  >
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'all' ? 'ring-2 ring-blue-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('all')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">{recordings.length}</div>
-              <div className="text-sm text-gray-600">Total Submissions</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'pending' ? 'ring-2 ring-yellow-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('pending')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
-              <div className="text-sm text-gray-600">Pending Review</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'reviewed' ? 'ring-2 ring-green-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('reviewed')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{reviewedCount}</div>
-              <div className="text-sm text-gray-600">Reviewed</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'flagged' ? 'ring-2 ring-red-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('flagged')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">{flaggedCount}</div>
-              <div className="text-sm text-gray-600">Flagged</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Hide-reviewed toggle. The data stays in the DB; this is a
-            purely client-side filter so the teacher can declutter
-            without losing history. Disabled (visually muted) when the
-            active filter is 'reviewed' so the teacher doesn't get
-            an empty page. */}
-        <div className="mb-6 flex items-center justify-end">
           <label
-            className={`inline-flex items-center gap-2 text-sm select-none ${
-              filter === 'reviewed' ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 cursor-pointer'
+            className={`inline-flex items-center gap-2 text-[13px] select-none ${
+              filter === 'reviewed'
+                ? 'text-stone-300 cursor-not-allowed'
+                : 'text-stone-600 cursor-pointer hover:text-stone-900 transition-colors duration-150'
             }`}
           >
             <input
@@ -434,40 +407,33 @@ export default function TeacherSubmissionsPage() {
               checked={hideReviewed}
               onChange={toggleHideReviewed}
               disabled={filter === 'reviewed'}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-3.5 w-3.5 rounded-[3px] border-stone-400 accent-stone-900"
             />
-            Hide reviewed submissions
-            <span className="text-xs text-gray-400">
-              (kept in records, just hidden here)
-            </span>
+            Hide reviewed
           </label>
         </div>
 
         {error && (
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="text-red-600">{error}</div>
-            </CardContent>
-          </Card>
+          <div className="text-[13px] text-rose-800 bg-rose-50/60 border border-rose-200 px-4 py-3 mb-8">
+            {error}
+          </div>
         )}
 
         {Object.keys(groupsByClass).length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium mb-2">
-                {filter === 'all' ? 'No submissions yet' : `No ${filter} submissions`}
-              </h3>
-              <p className="text-gray-600">
-                {filter === 'all'
-                  ? 'Student submissions will appear here once they start completing assignments.'
-                  : `No submissions with ${filter} status found.`
-                }
-              </p>
-            </CardContent>
-          </Card>
+          // Empty state teaches the surface rather than just saying "nothing".
+          <div className="border border-stone-200 bg-white py-16 px-6 text-center max-w-[560px] mx-auto">
+            <FileText className="w-7 h-7 mx-auto mb-4 text-stone-300" strokeWidth={1.5} />
+            <h3 className="text-[15px] font-medium text-stone-900 mb-1">
+              {filter === 'all' ? 'No submissions yet' : `No ${filter} submissions`}
+            </h3>
+            <p className="text-[13px] text-stone-500 leading-relaxed max-w-[44ch] mx-auto">
+              {filter === 'all'
+                ? 'Once students start recording, their attempts will appear here, grouped by class.'
+                : `Nothing with the ${filter} status to show. Try a different filter, or clear it to see everything.`}
+            </p>
+          </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-12">
             {Object.values(groupsByClass).map(({ className, classId, groups }) => {
               const expanded = expandedClassIds.has(classId);
               const pendingInClass = groups.reduce(
@@ -479,290 +445,355 @@ export default function TeacherSubmissionsPage() {
                 0,
               );
               return (
-              <div key={classId} className="space-y-4">
-                {/* Clickable class header — toggles the per-class
-                    body. The Delete button stops propagation so the
-                    teacher can't accidentally fire the destroy
-                    action while expanding the class. */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => toggleClassExpanded(classId)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggleClassExpanded(classId);
-                    }
-                  }}
-                  className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm cursor-pointer select-none hover:bg-gray-50"
-                  aria-expanded={expanded}
-                >
-                  <div className="flex items-center gap-3">
-                    {expanded ? (
-                      <ChevronUp className="w-5 h-5 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-500" />
-                    )}
-                    <Users className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">{className}</h2>
-                      <p className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
-                        <span>
-                          {groups.length} student submission{groups.length !== 1 ? 's' : ''}
-                        </span>
-                        {pendingInClass > 0 && (
-                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-800 border-yellow-300">
-                            {pendingInClass} pending
-                          </Badge>
-                        )}
-                        {flaggedInClass > 0 && (
-                          <Badge variant="outline" className="text-xs bg-red-50 text-red-800 border-red-300">
-                            {flaggedInClass} flagged
-                          </Badge>
-                        )}
-                      </p>
+                <section key={classId}>
+                  {/* CLASS HEADER — no card. A 1px top rule, the class
+                      name as a sans heading, a quiet meta line with
+                      counts and a "delete all" text link.
+                      "Delete all" demoted to a text link; never a
+                      destructive button in the header. */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleClassExpanded(classId)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleClassExpanded(classId);
+                      }
+                    }}
+                    className="group cursor-pointer select-none border-t border-stone-300 pt-5 pb-3"
+                    aria-expanded={expanded}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h2 className="text-[18px] font-medium text-stone-900 leading-tight">
+                          {className}
+                        </h2>
+                        <div className="flex items-center gap-3 text-[12px] text-stone-500 mt-1.5 flex-wrap">
+                          <span>
+                            <span className="tabular-nums text-stone-700">{groups.length}</span>{' '}
+                            submission{groups.length !== 1 ? 's' : ''}
+                          </span>
+                          {pendingInClass > 0 && (
+                            <>
+                              <span className="text-stone-300">·</span>
+                              <span className="inline-flex items-center gap-1.5 text-amber-800">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
+                                <span className="tabular-nums">{pendingInClass}</span> pending
+                              </span>
+                            </>
+                          )}
+                          {flaggedInClass > 0 && (
+                            <>
+                              <span className="text-stone-300">·</span>
+                              <span className="inline-flex items-center gap-1.5 text-rose-800">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-700" />
+                                <span className="tabular-nums">{flaggedInClass}</span> flagged
+                              </span>
+                            </>
+                          )}
+                          <span className="text-stone-300">·</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteAllClassRecordings(classId, className);
+                            }}
+                            className="text-stone-500 hover:text-rose-800 transition-colors duration-150 underline-offset-[3px] hover:underline"
+                          >
+                            Delete all
+                          </button>
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-stone-400 mt-1.5 transition-transform duration-200 ${
+                          expanded ? 'rotate-180' : ''
+                        }`}
+                      />
                     </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteAllClassRecordings(classId, className);
-                    }}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete All from Class
-                  </Button>
-                </div>
 
-                {expanded && (
-                <div className="space-y-4 ml-4">
-                  {groups.map((group) => {
-                    const studentName = `${group.studentFirstName} ${group.studentLastName}`;
-                    const visibleAttempts =
-                      filter === 'all'
-                        ? group.attempts
-                        : group.attempts.filter(a => a.status === filter);
-                    return (
-                      <Card key={group.key} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between gap-4 flex-wrap">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <CardTitle className="text-lg">{group.assignmentTitle}</CardTitle>
-                                {group.recordingMode === 'ai_graded' && (
-                                  <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-300 flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3" />
-                                    AI-graded
-                                  </Badge>
-                                )}
-                                <Badge variant="outline" className="font-medium">
-                                  {group.attempts.length} of {group.maxAttempts} attempt{group.maxAttempts !== 1 ? 's' : ''} used
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
-                                <span className="flex items-center gap-1">
-                                  <User className="w-4 h-4" />
+                  {expanded && (
+                    <div className="mt-2 border-t border-stone-200 divide-y divide-stone-200">
+                      {groups.map((group) => {
+                        const studentName = `${group.studentFirstName} ${group.studentLastName}`;
+                        const visibleAttempts =
+                          filter === 'all'
+                            ? group.attempts
+                            : group.attempts.filter(a => a.status === filter);
+                        return (
+                          <article key={group.key} className="py-6">
+                            {/* GROUP META — student + assignment side-by-
+                                side, attempts used + last-submitted on
+                                the right. */}
+                            <header className="flex items-baseline justify-between gap-4 flex-wrap mb-4">
+                              <div className="min-w-0">
+                                <div className="text-[15px] font-medium text-stone-900 leading-tight">
                                   {studentName}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-4 h-4" />
-                                  Latest: {format(new Date(group.latestSubmittedAt), 'MMM d, yyyy \'at\' h:mm a')}
-                                </span>
+                                </div>
+                                <div className="text-[13px] text-stone-500 mt-0.5">
+                                  {group.assignmentTitle}
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          {visibleAttempts.map((recording, idx) => (
-                            <div
-                              key={recording.id}
-                              className={`rounded-lg border bg-gray-50/40 p-4 space-y-3 ${
-                                idx > 0 ? 'mt-2' : ''
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-3 flex-wrap">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge variant="outline" className="font-semibold">
-                                    Attempt #{recording.attemptNumber}
-                                  </Badge>
-                                  <Badge className={getStatusColor(recording.status)}>
-                                    {recording.status}
-                                  </Badge>
-                                  {recording.letterGrade && (
-                                    <Badge variant="outline" className="font-semibold">
-                                      Grade: {recording.letterGrade}
-                                    </Badge>
-                                  )}
-                                  {recording.accuracyScore && (
-                                    <Badge variant="outline" className="flex items-center gap-1">
-                                      <Star className="w-3 h-3" />
-                                      {recording.accuracyScore}%
-                                    </Badge>
-                                  )}
-                                  <span className="flex items-center gap-1 text-xs text-gray-600">
-                                    <Calendar className="w-3 h-3" />
-                                    {format(new Date(recording.submittedAt), 'MMM d, h:mm a')}
+                              <div className="flex items-center gap-3 text-[12px] text-stone-500 flex-wrap">
+                                {group.recordingMode === 'ai_graded' && (
+                                  <span className="inline-flex items-center gap-1.5 text-stone-600">
+                                    <Sparkles className="w-3 h-3" />
+                                    AI graded
                                   </span>
-                                  {recording.audioDurationSeconds && (
-                                    <span className="flex items-center gap-1 text-xs text-gray-600">
-                                      <Volume2 className="w-3 h-3" />
-                                      {Math.floor(recording.audioDurationSeconds / 60)}:{(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
-                                    </span>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteRecording(recording.id, studentName, recording.attemptNumber)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  title={`Delete attempt #${recording.attemptNumber}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                )}
+                                <span>
+                                  <span className="tabular-nums text-stone-700">
+                                    {group.attempts.length}
+                                  </span>
+                                  <span className="text-stone-400">/</span>
+                                  <span className="tabular-nums">{group.maxAttempts}</span>{' '}
+                                  attempts
+                                </span>
+                                <span className="tabular-nums">
+                                  {format(new Date(group.latestSubmittedAt), 'MMM d, h:mm a')}
+                                </span>
                               </div>
+                            </header>
 
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <div className="flex-1 min-w-[280px]">
-                                  <RecordingAudioPlayer
-                                    recordingId={recording.id}
-                                    fallbackDurationSeconds={recording.audioDurationSeconds}
-                                  />
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={async () => {
-                                    const downloadUrl = await fetchPresignedUrl(recording.id);
-                                    if (downloadUrl) {
-                                      window.open(downloadUrl, '_blank');
-                                    } else {
-                                      alert('Unable to generate download link. Please try again.');
-                                    }
-                                  }}
-                                  title="Download recording"
-                                >
-                                  📥 Download
-                                </Button>
-                                <div className="flex gap-2">
-                                  {feedbackMode === recording.id ? (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        onClick={() => submitFeedback(recording.id)}
-                                        disabled={submittingFeedback || !feedbackText.trim()}
-                                      >
-                                        {submittingFeedback ? 'Saving...' : 'Save Feedback'}
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={cancelFeedback}
-                                        disabled={submittingFeedback}
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
-                                    >
-                                      {recording.teacherFeedback ? 'Edit Feedback' : 'Add Feedback'}
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-
-                              {recording.recordingMode === 'ai_graded' && (
-                                <AIAnalysisPanel
-                                  recordingId={recording.id}
-                                  letterGrade={recording.letterGrade}
-                                  accuracyScore={recording.accuracyScore !== null ? Number(recording.accuracyScore) : null}
-                                  wpmScore={recording.wpmScore !== null ? Number(recording.wpmScore) : null}
-                                  wcpm={recording.wcpm !== null ? Number(recording.wcpm) : null}
-                                  fluencyScore={recording.fluencyScore !== null ? Number(recording.fluencyScore) : null}
-                                  eslWcpmBand={recording.eslWcpmBand}
-                                  nativeWcpmBand={recording.nativeWcpmBand}
-                                  phrasingScore={recording.phrasingScore}
-                                  smoothnessScore={recording.smoothnessScore}
-                                  paceScore={recording.paceScore}
-                                  teacherSummary={recording.teacherSummary}
-                                  teacherSummaryZh={recording.teacherSummaryZh}
-                                  transcript={recording.transcript}
-                                  analysisJson={recording.analysisJson as never}
-                                  onReanalyzed={fetchRecordings}
-                                />
-                              )}
-
-                              {feedbackMode === recording.id && (
-                                <div className="p-4 bg-white border rounded-lg space-y-3">
-                                  <label className="block text-sm font-medium text-gray-700">
-                                    Quick Rating
-                                  </label>
-                                  <div className="flex gap-2 flex-wrap">
-                                    {QUICK_RATINGS.map((rating) => (
+                            <div className="space-y-5">
+                              {visibleAttempts.map((recording, idx) => {
+                                const tone = STATUS_TONE[recording.status];
+                                return (
+                                  <div
+                                    key={recording.id}
+                                    className={idx > 0 ? 'pt-5 border-t border-stone-200/70' : ''}
+                                  >
+                                    <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
+                                      <div className="flex items-baseline gap-3 flex-wrap text-[13px]">
+                                        <span className="text-[12px] text-stone-500 tabular-nums">
+                                          Attempt {recording.attemptNumber}
+                                        </span>
+                                        <span className="text-stone-300">·</span>
+                                        <span className="inline-flex items-center gap-1.5">
+                                          <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`} />
+                                          <span className={`capitalize ${tone.text}`}>
+                                            {recording.status}
+                                          </span>
+                                        </span>
+                                        {recording.letterGrade && (
+                                          <>
+                                            <span className="text-stone-300">·</span>
+                                            <span className="text-stone-500">
+                                              Grade{' '}
+                                              <span className="text-stone-900 font-medium">
+                                                {recording.letterGrade}
+                                              </span>
+                                            </span>
+                                          </>
+                                        )}
+                                        {recording.accuracyScore !== null && (
+                                          <>
+                                            <span className="text-stone-300">·</span>
+                                            <span className="tabular-nums text-stone-700">
+                                              {recording.accuracyScore}%
+                                            </span>
+                                          </>
+                                        )}
+                                        <span className="text-stone-300">·</span>
+                                        <span className="tabular-nums text-stone-500 text-[12px]">
+                                          {format(new Date(recording.submittedAt), 'MMM d, h:mm a')}
+                                        </span>
+                                        {recording.audioDurationSeconds && (
+                                          <>
+                                            <span className="text-stone-300">·</span>
+                                            <span className="tabular-nums text-stone-500 text-[12px]">
+                                              {Math.floor(recording.audioDurationSeconds / 60)}:
+                                              {(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
                                       <button
-                                        key={rating.emoji}
                                         type="button"
-                                        onClick={() => selectRating(rating)}
-                                        disabled={submittingFeedback}
-                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                                          selectedRating === rating.emoji
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200'
-                                            : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-700'
-                                        }`}
+                                        onClick={() =>
+                                          deleteRecording(
+                                            recording.id,
+                                            studentName,
+                                            recording.attemptNumber,
+                                          )
+                                        }
+                                        className="text-stone-400 hover:text-rose-800 transition-colors duration-150 p-1 -m-1"
+                                        title={`Delete attempt ${recording.attemptNumber}`}
                                       >
-                                        <span className="text-lg">{rating.emoji}</span>
-                                        {rating.label}
+                                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                                       </button>
-                                    ))}
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                      Message <span className="font-normal text-gray-400">(edit or write your own)</span>
-                                    </label>
-                                    <Textarea
-                                      id={`feedback-${recording.id}`}
-                                      value={feedbackText}
-                                      onChange={(e) => setFeedbackText(e.target.value)}
-                                      placeholder="Pick a rating above or type your own feedback..."
-                                      rows={3}
-                                      disabled={submittingFeedback}
-                                      className="w-full"
-                                    />
-                                  </div>
-                                  <TeacherReplyRecorder
-                                    recordingId={recording.id}
-                                    initialAudioUrl={recording.teacherReplyAudioUrl}
-                                    initialDurationSeconds={recording.teacherReplyDurationSeconds}
-                                    onChange={fetchRecordings}
-                                    disabled={submittingFeedback}
-                                  />
-                                  <p className="text-xs text-gray-500">
-                                    This feedback applies to attempt #{recording.attemptNumber} and will mark it as reviewed.
-                                  </p>
-                                </div>
-                              )}
+                                    </div>
 
-                              {recording.teacherFeedback && feedbackMode !== recording.id && (
-                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <h4 className="font-medium text-blue-800 mb-1 text-sm">Feedback for Attempt #{recording.attemptNumber}:</h4>
-                                  <p className="text-blue-700 text-sm">{recording.teacherFeedback}</p>
-                                </div>
-                              )}
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <div className="flex-1 min-w-[280px]">
+                                        <RecordingAudioPlayer
+                                          recordingId={recording.id}
+                                          fallbackDurationSeconds={recording.audioDurationSeconds}
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          const downloadUrl = await fetchPresignedUrl(recording.id);
+                                          if (downloadUrl) window.open(downloadUrl, '_blank');
+                                          else alert('Unable to generate download link. Please try again.');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 text-[12px] text-stone-600 hover:text-stone-900 transition-colors duration-150"
+                                        title="Download recording"
+                                      >
+                                        <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                        Download
+                                      </button>
+                                      <div className="flex items-center gap-2">
+                                        {feedbackMode === recording.id ? (
+                                          <>
+                                            <Button
+                                              size="sm"
+                                              onClick={() => submitFeedback(recording.id)}
+                                              disabled={submittingFeedback || !feedbackText.trim()}
+                                              className="h-8 px-3 text-[13px] bg-stone-900 hover:bg-stone-800 text-stone-50"
+                                            >
+                                              {submittingFeedback ? 'Saving' : 'Save'}
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={cancelFeedback}
+                                              disabled={submittingFeedback}
+                                              className="h-8 px-3 text-[13px] text-stone-600 hover:bg-stone-100"
+                                            >
+                                              Cancel
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              startFeedback(
+                                                recording.id,
+                                                recording.teacherFeedback || '',
+                                              )
+                                            }
+                                            className="text-[12px] text-stone-600 hover:text-stone-900 transition-colors duration-150"
+                                          >
+                                            {recording.teacherFeedback ? 'Edit feedback' : '+ Add feedback'}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {recording.recordingMode === 'ai_graded' && (
+                                      <div className="mt-1">
+                                        <AIAnalysisPanel
+                                          recordingId={recording.id}
+                                          letterGrade={recording.letterGrade}
+                                          accuracyScore={
+                                            recording.accuracyScore !== null
+                                              ? Number(recording.accuracyScore)
+                                              : null
+                                          }
+                                          wpmScore={
+                                            recording.wpmScore !== null ? Number(recording.wpmScore) : null
+                                          }
+                                          wcpm={recording.wcpm !== null ? Number(recording.wcpm) : null}
+                                          fluencyScore={
+                                            recording.fluencyScore !== null
+                                              ? Number(recording.fluencyScore)
+                                              : null
+                                          }
+                                          eslWcpmBand={recording.eslWcpmBand}
+                                          nativeWcpmBand={recording.nativeWcpmBand}
+                                          phrasingScore={recording.phrasingScore}
+                                          smoothnessScore={recording.smoothnessScore}
+                                          paceScore={recording.paceScore}
+                                          teacherSummary={recording.teacherSummary}
+                                          teacherSummaryZh={recording.teacherSummaryZh}
+                                          transcript={recording.transcript}
+                                          analysisJson={recording.analysisJson as never}
+                                          onReanalyzed={fetchRecordings}
+                                        />
+                                      </div>
+                                    )}
+
+                                    {feedbackMode === recording.id && (
+                                      <div className="mt-4 border-t border-stone-200 pt-4 space-y-4">
+                                        <div>
+                                          <div className="text-[10px] uppercase tracking-[0.14em] text-stone-500 mb-2.5">
+                                            Quick rating
+                                          </div>
+                                          <div className="flex gap-1.5 flex-wrap">
+                                            {QUICK_RATINGS.map((rating) => {
+                                              const isSelected = selectedRating === rating.emoji;
+                                              return (
+                                                <button
+                                                  key={rating.emoji}
+                                                  type="button"
+                                                  onClick={() => selectRating(rating)}
+                                                  disabled={submittingFeedback}
+                                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-[12px] transition-colors duration-150 ${
+                                                    isSelected
+                                                      ? 'bg-stone-900 border-stone-900 text-stone-50'
+                                                      : 'bg-white border-stone-200 text-stone-700 hover:border-stone-400'
+                                                  }`}
+                                                >
+                                                  <span className="text-[14px] leading-none">{rating.emoji}</span>
+                                                  {rating.label}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor={`feedback-${recording.id}`}
+                                            className="block text-[10px] uppercase tracking-[0.14em] text-stone-500 mb-1.5"
+                                          >
+                                            Message
+                                          </label>
+                                          <Textarea
+                                            id={`feedback-${recording.id}`}
+                                            value={feedbackText}
+                                            onChange={(e) => setFeedbackText(e.target.value)}
+                                            placeholder="Pick a rating, or write your own"
+                                            rows={3}
+                                            disabled={submittingFeedback}
+                                            className="w-full border-stone-200 focus-visible:border-stone-900 focus-visible:ring-0 text-[14px]"
+                                          />
+                                        </div>
+                                        <TeacherReplyRecorder
+                                          recordingId={recording.id}
+                                          initialAudioUrl={recording.teacherReplyAudioUrl}
+                                          initialDurationSeconds={recording.teacherReplyDurationSeconds}
+                                          onChange={fetchRecordings}
+                                          disabled={submittingFeedback}
+                                        />
+                                        <p className="text-[11px] text-stone-500">
+                                          Applies to attempt {recording.attemptNumber}; marks it reviewed.
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {recording.teacherFeedback && feedbackMode !== recording.id && (
+                                      <div className="mt-3 bg-stone-50 border border-stone-200 px-3.5 py-3">
+                                        <div className="text-[10px] uppercase tracking-[0.14em] text-stone-500 mb-1">
+                                          Feedback, attempt {recording.attemptNumber}
+                                        </div>
+                                        <p className="text-[14px] text-stone-800 leading-relaxed max-w-[60ch]">
+                                          {recording.teacherFeedback}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          ))}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                )}
-              </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
               );
             })}
           </div>
