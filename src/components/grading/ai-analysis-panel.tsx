@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Sparkles, RotateCw, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import { RotateCw, ChevronDown, AlertCircle } from "lucide-react";
 
 // Mirror of the persisted analysis_json shape. Kept loose because we may
 // extend it; the panel only needs a few fields.
@@ -69,13 +68,20 @@ interface Props {
   onReanalyzed?: () => void;
 }
 
-function gradeColor(grade: string | null): string {
-  if (!grade) return 'bg-gray-100 text-gray-700';
-  if (grade.startsWith('A')) return 'bg-green-100 text-green-800 border-green-300';
-  if (grade.startsWith('B')) return 'bg-blue-100 text-blue-800 border-blue-300';
-  if (grade.startsWith('C')) return 'bg-amber-100 text-amber-800 border-amber-300';
-  if (grade.startsWith('D')) return 'bg-orange-100 text-orange-800 border-orange-300';
-  return 'bg-red-100 text-red-800 border-red-300';
+// Traditional Mandarin gets a proper native font stack so it doesn't render
+// in the Latin sans default. Reused on every zh-Hant block.
+const ZH = 'font-["PingFang_TC","Noto_Sans_TC","Microsoft_JhengHei",sans-serif]';
+
+// One singular accent (emerald) carries the AI identity. No purple
+// (LILA BAN). Tone tokens drive a single colored dot + matching text
+// — never a filled chip, which would compete with the typography.
+function gradeTone(grade: string | null): { dot: string; text: string } {
+  if (!grade) return { dot: 'bg-zinc-300', text: 'text-zinc-500' };
+  if (grade.startsWith('A')) return { dot: 'bg-emerald-600', text: 'text-emerald-700' };
+  if (grade.startsWith('B')) return { dot: 'bg-sky-600', text: 'text-sky-700' };
+  if (grade.startsWith('C')) return { dot: 'bg-amber-600', text: 'text-amber-700' };
+  if (grade.startsWith('D')) return { dot: 'bg-orange-600', text: 'text-orange-700' };
+  return { dot: 'bg-rose-600', text: 'text-rose-700' };
 }
 
 const BAND_LABEL: Record<NonNullable<WcpmBand>, string> = {
@@ -85,29 +91,45 @@ const BAND_LABEL: Record<NonNullable<WcpmBand>, string> = {
   above_target: 'Above Target',
 };
 
-const BAND_COLOR: Record<NonNullable<WcpmBand>, string> = {
-  concern: 'bg-red-100 text-red-800 border-red-300',
-  developing: 'bg-amber-100 text-amber-800 border-amber-300',
-  on_target: 'bg-green-100 text-green-800 border-green-300',
-  above_target: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+const BAND_TONE: Record<NonNullable<WcpmBand>, { dot: string; text: string }> = {
+  concern: { dot: 'bg-rose-600', text: 'text-rose-700' },
+  developing: { dot: 'bg-amber-600', text: 'text-amber-700' },
+  on_target: { dot: 'bg-emerald-600', text: 'text-emerald-700' },
+  above_target: { dot: 'bg-emerald-700', text: 'text-emerald-800' },
 };
 
-// Renders a 1-4 prosody score as four dots. Filled dots = score value.
-function ProsodyMeter({ label, score }: { label: string; score: number | null | undefined }) {
+// A 1–4 prosody score rendered as four bar segments. Quieter than dots,
+// reads as a row in an editorial chart. Filled = `bg-zinc-900`, empty =
+// `bg-zinc-200` — no color on the meter itself; color is reserved for
+// the band label.
+function ProsodyRow({ label, score }: { label: string; score: number | null | undefined }) {
   if (score == null) return null;
   return (
-    <div className="flex flex-col items-center gap-0.5 min-w-[70px]">
-      <div className="flex gap-0.5" aria-label={`${label} score: ${score} of 4`}>
+    <div className="grid grid-cols-[6.5rem_1fr_2.5rem] items-center gap-4">
+      <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+        {label}
+      </span>
+      <div className="flex gap-[3px]" aria-label={`${label}: ${score} of 4`}>
         {[1, 2, 3, 4].map((n) => (
-          <span
+          <div
             key={n}
-            className={`block w-2 h-2 rounded-full ${
-              n <= score ? 'bg-purple-600' : 'bg-purple-200'
-            }`}
+            className={`h-[3px] flex-1 ${n <= score ? 'bg-zinc-900' : 'bg-zinc-200'}`}
           />
         ))}
       </div>
-      <span className="text-[10px] text-gray-600 uppercase tracking-wide">{label}</span>
+      <span className="font-mono tabular-nums text-[11px] text-zinc-600 text-right">
+        {score}<span className="text-zinc-400">/4</span>
+      </span>
+    </div>
+  );
+}
+
+// Tiny uppercase section caption that sits ABOVE its content like a
+// gallery wall label. Spec lives here so spacing is consistent.
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+      {children}
     </div>
   );
 }
@@ -159,241 +181,391 @@ export function AIAnalysisPanel({
     }
   };
 
+  const grade = gradeTone(letterGrade);
+
   return (
-    <div className="mt-4 border border-purple-200 bg-purple-50/50 rounded-lg overflow-hidden">
+    <div className="mt-4 border-t border-zinc-900 bg-white">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-purple-100/40 transition-colors"
+        className="w-full flex items-center justify-between gap-4 py-3.5 text-left transition-colors hover:bg-zinc-50"
       >
-        <div className="flex items-center gap-3 flex-wrap">
-          <Sparkles className="w-4 h-4 text-purple-600" />
-          <span className="font-medium text-purple-900 text-sm">AI Analysis</span>
+        <div className="flex items-baseline gap-5 flex-wrap min-w-0">
+          <span className="text-[10px] uppercase tracking-[0.22em] text-zinc-500 shrink-0">
+            AI Analysis
+          </span>
           {hasResults && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge className={`${gradeColor(letterGrade)} border`}>{letterGrade ?? '—'}</Badge>
+            <div className="flex items-baseline gap-5 flex-wrap min-w-0">
+              <span className={`font-mono tabular-nums text-xl leading-none ${grade.text}`}>
+                {letterGrade ?? '—'}
+              </span>
               {hasFluency ? (
                 <>
-                  <span className="text-xs text-gray-700">
-                    <span className="font-semibold">{wcpm}</span> WCPM
+                  <span className="text-sm text-zinc-700">
+                    <span className="font-mono tabular-nums font-medium text-zinc-900">{wcpm}</span>
+                    <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500 ml-1.5">wcpm</span>
                   </span>
                   {accuracyScore !== null && (
-                    <span className="text-xs text-gray-500">· {accuracyScore}% accuracy</span>
-                  )}
-                  {fluencyScore != null && (
-                    <span className="text-xs text-gray-500">· Fluency {fluencyScore}/100</span>
+                    <span className="text-sm text-zinc-500">
+                      <span className="font-mono tabular-nums">{accuracyScore}</span>%
+                    </span>
                   )}
                   {eslWcpmBand && (
-                    <Badge className={`${BAND_COLOR[eslWcpmBand]} border text-[11px]`}>
-                      {BAND_LABEL[eslWcpmBand]} (ESL)
-                    </Badge>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em]">
+                      <span className={`w-1.5 h-1.5 rounded-full ${BAND_TONE[eslWcpmBand].dot}`} />
+                      <span className={BAND_TONE[eslWcpmBand].text}>{BAND_LABEL[eslWcpmBand]}</span>
+                    </span>
                   )}
                 </>
               ) : (
                 <>
                   {accuracyScore !== null && (
-                    <span className="text-xs text-gray-700">{accuracyScore}% accuracy</span>
+                    <span className="text-sm text-zinc-700">
+                      <span className="font-mono tabular-nums">{accuracyScore}</span>%
+                    </span>
                   )}
                   {wpmScore !== null && (
-                    <span className="text-xs text-gray-500">· {wpmScore} WPM</span>
+                    <span className="text-sm text-zinc-500">
+                      <span className="font-mono tabular-nums">{wpmScore}</span>
+                      <span className="text-[10px] uppercase tracking-[0.14em] ml-1.5">wpm</span>
+                    </span>
                   )}
                 </>
               )}
             </div>
           )}
           {hasError && (
-            <span className="flex items-center gap-1 text-xs text-red-700">
-              <AlertCircle className="w-3 h-3" /> Analysis failed
+            <span className="inline-flex items-center gap-1.5 text-xs text-rose-700">
+              <AlertCircle className="w-3.5 h-3.5" /> Analysis failed
             </span>
           )}
           {isPending && (
-            <span className="text-xs text-gray-500 italic">analyzing…</span>
+            <span className="text-xs text-zinc-400 italic">analyzing…</span>
           )}
         </div>
-        {expanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+        <ChevronDown
+          className={`w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-200 ${
+            expanded ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 space-y-3 border-t border-purple-100">
+        <div className="pt-6 pb-8 space-y-10 border-t border-zinc-200">
           {hasResults && analysisJson && (
             <>
-              <div className="flex flex-wrap gap-2 pt-3 items-center">
-                <Badge className={`${gradeColor(letterGrade)} border text-base px-3 py-1`}>
-                  {letterGrade ?? '—'}
-                </Badge>
-                {hasFluency && (
-                  <Badge variant="outline" className="text-sm">
-                    <span className="font-semibold">{wcpm}</span>&nbsp;WCPM
-                  </Badge>
-                )}
-                <Badge variant="outline" className="text-sm">
-                  {accuracyScore ?? 0}% accuracy
-                </Badge>
-                {hasFluency && fluencyScore != null ? (
-                  <Badge variant="outline" className="text-sm">
-                    Fluency {fluencyScore}/100
-                  </Badge>
+              {/* MASTHEAD — four monumental figures separated by hairline
+                  rules. The numbers read as the headline; labels are
+                  small uppercase captions above them. */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-zinc-200">
+                <div className="px-5 first:pl-0 last:pr-0">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                    Grade
+                  </div>
+                  <div className={`font-mono tabular-nums text-5xl leading-none ${grade.text}`}>
+                    {letterGrade ?? '—'}
+                  </div>
+                </div>
+                {hasFluency ? (
+                  <>
+                    <div className="px-5 first:pl-0 last:pr-0">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                        WCPM
+                      </div>
+                      <div className="font-mono tabular-nums text-5xl leading-none text-zinc-900">
+                        {wcpm}
+                      </div>
+                    </div>
+                    <div className="px-5 first:pl-0 last:pr-0">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                        Accuracy
+                      </div>
+                      <div className="font-mono tabular-nums text-5xl leading-none text-zinc-900">
+                        {accuracyScore ?? 0}
+                        <span className="text-2xl text-zinc-400 ml-1">%</span>
+                      </div>
+                    </div>
+                    <div className="px-5 first:pl-0 last:pr-0">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                        Fluency
+                      </div>
+                      <div className="font-mono tabular-nums text-5xl leading-none text-zinc-900">
+                        {fluencyScore ?? 0}
+                        <span className="text-2xl text-zinc-400 ml-1">/100</span>
+                      </div>
+                    </div>
+                  </>
                 ) : (
-                  <Badge variant="outline" className="text-sm">
-                    {wpmScore ?? 0} WPM
-                  </Badge>
-                )}
-                {analysisJson.hallucinationSuspected && (
-                  <Badge variant="outline" className="text-sm bg-amber-50 text-amber-800 border-amber-300">
-                    Possibly silent — re-record
-                  </Badge>
+                  <>
+                    <div className="px-5 first:pl-0 last:pr-0">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                        Accuracy
+                      </div>
+                      <div className="font-mono tabular-nums text-5xl leading-none text-zinc-900">
+                        {accuracyScore ?? 0}
+                        <span className="text-2xl text-zinc-400 ml-1">%</span>
+                      </div>
+                    </div>
+                    <div className="px-5 first:pl-0 last:pr-0">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                        WPM
+                      </div>
+                      <div className="font-mono tabular-nums text-5xl leading-none text-zinc-900">
+                        {wpmScore ?? 0}
+                      </div>
+                    </div>
+                    <div className="px-5 first:pl-0 last:pr-0">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                        Status
+                      </div>
+                      <div className="text-2xl leading-none text-zinc-400 pt-3">—</div>
+                    </div>
+                  </>
                 )}
               </div>
 
-              {/* Band chip with native parenthetical for teacher reference. */}
+              {/* Band — type-only label with a colored dot. No fill, no
+                  pill chrome. Native parenthetical sits next to it as
+                  a quiet teacher reference. */}
               {eslWcpmBand && (
-                <div className="flex items-center gap-2 flex-wrap text-sm">
-                  <Badge className={`${BAND_COLOR[eslWcpmBand]} border`}>
-                    {BAND_LABEL[eslWcpmBand]} — ESL
-                  </Badge>
+                <div className="flex items-baseline gap-4 flex-wrap">
+                  <span className="inline-flex items-center gap-2 text-sm">
+                    <span className={`w-2 h-2 rounded-full ${BAND_TONE[eslWcpmBand].dot}`} />
+                    <span className={`uppercase tracking-[0.14em] text-xs font-medium ${BAND_TONE[eslWcpmBand].text}`}>
+                      {BAND_LABEL[eslWcpmBand]}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">ESL norm</span>
+                  </span>
                   {nativeWcpmBand && nativeWcpmBand !== eslWcpmBand && (
-                    <span className="text-xs text-gray-600">
-                      L1 norm: <span className="font-medium">{BAND_LABEL[nativeWcpmBand]}</span>
+                    <span className="text-xs text-zinc-500">
+                      L1 norm:{' '}
+                      <span className="text-zinc-800 font-medium">
+                        {BAND_LABEL[nativeWcpmBand]}
+                      </span>
+                    </span>
+                  )}
+                  {analysisJson.hallucinationSuspected && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-amber-700">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Possibly silent — consider re-recording
                     </span>
                   )}
                 </div>
               )}
 
-              {/* Prosody trio + per-dimension Claude notes. The dot meters
-                  give the at-a-glance score; the notes underneath explain
-                  what the model heard in 1-2 sentences. Pace has no note —
-                  it's wholly derived from the WCPM band already shown above. */}
+              {/* PROSODY — three horizontal bar rows. Reads as a row of
+                  newspaper data chart entries rather than a colored
+                  meter. Notes underneath are bilingual; each prosody
+                  dimension labeled in tracked uppercase. */}
               {(phrasingScore != null || smoothnessScore != null || paceScore != null) && (
-                <div className="bg-white border rounded-lg p-3 space-y-3">
-                  <div className="flex gap-4">
-                    <ProsodyMeter label="Phrasing" score={phrasingScore} />
-                    <ProsodyMeter label="Smoothness" score={smoothnessScore} />
-                    <ProsodyMeter label="Pace" score={paceScore} />
+                <section>
+                  <SectionLabel>Prosody</SectionLabel>
+                  <div className="space-y-2 border-t border-zinc-200 pt-3">
+                    <ProsodyRow label="Phrasing" score={phrasingScore} />
+                    <ProsodyRow label="Smoothness" score={smoothnessScore} />
+                    <ProsodyRow label="Pace" score={paceScore} />
                   </div>
+
                   {(analysisJson.claude?.prosody?.phrasingNotes ||
                     analysisJson.claude?.prosody?.smoothnessNotes) && (
-                    <div className="space-y-2 pt-1 border-t border-gray-100">
+                    <div className="mt-5 space-y-4">
                       {analysisJson.claude?.prosody?.phrasingNotes && (
-                        <div className="text-sm space-y-0.5">
-                          <span className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">
-                            Phrasing
-                          </span>
-                          <p className="text-gray-800 leading-relaxed">
-                            {analysisJson.claude.prosody.phrasingNotes}
-                          </p>
-                          {analysisJson.claude.prosody.phrasingNotesZh && (
-                            <p lang="zh-Hant" className="text-xs text-gray-500 leading-relaxed">
-                              {analysisJson.claude.prosody.phrasingNotesZh}
+                        <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-zinc-200">
+                          <div className="md:pr-6">
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-1.5">
+                              On phrasing
+                            </div>
+                            <p className="text-[15px] text-zinc-800 leading-relaxed max-w-[60ch]">
+                              {analysisJson.claude.prosody.phrasingNotes}
                             </p>
+                          </div>
+                          {analysisJson.claude.prosody.phrasingNotesZh && (
+                            <div className="md:pl-6 mt-3 md:mt-0">
+                              <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400 mb-1.5">
+                                繁體中文
+                              </div>
+                              <p
+                                lang="zh-Hant"
+                                className={`${ZH} text-[15px] text-zinc-600 leading-relaxed max-w-[60ch]`}
+                              >
+                                {analysisJson.claude.prosody.phrasingNotesZh}
+                              </p>
+                            </div>
                           )}
                         </div>
                       )}
                       {analysisJson.claude?.prosody?.smoothnessNotes && (
-                        <div className="text-sm space-y-0.5">
-                          <span className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">
-                            Smoothness
-                          </span>
-                          <p className="text-gray-800 leading-relaxed">
-                            {analysisJson.claude.prosody.smoothnessNotes}
-                          </p>
-                          {analysisJson.claude.prosody.smoothnessNotesZh && (
-                            <p lang="zh-Hant" className="text-xs text-gray-500 leading-relaxed">
-                              {analysisJson.claude.prosody.smoothnessNotesZh}
+                        <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-zinc-200">
+                          <div className="md:pr-6">
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-1.5">
+                              On smoothness
+                            </div>
+                            <p className="text-[15px] text-zinc-800 leading-relaxed max-w-[60ch]">
+                              {analysisJson.claude.prosody.smoothnessNotes}
                             </p>
+                          </div>
+                          {analysisJson.claude.prosody.smoothnessNotesZh && (
+                            <div className="md:pl-6 mt-3 md:mt-0">
+                              <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400 mb-1.5">
+                                繁體中文
+                              </div>
+                              <p
+                                lang="zh-Hant"
+                                className={`${ZH} text-[15px] text-zinc-600 leading-relaxed max-w-[60ch]`}
+                              >
+                                {analysisJson.claude.prosody.smoothnessNotesZh}
+                              </p>
+                            </div>
                           )}
                         </div>
                       )}
                     </div>
                   )}
-                </div>
+                </section>
               )}
 
+              {/* TEACHER NOTES — bilingual two-column grid with a
+                  hairline rule between English and Mandarin. The
+                  English block holds its own max-w so long sentences
+                  don't run edge-to-edge. */}
               {teacherSummary && (
-                <div className="bg-white border rounded-lg p-3 space-y-1">
-                  <h4 className="text-xs font-medium text-gray-700">Teacher notes</h4>
-                  <p className="text-sm text-gray-800 leading-relaxed">{teacherSummary}</p>
-                  {teacherSummaryZh && (
-                    <p
-                      lang="zh-Hant"
-                      className="text-sm text-gray-500 leading-relaxed"
-                    >
-                      {teacherSummaryZh}
-                    </p>
-                  )}
-                </div>
+                <section>
+                  <SectionLabel>Teacher notes</SectionLabel>
+                  <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-zinc-200 border-t border-zinc-200 pt-4">
+                    <div className="md:pr-8">
+                      <p className="text-[17px] text-zinc-900 leading-relaxed max-w-[58ch]">
+                        {teacherSummary}
+                      </p>
+                    </div>
+                    {teacherSummaryZh && (
+                      <div className="md:pl-8 mt-4 md:mt-0">
+                        <p
+                          lang="zh-Hant"
+                          className={`${ZH} text-[17px] text-zinc-700 leading-relaxed max-w-[58ch]`}
+                        >
+                          {teacherSummaryZh}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </section>
               )}
 
-              {/* Strengths + focus areas from the Claude prosody block. Each
-                  item is ONE sentence in English with a Traditional Mandarin
-                  translation right below it for Taiwanese teachers. Legacy
-                  string-only items still render — bilingual() handles both. */}
+              {/* STRENGTHS + FOCUS AREAS — editorial numbered lists.
+                  No green / amber tinted backgrounds. The accent dot
+                  carries the semantic meaning; numbering carries the
+                  hierarchy; the bilingual pair sits as a typographic
+                  unit. */}
               {(analysisJson.claude?.prosody?.strengths?.length ||
-                analysisJson.claude?.prosody?.focusAreas?.length) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                analysisJson.claude?.prosody?.focusAreas?.length) ? (
+                <section className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-zinc-200">
                   {analysisJson.claude?.prosody?.strengths?.length ? (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <h4 className="text-xs font-semibold text-green-800 mb-1 uppercase tracking-wide">
-                        Strengths
-                      </h4>
-                      <ul className="space-y-1.5">
+                    <div className="md:pr-8">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-700">
+                          Strengths
+                        </span>
+                      </div>
+                      <ol className="space-y-4">
                         {analysisJson.claude.prosody.strengths.map((raw, i) => {
                           const { en, zh } = bilingual(raw);
                           return (
-                            <li key={i} className="text-gray-800">
-                              <span className="block">• {en}</span>
-                              {zh && (
-                                <span
-                                  lang="zh-Hant"
-                                  className="block pl-3 text-xs text-gray-500"
-                                >
-                                  {zh}
-                                </span>
-                              )}
+                            <li key={i} className="grid grid-cols-[2rem_1fr] gap-3">
+                              <span className="font-mono tabular-nums text-xs text-zinc-400 pt-0.5">
+                                {String(i + 1).padStart(2, '0')}
+                              </span>
+                              <div>
+                                <p className="text-sm text-zinc-900 leading-relaxed">{en}</p>
+                                {zh && (
+                                  <p
+                                    lang="zh-Hant"
+                                    className={`${ZH} text-sm text-zinc-500 leading-relaxed mt-0.5`}
+                                  >
+                                    {zh}
+                                  </p>
+                                )}
+                              </div>
                             </li>
                           );
                         })}
-                      </ul>
+                      </ol>
                     </div>
-                  ) : null}
+                  ) : <div />}
                   {analysisJson.claude?.prosody?.focusAreas?.length ? (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                      <h4 className="text-xs font-semibold text-amber-800 mb-1 uppercase tracking-wide">
-                        Focus areas
-                      </h4>
-                      <ul className="space-y-1.5">
+                    <div className="md:pl-8 mt-8 md:mt-0">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-700">
+                          Focus areas
+                        </span>
+                      </div>
+                      <ol className="space-y-4">
                         {analysisJson.claude.prosody.focusAreas.map((raw, i) => {
                           const { en, zh } = bilingual(raw);
                           return (
-                            <li key={i} className="text-gray-800">
-                              <span className="block">• {en}</span>
-                              {zh && (
-                                <span
-                                  lang="zh-Hant"
-                                  className="block pl-3 text-xs text-gray-500"
-                                >
-                                  {zh}
-                                </span>
-                              )}
+                            <li key={i} className="grid grid-cols-[2rem_1fr] gap-3">
+                              <span className="font-mono tabular-nums text-xs text-zinc-400 pt-0.5">
+                                {String(i + 1).padStart(2, '0')}
+                              </span>
+                              <div>
+                                <p className="text-sm text-zinc-900 leading-relaxed">{en}</p>
+                                {zh && (
+                                  <p
+                                    lang="zh-Hant"
+                                    className={`${ZH} text-sm text-zinc-500 leading-relaxed mt-0.5`}
+                                  >
+                                    {zh}
+                                  </p>
+                                )}
+                              </div>
                             </li>
                           );
                         })}
-                      </ul>
+                      </ol>
                     </div>
                   ) : null}
-                </div>
-              )}
+                </section>
+              ) : null}
 
-              <div className="text-xs text-gray-600">
-                {analysisJson.matched ?? 0} correct ·{' '}
-                {analysisJson.substituted ?? 0} mispronounced ·{' '}
-                {analysisJson.missed ?? 0} skipped ·{' '}
-                {analysisJson.inserted ?? 0} extra
+              {/* Word-op tally — quiet bottom line with tabular numerals
+                  separated by dividers. Reads like a scoreline at the
+                  foot of an article. */}
+              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-t border-zinc-200 pt-4 text-xs">
+                <span className="flex items-baseline gap-2">
+                  <span className="font-mono tabular-nums text-zinc-900 text-base">
+                    {analysisJson.matched ?? 0}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">correct</span>
+                </span>
+                <span className="flex items-baseline gap-2">
+                  <span className="font-mono tabular-nums text-zinc-900 text-base">
+                    {analysisJson.substituted ?? 0}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">mispronounced</span>
+                </span>
+                <span className="flex items-baseline gap-2">
+                  <span className="font-mono tabular-nums text-zinc-900 text-base">
+                    {analysisJson.missed ?? 0}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">skipped</span>
+                </span>
+                <span className="flex items-baseline gap-2">
+                  <span className="font-mono tabular-nums text-zinc-900 text-base">
+                    {analysisJson.inserted ?? 0}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">extra</span>
+                </span>
               </div>
 
+              {/* PASSAGE — clean cream-paper card. The diff highlights
+                  use a subtle yellow underline and a strike rather than
+                  flat color blocks; reads as editor's marks rather
+                  than alarm. */}
               {analysisJson.expectedView && analysisJson.expectedView.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 mb-1">Story (with errors highlighted)</h4>
-                  <p className="text-sm leading-relaxed bg-white rounded p-3 border">
+                <section>
+                  <SectionLabel>Passage</SectionLabel>
+                  <p className="text-[15px] leading-[1.85] text-zinc-900 bg-[#fafaf7] border-t border-b border-zinc-200 px-1 py-5">
                     {analysisJson.expectedView.map((tok, i) => {
                       const sep = i > 0 ? ' ' : '';
                       if (tok.op === 'match') return <span key={i}>{sep}{tok.word}</span>;
@@ -401,17 +573,16 @@ export function AIAnalysisPanel({
                         return (
                           <span
                             key={i}
-                            className="bg-yellow-200 text-yellow-900 rounded px-0.5"
+                            className="bg-yellow-200/60 underline decoration-amber-700 decoration-1 underline-offset-[3px] px-0.5"
                             title={`Heard: "${tok.heard ?? ''}"`}
                           >
                             {sep}{tok.word}
                           </span>
                         );
-                      // del
                       return (
                         <span
                           key={i}
-                          className="bg-red-100 text-red-700 line-through rounded px-0.5"
+                          className="text-rose-700 line-through decoration-rose-400 decoration-1 px-0.5"
                           title="Skipped"
                         >
                           {sep}{tok.word}
@@ -419,47 +590,56 @@ export function AIAnalysisPanel({
                       );
                     })}
                   </p>
-                  <div className="flex gap-3 mt-1 text-[11px] text-gray-500">
-                    <span><span className="bg-yellow-200 px-1 rounded">word</span> mispronounced</span>
-                    <span><span className="bg-red-100 line-through px-1 rounded">word</span> skipped</span>
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-[11px] text-zinc-500">
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <span className="bg-yellow-200/60 underline decoration-amber-700 decoration-1 underline-offset-[3px] px-1">word</span>
+                      mispronounced
+                    </span>
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <span className="text-rose-700 line-through decoration-rose-400 decoration-1 px-1">word</span>
+                      skipped
+                    </span>
                   </div>
-                </div>
+                </section>
               )}
 
+              {/* TRANSCRIPT — verbatim. Reads as a quoted block. */}
               {transcript && (
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 mb-1">Transcript</h4>
-                  <p className="text-sm text-gray-800 bg-white rounded p-3 border whitespace-pre-wrap">
+                <section>
+                  <SectionLabel>Transcript</SectionLabel>
+                  <p className="text-[15px] text-zinc-700 leading-relaxed whitespace-pre-wrap border-l-2 border-zinc-300 pl-5 max-w-[68ch]">
                     {transcript}
                   </p>
-                </div>
+                </section>
               )}
             </>
           )}
 
           {hasError && (
-            <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+            <div className="border-l-2 border-rose-500 pl-4 py-1 text-sm text-rose-800">
               {analysisJson?.error}
             </div>
           )}
 
           {reanalyzeError && (
-            <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+            <div className="border-l-2 border-rose-500 pl-4 py-1 text-sm text-rose-800">
               {reanalyzeError}
             </div>
           )}
 
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={reanalyze}
-            disabled={reanalyzing}
-            className="gap-2"
-          >
-            <RotateCw className={`w-3 h-3 ${reanalyzing ? 'animate-spin' : ''}`} />
-            {reanalyzing ? 'Re-analyzing…' : 'Re-analyze'}
-          </Button>
+          <div className="pt-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={reanalyze}
+              disabled={reanalyzing}
+              className="gap-2 px-0 h-auto text-zinc-700 hover:text-zinc-950 hover:bg-transparent uppercase tracking-[0.14em] text-[11px] font-medium"
+            >
+              <RotateCw className={`w-3 h-3 ${reanalyzing ? 'animate-spin' : ''}`} />
+              {reanalyzing ? 'Re-analyzing' : 'Re-analyze'}
+            </Button>
+          </div>
         </div>
       )}
     </div>

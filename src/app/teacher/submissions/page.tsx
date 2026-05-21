@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Volume2, FileText, Calendar, ChevronDown, ChevronUp, User, Clock, Star, Trash2, Users, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  ChevronDown,
+  Trash2,
+  Download,
+  Sparkles,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AIAnalysisPanel } from "@/components/grading/ai-analysis-panel";
@@ -64,12 +69,24 @@ interface AttemptGroup {
   latestSubmittedAt: string;
 }
 
+type FilterKey = 'all' | 'pending' | 'reviewed' | 'flagged';
+
+// Tone tokens for the submission status — kept as a tiny colored dot
+// alongside an uppercase tracked label rather than a filled chip.
+// Single accent palette: emerald (reviewed) / amber (pending) / rose
+// (flagged). No purple anywhere.
+const STATUS_TONE: Record<Recording['status'], { dot: string; text: string }> = {
+  pending: { dot: 'bg-amber-500', text: 'text-amber-700' },
+  reviewed: { dot: 'bg-emerald-600', text: 'text-emerald-700' },
+  flagged: { dot: 'bg-rose-600', text: 'text-rose-700' },
+};
+
 export default function TeacherSubmissionsPage() {
   const router = useRouter();
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'flagged'>('all');
+  const [filter, setFilter] = useState<FilterKey>('all');
   const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState<string>('');
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
@@ -228,15 +245,6 @@ export default function TeacherSubmissionsPage() {
     setSelectedRating(null);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'reviewed': return 'bg-green-100 text-green-800';
-      case 'flagged': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const deleteRecording = async (recordingId: string, studentName: string, attemptNumber: number) => {
     const confirmed = confirm(`Delete attempt #${attemptNumber} by ${studentName}? This cannot be undone.`);
     if (!confirmed) return;
@@ -349,84 +357,102 @@ export default function TeacherSubmissionsPage() {
   const reviewedCount = recordings.filter(r => r.status === 'reviewed').length;
   const flaggedCount = recordings.filter(r => r.status === 'flagged').length;
 
+  const FILTERS: { key: FilterKey; label: string; count: number; dot: string | null }[] = [
+    { key: 'all', label: 'All', count: recordings.length, dot: null },
+    { key: 'pending', label: 'Pending', count: pendingCount, dot: 'bg-amber-500' },
+    { key: 'reviewed', label: 'Reviewed', count: reviewedCount, dot: 'bg-emerald-600' },
+    { key: 'flagged', label: 'Flagged', count: flaggedCount, dot: 'bg-rose-600' },
+  ];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading submissions...</div>
+      <div className="min-h-[100dvh] bg-white flex items-center justify-center">
+        <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">
+          Loading submissions
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => router.push('/teacher/dashboard')}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Student Submissions</h1>
-                <p className="text-gray-600 mt-1">
-                  Review and provide feedback on student recordings
-                </p>
-              </div>
+    <div className="min-h-[100dvh] bg-white text-zinc-900">
+      {/* MASTHEAD — editorial header. The back link is a quiet text
+          link, not a button. The page title sits as a deliberately
+          large display heading with a thin meta line below. */}
+      <header className="max-w-[1320px] mx-auto px-6 md:px-10 pt-8 pb-10">
+        <button
+          type="button"
+          onClick={() => router.push('/teacher/dashboard')}
+          className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-zinc-500 hover:text-zinc-900 transition-colors mb-8"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Dashboard
+        </button>
+        <div className="flex items-end justify-between gap-6 flex-wrap border-b border-zinc-900 pb-6">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500 mb-2">
+              Teacher · Submissions
             </div>
+            <h1 className="text-4xl md:text-5xl tracking-tight leading-none text-zinc-950">
+              Student readings
+            </h1>
           </div>
+          <p className="text-sm text-zinc-500 max-w-[42ch]">
+            Review, score, and respond to recordings grouped by class.
+          </p>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'all' ? 'ring-2 ring-blue-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('all')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">{recordings.length}</div>
-              <div className="text-sm text-gray-600">Total Submissions</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'pending' ? 'ring-2 ring-yellow-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('pending')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
-              <div className="text-sm text-gray-600">Pending Review</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'reviewed' ? 'ring-2 ring-green-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('reviewed')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{reviewedCount}</div>
-              <div className="text-sm text-gray-600">Reviewed</div>
-            </CardContent>
-          </Card>
-          <Card
-            className={`cursor-pointer transition-colors ${filter === 'flagged' ? 'ring-2 ring-red-500' : 'hover:bg-gray-50'}`}
-            onClick={() => setFilter('flagged')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">{flaggedCount}</div>
-              <div className="text-sm text-gray-600">Flagged</div>
-            </CardContent>
-          </Card>
+      <main className="max-w-[1320px] mx-auto px-6 md:px-10 pb-24">
+        {/* FILTER STRIP — anti-card. Four cells separated by hairline
+            verticals. Tap target is the cell. Active state is a thick
+            bottom rule + zinc-950 text; inactive is muted. */}
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-zinc-200 mb-12">
+          {FILTERS.map(({ key, label, count, dot }) => {
+            const active = filter === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`group text-left px-5 py-4 first:pl-0 last:pr-0 border-b-2 transition-[border-color,background-color] duration-200 ${
+                  active
+                    ? 'border-zinc-950'
+                    : 'border-transparent hover:border-zinc-300'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  {dot && (
+                    <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                  )}
+                  <span
+                    className={`text-[10px] uppercase tracking-[0.18em] ${
+                      active ? 'text-zinc-900' : 'text-zinc-500'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </div>
+                <div
+                  className={`font-mono tabular-nums text-3xl md:text-4xl leading-none ${
+                    active ? 'text-zinc-950' : 'text-zinc-700'
+                  }`}
+                >
+                  {count}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Hide-reviewed toggle. The data stays in the DB; this is a
-            purely client-side filter so the teacher can declutter
-            without losing history. Disabled (visually muted) when the
-            active filter is 'reviewed' so the teacher doesn't get
-            an empty page. */}
-        <div className="mb-6 flex items-center justify-end">
+        {/* Hide-reviewed toggle — recast as a text-link affordance,
+            not a checkbox row. Reads as a quiet utility setting. */}
+        <div className="mb-8 flex items-center justify-end">
           <label
-            className={`inline-flex items-center gap-2 text-sm select-none ${
-              filter === 'reviewed' ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 cursor-pointer'
+            className={`inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.14em] select-none ${
+              filter === 'reviewed'
+                ? 'text-zinc-300 cursor-not-allowed'
+                : 'text-zinc-600 cursor-pointer hover:text-zinc-900 transition-colors'
             }`}
           >
             <input
@@ -434,40 +460,35 @@ export default function TeacherSubmissionsPage() {
               checked={hideReviewed}
               onChange={toggleHideReviewed}
               disabled={filter === 'reviewed'}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-3.5 w-3.5 rounded-[2px] border-zinc-400 accent-zinc-900"
             />
-            Hide reviewed submissions
-            <span className="text-xs text-gray-400">
-              (kept in records, just hidden here)
-            </span>
+            Hide reviewed
           </label>
         </div>
 
         {error && (
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="text-red-600">{error}</div>
-            </CardContent>
-          </Card>
+          <div className="border-l-2 border-rose-500 pl-4 py-1 text-sm text-rose-800 mb-8">
+            {error}
+          </div>
         )}
 
         {Object.keys(groupsByClass).length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium mb-2">
-                {filter === 'all' ? 'No submissions yet' : `No ${filter} submissions`}
-              </h3>
-              <p className="text-gray-600">
-                {filter === 'all'
-                  ? 'Student submissions will appear here once they start completing assignments.'
-                  : `No submissions with ${filter} status found.`
-                }
-              </p>
-            </CardContent>
-          </Card>
+          <div className="border-t border-zinc-200 pt-16 pb-20 text-center">
+            <FileText className="w-10 h-10 mx-auto mb-5 text-zinc-300" strokeWidth={1.25} />
+            <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500 mb-2">
+              Empty
+            </div>
+            <h3 className="text-2xl tracking-tight text-zinc-900 mb-2">
+              {filter === 'all' ? 'No submissions yet' : `No ${filter} submissions`}
+            </h3>
+            <p className="text-sm text-zinc-500 max-w-[42ch] mx-auto">
+              {filter === 'all'
+                ? 'Student submissions will appear here once they start completing assignments.'
+                : `Nothing with the ${filter} status to show.`}
+            </p>
+          </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-16">
             {Object.values(groupsByClass).map(({ className, classId, groups }) => {
               const expanded = expandedClassIds.has(classId);
               const pendingInClass = groups.reduce(
@@ -479,295 +500,359 @@ export default function TeacherSubmissionsPage() {
                 0,
               );
               return (
-              <div key={classId} className="space-y-4">
-                {/* Clickable class header — toggles the per-class
-                    body. The Delete button stops propagation so the
-                    teacher can't accidentally fire the destroy
-                    action while expanding the class. */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => toggleClassExpanded(classId)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggleClassExpanded(classId);
-                    }
-                  }}
-                  className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm cursor-pointer select-none hover:bg-gray-50"
-                  aria-expanded={expanded}
-                >
-                  <div className="flex items-center gap-3">
-                    {expanded ? (
-                      <ChevronUp className="w-5 h-5 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-500" />
-                    )}
-                    <Users className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">{className}</h2>
-                      <p className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
-                        <span>
-                          {groups.length} student submission{groups.length !== 1 ? 's' : ''}
+                <section key={classId}>
+                  {/* CLASS SECTION DIVIDER — bold top rule like the
+                      head of a print magazine section. Number on the
+                      left, name center-left, meta right. The whole row
+                      is the tap target. */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleClassExpanded(classId)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleClassExpanded(classId);
+                      }
+                    }}
+                    className="group cursor-pointer select-none border-t-[3px] border-zinc-950 pt-5"
+                    aria-expanded={expanded}
+                  >
+                    <div className="flex items-start justify-between gap-6 flex-wrap">
+                      <div className="flex items-baseline gap-5 flex-wrap min-w-0">
+                        <h2 className="text-3xl md:text-4xl tracking-tight leading-none text-zinc-950">
+                          {className}
+                        </h2>
+                        <span className="font-mono tabular-nums text-xs text-zinc-500">
+                          {groups.length} submission{groups.length !== 1 ? 's' : ''}
                         </span>
                         {pendingInClass > 0 && (
-                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-800 border-yellow-300">
-                            {pendingInClass} pending
-                          </Badge>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-amber-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span className="font-mono tabular-nums">{pendingInClass}</span> pending
+                          </span>
                         )}
                         {flaggedInClass > 0 && (
-                          <Badge variant="outline" className="text-xs bg-red-50 text-red-800 border-red-300">
-                            {flaggedInClass} flagged
-                          </Badge>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-rose-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+                            <span className="font-mono tabular-nums">{flaggedInClass}</span> flagged
+                          </span>
                         )}
-                      </p>
+                      </div>
+                      <div className="flex items-center gap-5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteAllClassRecordings(classId, className);
+                          }}
+                          className="text-[11px] uppercase tracking-[0.14em] text-zinc-400 hover:text-rose-700 transition-colors"
+                        >
+                          Delete all
+                        </button>
+                        <ChevronDown
+                          className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${
+                            expanded ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteAllClassRecordings(classId, className);
-                    }}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete All from Class
-                  </Button>
-                </div>
 
-                {expanded && (
-                <div className="space-y-4 ml-4">
-                  {groups.map((group) => {
-                    const studentName = `${group.studentFirstName} ${group.studentLastName}`;
-                    const visibleAttempts =
-                      filter === 'all'
-                        ? group.attempts
-                        : group.attempts.filter(a => a.status === filter);
-                    return (
-                      <Card key={group.key} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between gap-4 flex-wrap">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <CardTitle className="text-lg">{group.assignmentTitle}</CardTitle>
-                                {group.recordingMode === 'ai_graded' && (
-                                  <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-300 flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3" />
-                                    AI-graded
-                                  </Badge>
-                                )}
-                                <Badge variant="outline" className="font-medium">
-                                  {group.attempts.length} of {group.maxAttempts} attempt{group.maxAttempts !== 1 ? 's' : ''} used
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
-                                <span className="flex items-center gap-1">
-                                  <User className="w-4 h-4" />
+                  {expanded && (
+                    <div className="mt-8 space-y-12">
+                      {groups.map((group) => {
+                        const studentName = `${group.studentFirstName} ${group.studentLastName}`;
+                        const visibleAttempts =
+                          filter === 'all'
+                            ? group.attempts
+                            : group.attempts.filter(a => a.status === filter);
+                        return (
+                          <article key={group.key}>
+                            {/* ASSIGNMENT MASTHEAD — student / title /
+                                meta in a quiet grid. The student name
+                                acts as the primary line, the
+                                assignment as a smaller subtitle. */}
+                            <header className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 mb-5 pb-4 border-b border-zinc-200">
+                              <div className="min-w-0">
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-1.5">
                                   {studentName}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-4 h-4" />
-                                  Latest: {format(new Date(group.latestSubmittedAt), 'MMM d, yyyy \'at\' h:mm a')}
-                                </span>
+                                </div>
+                                <h3 className="text-xl tracking-tight text-zinc-900 leading-tight">
+                                  {group.assignmentTitle}
+                                </h3>
                               </div>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          {visibleAttempts.map((recording, idx) => (
-                            <div
-                              key={recording.id}
-                              className={`rounded-lg border bg-gray-50/40 p-4 space-y-3 ${
-                                idx > 0 ? 'mt-2' : ''
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-3 flex-wrap">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge variant="outline" className="font-semibold">
-                                    Attempt #{recording.attemptNumber}
-                                  </Badge>
-                                  <Badge className={getStatusColor(recording.status)}>
-                                    {recording.status}
-                                  </Badge>
-                                  {recording.letterGrade && (
-                                    <Badge variant="outline" className="font-semibold">
-                                      Grade: {recording.letterGrade}
-                                    </Badge>
-                                  )}
-                                  {recording.accuracyScore && (
-                                    <Badge variant="outline" className="flex items-center gap-1">
-                                      <Star className="w-3 h-3" />
-                                      {recording.accuracyScore}%
-                                    </Badge>
-                                  )}
-                                  <span className="flex items-center gap-1 text-xs text-gray-600">
-                                    <Calendar className="w-3 h-3" />
-                                    {format(new Date(recording.submittedAt), 'MMM d, h:mm a')}
+                              <div className="flex items-center gap-4 text-[11px] text-zinc-500 md:justify-end flex-wrap">
+                                {group.recordingMode === 'ai_graded' && (
+                                  <span className="inline-flex items-center gap-1.5 uppercase tracking-[0.14em]">
+                                    <Sparkles className="w-3 h-3" />
+                                    AI graded
                                   </span>
-                                  {recording.audioDurationSeconds && (
-                                    <span className="flex items-center gap-1 text-xs text-gray-600">
-                                      <Volume2 className="w-3 h-3" />
-                                      {Math.floor(recording.audioDurationSeconds / 60)}:{(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
-                                    </span>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteRecording(recording.id, studentName, recording.attemptNumber)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  title={`Delete attempt #${recording.attemptNumber}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                )}
+                                <span className="uppercase tracking-[0.14em]">
+                                  <span className="font-mono tabular-nums text-zinc-900">
+                                    {group.attempts.length}
+                                  </span>
+                                  <span className="text-zinc-400">/</span>
+                                  <span className="font-mono tabular-nums">{group.maxAttempts}</span>
+                                  <span className="ml-1.5">attempts</span>
+                                </span>
+                                <span className="font-mono tabular-nums">
+                                  {format(new Date(group.latestSubmittedAt), 'MMM d · h:mm a')}
+                                </span>
                               </div>
+                            </header>
 
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <div className="flex-1 min-w-[280px]">
-                                  <RecordingAudioPlayer
-                                    recordingId={recording.id}
-                                    fallbackDurationSeconds={recording.audioDurationSeconds}
-                                  />
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={async () => {
-                                    const downloadUrl = await fetchPresignedUrl(recording.id);
-                                    if (downloadUrl) {
-                                      window.open(downloadUrl, '_blank');
-                                    } else {
-                                      alert('Unable to generate download link. Please try again.');
-                                    }
-                                  }}
-                                  title="Download recording"
-                                >
-                                  📥 Download
-                                </Button>
-                                <div className="flex gap-2">
-                                  {feedbackMode === recording.id ? (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        onClick={() => submitFeedback(recording.id)}
-                                        disabled={submittingFeedback || !feedbackText.trim()}
-                                      >
-                                        {submittingFeedback ? 'Saving...' : 'Save Feedback'}
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={cancelFeedback}
-                                        disabled={submittingFeedback}
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => startFeedback(recording.id, recording.teacherFeedback || '')}
-                                    >
-                                      {recording.teacherFeedback ? 'Edit Feedback' : 'Add Feedback'}
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
+                            <div>
+                              {visibleAttempts.map((recording, idx) => {
+                                const tone = STATUS_TONE[recording.status];
+                                return (
+                                  <div
+                                    key={recording.id}
+                                    className={`grid grid-cols-[3.5rem_1fr] gap-4 py-6 ${
+                                      idx > 0 ? 'border-t border-zinc-200' : ''
+                                    }`}
+                                  >
+                                    {/* MONUMENTAL ATTEMPT NUMERAL — sits
+                                        as a column-1 marker like a print
+                                        catalog entry. */}
+                                    <div className="font-mono tabular-nums text-3xl text-zinc-300 leading-none pt-1">
+                                      {String(recording.attemptNumber).padStart(2, '0')}
+                                    </div>
 
-                              {recording.recordingMode === 'ai_graded' && (
-                                <AIAnalysisPanel
-                                  recordingId={recording.id}
-                                  letterGrade={recording.letterGrade}
-                                  accuracyScore={recording.accuracyScore !== null ? Number(recording.accuracyScore) : null}
-                                  wpmScore={recording.wpmScore !== null ? Number(recording.wpmScore) : null}
-                                  wcpm={recording.wcpm !== null ? Number(recording.wcpm) : null}
-                                  fluencyScore={recording.fluencyScore !== null ? Number(recording.fluencyScore) : null}
-                                  eslWcpmBand={recording.eslWcpmBand}
-                                  nativeWcpmBand={recording.nativeWcpmBand}
-                                  phrasingScore={recording.phrasingScore}
-                                  smoothnessScore={recording.smoothnessScore}
-                                  paceScore={recording.paceScore}
-                                  teacherSummary={recording.teacherSummary}
-                                  teacherSummaryZh={recording.teacherSummaryZh}
-                                  transcript={recording.transcript}
-                                  analysisJson={recording.analysisJson as never}
-                                  onReanalyzed={fetchRecordings}
-                                />
-                              )}
+                                    <div className="min-w-0 space-y-4">
+                                      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                                        <div className="flex items-baseline gap-5 flex-wrap">
+                                          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em]">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`} />
+                                            <span className={tone.text}>{recording.status}</span>
+                                          </span>
+                                          {recording.letterGrade && (
+                                            <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+                                              Grade
+                                              <span className="font-mono tabular-nums text-zinc-900 ml-1.5">
+                                                {recording.letterGrade}
+                                              </span>
+                                            </span>
+                                          )}
+                                          {recording.accuracyScore !== null && (
+                                            <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+                                              <span className="font-mono tabular-nums text-zinc-900">
+                                                {recording.accuracyScore}
+                                              </span>
+                                              %
+                                            </span>
+                                          )}
+                                          <span className="font-mono tabular-nums text-[11px] text-zinc-500">
+                                            {format(new Date(recording.submittedAt), 'MMM d · h:mm a')}
+                                          </span>
+                                          {recording.audioDurationSeconds && (
+                                            <span className="font-mono tabular-nums text-[11px] text-zinc-500">
+                                              {Math.floor(recording.audioDurationSeconds / 60)}:
+                                              {(recording.audioDurationSeconds % 60).toString().padStart(2, '0')}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            deleteRecording(
+                                              recording.id,
+                                              studentName,
+                                              recording.attemptNumber,
+                                            )
+                                          }
+                                          className="text-zinc-400 hover:text-rose-700 transition-colors p-1 -m-1"
+                                          title={`Delete attempt #${recording.attemptNumber}`}
+                                        >
+                                          <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                                        </button>
+                                      </div>
 
-                              {feedbackMode === recording.id && (
-                                <div className="p-4 bg-white border rounded-lg space-y-3">
-                                  <label className="block text-sm font-medium text-gray-700">
-                                    Quick Rating
-                                  </label>
-                                  <div className="flex gap-2 flex-wrap">
-                                    {QUICK_RATINGS.map((rating) => (
-                                      <button
-                                        key={rating.emoji}
-                                        type="button"
-                                        onClick={() => selectRating(rating)}
-                                        disabled={submittingFeedback}
-                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                                          selectedRating === rating.emoji
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200'
-                                            : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-700'
-                                        }`}
-                                      >
-                                        <span className="text-lg">{rating.emoji}</span>
-                                        {rating.label}
-                                      </button>
-                                    ))}
+                                      <div className="flex items-center gap-3 flex-wrap">
+                                        <div className="flex-1 min-w-[280px]">
+                                          <RecordingAudioPlayer
+                                            recordingId={recording.id}
+                                            fallbackDurationSeconds={recording.audioDurationSeconds}
+                                          />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={async () => {
+                                            const downloadUrl = await fetchPresignedUrl(recording.id);
+                                            if (downloadUrl) {
+                                              window.open(downloadUrl, '_blank');
+                                            } else {
+                                              alert('Unable to generate download link. Please try again.');
+                                            }
+                                          }}
+                                          className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-zinc-600 hover:text-zinc-950 transition-colors"
+                                          title="Download recording"
+                                        >
+                                          <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                          Download
+                                        </button>
+                                        <div className="flex gap-3">
+                                          {feedbackMode === recording.id ? (
+                                            <>
+                                              <Button
+                                                size="sm"
+                                                onClick={() => submitFeedback(recording.id)}
+                                                disabled={submittingFeedback || !feedbackText.trim()}
+                                                className="rounded-none uppercase tracking-[0.14em] text-[11px] font-medium bg-zinc-950 hover:bg-zinc-800"
+                                              >
+                                                {submittingFeedback ? 'Saving' : 'Save feedback'}
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={cancelFeedback}
+                                                disabled={submittingFeedback}
+                                                className="rounded-none uppercase tracking-[0.14em] text-[11px] font-medium text-zinc-600 hover:bg-transparent hover:text-zinc-950"
+                                              >
+                                                Cancel
+                                              </Button>
+                                            </>
+                                          ) : (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() =>
+                                                startFeedback(
+                                                  recording.id,
+                                                  recording.teacherFeedback || '',
+                                                )
+                                              }
+                                              className="rounded-none border-zinc-300 uppercase tracking-[0.14em] text-[11px] font-medium hover:bg-zinc-950 hover:text-white hover:border-zinc-950 transition-colors"
+                                            >
+                                              {recording.teacherFeedback ? 'Edit feedback' : 'Add feedback'}
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {recording.recordingMode === 'ai_graded' && (
+                                        <AIAnalysisPanel
+                                          recordingId={recording.id}
+                                          letterGrade={recording.letterGrade}
+                                          accuracyScore={
+                                            recording.accuracyScore !== null
+                                              ? Number(recording.accuracyScore)
+                                              : null
+                                          }
+                                          wpmScore={
+                                            recording.wpmScore !== null
+                                              ? Number(recording.wpmScore)
+                                              : null
+                                          }
+                                          wcpm={
+                                            recording.wcpm !== null ? Number(recording.wcpm) : null
+                                          }
+                                          fluencyScore={
+                                            recording.fluencyScore !== null
+                                              ? Number(recording.fluencyScore)
+                                              : null
+                                          }
+                                          eslWcpmBand={recording.eslWcpmBand}
+                                          nativeWcpmBand={recording.nativeWcpmBand}
+                                          phrasingScore={recording.phrasingScore}
+                                          smoothnessScore={recording.smoothnessScore}
+                                          paceScore={recording.paceScore}
+                                          teacherSummary={recording.teacherSummary}
+                                          teacherSummaryZh={recording.teacherSummaryZh}
+                                          transcript={recording.transcript}
+                                          analysisJson={recording.analysisJson as never}
+                                          onReanalyzed={fetchRecordings}
+                                        />
+                                      )}
+
+                                      {feedbackMode === recording.id && (
+                                        <div className="border-t border-zinc-200 pt-5 space-y-5">
+                                          <div>
+                                            <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-3">
+                                              Quick rating
+                                            </div>
+                                            <div className="flex gap-2 flex-wrap">
+                                              {QUICK_RATINGS.map((rating) => {
+                                                const isSelected = selectedRating === rating.emoji;
+                                                return (
+                                                  <button
+                                                    key={rating.emoji}
+                                                    type="button"
+                                                    onClick={() => selectRating(rating)}
+                                                    disabled={submittingFeedback}
+                                                    className={`inline-flex items-center gap-2 px-3 py-2 border text-[11px] uppercase tracking-[0.14em] font-medium transition-colors ${
+                                                      isSelected
+                                                        ? 'border-zinc-950 bg-zinc-950 text-white'
+                                                        : 'border-zinc-300 bg-white text-zinc-700 hover:border-zinc-950'
+                                                    }`}
+                                                  >
+                                                    <span className="text-base leading-none">{rating.emoji}</span>
+                                                    {rating.label}
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor={`feedback-${recording.id}`}
+                                              className="block text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-2"
+                                            >
+                                              Message
+                                              <span className="text-zinc-400 ml-1.5 normal-case tracking-normal">
+                                                — edit, or write your own
+                                              </span>
+                                            </label>
+                                            <Textarea
+                                              id={`feedback-${recording.id}`}
+                                              value={feedbackText}
+                                              onChange={(e) => setFeedbackText(e.target.value)}
+                                              placeholder="Pick a rating or type your own feedback…"
+                                              rows={3}
+                                              disabled={submittingFeedback}
+                                              className="w-full rounded-none border-zinc-300 focus-visible:border-zinc-950 focus-visible:ring-0"
+                                            />
+                                          </div>
+                                          <TeacherReplyRecorder
+                                            recordingId={recording.id}
+                                            initialAudioUrl={recording.teacherReplyAudioUrl}
+                                            initialDurationSeconds={recording.teacherReplyDurationSeconds}
+                                            onChange={fetchRecordings}
+                                            disabled={submittingFeedback}
+                                          />
+                                          <p className="text-[11px] text-zinc-500">
+                                            Applies to attempt #{recording.attemptNumber}; marks it reviewed.
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {recording.teacherFeedback && feedbackMode !== recording.id && (
+                                        <div className="border-l-2 border-zinc-900 pl-5 py-1">
+                                          <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-1.5">
+                                            Feedback · Attempt {recording.attemptNumber}
+                                          </div>
+                                          <p className="text-sm text-zinc-900 leading-relaxed max-w-[60ch]">
+                                            {recording.teacherFeedback}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div>
-                                    <label htmlFor={`feedback-${recording.id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                      Message <span className="font-normal text-gray-400">(edit or write your own)</span>
-                                    </label>
-                                    <Textarea
-                                      id={`feedback-${recording.id}`}
-                                      value={feedbackText}
-                                      onChange={(e) => setFeedbackText(e.target.value)}
-                                      placeholder="Pick a rating above or type your own feedback..."
-                                      rows={3}
-                                      disabled={submittingFeedback}
-                                      className="w-full"
-                                    />
-                                  </div>
-                                  <TeacherReplyRecorder
-                                    recordingId={recording.id}
-                                    initialAudioUrl={recording.teacherReplyAudioUrl}
-                                    initialDurationSeconds={recording.teacherReplyDurationSeconds}
-                                    onChange={fetchRecordings}
-                                    disabled={submittingFeedback}
-                                  />
-                                  <p className="text-xs text-gray-500">
-                                    This feedback applies to attempt #{recording.attemptNumber} and will mark it as reviewed.
-                                  </p>
-                                </div>
-                              )}
-
-                              {recording.teacherFeedback && feedbackMode !== recording.id && (
-                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <h4 className="font-medium text-blue-800 mb-1 text-sm">Feedback for Attempt #{recording.attemptNumber}:</h4>
-                                  <p className="text-blue-700 text-sm">{recording.teacherFeedback}</p>
-                                </div>
-                              )}
+                                );
+                              })}
                             </div>
-                          ))}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                )}
-              </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
               );
             })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
