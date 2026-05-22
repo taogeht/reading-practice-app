@@ -75,12 +75,14 @@ type FilterKey = 'all' | 'pending' | 'reviewed' | 'flagged';
 const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
 // Status rendered as a low-saturation dot + text label (Linear /
-// Stripe idiom), never a filled chip.
-const STATUS_TONE: Record<Recording['status'], { dot: string; text: string }> = {
-  pending: { dot: 'bg-amber-700', text: 'text-amber-800' },
-  reviewed: { dot: 'bg-stone-400', text: 'text-stone-600' },
-  flagged: { dot: 'bg-rose-700', text: 'text-rose-800' },
-};
+// Stripe idiom), never a filled chip. Falls back to the neutral
+// (reviewed) tone for null / unknown values so a single bad row
+// can't crash the page.
+function statusTone(status: Recording['status'] | string | null | undefined): { dot: string; text: string } {
+  if (status === 'pending') return { dot: 'bg-amber-700', text: 'text-amber-800' };
+  if (status === 'flagged') return { dot: 'bg-rose-700', text: 'text-rose-800' };
+  return { dot: 'bg-stone-400', text: 'text-stone-600' };
+}
 
 export default function TeacherSubmissionsPage() {
   const router = useRouter();
@@ -563,7 +565,7 @@ export default function TeacherSubmissionsPage() {
 
                             <div className="space-y-5">
                               {visibleAttempts.map((recording, idx) => {
-                                const tone = STATUS_TONE[recording.status];
+                                const tone = statusTone(recording.status);
                                 return (
                                   <div
                                     key={recording.id}
