@@ -25,12 +25,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days');
-        const days = daysParam ? parseInt(daysParam, 10) : 7;
+        // No `days` param means "all time" — skip the date filter entirely.
+        const days = daysParam ? parseInt(daysParam, 10) : null;
 
-        // Calculate date range
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
-        startDate.setHours(0, 0, 0, 0);
+        const startDate = days !== null ? new Date() : null;
+        if (startDate && days !== null) {
+            startDate.setDate(startDate.getDate() - days);
+            startDate.setHours(0, 0, 0, 0);
+        }
 
         const now = new Date();
         const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
@@ -61,10 +63,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                     })
                     .from(session)
                     .where(
-                        and(
-                            eq(session.userId, student.studentId),
-                            gte(session.createdAt, startDate)
-                        )
+                        startDate
+                            ? and(
+                                  eq(session.userId, student.studentId),
+                                  gte(session.createdAt, startDate)
+                              )
+                            : eq(session.userId, student.studentId)
                     )
                     .orderBy(desc(session.createdAt))
                     .limit(50);
@@ -110,7 +114,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({
             activity: studentActivity,
-            daysIncluded: days,
+            daysIncluded: days ?? 'all',
             totalStudents: enrolledStudents.length,
             studentsLoggedIn: studentActivity.filter(s => s.lastLoginAt).length,
         });

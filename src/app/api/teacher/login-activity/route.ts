@@ -23,11 +23,14 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days');
-        const days = daysParam ? parseInt(daysParam, 10) : 7;
+        // No `days` param means "all time" — skip the date filter entirely.
+        const days = daysParam ? parseInt(daysParam, 10) : null;
 
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
-        startDate.setHours(0, 0, 0, 0);
+        const startDate = days !== null ? new Date() : null;
+        if (startDate && days !== null) {
+            startDate.setDate(startDate.getDate() - days);
+            startDate.setHours(0, 0, 0, 0);
+        }
 
         const now = new Date();
         const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
@@ -52,7 +55,7 @@ export async function GET(request: NextRequest) {
         if (teacherClasses.length === 0) {
             return NextResponse.json({
                 activity: [],
-                daysIncluded: days,
+                daysIncluded: days ?? 'all',
                 totalEnrollments: 0,
                 studentsLoggedIn: 0,
             });
@@ -77,7 +80,7 @@ export async function GET(request: NextRequest) {
         if (enrollments.length === 0) {
             return NextResponse.json({
                 activity: [],
-                daysIncluded: days,
+                daysIncluded: days ?? 'all',
                 totalEnrollments: 0,
                 studentsLoggedIn: 0,
             });
@@ -93,7 +96,11 @@ export async function GET(request: NextRequest) {
                 lastActivityAt: session.lastActivityAt,
             })
             .from(session)
-            .where(and(inArray(session.userId, studentIds), gte(session.createdAt, startDate)))
+            .where(
+                startDate
+                    ? and(inArray(session.userId, studentIds), gte(session.createdAt, startDate))
+                    : inArray(session.userId, studentIds)
+            )
             .orderBy(desc(session.createdAt))
             .limit(50 * studentIds.length);
 
@@ -153,7 +160,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             activity,
-            daysIncluded: days,
+            daysIncluded: days ?? 'all',
             totalEnrollments: enrollments.length,
             studentsLoggedIn,
             uniqueStudents: studentIds.length,
