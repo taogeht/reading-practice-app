@@ -261,6 +261,7 @@ export const assignments = pgTable(
     assignedAt: timestamp('assigned_at', { withTimezone: true }),
     dueAt: timestamp('due_at', { withTimezone: true }),
     maxAttempts: integer('max_attempts').default(3),
+    maxRecordingSeconds: integer('max_recording_seconds').default(60).notNull(),
     instructions: text('instructions'),
     // 'teacher_review' (default, current behavior) | 'ai_graded' (Whisper-based
     // auto-grading). Opt-in per assignment; the option is also gated by the

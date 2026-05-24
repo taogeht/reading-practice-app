@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AudioRecorder } from "@/components/audio/audio-recorder";
+import { PlaybackSpeedSlider } from "@/components/audio/playback-speed-slider";
 import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOpen, StopCircle } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
+import { usePlaybackRate } from "@/hooks/use-playback-rate";
 
 import type { StoryTtsAudio } from "@/types/story";
 
@@ -33,6 +35,8 @@ interface Assignment {
   instructions: string | null;
   story: Story;
   attempts: number;
+  maxAttempts: number;
+  maxRecordingSeconds: number;
   status: 'pending' | 'completed';
   teacherFeedback: string | null;
   reviewedAt: string | null;
@@ -53,12 +57,24 @@ export default function AssignmentPracticePage() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [storyAudio, setStoryAudio] = useState<HTMLAudioElement | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
+  const [playbackRate, setPlaybackRate] = usePlaybackRate();
+  // Bump locally on each successful submit. `assignment.attempts` is the
+  // server count at page load; the live count = server count + this delta.
+  const [submittedThisSession, setSubmittedThisSession] = useState(0);
 
   useEffect(() => {
     if (assignmentId) {
       fetchAssignment();
     }
   }, [assignmentId]);
+
+  // Apply live rate changes while audio is playing so dragging the slider
+  // mid-playback takes effect immediately without restarting the track.
+  useEffect(() => {
+    if (storyAudio) {
+      storyAudio.playbackRate = playbackRate;
+    }
+  }, [storyAudio, playbackRate]);
 
   useEffect(() => {
     return () => {
@@ -120,6 +136,7 @@ export default function AssignmentPracticePage() {
       setStoryAudio(null);
     } else {
       const audio = new Audio(currentVoice.url);
+      audio.playbackRate = playbackRate;
       setStoryAudio(audio);
       setIsPlayingStory(true);
 
@@ -144,6 +161,9 @@ export default function AssignmentPracticePage() {
 
   const handleRecordingComplete = async (result: any) => {
     setRecordingResult(result);
+    if (result?.success) {
+      setSubmittedThisSession((n) => n + 1);
+    }
   };
 
   const handleStartOver = () => {
@@ -180,6 +200,11 @@ export default function AssignmentPracticePage() {
     );
   }
 
+  const attemptsUsed = (assignment?.attempts ?? 0) + submittedThisSession;
+  const maxAttempts = assignment?.maxAttempts ?? 3;
+  const attemptsRemaining = Math.max(0, maxAttempts - attemptsUsed);
+  const maxRecordingSeconds = assignment?.maxRecordingSeconds ?? 60;
+
   if (recordingResult?.success) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-100">
@@ -212,15 +237,21 @@ export default function AssignmentPracticePage() {
                 <Button onClick={handleBackToDashboard} className="w-full" size="lg">
                   Back to Dashboard
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleStartOver}
-                  className="w-full"
-                  size="lg"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Record Again
-                </Button>
+                {attemptsRemaining > 0 ? (
+                  <Button
+                    variant="outline"
+                    onClick={handleStartOver}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Record Again ({attemptsRemaining} {attemptsRemaining === 1 ? 'try' : 'tries'} left)
+                  </Button>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    You've used all {maxAttempts} {maxAttempts === 1 ? 'attempt' : 'attempts'} for this assignment.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -305,6 +336,7 @@ export default function AssignmentPracticePage() {
                     </>
                   )}
                 </Button>
+                <PlaybackSpeedSlider rate={playbackRate} onChange={setPlaybackRate} />
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">Voice:</span> {currentVoice.label ?? currentVoice.voiceId ?? 'Default'}
                   {currentVoice.durationSeconds && (
@@ -367,13 +399,22 @@ export default function AssignmentPracticePage() {
           </CardHeader>
           <CardContent className="p-8">
             <div className="text-center">
-              <AudioRecorder
-                onRecordingComplete={handleRecordingComplete}
-                maxDurationSeconds={60}
-                showLivePreview={true}
-                disabled={false}
-                assignmentId={assignment.id}
-              />
+              <div className="mb-4 text-sm text-gray-600">
+                Attempt {Math.min(attemptsUsed + 1, maxAttempts)} of {maxAttempts} · up to {maxRecordingSeconds}s
+              </div>
+              {attemptsRemaining > 0 ? (
+                <AudioRecorder
+                  onRecordingComplete={handleRecordingComplete}
+                  maxDurationSeconds={maxRecordingSeconds}
+                  showLivePreview={true}
+                  disabled={false}
+                  assignmentId={assignment.id}
+                />
+              ) : (
+                <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-900">
+                  You've used all {maxAttempts} {maxAttempts === 1 ? 'attempt' : 'attempts'} for this assignment. Your teacher will review what you've submitted.
+                </div>
+              )}
 
               {recordingResult && !recordingResult.success && (
                 <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-lg">

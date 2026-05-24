@@ -44,6 +44,7 @@ export async function GET(
         assignedAt: assignments.assignedAt,
         dueAt: assignments.dueAt,
         maxAttempts: assignments.maxAttempts,
+        maxRecordingSeconds: assignments.maxRecordingSeconds,
         instructions: assignments.instructions,
         createdAt: assignments.createdAt,
         storyId: assignments.storyId,
@@ -139,6 +140,7 @@ export async function GET(
           description: assignmentData.description,
           dueAt: assignmentData.dueAt,
           maxAttempts: assignmentData.maxAttempts,
+          maxRecordingSeconds: assignmentData.maxRecordingSeconds,
           instructions: assignmentData.instructions,
           story: {
             id: assignmentData.storyId,
@@ -237,6 +239,7 @@ export async function GET(
           createdAt: assignmentData.createdAt,
           dueAt: assignmentData.dueAt,
           maxAttempts: assignmentData.maxAttempts,
+          maxRecordingSeconds: assignmentData.maxRecordingSeconds,
           instructions: assignmentData.instructions,
           storyId: assignmentData.storyId,
           storyTitle: assignmentData.storyTitle,
@@ -303,9 +306,16 @@ export async function PUT(
       classId,
       dueAt,
       maxAttempts,
+      maxRecordingSeconds,
       instructions,
       status,
     } = body;
+
+    const clampedAttempts = Math.min(20, Math.max(1, Math.floor(Number(maxAttempts) || 3)));
+    const clampedDuration = Math.min(
+      600,
+      Math.max(15, Math.floor(Number(maxRecordingSeconds) || 60)),
+    );
 
     // Validate required fields
     if (!title || !storyId || !classId) {
@@ -329,7 +339,8 @@ export async function PUT(
         storyId,
         classId,
         dueAt: dueAt ? new Date(dueAt) : null,
-        maxAttempts: maxAttempts || 3,
+        maxAttempts: clampedAttempts,
+        maxRecordingSeconds: clampedDuration,
         instructions,
         status: status || 'published',
       })

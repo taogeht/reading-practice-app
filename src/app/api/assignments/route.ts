@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
         assignedAt: assignments.assignedAt,
         dueAt: assignments.dueAt,
         maxAttempts: assignments.maxAttempts,
+        maxRecordingSeconds: assignments.maxRecordingSeconds,
         instructions: assignments.instructions,
         recordingMode: assignments.recordingMode,
         createdAt: assignments.createdAt,
@@ -202,6 +203,7 @@ export async function POST(request: NextRequest) {
       classId,
       dueAt,
       maxAttempts = 3,
+      maxRecordingSeconds = 60,
       instructions,
       recordingMode = 'teacher_review',
     } = body;
@@ -213,6 +215,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const clampedAttempts = Math.min(20, Math.max(1, Math.floor(Number(maxAttempts) || 3)));
+    const clampedDuration = Math.min(600, Math.max(15, Math.floor(Number(maxRecordingSeconds) || 60)));
 
     // Server-side guard: only accept ai_graded when the env flag is on, even
     // if the client sends it. Belt-and-suspenders for the feature flag.
@@ -263,7 +268,8 @@ export async function POST(request: NextRequest) {
         status: 'published',
         assignedAt: new Date(),
         dueAt: dueAt ? new Date(dueAt) : null,
-        maxAttempts,
+        maxAttempts: clampedAttempts,
+        maxRecordingSeconds: clampedDuration,
         instructions,
         recordingMode,
       })

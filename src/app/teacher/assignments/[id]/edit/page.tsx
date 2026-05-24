@@ -35,6 +35,8 @@ const assignmentSchema = z.object({
   classId: z.string().min(1, "Please select a class"),
   instructions: z.string().optional(),
   status: z.enum(['draft', 'published', 'archived']).default('published'),
+  maxAttempts: z.coerce.number().int().min(1, "At least 1 attempt").max(20, "20 max").default(3),
+  maxRecordingSeconds: z.coerce.number().int().min(15, "At least 15 seconds").max(600, "10 minute max").default(60),
 });
 
 type AssignmentFormData = z.infer<typeof assignmentSchema>;
@@ -64,6 +66,8 @@ interface Assignment {
   instructions: string | null;
   storyId: string;
   classId: string;
+  maxAttempts: number | null;
+  maxRecordingSeconds: number | null;
 }
 
 export default function EditAssignmentPage() {
@@ -85,6 +89,8 @@ export default function EditAssignmentPage() {
       classId: "",
       instructions: "",
       status: "published",
+      maxAttempts: 3,
+      maxRecordingSeconds: 60,
     },
   });
 
@@ -123,6 +129,8 @@ export default function EditAssignmentPage() {
           classId: assignment.classId,
           instructions: assignment.instructions || "",
           status: assignment.status as 'draft' | 'published' | 'archived',
+          maxAttempts: assignment.maxAttempts ?? 3,
+          maxRecordingSeconds: assignment.maxRecordingSeconds ?? 60,
         });
       } else if (assignmentResponse.status === 404) {
         setError('Assignment not found');
@@ -416,6 +424,38 @@ export default function EditAssignmentPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Recording limits */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="maxAttempts"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Attempts allowed</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={1} max={20} step={1} {...field} />
+                      </FormControl>
+                      <FormDescription>Default 3. Range 1–20.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="maxRecordingSeconds"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max recording length (sec)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={15} max={600} step={5} {...field} />
+                      </FormControl>
+                      <FormDescription>Default 60. Range 15–600.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button

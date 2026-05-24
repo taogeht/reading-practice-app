@@ -152,8 +152,14 @@ export function AudioRecorder({
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    // Guard on the MediaRecorder's own state — NOT on the React `isRecording`
+    // state. This function is called from inside the setInterval closure
+    // captured during startRecording, where `isRecording` was still false
+    // (the setIsRecording(true) call hadn't committed yet). That made the
+    // 60s auto-stop a no-op for years.
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();
       setIsRecording(false);
 
       if (timerRef.current) {

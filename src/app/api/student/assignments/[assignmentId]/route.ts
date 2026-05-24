@@ -57,6 +57,7 @@ export async function GET(
         assignedAt: assignments.assignedAt,
         dueAt: assignments.dueAt,
         maxAttempts: assignments.maxAttempts,
+        maxRecordingSeconds: assignments.maxRecordingSeconds,
         instructions: assignments.instructions,
         className: classes.name,
         // Story details
@@ -138,6 +139,7 @@ export async function GET(
       instructions: assignment.instructions,
       dueAt: assignment.dueAt?.toISOString() || null,
       maxAttempts: assignment.maxAttempts || 3,
+      maxRecordingSeconds: assignment.maxRecordingSeconds || 60,
       attempts: studentRecordings.length,
       status: completedRecordings.length > 0 ? 'completed' as const : 'pending' as const,
       bestScore: bestScore ? Math.round(bestScore) : null,
