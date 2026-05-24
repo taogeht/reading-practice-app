@@ -29,7 +29,9 @@ import {
   X,
 } from 'lucide-react';
 import { useHeartbeat } from '@/hooks/use-heartbeat';
+import { usePlaybackRate } from '@/hooks/use-playback-rate';
 import { PageRecordingPanel } from '@/components/recordings/page-recording-panel';
+import { PlaybackSpeedSlider } from '@/components/audio/playback-speed-slider';
 
 // ---------- Types ----------
 
@@ -546,6 +548,18 @@ function ReaderView({
   onNext: () => void;
 }) {
   const isLast = currentIndex === totalPages - 1;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playbackRate, setPlaybackRate] = usePlaybackRate();
+
+  // Keep the live audio element in sync with the slider. The element is
+  // remounted on every page change (keyed by audioUrl), so onLoadedMetadata
+  // re-applies the rate after the new src has loaded.
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate, page.audioUrl]);
+
   // Keyed wrapper triggers a fresh CSS transition on each page change.
   // The `data-direction` attribute drives the slide direction in the
   // (very compact) animation classes below.
@@ -571,15 +585,24 @@ function ReaderView({
           {page.text}
         </p>
         {page.audioUrl && (
-          <div className="mt-4 max-w-2xl mx-auto flex justify-center">
+          <div className="mt-4 max-w-2xl mx-auto flex flex-col items-center gap-2">
+            <PlaybackSpeedSlider
+              rate={playbackRate}
+              onChange={setPlaybackRate}
+              className="w-full max-w-md"
+            />
             {/* Keyed by page.audioUrl so navigating to a new page mounts
                 a fresh element — browsers don't reliably restart playback
                 on a src change alone. */}
             <audio
               key={page.audioUrl}
+              ref={audioRef}
               controls
               preload="none"
               src={page.audioUrl}
+              onLoadedMetadata={(e) => {
+                e.currentTarget.playbackRate = playbackRate;
+              }}
               className="w-full max-w-md"
             />
           </div>
