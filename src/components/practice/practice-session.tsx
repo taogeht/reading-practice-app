@@ -5,9 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2, Wand2, Sparkles, Volume2 } from 'lucide-react';
-import type { UnitInfo } from '@/lib/practice/units';
 
 type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder' | 'phonics';
+
+// Picker shapes from /api/student/practice/available-units (book-grouped).
+interface PickerUnit {
+  unit: number;
+  topic: string;
+  emoji?: string;
+}
+interface PickerBook {
+  slug: string;
+  title: string;
+  units: PickerUnit[];
+}
 
 // `kind` is server-set on phonics questions; the renderer uses it to decide
 // whether to show a Play button (listen) vs a plain MCQ (rhyme / sound).
@@ -77,9 +88,9 @@ function fallbackSpeak(word: string) {
 type View =
   | { name: 'picker' }
   | { name: 'loading' }
-  | { name: 'quiz'; unit: number; questions: Question[]; index: number; correctCount: number }
-  | { name: 'results'; unit: number; correctCount: number; total: number }
-  | { name: 'empty'; unit: number; message: string };
+  | { name: 'quiz'; book: string; unit: number; questions: Question[]; index: number; correctCount: number }
+  | { name: 'results'; book: string; unit: number; correctCount: number; total: number }
+  | { name: 'empty'; book: string; unit: number; message: string };
 
 type SessionLength = 5 | 10 | 20;
 
@@ -95,7 +106,7 @@ export function PracticeSession() {
     firstTryBonus: number;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [availableUnits, setAvailableUnits] = useState<UnitInfo[] | null>(null);
+  const [books, setBooks] = useState<PickerBook[] | null>(null);
   const [sessionLength, setSessionLength] = useState<SessionLength>(5);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -105,19 +116,25 @@ export function PracticeSession() {
       try {
         const res = await fetch('/api/student/practice/available-units');
         if (!res.ok) {
-          if (!cancelled) setAvailableUnits([]);
+          if (!cancelled) setBooks([]);
           return;
         }
         const data = await res.json();
-        if (!cancelled) setAvailableUnits(data.units || []);
+        if (!cancelled) setBooks(data.books || []);
       } catch {
-        if (!cancelled) setAvailableUnits([]);
+        if (!cancelled) setBooks([]);
       }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Flat lookup of (book, unit) → PickerUnit, for the quiz header emoji/topic.
+  const findUnit = (bookSlug: string, unit: number): PickerUnit | undefined =>
+    books?.find((b) => b.slug === bookSlug)?.units.find((u) => u.unit === unit);
+
+  const totalUnitCount = (books ?? []).reduce((sum, b) => sum + b.units.length, 0);
 
   // Auto-play the listen-kind word when its question becomes the current one.
   // The student can also tap the Play button to hear it again.
@@ -133,15 +150,18 @@ export function PracticeSession() {
     }
   }, [view]);
 
-  const startUnit = async (unit: number) => {
+  const startUnit = async (book: string, unit: number) => {
     setView({ name: 'loading' });
     try {
-      const res = await fetch(`/api/practice/session?unit=${unit}&count=${sessionLength}`);
+      const res = await fetch(
+        `/api/practice/session?book=${encodeURIComponent(book)}&unit=${unit}&count=${sessionLength}`
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to load');
       if (!data.questions || data.questions.length === 0) {
         setView({
           name: 'empty',
+          book,
           unit,
           message: data.message || 'No questions yet for this unit.',
         });
@@ -149,6 +169,7 @@ export function PracticeSession() {
       }
       setView({
         name: 'quiz',
+        book,
         unit,
         questions: data.questions,
         index: 0,
@@ -160,6 +181,7 @@ export function PracticeSession() {
     } catch {
       setView({
         name: 'empty',
+        book,
         unit,
         message: 'Something went wrong loading questions.',
       });
@@ -210,6 +232,7 @@ export function PracticeSession() {
     if (nextIndex >= view.questions.length) {
       setView({
         name: 'results',
+        book: view.book,
         unit: view.unit,
         correctCount: view.correctCount,
         total: view.questions.length,
@@ -234,11 +257,11 @@ export function PracticeSession() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {availableUnits === null ? (
+          {books === null ? (
             <div className="py-8 text-center text-gray-500 flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading units…
             </div>
-          ) : availableUnits.length === 0 ? (
+          ) : totalUnitCount === 0 ? (
             <div className="py-8 text-center text-gray-500">
               No practice units are turned on for your class yet. Ask your teacher!
             </div>
@@ -268,19 +291,29 @@ export function PracticeSession() {
                   })}
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {availableUnits.map((u) => (
-                  <button
-                    key={u.unit}
-                    onClick={() => startUnit(u.unit)}
-                    className="text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition rounded-xl p-4 cursor-pointer"
-                  >
-                    <div className="text-3xl mb-1">{u.emoji}</div>
-                    <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
-                      Unit {u.unit}
+              <div className="space-y-5">
+                {books.map((b) => (
+                  <div key={b.slug}>
+                    {/* Book heading only when more than one book is available. */}
+                    {books.length > 1 && (
+                      <div className="text-sm font-bold text-gray-700 mb-2">{b.title}</div>
+                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {b.units.map((u) => (
+                        <button
+                          key={u.unit}
+                          onClick={() => startUnit(b.slug, u.unit)}
+                          className="text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition rounded-xl p-4 cursor-pointer"
+                        >
+                          {u.emoji && <div className="text-3xl mb-1">{u.emoji}</div>}
+                          <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
+                            Unit {u.unit}
+                          </div>
+                          <div className="text-sm font-bold text-gray-900">{u.topic}</div>
+                        </button>
+                      ))}
                     </div>
-                    <div className="text-sm font-bold text-gray-900">{u.topic}</div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </>
@@ -331,7 +364,7 @@ export function PracticeSession() {
             <div className="text-gray-600 mt-1">{pct}% correct</div>
           </div>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => startUnit(view.unit)}>
+            <Button onClick={() => startUnit(view.book, view.unit)}>
               <RotateCw className="w-4 h-4 mr-2" />
               Try again
             </Button>
@@ -347,7 +380,7 @@ export function PracticeSession() {
   // --- Quiz ---
   const question = view.questions[view.index];
   const isAnswered = feedback !== null;
-  const unitInfo = (availableUnits ?? []).find((u) => u.unit === view.unit);
+  const unitInfo = findUnit(view.book, view.unit);
   const phonics = question.questionType === 'phonics' ? (question.payload ?? null) : null;
   const phonicsKind = phonics?.kind ?? null;
 

@@ -4,32 +4,51 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Loader2, ListChecks, Check } from 'lucide-react';
-import type { UnitInfo } from '@/lib/practice/units';
+import { BOOKS, DEFAULT_BOOK_SLUG, type BookSlug } from '@/lib/practice/books';
 
 interface ClassPracticeUnitsSectionProps {
   classId: string;
   defaultExpanded?: boolean;
 }
 
+// Mirrors the API's BookUnitInfo. Defined locally because book-units.ts is
+// server-only (it reads the curriculum JSON from disk).
+interface PickerUnit {
+  unit: number;
+  topic: string;
+  emoji?: string;
+}
+
+// Only books that actually have curriculum can be configured.
+const SELECTABLE_BOOKS = BOOKS.filter((b) => b.availableUnits.length > 0);
+
 export function ClassPracticeUnitsSection({
   classId,
   defaultExpanded = false,
 }: ClassPracticeUnitsSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const [available, setAvailable] = useState<UnitInfo[]>([]);
+  const [book, setBook] = useState<BookSlug>(
+    SELECTABLE_BOOKS.some((b) => b.slug === DEFAULT_BOOK_SLUG)
+      ? DEFAULT_BOOK_SLUG
+      : (SELECTABLE_BOOKS[0]?.slug ?? DEFAULT_BOOK_SLUG)
+  );
+  const [available, setAvailable] = useState<PickerUnit[]>([]);
   const [enabled, setEnabled] = useState<Set<number>>(new Set());
   const [serverEnabled, setServerEnabled] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Re-fetch whenever the class or the selected book changes.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/teacher/classes/${classId}/practice-units`);
+        const res = await fetch(
+          `/api/teacher/classes/${classId}/practice-units?book=${encodeURIComponent(book)}`
+        );
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || 'Failed to load practice units');
         if (cancelled) return;
@@ -45,7 +64,7 @@ export function ClassPracticeUnitsSection({
     return () => {
       cancelled = true;
     };
-  }, [classId]);
+  }, [classId, book]);
 
   const toggle = (unit: number) => {
     setEnabled((prev) => {
@@ -67,7 +86,7 @@ export function ClassPracticeUnitsSection({
       const res = await fetch(`/api/teacher/classes/${classId}/practice-units`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ units: Array.from(enabled) }),
+        body: JSON.stringify({ bookSlug: book, units: Array.from(enabled) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to save');
@@ -94,8 +113,8 @@ export function ClassPracticeUnitsSection({
               {loading
                 ? 'Loading…'
                 : serverEnabled.size === 0
-                  ? 'No units enabled — students see nothing in their picker'
-                  : `${serverEnabled.size} unit${serverEnabled.size === 1 ? '' : 's'} enabled for this class`}
+                  ? 'No units enabled for this book — students see nothing in their picker'
+                  : `${serverEnabled.size} unit${serverEnabled.size === 1 ? '' : 's'} enabled for this book`}
             </p>
           </div>
         </div>
@@ -108,6 +127,28 @@ export function ClassPracticeUnitsSection({
 
       {isExpanded && (
         <CardContent className="pt-0 border-t space-y-4">
+          {/* Book selector — only shown when more than one book has curriculum. */}
+          {SELECTABLE_BOOKS.length > 1 && (
+            <div className="flex items-center gap-2 mt-4">
+              <label htmlFor="practice-book" className="text-sm font-medium text-gray-700">
+                Book
+              </label>
+              <select
+                id="practice-book"
+                value={book}
+                onChange={(e) => setBook(e.target.value as BookSlug)}
+                disabled={saving}
+                className="rounded-md border border-gray-200 px-2 py-1.5 text-sm"
+              >
+                {SELECTABLE_BOOKS.map((b) => (
+                  <option key={b.slug} value={b.slug}>
+                    {b.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-6 text-gray-500">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -136,7 +177,7 @@ export function ClassPracticeUnitsSection({
                             : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50/50'
                         }`}
                       >
-                        <span className="text-base">{u.emoji}</span>
+                        {u.emoji && <span className="text-base">{u.emoji}</span>}
                         <span>Unit {u.unit}</span>
                         <span className="text-xs text-gray-500 hidden sm:inline">— {u.topic}</span>
                         {isOn && <Check className="w-4 h-4 text-emerald-600" />}

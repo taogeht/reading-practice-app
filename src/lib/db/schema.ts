@@ -887,11 +887,20 @@ export const classPracticeUnits = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    // Which book this enabled unit belongs to. A class can enable units from
+    // more than one book at once (e.g. review an earlier book while starting a
+    // new one), so uniqueness is on (class, book, unit) — unit alone isn't
+    // unique across the five-book curriculum.
+    bookSlug: varchar('book_slug', { length: 50 }).notNull().default('family-friends-1'),
     unit: integer('unit').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({
-    uniqueClassUnit: uniqueIndex('unique_class_practice_unit').on(table.classId, table.unit),
+    uniqueClassBookUnit: uniqueIndex('unique_class_practice_book_unit').on(
+      table.classId,
+      table.bookSlug,
+      table.unit
+    ),
     classIdIdx: index('idx_class_practice_units_class_id').on(table.classId),
   })
 );

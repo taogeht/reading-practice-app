@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { logError } from '@/lib/logger';
-import { DEFAULT_BOOK_SLUG } from '@/lib/practice/books';
+import { DEFAULT_BOOK_SLUG, isValidBookSlug } from '@/lib/practice/books';
 import { ensurePhonicsAudioBatch } from '@/lib/tts/phonics-audio';
 
 export const runtime = 'nodejs';
@@ -84,9 +84,12 @@ export async function GET(request: NextRequest) {
     const unitParam = url.searchParams.get('unit');
     const requestedUnit = unitParam ? parseInt(unitParam, 10) : NaN;
 
-    // Always FAF1 for now — when other books get curriculum, route by class's
-    // currentBookSlug (not yet wired).
-    const bookSlug = DEFAULT_BOOK_SLUG;
+    // Book comes from ?book=; defaults to FAF1. The phonics deck is currently
+    // single-book in the UI, but the route honors the param so a book-aware
+    // deck can pass it without a route change.
+    const bookSlugParam = url.searchParams.get('book');
+    const bookSlug =
+      bookSlugParam && isValidBookSlug(bookSlugParam) ? bookSlugParam : DEFAULT_BOOK_SLUG;
 
     const availableUnits = await listUnitsWithPhonics(bookSlug);
 

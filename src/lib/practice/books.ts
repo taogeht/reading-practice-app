@@ -29,7 +29,7 @@ export const BOOKS: PracticeBook[] = [
     slug: 'family-friends-1',
     title: 'Family and Friends 1',
     shortLabel: 'FAF 1',
-    availableUnits: [12, 13, 14, 15],
+    availableUnits: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
   },
   {
     slug: 'family-friends-2',

@@ -8,7 +8,7 @@ import {
   practiceAttempts,
   practiceQuestions,
 } from '@/lib/db/schema';
-import { isAvailablePracticeUnit } from '@/lib/practice/units';
+import { DEFAULT_BOOK_SLUG, isValidBookSlug, isUnitAvailableForBook } from '@/lib/practice/books';
 import { ensurePhonicsAudioBatch } from '@/lib/tts/phonics-audio';
 
 export const runtime = 'nodejs';
@@ -67,8 +67,11 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url);
+  const bookSlugParam = url.searchParams.get('book');
+  const bookSlug =
+    bookSlugParam && isValidBookSlug(bookSlugParam) ? bookSlugParam : DEFAULT_BOOK_SLUG;
   const unit = Number(url.searchParams.get('unit'));
-  if (!isAvailablePracticeUnit(unit)) {
+  if (!isUnitAvailableForBook(bookSlug, unit)) {
     return NextResponse.json({ error: 'Invalid unit' }, { status: 400 });
   }
 
@@ -83,7 +86,13 @@ export async function GET(request: NextRequest) {
     .select({ unit: classPracticeUnits.unit })
     .from(classPracticeUnits)
     .innerJoin(classEnrollments, eq(classEnrollments.classId, classPracticeUnits.classId))
-    .where(and(eq(classEnrollments.studentId, user.id), eq(classPracticeUnits.unit, unit)))
+    .where(
+      and(
+        eq(classEnrollments.studentId, user.id),
+        eq(classPracticeUnits.bookSlug, bookSlug),
+        eq(classPracticeUnits.unit, unit)
+      )
+    )
     .limit(1);
   if (enabled.length === 0) {
     return NextResponse.json(
@@ -105,7 +114,13 @@ export async function GET(request: NextRequest) {
       timesServed: practiceQuestions.timesServed,
     })
     .from(practiceQuestions)
-    .where(and(eq(practiceQuestions.unit, unit), eq(practiceQuestions.active, true)));
+    .where(
+      and(
+        eq(practiceQuestions.bookSlug, bookSlug),
+        eq(practiceQuestions.unit, unit),
+        eq(practiceQuestions.active, true)
+      )
+    );
 
   // Phonics questions are gated behind a feature flag while the deck UI is
   // still being polished. Until enabled, filter them out so any rows a

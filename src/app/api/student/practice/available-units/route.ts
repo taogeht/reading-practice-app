@@ -3,13 +3,16 @@ import { eq, inArray } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classEnrollments, classPracticeUnits } from '@/lib/db/schema';
-import { UNITS } from '@/lib/practice/units';
+import { BOOKS, isValidBookSlug } from '@/lib/practice/books';
+import { getBookUnits } from '@/lib/practice/book-units';
 
 export const runtime = 'nodejs';
 
 // GET /api/student/practice/available-units
-// Returns the practice unit picker entries for this student, restricted to
-// units enabled on at least one of their enrolled classes.
+// Returns the practice picker entries for this student, grouped by book and
+// restricted to (book, unit) pairs enabled on at least one of their enrolled
+// classes.
+// → { books: [{ slug, title, units: [{ unit, topic, emoji }] }] }
 export async function GET(_request: NextRequest) {
     const user = await getCurrentUser();
     if (!user || user.role !== 'student') {
@@ -23,16 +26,34 @@ export async function GET(_request: NextRequest) {
 
     const classIds = enrollments.map((e) => e.classId);
     if (classIds.length === 0) {
-        return NextResponse.json({ units: [] });
+        return NextResponse.json({ books: [] });
     }
 
     const enabled = await db
-        .select({ unit: classPracticeUnits.unit })
+        .select({ bookSlug: classPracticeUnits.bookSlug, unit: classPracticeUnits.unit })
         .from(classPracticeUnits)
         .where(inArray(classPracticeUnits.classId, classIds));
 
-    const enabledSet = new Set(enabled.map((row) => row.unit));
-    const units = UNITS.filter((u) => enabledSet.has(u.unit));
+    // Group enabled units by book slug.
+    const enabledByBook = new Map<string, Set<number>>();
+    for (const row of enabled) {
+        if (!isValidBookSlug(row.bookSlug)) continue;
+        const set = enabledByBook.get(row.bookSlug) ?? new Set<number>();
+        set.add(row.unit);
+        enabledByBook.set(row.bookSlug, set);
+    }
 
-    return NextResponse.json({ units });
+    // Build book-grouped output in canonical BOOKS order, attaching each unit's
+    // topic/emoji from the curriculum JSON. Skip books with nothing enabled.
+    const books = [];
+    for (const book of BOOKS) {
+        const enabledUnits = enabledByBook.get(book.slug);
+        if (!enabledUnits || enabledUnits.size === 0) continue;
+        const catalog = await getBookUnits(book.slug);
+        const units = catalog.filter((u) => enabledUnits.has(u.unit));
+        if (units.length === 0) continue;
+        books.push({ slug: book.slug, title: book.title, units });
+    }
+
+    return NextResponse.json({ books });
 }

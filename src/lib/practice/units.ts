@@ -34,10 +34,19 @@ export function isValidUnit(n: number): boolean {
   return Number.isInteger(n) && n >= MIN_UNIT && n <= MAX_UNIT;
 }
 
-// Units with a curated curriculum JSON at src/lib/curriculum/unit-{N}.json.
-// The practice-quiz generator only supports these — there is no PDF fallback.
-// Add a unit number here when you write its JSON.
-const PRACTICE_UNIT_NUMBERS: ReadonlySet<number> = new Set([12, 13, 14, 15]);
+// Units with a curated curriculum JSON at
+// src/lib/curriculum/family-friends-1/unit-{N}.json that has grammar_patterns
+// (the generator refuses units without them — e.g. unit 0, the vocab-only
+// spiral provider). The practice-quiz generator only supports these — there is
+// no PDF fallback. Add a unit number here when you author its JSON.
+//
+// NOTE: this set is Family-and-Friends-1-only (the legacy single-book gate).
+// Multi-book availability lives in books.ts (`availableUnits` per BookSlug);
+// see books.ts and the multi-book readiness plan before relying on this for
+// any book other than FAF1.
+const PRACTICE_UNIT_NUMBERS: ReadonlySet<number> = new Set([
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+]);
 
 export const AVAILABLE_PRACTICE_UNITS: UnitInfo[] = UNITS.filter((u) =>
   PRACTICE_UNIT_NUMBERS.has(u.unit)
