@@ -12,5 +12,41 @@
     { "word": "student",        "image": "/images/unit-4/student.png" },
     { "word": "teacher",        "image": "/images/unit-4/teacher.png" },
     { "word": "zookeeper",      "image": "/images/unit-4/zookeeper.png" }
-  ]
+  ],
+  "verbs": [],
+  "grammar_patterns": [
+    {
+      "pattern": "She's / He's a [job].",
+      "examples": [
+        "She's a cook.",
+        "He's a student.",
+        "She's a doctor."
+      ]
+    },
+    {
+      "pattern": "Is she / he a [job]? Yes, [pronoun] is. / No, [pronoun] isn't.",
+      "examples": [
+        "Is she a teacher? No, she isn't.",
+        "Is he a teacher? Yes, he is.",
+        "Is he a firefighter? No, he isn't."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "She's a cook.",
+    "He's a student.",
+    "Is she a teacher? No, she isn't.",
+    "Is he a teacher? Yes, he is.",
+    "But he is a hero!"
+  ],
+  "phonics": {
+    "sound": "initial sounds m, n, o, p",
+    "word_families": [],
+    "chant": [
+      "This is my mom, m, m, mom.",
+      "This is my nurse, n, n, nurse.",
+      "This is my orange, o, o, orange.",
+      "This is my pen, p, p, pen."
+    ]
+  }
 }

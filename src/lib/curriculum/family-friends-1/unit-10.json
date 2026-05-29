@@ -8,5 +8,53 @@
     { "word": "square",    "image": "/images/unit-10/square.png" },
     { "word": "triangle",  "image": "/images/unit-10/triangle.png" }
   ],
-  "adjectives": ["blond", "brown", "curly", "long", "short", "straight"]
+  "adjectives": ["blond", "brown", "curly", "long", "short", "straight"],
+  "colors": ["blond", "brown", "black", "blue"],
+  "grammar_patterns": [
+    {
+      "pattern": "[Pronoun] has [adjective] [object].",
+      "examples": [
+        "He has short hair.",
+        "She has blue eyes.",
+        "It has black eyes.",
+        "He has curly hair, too."
+      ]
+    },
+    {
+      "pattern": "[Pronoun] doesn't have [adjective] [object].",
+      "examples": [
+        "He doesn't have straight hair.",
+        "She doesn't have brown eyes.",
+        "But he doesn't have blue eyes."
+      ]
+    },
+    {
+      "pattern": "It's a [shape]. It has [number] sides.",
+      "examples": [
+        "It's a square! It has four sides.",
+        "It's a triangle! It has three sides.",
+        "It's a circle! It doesn't have sides."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "I have a new friend.",
+    "He has curly hair.",
+    "She has straight hair.",
+    "It has blue eyes.",
+    "He doesn't have straight hair.",
+    "She doesn't have brown eyes.",
+    "It's a square! It has four sides.",
+    "It's a circle! It doesn't have sides."
+  ],
+  "phonics": {
+    "sound": "digraph th",
+    "word_families": [],
+    "chant": [
+      "Baby Theo's in the bath,",
+      "One, two, three.",
+      "Baby Theo counts his teeth,",
+      "One, two, three."
+    ]
+  }
 }

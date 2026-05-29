@@ -1,6 +1,6 @@
 {
   "unit": 3,
-  "topic": "My body",
+  "topic": "This is my nose!",
   "vocabulary": [
     { "word": "ear",      "image": "/images/unit-3/ear.png" },
     { "word": "eye",      "image": "/images/unit-3/eye.png" },
@@ -12,5 +12,39 @@
     { "word": "hand",     "image": "/images/unit-3/hand.png" },
     { "word": "finger",   "image": "/images/unit-3/finger.png" },
     { "word": "leg",      "image": "/images/unit-3/leg.png" }
-  ]
+  ],
+  "verbs": [],
+  "grammar_patterns": [
+    {
+      "pattern": "This is [possessive] [object].",
+      "examples": [
+        "This is my nose.",
+        "This is my face."
+      ]
+    },
+    {
+      "pattern": "These are [possessive] [plural object].",
+      "examples": [
+        "These are my arms.",
+        "These are my hands."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "This is my nose.",
+    "This is my face.",
+    "These are my arms.",
+    "These are my hands.",
+    "Put it on your arms, your nose, your face, and your legs."
+  ],
+  "phonics": {
+    "sound": "initial sounds i, j, k, l",
+    "word_families": [],
+    "chant": [
+      "Look at the ink, i, i, ink.",
+      "Look at the jelly, j, j, jelly.",
+      "Look at the kite, k, k, kite.",
+      "Look at the lion, l, l, lion."
+    ]
+  }
 }

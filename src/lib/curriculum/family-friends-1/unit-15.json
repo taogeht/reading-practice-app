@@ -19,7 +19,7 @@
     { "word": "sunscreen",   "image": "/images/unit-15/sunscreen.png" },
     { "word": "the ocean",   "image": "/images/unit-15/the-ocean.png" }
   ],
-  "verbs": ["find", "go", "make", "play", "swim", "walk"],
+  "verbs": ["find", "go", "make", "play", "swim", "walk", "put on", "run"],
   "grammar_patterns": [
     {
       "pattern": "Let's [verb] [object].",
@@ -32,7 +32,8 @@
         "Let's make a sandcastle.",
         "Let's walk on the beach.",
         "Let's swim in the ocean.",
-        "Let's go in a boat."
+        "Let's go in a boat.",
+        "Let's put on sunscreen."
       ]
     },
     {
@@ -148,7 +149,7 @@
       "Bug, bug, bug",
       "Here is the sun",
       "Sun, sun, sun",
-      "Let's go and have fun",
+      "Let's all have fun",
       "Fun, fun, fun"
     ]
   },

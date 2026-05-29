@@ -12,5 +12,36 @@
     { "word": "slide",      "image": "/images/unit-5/slide.png" },
     { "word": "swing",      "image": "/images/unit-5/swing.png" },
     { "word": "tree",       "image": "/images/unit-5/tree.png" }
-  ]
+  ],
+  "verbs": [],
+  "prepositions": ["in", "on", "under"],
+  "grammar_patterns": [
+    {
+      "pattern": "Where's the [object]? It's [preposition] the [object].",
+      "examples": [
+        "Where's the ball? It's in the goal.",
+        "Where's the ball? It's on the slide.",
+        "Where's the ball? It's under the seesaw."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Where's the ball?",
+    "It's in the goal.",
+    "It's on the slide.",
+    "It's under the seesaw.",
+    "The ball's on the slide.",
+    "And now it's in the goal!"
+  ],
+  "phonics": {
+    "sound": "initial sounds q, r, s, t, u",
+    "word_families": [],
+    "chant": [
+      "Where is the queen? Q, q, queen.",
+      "Where is the rabbit? R, r, rabbit.",
+      "Where is the sofa? S, s, sofa.",
+      "Where is the tiger? T, t, tiger.",
+      "Where is the umbrella? U, u, umbrella."
+    ]
+  }
 }

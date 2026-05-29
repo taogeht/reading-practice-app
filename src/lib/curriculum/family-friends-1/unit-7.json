@@ -12,5 +12,51 @@
     { "word": "tracksuit", "image": "/images/unit-7/tracksuit.png" },
     { "word": "pants",     "image": "/images/unit-7/pants.png" },
     { "word": "t-shirt",   "image": "/images/unit-7/t-shirt.png" }
-  ]
+  ],
+  "verbs": ["put on"],
+  "colors": ["red", "orange", "blue", "green", "pink"],
+  "grammar_patterns": [
+    {
+      "pattern": "This is [possessive] [object].",
+      "examples": [
+        "This is her dress."
+      ]
+    },
+    {
+      "pattern": "These are [possessive] [plural object].",
+      "examples": [
+        "These are his shorts."
+      ]
+    },
+    {
+      "pattern": "Are these [possessive] [plural object]? Yes, they are. / No, they aren't.",
+      "examples": [
+        "Are these her socks? Yes, they are.",
+        "Are these his pants? No, they aren't."
+      ]
+    },
+    {
+      "pattern": "What color are [possessive] [plural object]? They're [color].",
+      "examples": [
+        "What color are these pants? They're pink."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "This is her dress.",
+    "These are his shorts.",
+    "Are these her socks? Yes, they are.",
+    "Are these his pants? No, they aren't.",
+    "What color are these pants? They're pink.",
+    "It's my favorite color."
+  ],
+  "phonics": {
+    "sound": "the alphabet",
+    "word_families": [],
+    "chant": [
+      "I know my ABCs, please sing along with me.",
+      "a b c d e f g h i j k l m n o p q r s t u v w x y z",
+      "I know my ABCs, please sing along with me."
+    ]
+  }
 }

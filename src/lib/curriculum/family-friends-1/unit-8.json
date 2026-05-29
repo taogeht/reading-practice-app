@@ -12,5 +12,55 @@
     { "word": "house",       "image": "/images/unit-8/house.png" },
     { "word": "downstairs",  "image": "/images/unit-8/downstairs.png" },
     { "word": "upstairs",    "image": "/images/unit-8/upstairs.png" }
-  ]
+  ],
+  "verbs": [],
+  "prepositions": ["in"],
+  "grammar_patterns": [
+    {
+      "pattern": "Where's [name]? [Pronoun]'s in the [room].",
+      "examples": [
+        "Where's Grandma? She's in the dining room.",
+        "Where's Grandpa? He's in the kitchen."
+      ]
+    },
+    {
+      "pattern": "Is [pronoun] in the [room]? No, [pronoun] isn't.",
+      "examples": [
+        "Is she in the kitchen? No, she isn't."
+      ]
+    },
+    {
+      "pattern": "Where are [names]? They're in the [room].",
+      "examples": [
+        "Where are Dad and Billy? They're in the dining room, too."
+      ]
+    },
+    {
+      "pattern": "Are they in the [room]? No, they aren't.",
+      "examples": [
+        "Are they in the living room? No, they aren't."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Where's Grandma? She's in the dining room.",
+    "Is she in the kitchen? No, she isn't.",
+    "Where are Dad and Billy? They're in the dining room, too.",
+    "Are they in the living room? No, they aren't.",
+    "This is my house."
+  ],
+  "phonics": {
+    "sound": "digraph sh",
+    "word_families": [],
+    "chant": [
+      "Shirley's shoes are red,",
+      "Her T-shirt is blue.",
+      "She has a toy sheep,",
+      "And a toy fish, too.",
+      "The sheep is white,",
+      "The fish is blue.",
+      "Shirley wants to play,",
+      "With me and with you."
+    ]
+  }
 }

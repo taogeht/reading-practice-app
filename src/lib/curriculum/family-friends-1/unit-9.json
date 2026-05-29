@@ -13,5 +13,43 @@
     { "word": "pineapple", "image": "/images/unit-9/pineapple.png" },
     { "word": "sandwich",  "image": "/images/unit-9/sandwich.png" },
     { "word": "tomato",    "image": "/images/unit-9/tomato.png" }
-  ]
+  ],
+  "verbs": [],
+  "grammar_patterns": [
+    {
+      "pattern": "I have [a/an/number] [object].",
+      "examples": [
+        "I have an apple.",
+        "I have two sandwiches.",
+        "I have a banana."
+      ]
+    },
+    {
+      "pattern": "I don't have [possessive] [object].",
+      "examples": [
+        "I don't have my lunchbox."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "I have an apple.",
+    "I have two sandwiches.",
+    "I don't have my lunchbox.",
+    "It's lunchtime.",
+    "Open my lunchbox."
+  ],
+  "phonics": {
+    "sound": "digraph ch",
+    "word_families": [],
+    "chant": [
+      "My name's Charlie.",
+      "This is my teacher.",
+      "She's on a chair.",
+      "She has a little chick.",
+      "Chirp, chirp, chirp, says the chick.",
+      "Chirp, chirp, chirp, says the chick.",
+      "My teacher's on a chair.",
+      "She has a little chick."
+    ]
+  }
 }

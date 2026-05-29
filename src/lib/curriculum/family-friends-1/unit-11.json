@@ -11,5 +11,60 @@
     { "word": "snake",      "image": "/images/unit-11/snake.png" },
     { "word": "tiger",      "image": "/images/unit-11/tiger.png" }
   ],
-  "adjectives": ["big", "little", "tall"]
+  "adjectives": ["big", "little", "tall", "funny"],
+  "verbs": ["like"],
+  "grammar_patterns": [
+    {
+      "pattern": "I like / I don't like [plural noun].",
+      "examples": [
+        "I like monkeys.",
+        "I don't like elephants."
+      ]
+    },
+    {
+      "pattern": "They're / I'm [adjective].",
+      "examples": [
+        "They're big.",
+        "I'm little.",
+        "They're tall!"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "I like monkeys.",
+    "I don't like elephants.",
+    "They're big.",
+    "I'm little.",
+    "They're tall!",
+    "They're funny and you're funny, too!"
+  ],
+  "phonics": {
+    "sound": "short a",
+    "description": "CVC words with the short a vowel sound. Two rhyming families: -at and -an.",
+    "word_families": [
+      {
+        "family": "-at",
+        "words": [
+          { "word": "cat", "emoji": "🐱" },
+          { "word": "hat", "emoji": "🎩" }
+        ]
+      },
+      {
+        "family": "-an",
+        "words": [
+          { "word": "man", "emoji": "🧑" },
+          { "word": "fan", "emoji": "🪭" }
+        ]
+      }
+    ],
+    "chant": [
+      "The cat has a hat.",
+      "a, a, a, a.",
+      "The man has a fan.",
+      "a, a, a, a.",
+      "The cat has a hat.",
+      "The man has a fan.",
+      "a, a, a, a."
+    ]
+  }
 }

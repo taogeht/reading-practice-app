@@ -12,5 +12,44 @@
     { "word": "eraser",   "image": "/images/unit-1/eraser.png" },
     { "word": "ruler",    "image": "/images/unit-1/ruler.png" },
     { "word": "window",   "image": "/images/unit-1/window.png" }
-  ]
+  ],
+  "verbs": ["open", "close"],
+  "grammar_patterns": [
+    {
+      "pattern": "What's this? It's a/an [object].",
+      "examples": [
+        "What's this?",
+        "It's a pen.",
+        "It's an eraser.",
+        "It's a book.",
+        "It's a door."
+      ]
+    },
+    {
+      "pattern": "[Verb] the [object].",
+      "examples": [
+        "Open the book.",
+        "Close the book.",
+        "Open the door.",
+        "Close the window."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "What's this?",
+    "It's a pen.",
+    "It's an eraser.",
+    "Open the book.",
+    "Close the book."
+  ],
+  "phonics": {
+    "sound": "initial sounds a, b, c, d",
+    "word_families": [],
+    "chant": [
+      "This is an apple, a, a, apple.",
+      "This is a bird, b, b, bird.",
+      "This is a cat, c, c, cat.",
+      "This is a dog, d, d, dog."
+    ]
+  }
 }

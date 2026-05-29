@@ -56,5 +56,35 @@
     "I don't like rice.",
     "What do you like?",
     "I like bread and yogurt."
-  ]
+  ],
+  "phonics": {
+    "sound": "short e",
+    "description": "CVC words with the short e vowel sound. Two rhyming families: -ed and -en.",
+    "word_families": [
+      {
+        "family": "-ed",
+        "words": [
+          { "word": "bed", "emoji": "🛏️" },
+          { "word": "red", "emoji": "🟥" }
+        ]
+      },
+      {
+        "family": "-en",
+        "words": [
+          { "word": "pen", "emoji": "🖊️" },
+          { "word": "hen", "emoji": "🐔" }
+        ]
+      }
+    ],
+    "chant": [
+      "Ken has a pen,",
+      "Pen, pen, pen.",
+      "Ken's pen is red,",
+      "Red, red, red.",
+      "Where's Ken's pen?",
+      "Pen, pen, pen.",
+      "It's on Ken's bed,",
+      "Bed, bed, bed."
+    ]
+  }
 }

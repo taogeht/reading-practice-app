@@ -11,5 +11,42 @@
     { "word": "aunt",    "image": "/images/unit-6/aunt.png" },
     { "word": "uncle",   "image": "/images/unit-6/uncle.png" },
     { "word": "cousin",  "image": "/images/unit-6/cousin.png" }
-  ]
+  ],
+  "verbs": [],
+  "grammar_patterns": [
+    {
+      "pattern": "This is [name]'s [object].",
+      "examples": [
+        "This is Mom's book.",
+        "This is Billy's teddy bear.",
+        "This is Mom's umbrella."
+      ]
+    },
+    {
+      "pattern": "Where's [name]'s [object]? [Name]'s [object] is [preposition] the [object].",
+      "examples": [
+        "Where's Grandpa's hat?",
+        "Grandpa's hat is in the tree!"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "This is Mom's book.",
+    "This is Billy's teddy bear.",
+    "This is Mom's umbrella.",
+    "Where's Grandpa's hat?",
+    "Grandpa's hat is in the tree!",
+    "Who's this? It's Beth's aunt."
+  ],
+  "phonics": {
+    "sound": "initial sounds v, w, x, y, z",
+    "word_families": [],
+    "chant": [
+      "Here is a van, v, v, van.",
+      "Here is a window, w, w, window.",
+      "Here is a box, x, x, box.",
+      "Here is a yo-yo, y, y, yo-yo.",
+      "Here is a zebra, z, z, zebra."
+    ]
+  }
 }

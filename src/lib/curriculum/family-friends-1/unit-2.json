@@ -12,5 +12,40 @@
     { "word": "scooter",    "image": "/images/unit-2/scooter.png" },
     { "word": "teddy bear", "image": "/images/unit-2/teddy-bear.png" },
     { "word": "train",      "image": "/images/unit-2/train.png" }
-  ]
+  ],
+  "verbs": [],
+  "grammar_patterns": [
+    {
+      "pattern": "This is [possessive] [object].",
+      "examples": [
+        "This is my bag.",
+        "This is your doll."
+      ]
+    },
+    {
+      "pattern": "Is this [possessive] [object]? Yes, it is. / No, it isn't.",
+      "examples": [
+        "Is this your teddy bear?",
+        "Yes, it is.",
+        "No, it isn't."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "This is my bag.",
+    "This is your doll.",
+    "Is this your teddy bear?",
+    "Yes, it is.",
+    "No, it isn't."
+  ],
+  "phonics": {
+    "sound": "initial sounds e, f, g, h",
+    "word_families": [],
+    "chant": [
+      "I have an egg, e, e, egg.",
+      "I have a fig, f, f, fig.",
+      "I have a goat, g, g, goat.",
+      "I have a hat, h, h, hat."
+    ]
+  }
 }
