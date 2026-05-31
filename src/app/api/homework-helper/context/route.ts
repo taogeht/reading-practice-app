@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { canUseSunnyPreview } from '@/lib/auth/teacher-capabilities';
 import { db } from '@/lib/db';
 import { classEnrollments, classes, spellingLists, spellingWords } from '@/lib/db/schema';
 import { isValidUnit } from '@/lib/practice/units';
@@ -15,6 +16,9 @@ export async function GET(request: NextRequest) {
 
   // Teacher/admin preview mode: unit comes from query string, no student context lookup
   if (user.role === 'teacher' || user.role === 'admin') {
+    if (!(await canUseSunnyPreview(user))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    }
     const unitParam = Number(request.nextUrl.searchParams.get('unit'));
     const unit = isValidUnit(unitParam) ? unitParam : 1;
     return NextResponse.json({ currentUnit: unit, spellingWords: [] });

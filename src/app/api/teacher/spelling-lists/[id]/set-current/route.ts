@@ -4,6 +4,7 @@ import { spellingLists } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, inArray } from 'drizzle-orm';
 import { accessibleClassIds } from '@/lib/auth/class-access';
+import { canManageSpellingLists } from '@/lib/auth/teacher-capabilities';
 
 export const runtime = 'nodejs';
 
@@ -20,6 +21,9 @@ export async function POST(
         const user = await getCurrentUser();
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await canManageSpellingLists(user))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const { id: listId } = await params;
@@ -84,6 +88,9 @@ export async function DELETE(
         const user = await getCurrentUser();
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await canManageSpellingLists(user))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const { id: listId } = await params;

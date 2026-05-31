@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { and, desc, eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { canUseSunnyPreview } from '@/lib/auth/teacher-capabilities';
 import { db } from '@/lib/db';
 import { classEnrollments, classes, spellingLists, spellingWords } from '@/lib/db/schema';
 import { buildSystemPrompt } from '@/lib/curriculum/context';
@@ -107,6 +108,10 @@ export async function POST(request: NextRequest) {
   if (user.role === 'student') {
     ({ currentUnit, spellingWords } = await resolveStudentContext(user.id));
   } else {
+    // Teacher/admin Sunny preview — gated capability (admins always pass).
+    if (!(await canUseSunnyPreview(user))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    }
     const teacherUnit = Number(body.unit);
     currentUnit = isValidUnit(teacherUnit) ? teacherUnit : 1;
     spellingWords = [];

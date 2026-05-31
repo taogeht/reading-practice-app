@@ -47,6 +47,10 @@ interface User {
   primarySchoolId?: string | null;
   primarySchoolName?: string | null;
   canGenerateReadingContent?: boolean;
+  canManageSpellingLists?: boolean;
+  canManageAssignments?: boolean;
+  canGeneratePracticeQuestions?: boolean;
+  canUseSunnyPreview?: boolean;
 }
 
 interface School {

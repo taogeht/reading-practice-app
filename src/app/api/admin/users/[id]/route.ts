@@ -14,6 +14,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { r2Client, r2KeyFromStoredUrl } from '@/lib/storage/r2-client';
+import type { TeacherCapabilities } from '@/lib/auth/teacher-capabilities';
 import { alias } from 'drizzle-orm/pg-core';
 import { recordAuditEvent } from '@/lib/audit';
 
@@ -49,6 +50,10 @@ export async function GET(
         primarySchoolId: primaryMembership.schoolId,
         primarySchoolName: schools.name,
         canGenerateReadingContent: teachers.canGenerateReadingContent,
+        canManageSpellingLists: teachers.canManageSpellingLists,
+        canManageAssignments: teachers.canManageAssignments,
+        canGeneratePracticeQuestions: teachers.canGeneratePracticeQuestions,
+        canUseSunnyPreview: teachers.canUseSunnyPreview,
       })
       .from(users)
       .leftJoin(
@@ -92,7 +97,20 @@ export async function PUT(
 
     const { id: userId } = await params;
     const body = await request.json();
-    const { email, password, role, firstName, lastName, active, schoolId, canGenerateReadingContent } = body;
+    const {
+      email,
+      password,
+      role,
+      firstName,
+      lastName,
+      active,
+      schoolId,
+      canGenerateReadingContent,
+      canManageSpellingLists,
+      canManageAssignments,
+      canGeneratePracticeQuestions,
+      canUseSunnyPreview,
+    } = body;
 
     const [existingUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!existingUser) {
@@ -183,23 +201,39 @@ export async function PUT(
       .returning();
 
     if (nextRole === 'teacher') {
-      const nextCanGenerate = canGenerateReadingContent === undefined
-        ? undefined
-        : Boolean(canGenerateReadingContent);
+      // undefined = field omitted → leave that permission unchanged. Never
+      // silently reset a permission a partial payload didn't mention.
+      const toBool = (v: unknown) => (v === undefined ? undefined : Boolean(v));
+      const nextSpelling = toBool(canManageSpellingLists);
+      const nextAssignments = toBool(canManageAssignments);
+      const nextReading = toBool(canGenerateReadingContent);
+      const nextPractice = toBool(canGeneratePracticeQuestions);
+      const nextSunny = toBool(canUseSunnyPreview);
 
+      // Ensure a teachers row exists, seeded with the restrictive column
+      // defaults (spelling + assignments on, the rest off) so promoting a user
+      // to teacher lands on the intended baseline.
       await db
         .insert(teachers)
         .values({
           id: userId,
-          canGenerateReadingContent: nextCanGenerate ?? false,
+          canManageSpellingLists: nextSpelling ?? true,
+          canManageAssignments: nextAssignments ?? true,
+          canGenerateReadingContent: nextReading ?? false,
+          canGeneratePracticeQuestions: nextPractice ?? false,
+          canUseSunnyPreview: nextSunny ?? false,
         })
         .onConflictDoNothing();
 
-      if (nextCanGenerate !== undefined) {
-        await db
-          .update(teachers)
-          .set({ canGenerateReadingContent: nextCanGenerate })
-          .where(eq(teachers.id, userId));
+      // Update only the flags explicitly provided.
+      const capUpdates: Partial<TeacherCapabilities> = {};
+      if (nextSpelling !== undefined) capUpdates.canManageSpellingLists = nextSpelling;
+      if (nextAssignments !== undefined) capUpdates.canManageAssignments = nextAssignments;
+      if (nextReading !== undefined) capUpdates.canGenerateReadingContent = nextReading;
+      if (nextPractice !== undefined) capUpdates.canGeneratePracticeQuestions = nextPractice;
+      if (nextSunny !== undefined) capUpdates.canUseSunnyPreview = nextSunny;
+      if (Object.keys(capUpdates).length > 0) {
+        await db.update(teachers).set(capUpdates).where(eq(teachers.id, userId));
       }
 
       if (resolvedSchoolId) {
@@ -237,6 +271,22 @@ export async function PUT(
         canGenerateReadingContent:
           nextRole === 'teacher' && canGenerateReadingContent !== undefined
             ? Boolean(canGenerateReadingContent)
+            : undefined,
+        canManageSpellingLists:
+          nextRole === 'teacher' && canManageSpellingLists !== undefined
+            ? Boolean(canManageSpellingLists)
+            : undefined,
+        canManageAssignments:
+          nextRole === 'teacher' && canManageAssignments !== undefined
+            ? Boolean(canManageAssignments)
+            : undefined,
+        canGeneratePracticeQuestions:
+          nextRole === 'teacher' && canGeneratePracticeQuestions !== undefined
+            ? Boolean(canGeneratePracticeQuestions)
+            : undefined,
+        canUseSunnyPreview:
+          nextRole === 'teacher' && canUseSunnyPreview !== undefined
+            ? Boolean(canUseSunnyPreview)
             : undefined,
       },
       request,

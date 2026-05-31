@@ -22,6 +22,10 @@ interface User {
   active?: boolean;
   primarySchoolId?: string | null;
   canGenerateReadingContent?: boolean;
+  canManageSpellingLists?: boolean;
+  canManageAssignments?: boolean;
+  canGeneratePracticeQuestions?: boolean;
+  canUseSunnyPreview?: boolean;
 }
 
 interface SchoolOption {
@@ -57,6 +61,10 @@ export default function UserForm({
     active: user?.active ?? true,
     schoolId: user?.primarySchoolId ?? '',
     canGenerateReadingContent: user?.canGenerateReadingContent ?? false,
+    canManageSpellingLists: user?.canManageSpellingLists ?? true,
+    canManageAssignments: user?.canManageAssignments ?? true,
+    canGeneratePracticeQuestions: user?.canGeneratePracticeQuestions ?? false,
+    canUseSunnyPreview: user?.canUseSunnyPreview ?? false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,6 +79,10 @@ export default function UserForm({
       active: user?.active ?? true,
       schoolId: user?.primarySchoolId ?? '',
       canGenerateReadingContent: user?.canGenerateReadingContent ?? false,
+      canManageSpellingLists: user?.canManageSpellingLists ?? true,
+      canManageAssignments: user?.canManageAssignments ?? true,
+      canGeneratePracticeQuestions: user?.canGeneratePracticeQuestions ?? false,
+      canUseSunnyPreview: user?.canUseSunnyPreview ?? false,
     });
     setErrors({});
   }, [user]);
@@ -230,20 +242,53 @@ export default function UserForm({
       )}
 
       {formData.role === 'teacher' && (
-        <div className="flex items-start space-x-2">
-          <Switch
-            id="canGenerateReadingContent"
-            checked={formData.canGenerateReadingContent}
-            onCheckedChange={(checked) => handleChange('canGenerateReadingContent', checked)}
-          />
-          <div className="space-y-0.5">
-            <Label htmlFor="canGenerateReadingContent">
-              Can generate reading content
-            </Label>
+        <div className="space-y-3 rounded-lg border p-3">
+          <div>
+            <p className="text-sm font-medium">Teacher permissions</p>
             <p className="text-xs text-gray-500">
-              Grants access to the Reading Practice hub: generating stories, page audio, images, and questions.
+              New teachers can manage spelling lists and assignments by default. Grant the
+              cost-incurring features individually.
             </p>
           </div>
+          {([
+            {
+              key: 'canManageSpellingLists',
+              label: 'Manage spelling lists',
+              desc: 'Create/edit spelling lists and generate word audio + images.',
+            },
+            {
+              key: 'canManageAssignments',
+              label: 'Manage assignments',
+              desc: 'Create, edit, and delete reading assignments.',
+            },
+            {
+              key: 'canGenerateReadingContent',
+              label: 'Generate reading practice',
+              desc: 'Reading Practice hub: generate passages, page audio, images, and questions.',
+            },
+            {
+              key: 'canGeneratePracticeQuestions',
+              label: 'Generate practice questions',
+              desc: 'Generate and manage the AI practice-question bank.',
+            },
+            {
+              key: 'canUseSunnyPreview',
+              label: 'Use Sunny preview',
+              desc: 'Preview the Sunny homework-helper assistant.',
+            },
+          ] as const).map((cap) => (
+            <div key={cap.key} className="flex items-start space-x-2">
+              <Switch
+                id={cap.key}
+                checked={formData[cap.key]}
+                onCheckedChange={(checked) => handleChange(cap.key, checked)}
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor={cap.key}>{cap.label}</Label>
+                <p className="text-xs text-gray-500">{cap.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

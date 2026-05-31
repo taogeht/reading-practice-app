@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { spellingLists, spellingWords } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, sql } from 'drizzle-orm';
+import { canManageSpellingLists } from '@/lib/auth/teacher-capabilities';
 import { geminiImageClient } from '@/lib/image/gemini-client';
 import { r2Client } from '@/lib/storage/r2-client';
 
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await canManageSpellingLists(user))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);

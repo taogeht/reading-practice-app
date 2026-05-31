@@ -14,6 +14,7 @@ import {
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 import { accessibleClassIds, userCanManageClass } from '@/lib/auth/class-access';
+import { canManageAssignments } from '@/lib/auth/teacher-capabilities';
 
 export const runtime = 'nodejs';
 
@@ -22,6 +23,9 @@ export async function GET(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!(await canManageAssignments(user))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
     // Get teacher ID
@@ -184,6 +188,9 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!(await canManageAssignments(user))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
     // Get teacher ID

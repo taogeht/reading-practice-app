@@ -78,8 +78,12 @@ type DashboardData = {
    *  Hides Story Library, Archived Stories, and the Quick Actions card —
    *  all of which expose owner-only actions. */
   isCoTeacherOnly: boolean;
-  /** Admin-granted capability gating /teacher/reading. */
+  /** Admin-granted per-teacher capabilities (admins see all). */
   canGenerateReadingContent: boolean;
+  canManageSpellingLists: boolean;
+  canManageAssignments: boolean;
+  canGeneratePracticeQuestions: boolean;
+  canUseSunnyPreview: boolean;
   stats: Stats;
   recentSubmissions: Submission[];
   assignmentsSummary: AssignmentSummary[];
@@ -217,26 +221,36 @@ export default function TeacherDashboardPage() {
                       Reading Practice
                     </Button>
                   )}
-                  <Button variant="outline" onClick={() => router.push('/teacher/spelling-lists')}>
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Manage Spelling Lists
-                  </Button>
-                  <Button variant="outline" onClick={() => router.push('/teacher/practice-questions')}>
-                    <Trophy className="w-4 h-4 mr-2" />
-                    Practice Questions
-                  </Button>
-                  <Button variant="outline" onClick={() => router.push('/teacher/helper')}>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Sunny Preview
-                  </Button>
-                  <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
-                    <List className="w-4 h-4 mr-2" />
-                    Manage Assignments
-                  </Button>
-                  <Button onClick={() => setShowCreateAssignment(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Assignment
-                  </Button>
+                  {dashboardData.canManageSpellingLists && (
+                    <Button variant="outline" onClick={() => router.push('/teacher/spelling-lists')}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Manage Spelling Lists
+                    </Button>
+                  )}
+                  {dashboardData.canGeneratePracticeQuestions && (
+                    <Button variant="outline" onClick={() => router.push('/teacher/practice-questions')}>
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Practice Questions
+                    </Button>
+                  )}
+                  {dashboardData.canUseSunnyPreview && (
+                    <Button variant="outline" onClick={() => router.push('/teacher/helper')}>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Sunny Preview
+                    </Button>
+                  )}
+                  {dashboardData.canManageAssignments && (
+                    <>
+                      <Button variant="outline" onClick={() => router.push('/teacher/assignments')}>
+                        <List className="w-4 h-4 mr-2" />
+                        Manage Assignments
+                      </Button>
+                      <Button onClick={() => setShowCreateAssignment(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Assignment
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
               <Button variant="outline" onClick={handleLogout}>

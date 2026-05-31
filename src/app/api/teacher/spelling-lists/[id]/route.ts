@@ -4,6 +4,7 @@ import { spellingLists, spellingWords, classes } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, and, inArray } from 'drizzle-orm';
 import { userCanManageClass, accessibleClassIds } from '@/lib/auth/class-access';
+import { canManageSpellingLists } from '@/lib/auth/teacher-capabilities';
 
 export const runtime = 'nodejs';
 
@@ -16,6 +17,9 @@ export async function GET(
         const user = await getCurrentUser();
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await canManageSpellingLists(user))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const { id: listId } = await params;
@@ -72,6 +76,9 @@ export async function PUT(
         const user = await getCurrentUser();
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await canManageSpellingLists(user))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const { id: listId } = await params;
@@ -241,6 +248,9 @@ export async function DELETE(
         const user = await getCurrentUser();
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await canManageSpellingLists(user))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const { id: listId } = await params;

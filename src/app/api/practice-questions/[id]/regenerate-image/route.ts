@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { canGeneratePracticeQuestions } from '@/lib/auth/teacher-capabilities';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
 import { geminiImageClient } from '@/lib/image/gemini-client';
@@ -16,6 +17,9 @@ export async function POST(
   const user = await getCurrentUser();
   if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!(await canGeneratePracticeQuestions(user))) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
   }
 
   const { id } = await params;

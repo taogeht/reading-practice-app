@@ -16,6 +16,7 @@ import { logError } from '@/lib/logger';
 import { normalizeTtsAudio, StoryTtsAudio } from '@/types/story';
 import { r2Client } from '@/lib/storage/r2-client';
 import { userCanManageAssignment } from '@/lib/auth/class-access';
+import { canManageAssignments } from '@/lib/auth/teacher-capabilities';
 
 export const runtime = 'nodejs';
 
@@ -286,6 +287,9 @@ export async function PUT(
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!(await canManageAssignments(user))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    }
 
     const { id: assignmentId } = await params;
 
@@ -369,6 +373,9 @@ export async function DELETE(
     const user = await getCurrentUser();
     if (!user || !['teacher', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!(await canManageAssignments(user))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
     const { id: assignmentId } = await params;

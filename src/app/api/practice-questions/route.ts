@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, desc } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { canGeneratePracticeQuestions } from '@/lib/auth/teacher-capabilities';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
 import { generateQuestions, type QuestionType } from '@/lib/practice/generate';
@@ -54,6 +55,9 @@ export async function GET(request: NextRequest) {
   if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (!(await canGeneratePracticeQuestions(user))) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+  }
 
   const url = new URL(request.url);
   const unitParam = url.searchParams.get('unit');
@@ -78,6 +82,9 @@ export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!(await canGeneratePracticeQuestions(user))) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
   }
 
   let body: {

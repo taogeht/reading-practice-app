@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { accessibleClassIds, isCoTeacherOnly } from '@/lib/auth/class-access';
-import { canGenerateReadingContent } from '@/lib/auth/reading-content';
+import { getTeacherCapabilities } from '@/lib/auth/teacher-capabilities';
 import {
   classes,
   assignments,
@@ -207,6 +207,19 @@ export async function GET(request: NextRequest) {
     // userIsClassPrimary so mixed users see full controls on owned classes.
     const coTeacherOnly = await isCoTeacherOnly(user.id, user.role);
 
+    // Capability flags drive which dashboard shortcuts render. Admins bypass
+    // (see everything); teachers get their stored row.
+    const caps =
+      user.role === 'admin'
+        ? {
+            canManageSpellingLists: true,
+            canManageAssignments: true,
+            canGenerateReadingContent: true,
+            canGeneratePracticeQuestions: true,
+            canUseSunnyPreview: true,
+          }
+        : await getTeacherCapabilities(user.id);
+
     const dashboardData = {
       teacher: {
         id: user.id,
@@ -221,7 +234,7 @@ export async function GET(request: NextRequest) {
         }))
       },
       isCoTeacherOnly: coTeacherOnly,
-      canGenerateReadingContent: await canGenerateReadingContent(user),
+      ...caps,
       stats: {
         totalStudents,
         activeAssignments: activeAssignmentsResult[0]?.count || 0,

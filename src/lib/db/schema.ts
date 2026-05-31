@@ -154,7 +154,16 @@ export const teachers = pgTable('teachers', {
   employeeId: varchar('employee_id', { length: 100 }),
   department: varchar('department', { length: 100 }),
   subjects: text('subjects').array(),
+  // Per-teacher feature capabilities, admin-managed. Defaults encode the
+  // restrictive baseline: a new teacher may manage spelling lists + assignments
+  // only; reading-content / practice-question generation and the Sunny preview
+  // are off until an admin grants them. Admins always bypass these
+  // (see src/lib/auth/teacher-capabilities.ts).
+  canManageSpellingLists: boolean('can_manage_spelling_lists').notNull().default(true),
+  canManageAssignments: boolean('can_manage_assignments').notNull().default(true),
   canGenerateReadingContent: boolean('can_generate_reading_content').notNull().default(false),
+  canGeneratePracticeQuestions: boolean('can_generate_practice_questions').notNull().default(false),
+  canUseSunnyPreview: boolean('can_use_sunny_preview').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

@@ -99,7 +99,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, role, firstName, lastName, schoolId, canGenerateReadingContent } = body;
+    const {
+      email,
+      password,
+      role,
+      firstName,
+      lastName,
+      schoolId,
+      canGenerateReadingContent,
+      canManageSpellingLists,
+      canManageAssignments,
+      canGeneratePracticeQuestions,
+      canUseSunnyPreview,
+    } = body;
 
     // Validate required fields
     if (!email || !password || !role || !firstName || !lastName) {
@@ -170,7 +182,15 @@ export async function POST(request: NextRequest) {
         .insert(teachers)
         .values({
           id: newUser.id,
+          // Default-on caps fall back to true when the field is omitted; the
+          // restrictive caps fall back to false.
+          canManageSpellingLists:
+            canManageSpellingLists === undefined ? true : Boolean(canManageSpellingLists),
+          canManageAssignments:
+            canManageAssignments === undefined ? true : Boolean(canManageAssignments),
           canGenerateReadingContent: Boolean(canGenerateReadingContent),
+          canGeneratePracticeQuestions: Boolean(canGeneratePracticeQuestions),
+          canUseSunnyPreview: Boolean(canUseSunnyPreview),
         })
         .onConflictDoNothing();
 
@@ -202,6 +222,21 @@ export async function POST(request: NextRequest) {
         lastName,
         schoolId: resolvedSchoolId,
         canGenerateReadingContent: role === 'teacher' ? Boolean(canGenerateReadingContent) : undefined,
+        canManageSpellingLists:
+          role === 'teacher'
+            ? canManageSpellingLists === undefined
+              ? true
+              : Boolean(canManageSpellingLists)
+            : undefined,
+        canManageAssignments:
+          role === 'teacher'
+            ? canManageAssignments === undefined
+              ? true
+              : Boolean(canManageAssignments)
+            : undefined,
+        canGeneratePracticeQuestions:
+          role === 'teacher' ? Boolean(canGeneratePracticeQuestions) : undefined,
+        canUseSunnyPreview: role === 'teacher' ? Boolean(canUseSunnyPreview) : undefined,
       },
       request,
     });

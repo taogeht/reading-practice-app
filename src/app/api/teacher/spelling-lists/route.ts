@@ -4,6 +4,7 @@ import { spellingLists, classes, spellingWords } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, desc, inArray } from 'drizzle-orm';
 import { accessibleClassIds } from '@/lib/auth/class-access';
+import { canManageSpellingLists } from '@/lib/auth/teacher-capabilities';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +15,9 @@ export async function GET(request: NextRequest) {
         const user = await getCurrentUser();
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await canManageSpellingLists(user))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         // Every class the user can manage (primary or co-teacher; admins see all).

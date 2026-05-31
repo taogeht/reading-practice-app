@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
+import { canGenerateReadingContent } from '@/lib/auth/teacher-capabilities';
 import { db } from '@/lib/db';
 import {
   readingPassages,
@@ -104,6 +105,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const user = await getCurrentUser();
     if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
+    if (!(await canGenerateReadingContent(user))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
     const { passageId } = await params;
 
