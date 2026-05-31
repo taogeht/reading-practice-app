@@ -1,0 +1,96 @@
+{
+  "unit": 11,
+  "topic": "What are you wearing?",
+  "vocabulary": [
+    { "word": "skirt",   "image": "/images/family-friends-2/unit-11/skirt.png" },
+    { "word": "scarf",   "image": "/images/family-friends-2/unit-11/scarf.png" },
+    { "word": "gloves",  "image": "/images/family-friends-2/unit-11/gloves.png" },
+    { "word": "jeans",   "image": "/images/family-friends-2/unit-11/jeans.png" },
+    { "word": "boots",   "image": "/images/family-friends-2/unit-11/boots.png" },
+    { "word": "shirt",   "image": "/images/family-friends-2/unit-11/shirt.png" },
+    { "word": "dress",   "image": "/images/family-friends-2/unit-11/dress.png" },
+    { "word": "T-shirt", "image": "/images/family-friends-2/unit-11/t-shirt.png" },
+    { "word": "hat",     "image": "/images/family-friends-2/unit-11/hat.png" },
+    { "word": "socks",   "image": "/images/family-friends-2/unit-11/socks.png" },
+    { "word": "shoes",   "image": "/images/family-friends-2/unit-11/shoes.png" },
+    { "word": "shorts",  "image": "/images/family-friends-2/unit-11/shorts.png" },
+    { "word": "pants",   "image": "/images/family-friends-2/unit-11/pants.png" }
+  ],
+  "numbers": [
+    "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "eleven", "twelve", "fifteen", "thirty", "forty-five"
+  ],
+  "colors": ["blue", "red", "yellow", "black", "green", "brown"],
+  "grammar_patterns": [
+    {
+      "pattern": "What are you wearing? I'm wearing [clothes].",
+      "examples": [
+        "What are you wearing? I'm wearing a blue skirt.",
+        "I'm wearing a blue skirt and a red scarf.",
+        "I'm wearing a T-shirt."
+      ]
+    },
+    {
+      "pattern": "What's he/she wearing? He's/She's wearing [clothes].",
+      "examples": [
+        "What's he wearing? He's wearing a yellow shirt.",
+        "What's she wearing? She's wearing red pants.",
+        "She's wearing red pants and black boots."
+      ]
+    },
+    {
+      "pattern": "What time is it? It's [time].",
+      "examples": [
+        "What time is it? It's four o'clock.",
+        "It's three fifteen.",
+        "It's three thirty.",
+        "It's three forty-five."
+      ]
+    },
+    {
+      "pattern": "This is a [singular clothing]. / These are [plural clothing].",
+      "examples": [
+        "This is a shirt.",
+        "These are gloves.",
+        "These are jeans."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "What time is it, Grandma? It's four o'clock.",
+    "We can't see you. What are you wearing?",
+    "I'm wearing a blue skirt and a red scarf.",
+    "She's wearing red pants and black boots.",
+    "What's he wearing? He's wearing a yellow shirt.",
+    "It's three fifteen.",
+    "It's three thirty.",
+    "It's three forty-five.",
+    "These are gloves. This is a shirt."
+  ],
+  "phonics": {
+    "sound": "long o",
+    "description": "Long vowel o with magic e (o_e), as in home. The silent e makes the o say its name.",
+    "word_families": [
+      {
+        "family": "o_e",
+        "words": [
+          { "word": "nose" },
+          { "word": "rope" },
+          { "word": "stone" },
+          { "word": "bone" },
+          { "word": "home" }
+        ]
+      }
+    ],
+    "chant": [
+      "The fox has my rope.",
+      "The fox is on a stone.",
+      "Hurry up, fox.",
+      "I want to go home.",
+      "My nose is cold.",
+      "Here is a bone.",
+      "Hurry up, fox.",
+      "I want to go home."
+    ]
+  }
+}

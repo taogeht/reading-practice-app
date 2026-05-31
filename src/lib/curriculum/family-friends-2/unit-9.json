@@ -1,0 +1,90 @@
+{
+  "unit": 9,
+  "topic": "Where does she work?",
+  "vocabulary": [
+    { "word": "hospital",       "image": "/images/family-friends-2/unit-9/hospital.png" },
+    { "word": "school",         "image": "/images/family-friends-2/unit-9/school.png" },
+    { "word": "airport",        "image": "/images/family-friends-2/unit-9/airport.png" },
+    { "word": "police station", "image": "/images/family-friends-2/unit-9/police-station.png" },
+    { "word": "fire station",   "image": "/images/family-friends-2/unit-9/fire-station.png" },
+    { "word": "store",          "image": "/images/family-friends-2/unit-9/store.png" },
+    { "word": "station",        "image": "/images/family-friends-2/unit-9/station.png" },
+    { "word": "zoo",            "image": "/images/family-friends-2/unit-9/zoo.png" },
+    { "word": "supermarket",    "image": "/images/family-friends-2/unit-9/supermarket.png" },
+    { "word": "bank",           "image": "/images/family-friends-2/unit-9/bank.png" },
+    { "word": "garage",         "image": "/images/family-friends-2/unit-9/garage.png" },
+    { "word": "office",         "image": "/images/family-friends-2/unit-9/office.png" }
+  ],
+  "prepositions": ["in", "at"],
+  "grammar_patterns": [
+    {
+      "pattern": "Where does he/she work? He/She works in a [place].",
+      "examples": [
+        "Where does he work? He works in a police station.",
+        "She works in a store.",
+        "Molly works at the zoo."
+      ]
+    },
+    {
+      "pattern": "Does he/she work in a/an [place]? Yes, he does. / No, she doesn't.",
+      "examples": [
+        "Does your mom work in an airport? No, she doesn't.",
+        "Does she work in a store? Yes, she does.",
+        "Does he work in a hospital?"
+      ]
+    },
+    {
+      "pattern": "[Subject] [item], [item], and [item]. (lists with commas and 'and')",
+      "examples": [
+        "She looks after elephants, giraffes, lions, and tigers.",
+        "I get up, have breakfast, and go to school.",
+        "He likes chicken, pizza, and salad."
+      ]
+    },
+    {
+      "pattern": "My [family member]'s a [job].",
+      "examples": [
+        "My dad's a police officer.",
+        "My mom works in a cake store!",
+        "Jason's dad works in an office."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Where does he work? He works in a police station.",
+    "Does your mom work in an airport? No, she doesn't.",
+    "Does she work in a store? Yes, she does.",
+    "My dad's a police officer.",
+    "My mom works in a cake store!",
+    "Molly works at the zoo.",
+    "She looks after elephants, giraffes, lions, and tigers.",
+    "I get up, have breakfast, and go to school.",
+    "Jason's dad works in an office."
+  ],
+  "phonics": {
+    "sound": "long a",
+    "description": "Long vowel a with magic e (a_e), as in cake. The silent e makes the a say its name.",
+    "word_families": [
+      {
+        "family": "a_e",
+        "words": [
+          { "word": "lake" },
+          { "word": "gate" },
+          { "word": "face" },
+          { "word": "plane" },
+          { "word": "cake" }
+        ]
+      }
+    ],
+    "chant": [
+      "Open the gate,",
+      "The gate, gate, gate.",
+      "See the lake,",
+      "The lake, lake, lake.",
+      "A smile on your face,",
+      "Your face, face, face.",
+      "Here is a cake,",
+      "A cake, cake, cake."
+    ]
+  }
+}

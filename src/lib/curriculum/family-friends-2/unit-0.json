@@ -1,0 +1,141 @@
+{
+  "unit": 0,
+  "topic": "Welcome back!",
+  "vocabulary": [
+    { "word": "mom",        "image": "/images/family-friends-2/unit-0/mom.png" },
+    { "word": "dad",        "image": "/images/family-friends-2/unit-0/dad.png" },
+    { "word": "brother",    "image": "/images/family-friends-2/unit-0/brother.png" },
+    { "word": "sister",     "image": "/images/family-friends-2/unit-0/sister.png" },
+    { "word": "grandma",    "image": "/images/family-friends-2/unit-0/grandma.png" },
+    { "word": "grandpa",    "image": "/images/family-friends-2/unit-0/grandpa.png" },
+    { "word": "aunt",       "image": "/images/family-friends-2/unit-0/aunt.png" },
+    { "word": "uncle",      "image": "/images/family-friends-2/unit-0/uncle.png" },
+    { "word": "cousin",     "image": "/images/family-friends-2/unit-0/cousin.png" },
+    { "word": "hair",       "image": "/images/family-friends-2/unit-0/hair.png" },
+    { "word": "eyes",       "image": "/images/family-friends-2/unit-0/eyes.png" },
+    { "word": "ball",       "image": "/images/family-friends-2/unit-0/ball.png" },
+    { "word": "car",        "image": "/images/family-friends-2/unit-0/car.png" },
+    { "word": "train",      "image": "/images/family-friends-2/unit-0/train.png" },
+    { "word": "doll",       "image": "/images/family-friends-2/unit-0/doll.png" },
+    { "word": "teddy bear", "image": "/images/family-friends-2/unit-0/teddy-bear.png" },
+    { "word": "puzzle",     "image": "/images/family-friends-2/unit-0/puzzle.png" },
+    { "word": "bike",       "image": "/images/family-friends-2/unit-0/bike.png" },
+    { "word": "kite",       "image": "/images/family-friends-2/unit-0/kite.png" }
+  ],
+  "numbers": [
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen", "twenty"
+  ],
+  "colors": [
+    "red", "green", "blue", "yellow", "pink", "purple",
+    "black", "white", "brown", "orange", "gray"
+  ],
+  "prepositions": ["under"],
+  "adjectives": ["long", "short", "curly", "straight", "blond", "little", "happy", "fine"],
+  "grammar_patterns": [
+    {
+      "pattern": "I have [adjective] [noun].",
+      "examples": [
+        "I have brown hair.",
+        "I have long hair.",
+        "I have a little brother."
+      ]
+    },
+    {
+      "pattern": "He/She has [adjective] [noun].",
+      "examples": [
+        "He has green eyes.",
+        "She has curly hair.",
+        "He has lots of teddy bears."
+      ]
+    },
+    {
+      "pattern": "My/His/Her name's [name].",
+      "examples": [
+        "My name's Rosy.",
+        "His name's Billy.",
+        "Her name's Jasmin."
+      ]
+    },
+    {
+      "pattern": "This is my [family member].",
+      "examples": [
+        "This is my cousin, Tim.",
+        "This is my sister.",
+        "This is my friend."
+      ]
+    },
+    {
+      "pattern": "This is [name]'s [family member].",
+      "examples": [
+        "This is Rosy's mom.",
+        "This is Rosy's dad.",
+        "Tim is Rosy's cousin."
+      ]
+    },
+    {
+      "pattern": "He's/She's/I'm [number]. (age)",
+      "examples": [
+        "He's two.",
+        "I'm seven.",
+        "She's nine."
+      ]
+    },
+    {
+      "pattern": "Where's [name]? Is he/she [preposition] the [noun]?",
+      "examples": [
+        "Where's Billy?",
+        "Is he under the bed?",
+        "No, he isn't."
+      ]
+    },
+    {
+      "pattern": "How many [plural noun] are there? There are [number] [plural noun].",
+      "examples": [
+        "How many cars are there?",
+        "There are ten cars.",
+        "How many balls are there? There are five balls."
+      ]
+    },
+    {
+      "pattern": "There is [singular noun]. / There are [plural noun].",
+      "examples": [
+        "There is one train.",
+        "There is one puzzle.",
+        "There are three balls."
+      ]
+    },
+    {
+      "pattern": "What color is [noun]? It's [color].",
+      "examples": [
+        "What color is number 18?",
+        "It's blue.",
+        "What color is the car? It's red."
+      ]
+    },
+    {
+      "pattern": "Greetings.",
+      "examples": [
+        "Hello. How are you?",
+        "I'm fine, thank you.",
+        "How old are you? I'm seven.",
+        "Goodbye."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Hello. My name's Rosy.",
+    "I have brown hair.",
+    "This is my cousin, Tim.",
+    "He has green eyes.",
+    "I have a little brother. His name's Billy.",
+    "He's two. He has curly hair.",
+    "Where's Billy? Is he under the bed?",
+    "No, he isn't.",
+    "How many cars are there?",
+    "There are ten cars.",
+    "This is Rosy's mom.",
+    "What color is number 18?"
+  ]
+}

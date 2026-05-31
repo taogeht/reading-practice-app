@@ -1,0 +1,105 @@
+{
+  "unit": 4,
+  "topic": "Do you have a milkshake?",
+  "vocabulary": [
+    { "word": "salad",          "image": "/images/family-friends-2/unit-4/salad.png" },
+    { "word": "fries",          "image": "/images/family-friends-2/unit-4/fries.png" },
+    { "word": "pizza",          "image": "/images/family-friends-2/unit-4/pizza.png" },
+    { "word": "milkshake",      "image": "/images/family-friends-2/unit-4/milkshake.png" },
+    { "word": "cheese sandwich","image": "/images/family-friends-2/unit-4/cheese-sandwich.png" },
+    { "word": "chicken",        "image": "/images/family-friends-2/unit-4/chicken.png" },
+    { "word": "yogurt",         "image": "/images/family-friends-2/unit-4/yogurt.png" },
+    { "word": "cookie",         "image": "/images/family-friends-2/unit-4/cookie.png" },
+    { "word": "juice",          "image": "/images/family-friends-2/unit-4/juice.png" },
+    { "word": "apple",          "image": "/images/family-friends-2/unit-4/apple.png" },
+    { "word": "banana",         "image": "/images/family-friends-2/unit-4/banana.png" },
+    { "word": "orange",         "image": "/images/family-friends-2/unit-4/orange.png" }
+  ],
+  "numbers": [
+    "ten", "twenty", "thirty", "forty", "fifty",
+    "sixty", "seventy", "eighty", "ninety", "one hundred"
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "Do you have a [noun]? Yes, I do. / No, I don't.",
+      "examples": [
+        "Do you have a milkshake? Yes, I do.",
+        "Do you have fries? No, I don't.",
+        "Do you have pizza?"
+      ]
+    },
+    {
+      "pattern": "Does he/she have a [noun]? Yes, he does. / No, she doesn't.",
+      "examples": [
+        "Does he have a sandwich? No, he doesn't.",
+        "Does she have a pizza? Yes, she does.",
+        "He doesn't have his fries."
+      ]
+    },
+    {
+      "pattern": "They like [plural noun].",
+      "examples": [
+        "They like sandwiches.",
+        "They like bananas."
+      ]
+    },
+    {
+      "pattern": "I'm not [adjective].",
+      "examples": [
+        "I'm not hungry."
+      ]
+    },
+    {
+      "pattern": "Let's count to [number]!",
+      "examples": [
+        "Let's count to one hundred!"
+      ]
+    },
+    {
+      "pattern": "[number]-[number] (compound numbers)",
+      "examples": [
+        "twenty-one",
+        "twenty-two",
+        "twenty-nine"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Do you have a milkshake? Yes, I do.",
+    "Does he have a sandwich? No, he doesn't.",
+    "He doesn't have his salad.",
+    "They like sandwiches.",
+    "I'm not hungry.",
+    "Let's count to one hundred!",
+    "Kate has a yogurt.",
+    "We have more food."
+  ],
+  "phonics": {
+    "sound": "gr, br, and fr",
+    "description": "The consonant blends gr, br, and fr. Words are grouped by their beginning blend.",
+    "word_families": [
+      {
+        "family": "gr",
+        "words": [{ "word": "grapes" }, { "word": "grass" }]
+      },
+      {
+        "family": "br",
+        "words": [{ "word": "bread" }, { "word": "brush" }, { "word": "brown" }]
+      },
+      {
+        "family": "fr",
+        "words": [{ "word": "frog" }, { "word": "frisbee" }, { "word": "friends" }]
+      }
+    ],
+    "chant": [
+      "There are grapes and bread,",
+      "And juice in a glass.",
+      "Friends together,",
+      "In the green, green, grass.",
+      "Play with a frisbee,",
+      "Play with a ball.",
+      "The friends have fun",
+      "With the big, brown ball."
+    ]
+  }
+}

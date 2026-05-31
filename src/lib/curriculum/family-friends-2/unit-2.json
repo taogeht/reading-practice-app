@@ -1,0 +1,99 @@
+{
+  "unit": 2,
+  "topic": "They're happy now!",
+  "vocabulary": [],
+  "adjectives": [
+    "hot", "cold", "hungry", "thirsty", "happy", "sad",
+    "tired", "angry", "scared", "brave", "nervous", "good", "bad"
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "We're/They're [adjective].",
+      "examples": [
+        "We're happy.",
+        "They're hungry.",
+        "They're happy now."
+      ]
+    },
+    {
+      "pattern": "Are they [adjective]? Yes, they are. / No, they aren't.",
+      "examples": [
+        "Are they hot? No, they aren't.",
+        "Are they happy? Yes, they are.",
+        "No, they aren't cold."
+      ]
+    },
+    {
+      "pattern": "He's/She's [adjective].",
+      "examples": [
+        "He's happy.",
+        "She's thirsty.",
+        "He's cold."
+      ]
+    },
+    {
+      "pattern": "I'm/You're/We're/They're [adjective]. (long and short forms)",
+      "examples": [
+        "I'm cold.",
+        "We're scared.",
+        "They are nervous."
+      ]
+    },
+    {
+      "pattern": "[Demonstrative] [noun] are/aren't [adjective].",
+      "examples": [
+        "These girls are hungry.",
+        "These boys aren't cold.",
+        "We aren't tired."
+      ]
+    },
+    {
+      "pattern": "I [verb] when I am [adjective].",
+      "examples": [
+        "I cry when I am sad.",
+        "I smile when I am brave.",
+        "I smile when I do something good."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "We're happy.",
+    "They're hungry.",
+    "Are they hot? No, they aren't.",
+    "Are they happy? Yes, they are.",
+    "He's happy.",
+    "She's thirsty.",
+    "These girls are hungry.",
+    "These boys aren't cold.",
+    "They're happy now and we're happy, too.",
+    "I cry when I am sad."
+  ],
+  "phonics": {
+    "sound": "ch, sh, and th",
+    "description": "The digraphs ch, sh, and th. Words are grouped by their shared sound.",
+    "word_families": [
+      {
+        "family": "ch",
+        "words": [{ "word": "chair" }, { "word": "teacher" }]
+      },
+      {
+        "family": "sh",
+        "words": [{ "word": "shoes" }, { "word": "fish" }]
+      },
+      {
+        "family": "th",
+        "words": [{ "word": "thumb" }, { "word": "bath" }]
+      }
+    ],
+    "chant": [
+      "Look at my teacher,",
+      "Sitting on a chair.",
+      "Her shoes are blue,",
+      "She has long, black hair.",
+      "A picture of a bath,",
+      "And a picture of a fish.",
+      "Look at my teacher,",
+      "Her name's Miss Wish."
+    ]
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "unit": 3,
+  "topic": "I can ride a bike!",
+  "vocabulary": [
+    { "word": "ride a bike",  "image": "/images/family-friends-2/unit-3/ride-a-bike.png" },
+    { "word": "ride a horse", "image": "/images/family-friends-2/unit-3/ride-a-horse.png" },
+    { "word": "skate",        "image": "/images/family-friends-2/unit-3/skate.png" },
+    { "word": "skateboard",   "image": "/images/family-friends-2/unit-3/skateboard.png" },
+    { "word": "play tennis",  "image": "/images/family-friends-2/unit-3/play-tennis.png" },
+    { "word": "play soccer",  "image": "/images/family-friends-2/unit-3/play-soccer.png" },
+    { "word": "swim",         "image": "/images/family-friends-2/unit-3/swim.png" },
+    { "word": "scooter",      "image": "/images/family-friends-2/unit-3/scooter.png" },
+    { "word": "skates",       "image": "/images/family-friends-2/unit-3/skates.png" },
+    { "word": "swing",        "image": "/images/family-friends-2/unit-3/swing.png" }
+  ],
+  "verbs": ["ride", "skate", "skateboard", "swim", "play", "run", "cook", "fly", "dance", "climb", "sing", "draw"],
+  "prepositions": ["behind", "in front of", "next to", "between", "on", "under"],
+  "grammar_patterns": [
+    {
+      "pattern": "I can [verb]. / I can't [verb].",
+      "examples": [
+        "I can skate.",
+        "I can swim.",
+        "I can't skateboard.",
+        "I can't ride a bike."
+      ]
+    },
+    {
+      "pattern": "Can he/she [verb]? Yes, she can. / No, he can't.",
+      "examples": [
+        "Can she play tennis? Yes, she can.",
+        "Can he ride a bike? No, he can't.",
+        "Can he ride a horse? No, he can't."
+      ]
+    },
+    {
+      "pattern": "Can they [verb]? Yes, they can. / No, they can't.",
+      "examples": [
+        "Can they play tennis? No, they can't.",
+        "Can they skateboard? Yes, they can."
+      ]
+    },
+    {
+      "pattern": "Where's the [noun]? It's [preposition] the [noun].",
+      "examples": [
+        "Where's the skateboard? It's in front of the table.",
+        "Where is my teddy bear? Is he hiding there?"
+      ]
+    },
+    {
+      "pattern": "The [noun] is [preposition] the [noun].",
+      "examples": [
+        "The book is behind the teddy bear.",
+        "The teddy bear is on the bed.",
+        "The toy box is between the bed and the chair."
+      ]
+    },
+    {
+      "pattern": "This is / It's a [consonant-noun]. / This is / It's an [vowel-noun].",
+      "examples": [
+        "This is an apple.",
+        "It's a blue doll.",
+        "I have an ice pop.",
+        "She has an egg."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "I can skate.",
+    "I can't skateboard.",
+    "Can she play tennis? Yes, she can.",
+    "Can he ride a bike? No, he can't.",
+    "Where's the skateboard? It's in front of the table.",
+    "The book is behind the teddy bear.",
+    "This is an apple.",
+    "It's a blue doll.",
+    "Can they play tennis? No, they can't."
+  ],
+  "phonics": {
+    "sound": "short vowels",
+    "description": "CVC words with the short vowels a, e, i, o, u, grouped into rhyming families.",
+    "word_families": [
+      {
+        "family": "-an",
+        "words": [{ "word": "van" }, { "word": "man" }]
+      },
+      {
+        "family": "-ig",
+        "words": [{ "word": "pig" }, { "word": "fig" }, { "word": "big" }]
+      },
+      {
+        "family": "-ed",
+        "words": [{ "word": "bed" }, { "word": "red" }]
+      },
+      {
+        "family": "-ug",
+        "words": [{ "word": "bug" }, { "word": "rug" }]
+      },
+      {
+        "family": "-og",
+        "words": [{ "word": "dog" }, { "word": "log" }]
+      },
+      {
+        "family": "-at",
+        "words": [{ "word": "cat" }]
+      },
+      {
+        "family": "-en",
+        "words": [{ "word": "pen" }]
+      },
+      {
+        "family": "-op",
+        "words": [{ "word": "mop" }]
+      },
+      {
+        "family": "-ox",
+        "words": [{ "word": "fox" }]
+      },
+      {
+        "family": "-us",
+        "words": [{ "word": "bus" }]
+      }
+    ],
+    "chant": [
+      "A cat, cat, cat",
+      "is in a van, van, van.",
+      "A pen, pen, pen",
+      "is on my bed, bed, bed.",
+      "A pig, pig, pig",
+      "has a fig, fig, fig.",
+      "A dog, dog, dog",
+      "is on the bus, bus, bus."
+    ]
+  }
+}

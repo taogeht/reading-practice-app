@@ -1,0 +1,99 @@
+{
+  "unit": 12,
+  "topic": "You're sleeping!",
+  "vocabulary": [
+    { "word": "wedding",       "image": "/images/family-friends-2/unit-12/wedding.png" },
+    { "word": "guests",        "image": "/images/family-friends-2/unit-12/guests.png" },
+    { "word": "cake",          "image": "/images/family-friends-2/unit-12/cake.png" },
+    { "word": "bride",         "image": "/images/family-friends-2/unit-12/bride.png" },
+    { "word": "band",          "image": "/images/family-friends-2/unit-12/band.png" },
+    { "word": "invitation",    "image": "/images/family-friends-2/unit-12/invitation.png" },
+    { "word": "dress",         "image": "/images/family-friends-2/unit-12/dress.png" },
+    { "word": "make a cake",   "image": "/images/family-friends-2/unit-12/make-a-cake.png" },
+    { "word": "wash the car",  "image": "/images/family-friends-2/unit-12/wash-the-car.png" },
+    { "word": "brush my hair", "image": "/images/family-friends-2/unit-12/brush-my-hair.png" },
+    { "word": "take photos",   "image": "/images/family-friends-2/unit-12/take-photos.png" },
+    { "word": "choose a dress","image": "/images/family-friends-2/unit-12/choose-a-dress.png" }
+  ],
+  "verbs": ["dance", "eat", "sing", "talk", "sleep", "watch", "play", "drink", "swim", "listen", "look", "wear"],
+  "grammar_patterns": [
+    {
+      "pattern": "What are you doing? I'm/We're [verb-ing].",
+      "examples": [
+        "What are you doing? I'm dancing with Dad.",
+        "We're watching our wedding.",
+        "I'm wearing a shirt and a tie."
+      ]
+    },
+    {
+      "pattern": "What's he/she doing? He's/She's [verb-ing].",
+      "examples": [
+        "What's he doing? He's eating the wedding cake.",
+        "Mom's making cakes for the wedding.",
+        "My sister is taking lots of photos."
+      ]
+    },
+    {
+      "pattern": "What are they doing? They're [verb-ing].",
+      "examples": [
+        "What are they doing? They're talking.",
+        "Everyone is singing and talking.",
+        "The band is playing music."
+      ]
+    },
+    {
+      "pattern": "Are they / Is he/she [verb-ing]? Yes, they are. / No, he isn't.",
+      "examples": [
+        "Are they dancing? Yes, they are.",
+        "Is she singing? Yes, she is.",
+        "Are they drinking? No, they aren't."
+      ]
+    },
+    {
+      "pattern": "[Subject] is [verb-ing] [object].",
+      "examples": [
+        "Dad is washing the car.",
+        "Now I'm brushing my hair.",
+        "My sister is choosing a dress."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "We're watching our wedding.",
+    "The band is playing music.",
+    "I'm dancing with Dad.",
+    "What's he doing? He's eating the wedding cake.",
+    "They're talking.",
+    "Everyone is singing and talking. And you're sleeping!",
+    "Are they dancing? Yes, they are.",
+    "Mom's making cakes for the wedding.",
+    "Dad is washing the car.",
+    "My sister is taking lots of photos."
+  ],
+  "phonics": {
+    "sound": "long u",
+    "description": "Long vowel u with magic e (u_e), as in cube. The silent e makes the u say its name.",
+    "word_families": [
+      {
+        "family": "u_e",
+        "words": [
+          { "word": "cube" },
+          { "word": "flute" },
+          { "word": "tube" },
+          { "word": "mule" },
+          { "word": "June" }
+        ]
+      }
+    ],
+    "chant": [
+      "This month is June",
+      "And it's my birthday!",
+      "I have a fun cube,",
+      "I can play all day.",
+      "I have a new flute",
+      "For my birthday,",
+      "And a poster in a tube.",
+      "What a happy day!"
+    ]
+  }
+}

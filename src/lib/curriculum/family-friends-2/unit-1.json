@@ -1,0 +1,130 @@
+{
+  "unit": 1,
+  "topic": "Our new things",
+  "vocabulary": [
+    { "word": "classroom",   "image": "/images/family-friends-2/unit-1/classroom.png" },
+    { "word": "table",       "image": "/images/family-friends-2/unit-1/table.png" },
+    { "word": "chair",       "image": "/images/family-friends-2/unit-1/chair.png" },
+    { "word": "computer",    "image": "/images/family-friends-2/unit-1/computer.png" },
+    { "word": "coat hook",   "image": "/images/family-friends-2/unit-1/coat-hook.png" },
+    { "word": "pencil case", "image": "/images/family-friends-2/unit-1/pencil-case.png" },
+    { "word": "board",       "image": "/images/family-friends-2/unit-1/board.png" },
+    { "word": "poster",      "image": "/images/family-friends-2/unit-1/poster.png" },
+    { "word": "picture",     "image": "/images/family-friends-2/unit-1/picture.png" },
+    { "word": "drawers",     "image": "/images/family-friends-2/unit-1/drawers.png" },
+    { "word": "cabinet",     "image": "/images/family-friends-2/unit-1/cabinet.png" },
+    { "word": "cd player",   "image": "/images/family-friends-2/unit-1/cd-player.png" },
+    { "word": "book",        "image": "/images/family-friends-2/unit-1/book.png" },
+    { "word": "window",      "image": "/images/family-friends-2/unit-1/window.png" },
+    { "word": "door",        "image": "/images/family-friends-2/unit-1/door.png" }
+  ],
+  "adjectives": ["new", "big", "long", "short", "small", "nice"],
+  "grammar_patterns": [
+    {
+      "pattern": "This is the [noun].",
+      "examples": [
+        "This is the new computer.",
+        "This is my new pencil case.",
+        "This is our new board."
+      ]
+    },
+    {
+      "pattern": "That is a [noun].",
+      "examples": [
+        "That is a new board.",
+        "That is a new computer.",
+        "That's our new board."
+      ]
+    },
+    {
+      "pattern": "These are [plural noun].",
+      "examples": [
+        "These are new tables.",
+        "These are your new tables and chairs.",
+        "These are new pencils and pens."
+      ]
+    },
+    {
+      "pattern": "Those are [plural noun].",
+      "examples": [
+        "Those are new coat hooks.",
+        "Those are your new coat hooks.",
+        "Those are new posters."
+      ]
+    },
+    {
+      "pattern": "There is a new [noun].",
+      "examples": [
+        "There is a new table.",
+        "There is a new board.",
+        "There is a new pencil case."
+      ]
+    },
+    {
+      "pattern": "There are new [plural noun].",
+      "examples": [
+        "There are new coat hooks.",
+        "There are new computers.",
+        "There are new chairs."
+      ]
+    },
+    {
+      "pattern": "Do you like our new [noun]? Yes, we do.",
+      "examples": [
+        "Do you like our new things? Yes, we do.",
+        "Do you like our new board? Yes, we do.",
+        "Do you like our new computer? Yes, I do."
+      ]
+    },
+    {
+      "pattern": "Our [noun] is [adjective].",
+      "examples": [
+        "Our classroom is upstairs.",
+        "Our classroom is very big.",
+        "Our board is big."
+      ]
+    },
+    {
+      "pattern": "There are lots of [plural noun] on the [noun].",
+      "examples": [
+        "There are lots of pictures and posters on the wall.",
+        "There are lots of books on the table.",
+        "There are lots of posters on the board."
+      ]
+    },
+    {
+      "pattern": "There are [number] [plural noun] in my class.",
+      "examples": [
+        "There are 12 girls and 14 boys in my class.",
+        "There are 12 girls in my class.",
+        "There are 14 boys in my class."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "the alphabet and initial letter sounds",
+    "word_families": [],
+    "chant": [
+      "A, B, C, D, E, F, G,",
+      "Come and play this game with me.",
+      "H, I, J, K, L, M, N,",
+      "Close your eyes and count to ten.",
+      "O, P, Q, R, S, T,",
+      "Touch your nose and touch your knee.",
+      "U, V, W, X, Y, Z,",
+      "Touch your feet and jump with me."
+    ]
+  },
+  "key_sentences": [
+    "Look! These are your new tables and chairs.",
+    "Those are your new coat hooks.",
+    "That is our new board.",
+    "This is the new computer.",
+    "Do you like our new things? Yes, we do.",
+    "This is my new pencil case.",
+    "Our classroom is upstairs. It's very big.",
+    "There are 12 girls and 14 boys in my class.",
+    "There are lots of pictures and posters on the wall.",
+    "We sit at tables."
+  ]
+}

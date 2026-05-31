@@ -1,0 +1,97 @@
+{
+  "unit": 7,
+  "topic": "Let's buy presents!",
+  "vocabulary": [
+    { "word": "chocolate", "image": "/images/family-friends-2/unit-7/chocolate.png" },
+    { "word": "candy",     "image": "/images/family-friends-2/unit-7/candy.png" },
+    { "word": "balloon",   "image": "/images/family-friends-2/unit-7/balloon.png" },
+    { "word": "present",   "image": "/images/family-friends-2/unit-7/present.png" },
+    { "word": "cake",      "image": "/images/family-friends-2/unit-7/cake.png" },
+    { "word": "card",      "image": "/images/family-friends-2/unit-7/card.png" },
+    { "word": "pastries",  "image": "/images/family-friends-2/unit-7/pastries.png" },
+    { "word": "nuts",      "image": "/images/family-friends-2/unit-7/nuts.png" },
+    { "word": "tie",       "image": "/images/family-friends-2/unit-7/tie.png" },
+    { "word": "neighbor",  "image": "/images/family-friends-2/unit-7/neighbor.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "What do you like? I like [noun].",
+      "examples": [
+        "What do you like? I like balloons.",
+        "I like chocolate.",
+        "I like trains and cars."
+      ]
+    },
+    {
+      "pattern": "What does he/she like? He/She likes [noun].",
+      "examples": [
+        "What does he like? He likes chocolate.",
+        "What does she like? She likes candy.",
+        "He likes trains and cars."
+      ]
+    },
+    {
+      "pattern": "He/She doesn't like [noun].",
+      "examples": [
+        "He doesn't like balloons.",
+        "She doesn't like eggs.",
+        "Billy is scared of balloons."
+      ]
+    },
+    {
+      "pattern": "[Subject] do/does not like [noun]. (long and short forms)",
+      "examples": [
+        "I do not like candy. / I don't like candy.",
+        "She does not like eggs. / She doesn't like eggs.",
+        "My grandpa doesn't like cake."
+      ]
+    },
+    {
+      "pattern": "Let's buy a present for [name].",
+      "examples": [
+        "Let's buy a present for Mrs. Guss.",
+        "Let's buy presents.",
+        "What can we buy?"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "It's Billy's birthday tomorrow.",
+    "Let's buy presents. What does he like?",
+    "He likes trains and cars.",
+    "Billy doesn't like balloons. He's scared of balloons.",
+    "What do you like? I like balloons.",
+    "She doesn't like eggs.",
+    "My grandpa doesn't like cake.",
+    "Let's buy a present for Mrs. Guss.",
+    "Thank you for my presents."
+  ],
+  "phonics": {
+    "sound": "cl, gl, and sl",
+    "description": "The consonant blends cl, gl, and sl. Words are grouped by their beginning blend.",
+    "word_families": [
+      {
+        "family": "cl",
+        "words": [{ "word": "cloud" }, { "word": "clock" }]
+      },
+      {
+        "family": "gl",
+        "words": [{ "word": "gloves" }, { "word": "glue" }]
+      },
+      {
+        "family": "sl",
+        "words": [{ "word": "slide" }, { "word": "slippers" }]
+      }
+    ],
+    "chant": [
+      "I take off my slippers,",
+      "I go outside.",
+      "I put on my gloves,",
+      "And I play on the slide.",
+      "I look at the clock,",
+      "I see clouds in the sky.",
+      "Time to take off my gloves,",
+      "Time to say, \"Goodbye.\""
+    ]
+  }
+}

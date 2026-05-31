@@ -1,0 +1,87 @@
+{
+  "unit": 13,
+  "topic": "Look at all the animals!",
+  "vocabulary": [
+    { "word": "cow",    "image": "/images/family-friends-2/unit-13/cow.png" },
+    { "word": "goat",   "image": "/images/family-friends-2/unit-13/goat.png" },
+    { "word": "horse",  "image": "/images/family-friends-2/unit-13/horse.png" },
+    { "word": "sheep",  "image": "/images/family-friends-2/unit-13/sheep.png" },
+    { "word": "donkey", "image": "/images/family-friends-2/unit-13/donkey.png" },
+    { "word": "goose",  "image": "/images/family-friends-2/unit-13/goose.png" },
+    { "word": "hen",    "image": "/images/family-friends-2/unit-13/hen.png" },
+    { "word": "chick",  "image": "/images/family-friends-2/unit-13/chick.png" }
+  ],
+  "adjectives": ["big", "small", "tall", "short", "loud", "quiet", "fast", "slow"],
+  "prepositions": ["behind", "in front of", "between", "next to", "on"],
+  "grammar_patterns": [
+    {
+      "pattern": "This [noun] is [comparative] than that [noun].",
+      "examples": [
+        "This cow is bigger than that cow.",
+        "This sheep is smaller than that sheep.",
+        "That goat is bigger than the other goats."
+      ]
+    },
+    {
+      "pattern": "The [noun] is [comparative] than the [noun].",
+      "examples": [
+        "The horse is bigger than the goat.",
+        "The girl is taller than the boy.",
+        "The boy is shorter than the girl.",
+        "The sheep is smaller than the cow."
+      ]
+    },
+    {
+      "pattern": "The [noun] is [comparative: louder/quieter/faster/slower] than the [noun].",
+      "examples": [
+        "The hen is louder than the chick.",
+        "The goat is faster than the cow.",
+        "The cow is slower than the goat."
+      ]
+    },
+    {
+      "pattern": "There's a [animal] [preposition] the [noun].",
+      "examples": [
+        "There's a cow behind the gate.",
+        "There's a goat between the horse and the van.",
+        "There's a goose behind the tree."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Look at all the animals!",
+    "This cow is bigger than that cow.",
+    "This sheep is smaller than that sheep.",
+    "The horse is bigger than the goat.",
+    "The girl is taller than the boy.",
+    "The boy is shorter than the girl.",
+    "The hen is louder than the chick.",
+    "The goat is faster than the cow.",
+    "There's a cow behind the gate."
+  ],
+  "phonics": {
+    "sound": "long e",
+    "description": "Long vowel e spelled ee, as in tree. Two e's together make the long e sound.",
+    "word_families": [
+      {
+        "family": "ee",
+        "words": [
+          { "word": "tree" },
+          { "word": "green" },
+          { "word": "three" },
+          { "word": "cheese" },
+          { "word": "feet" }
+        ]
+      }
+    ],
+    "chant": [
+      "Look up at the green tree.",
+      "What can you see?",
+      "Two feet and a tail.",
+      "What's hiding there?",
+      "Count them: one, two, three!",
+      "A monkey with a piece of cheese,",
+      "That's what's hiding there!"
+    ]
+  }
+}

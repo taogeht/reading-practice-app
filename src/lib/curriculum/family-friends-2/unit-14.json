@@ -1,0 +1,90 @@
+{
+  "unit": 14,
+  "topic": "Look at the photos!",
+  "vocabulary": [
+    { "word": "fridge", "image": "/images/family-friends-2/unit-14/fridge.png" },
+    { "word": "photo",  "image": "/images/family-friends-2/unit-14/photo.png" },
+    { "word": "floor",  "image": "/images/family-friends-2/unit-14/floor.png" },
+    { "word": "trash",  "image": "/images/family-friends-2/unit-14/trash.png" }
+  ],
+  "adjectives": [
+    "kind", "bad", "wet", "dry", "neat", "messy", "dirty",
+    "happy", "sad", "hungry", "proud", "good"
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "[Subject] was / wasn't [adjective].",
+      "examples": [
+        "I was happy.",
+        "She wasn't wet. She was dry!",
+        "This goat was hungry.",
+        "Billy was little then."
+      ]
+    },
+    {
+      "pattern": "[Subject] were / weren't [adjective].",
+      "examples": [
+        "We were in the park.",
+        "You were good, Tim.",
+        "The babies weren't sad. They were hungry.",
+        "These birds were bad."
+      ]
+    },
+    {
+      "pattern": "[Subject] [verb] [noun] and [noun]. (and)",
+      "examples": [
+        "I like donkeys and horses.",
+        "Everyone was happy."
+      ]
+    },
+    {
+      "pattern": "[Subject] doesn't/don't [verb] [noun] or [noun]. (or)",
+      "examples": [
+        "I don't like dogs or cats."
+      ]
+    },
+    {
+      "pattern": "Plurals: [noun]+s (vowel + y) / +ies (consonant + y).",
+      "examples": [
+        "boy -> boys, turkey -> turkeys, monkey -> monkeys",
+        "family -> families, baby -> babies, party -> parties"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Look at the photos.",
+    "We were in the park. You were good, Tim.",
+    "The babies weren't sad. They were hungry.",
+    "We were very wet. Mom wasn't wet. She was dry!",
+    "These birds were bad. This goat was hungry.",
+    "I was little then, but I'm not little now.",
+    "The house was so messy!",
+    "Everyone was happy.",
+    "The house is very neat."
+  ],
+  "phonics": {
+    "sound": "short and long vowels",
+    "description": "Contrasting short vowels with long vowels (magic e): cap/cape, cub/cube, pin/pine. Best practiced as a listening task.",
+    "word_families": [
+      {
+        "family": "short vowel",
+        "words": [{ "word": "cap" }, { "word": "cub" }, { "word": "pin" }]
+      },
+      {
+        "family": "magic e",
+        "words": [{ "word": "cape" }, { "word": "cube" }, { "word": "pine" }]
+      }
+    ],
+    "chant": [
+      "A lion cub plays with a cube.",
+      "Cub, cub, cub.",
+      "Cube, cube, cube.",
+      "There's a big pin under the pine.",
+      "Pin, pin, pin.",
+      "Pine, pine, pine.",
+      "She has a red cap and a cape.",
+      "Cap, cap, cap.",
+      "Cape, cape, cape."
+    ]
+  }
+}

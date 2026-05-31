@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Family and Friends 2 — Curriculum Reference</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --line: #e6e8ee;
+    --accent: #4f46e5;
+    --accent-soft: #eef0fd;
+    --grammar: #0e7490;
+    --grammar-soft: #e0f2f5;
+    --phonics: #b45309;
+    --phonics-soft: #fdf1e1;
+    --key: #15803d;
+    --key-soft: #e7f5ec;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 14px rgba(16,24,40,.06);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 20px 80px; }
+
+  header.cover {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c5cf0 55%, #9d6ff0 100%);
+    color: #fff;
+    padding: 56px 20px 48px;
+    text-align: center;
+  }
+  .cover h1 { margin: 0; font-size: 40px; letter-spacing: -.02em; font-weight: 800; }
+  .cover .sub { margin-top: 8px; font-size: 17px; opacity: .92; font-weight: 500; }
+  .cover .meta { margin-top: 18px; font-size: 13px; opacity: .85; }
+  .cover .meta span { display: inline-block; padding: 4px 12px; background: rgba(255,255,255,.16); border-radius: 999px; margin: 0 4px; }
+
+  .toc {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px; margin: 28px 0 36px;
+  }
+  .toc-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 12px; text-decoration: none; color: var(--ink);
+    box-shadow: var(--shadow); transition: transform .08s ease, border-color .08s ease;
+  }
+  .toc-item:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .toc-num {
+    flex: none; width: 30px; height: 30px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent);
+    display: grid; place-items: center; font-weight: 700; font-size: 14px;
+  }
+  .toc-topic { font-size: 14px; font-weight: 600; }
+
+  .unit {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 22px; overflow: hidden;
+  }
+  .unit-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 22px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(0deg, #fafbff, #ffffff);
+    position: relative;
+  }
+  .unit-num {
+    flex: none; width: 40px; height: 40px; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center; font-weight: 800; font-size: 18px;
+  }
+  .unit-topic { margin: 0; font-size: 21px; font-weight: 750; letter-spacing: -.01em; }
+  .top-link { margin-left: auto; font-size: 12px; color: var(--muted); text-decoration: none; }
+  .top-link:hover { color: var(--accent); }
+  .unit-body { padding: 18px 22px 22px; }
+
+  .field { margin-top: 18px; }
+  .field:first-child { margin-top: 0; }
+  .field-title {
+    margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 8px;
+  }
+  .field-title .count {
+    background: var(--accent-soft); color: var(--accent); font-size: 11px;
+    padding: 1px 7px; border-radius: 999px; letter-spacing: 0;
+  }
+  .field-sub { margin: 12px 0 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+  .bank { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .bank-label {
+    flex: none; min-width: 96px; font-size: 12px; font-weight: 700; color: var(--muted);
+    text-align: right; padding-top: 3px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f1f3f7; border: 1px solid #e7eaf1; color: #2b3140;
+    padding: 3px 10px; border-radius: 999px; font-size: 13.5px; font-weight: 500;
+  }
+  .chip .sw { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); display: inline-block; }
+  .chip.phon { background: var(--phonics-soft); border-color: #f3e2c9; color: #7a4a08; }
+  .chip .emoji { font-size: 14px; }
+
+  .patterns { display: grid; gap: 10px; }
+  .pattern { border: 1px solid var(--grammar-soft); border-left: 3px solid var(--grammar); border-radius: 10px; padding: 10px 14px; background: #fbfeff; }
+  .pattern-head { font-weight: 700; color: var(--grammar); font-size: 15px; }
+  .examples { margin: 8px 0 2px; padding-left: 18px; }
+  .examples li { font-size: 14px; margin: 2px 0; color: #2b3140; }
+
+  .key-sentences { margin: 0; padding-left: 18px; }
+  .key-sentences li { font-size: 14.5px; margin: 4px 0; }
+  .key-sentences li::marker { color: var(--key); }
+
+  .phonics { border-top: 1px dashed var(--line); padding-top: 18px; }
+  .sound-badge {
+    background: var(--phonics-soft); color: var(--phonics); font-size: 12px;
+    padding: 2px 10px; border-radius: 999px; letter-spacing: 0; font-weight: 700; text-transform: none;
+  }
+  .desc { margin: 0 0 10px; font-size: 14px; color: #444b59; }
+  .fams { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; }
+  .fam { }
+  .fam-label {
+    display: inline-block; font-weight: 800; color: var(--phonics);
+    font-size: 13px; margin-bottom: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .chant {
+    background: var(--phonics-soft); border-radius: 10px; padding: 12px 16px;
+    font-style: italic; color: #6b4410; font-size: 14px;
+  }
+  .chant-line { margin: 1px 0; }
+  .muted { color: var(--muted); font-size: 13.5px; font-style: italic; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 24px 0 0; }
+  @media (max-width: 560px) {
+    .bank-label { text-align: left; min-width: 0; }
+    .cover h1 { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+<a id="top"></a>
+<header class="cover">
+  <h1>Family and Friends 2</h1>
+  <div class="sub">Complete Curriculum Reference</div>
+  <div class="meta">
+    <span>16 units (0–15)</span>
+    <span>family-friends-2</span>
+    <span>Generated 2026-05-31</span>
+  </div>
+</header>
+<div class="wrap">
+  <nav class="toc"><a class="toc-item" href="#unit-0"><span class="toc-num">0</span><span class="toc-topic">Welcome back!</span></a><a class="toc-item" href="#unit-1"><span class="toc-num">1</span><span class="toc-topic">Our new things</span></a><a class="toc-item" href="#unit-2"><span class="toc-num">2</span><span class="toc-topic">They're happy now!</span></a><a class="toc-item" href="#unit-3"><span class="toc-num">3</span><span class="toc-topic">I can ride a bike!</span></a><a class="toc-item" href="#unit-4"><span class="toc-num">4</span><span class="toc-topic">Do you have a milkshake?</span></a><a class="toc-item" href="#unit-5"><span class="toc-num">5</span><span class="toc-topic">We have English!</span></a><a class="toc-item" href="#unit-6"><span class="toc-num">6</span><span class="toc-topic">Let's play after school!</span></a><a class="toc-item" href="#unit-7"><span class="toc-num">7</span><span class="toc-topic">Let's buy presents!</span></a><a class="toc-item" href="#unit-8"><span class="toc-num">8</span><span class="toc-topic">What time is it?</span></a><a class="toc-item" href="#unit-9"><span class="toc-num">9</span><span class="toc-topic">Where does she work?</span></a><a class="toc-item" href="#unit-10"><span class="toc-num">10</span><span class="toc-topic">It's hot today!</span></a><a class="toc-item" href="#unit-11"><span class="toc-num">11</span><span class="toc-topic">What are you wearing?</span></a><a class="toc-item" href="#unit-12"><span class="toc-num">12</span><span class="toc-topic">You're sleeping!</span></a><a class="toc-item" href="#unit-13"><span class="toc-num">13</span><span class="toc-topic">Look at all the animals!</span></a><a class="toc-item" href="#unit-14"><span class="toc-num">14</span><span class="toc-topic">Look at the photos!</span></a><a class="toc-item" href="#unit-15"><span class="toc-num">15</span><span class="toc-topic">Good job!</span></a></nav>
+  <section class="unit" id="unit-0">
+    <header class="unit-head">
+      <span class="unit-num">0</span>
+      <h2 class="unit-topic">Welcome back!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">mom</span><span class="chip">dad</span><span class="chip">brother</span><span class="chip">sister</span><span class="chip">grandma</span><span class="chip">grandpa</span><span class="chip">aunt</span><span class="chip">uncle</span><span class="chip">cousin</span><span class="chip">hair</span><span class="chip">eyes</span><span class="chip">ball</span><span class="chip">car</span><span class="chip">train</span><span class="chip">doll</span><span class="chip">teddy bear</span><span class="chip">puzzle</span><span class="chip">bike</span><span class="chip">kite</span></div></div><div class="bank"><span class="bank-label">Adjectives</span><div class="chips"><span class="chip">long</span><span class="chip">short</span><span class="chip">curly</span><span class="chip">straight</span><span class="chip">blond</span><span class="chip">little</span><span class="chip">happy</span><span class="chip">fine</span></div></div><div class="bank"><span class="bank-label">Numbers</span><div class="chips"><span class="chip">one</span><span class="chip">two</span><span class="chip">three</span><span class="chip">four</span><span class="chip">five</span><span class="chip">six</span><span class="chip">seven</span><span class="chip">eight</span><span class="chip">nine</span><span class="chip">ten</span><span class="chip">eleven</span><span class="chip">twelve</span><span class="chip">thirteen</span><span class="chip">fourteen</span><span class="chip">fifteen</span><span class="chip">sixteen</span><span class="chip">seventeen</span><span class="chip">eighteen</span><span class="chip">nineteen</span><span class="chip">twenty</span></div></div><div class="bank"><span class="bank-label">Colors</span><div class="chips"><span class="chip"><span class="sw" style="background:#e23b3b"></span>red</span><span class="chip"><span class="sw" style="background:#3aa655"></span>green</span><span class="chip"><span class="sw" style="background:#3b6fe2"></span>blue</span><span class="chip"><span class="sw" style="background:#f2c200"></span>yellow</span><span class="chip"><span class="sw" style="background:#f06ba8"></span>pink</span><span class="chip"><span class="sw" style="background:#8a4fc4"></span>purple</span><span class="chip"><span class="sw" style="background:#2b2b2b"></span>black</span><span class="chip"><span class="sw" style="background:#ffffff"></span>white</span><span class="chip"><span class="sw" style="background:#9b6a3f"></span>brown</span><span class="chip"><span class="sw" style="background:#f08a24"></span>orange</span><span class="chip"><span class="sw" style="background:#9aa0a6"></span>gray</span></div></div><div class="bank"><span class="bank-label">Prepositions</span><div class="chips"><span class="chip">under</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">11</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">I have [adjective] [noun].</div>
+        <ul class="examples"><li>I have brown hair.</li><li>I have long hair.</li><li>I have a little brother.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">He/She has [adjective] [noun].</div>
+        <ul class="examples"><li>He has green eyes.</li><li>She has curly hair.</li><li>He has lots of teddy bears.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">My/His/Her name's [name].</div>
+        <ul class="examples"><li>My name's Rosy.</li><li>His name's Billy.</li><li>Her name's Jasmin.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">This is my [family member].</div>
+        <ul class="examples"><li>This is my cousin, Tim.</li><li>This is my sister.</li><li>This is my friend.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">This is [name]'s [family member].</div>
+        <ul class="examples"><li>This is Rosy's mom.</li><li>This is Rosy's dad.</li><li>Tim is Rosy's cousin.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">He's/She's/I'm [number]. (age)</div>
+        <ul class="examples"><li>He's two.</li><li>I'm seven.</li><li>She's nine.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Where's [name]? Is he/she [preposition] the [noun]?</div>
+        <ul class="examples"><li>Where's Billy?</li><li>Is he under the bed?</li><li>No, he isn't.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">How many [plural noun] are there? There are [number] [plural noun].</div>
+        <ul class="examples"><li>How many cars are there?</li><li>There are ten cars.</li><li>How many balls are there? There are five balls.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There is [singular noun]. / There are [plural noun].</div>
+        <ul class="examples"><li>There is one train.</li><li>There is one puzzle.</li><li>There are three balls.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What color is [noun]? It's [color].</div>
+        <ul class="examples"><li>What color is number 18?</li><li>It's blue.</li><li>What color is the car? It's red.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Greetings.</div>
+        <ul class="examples"><li>Hello. How are you?</li><li>I'm fine, thank you.</li><li>How old are you? I'm seven.</li><li>Goodbye.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Hello. My name's Rosy.</li><li>I have brown hair.</li><li>This is my cousin, Tim.</li><li>He has green eyes.</li><li>I have a little brother. His name's Billy.</li><li>He's two. He has curly hair.</li><li>Where's Billy? Is he under the bed?</li><li>No, he isn't.</li><li>How many cars are there?</li><li>There are ten cars.</li><li>This is Rosy's mom.</li><li>What color is number 18?</li></ul>
+  </div>
+      
+    </div>
+  </section>
+<section class="unit" id="unit-1">
+    <header class="unit-head">
+      <span class="unit-num">1</span>
+      <h2 class="unit-topic">Our new things</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">classroom</span><span class="chip">table</span><span class="chip">chair</span><span class="chip">computer</span><span class="chip">coat hook</span><span class="chip">pencil case</span><span class="chip">board</span><span class="chip">poster</span><span class="chip">picture</span><span class="chip">drawers</span><span class="chip">cabinet</span><span class="chip">cd player</span><span class="chip">book</span><span class="chip">window</span><span class="chip">door</span></div></div><div class="bank"><span class="bank-label">Adjectives</span><div class="chips"><span class="chip">new</span><span class="chip">big</span><span class="chip">long</span><span class="chip">short</span><span class="chip">small</span><span class="chip">nice</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">10</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">This is the [noun].</div>
+        <ul class="examples"><li>This is the new computer.</li><li>This is my new pencil case.</li><li>This is our new board.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">That is a [noun].</div>
+        <ul class="examples"><li>That is a new board.</li><li>That is a new computer.</li><li>That's our new board.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">These are [plural noun].</div>
+        <ul class="examples"><li>These are new tables.</li><li>These are your new tables and chairs.</li><li>These are new pencils and pens.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Those are [plural noun].</div>
+        <ul class="examples"><li>Those are new coat hooks.</li><li>Those are your new coat hooks.</li><li>Those are new posters.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There is a new [noun].</div>
+        <ul class="examples"><li>There is a new table.</li><li>There is a new board.</li><li>There is a new pencil case.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There are new [plural noun].</div>
+        <ul class="examples"><li>There are new coat hooks.</li><li>There are new computers.</li><li>There are new chairs.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Do you like our new [noun]? Yes, we do.</div>
+        <ul class="examples"><li>Do you like our new things? Yes, we do.</li><li>Do you like our new board? Yes, we do.</li><li>Do you like our new computer? Yes, I do.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Our [noun] is [adjective].</div>
+        <ul class="examples"><li>Our classroom is upstairs.</li><li>Our classroom is very big.</li><li>Our board is big.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There are lots of [plural noun] on the [noun].</div>
+        <ul class="examples"><li>There are lots of pictures and posters on the wall.</li><li>There are lots of books on the table.</li><li>There are lots of posters on the board.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There are [number] [plural noun] in my class.</div>
+        <ul class="examples"><li>There are 12 girls and 14 boys in my class.</li><li>There are 12 girls in my class.</li><li>There are 14 boys in my class.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Look! These are your new tables and chairs.</li><li>Those are your new coat hooks.</li><li>That is our new board.</li><li>This is the new computer.</li><li>Do you like our new things? Yes, we do.</li><li>This is my new pencil case.</li><li>Our classroom is upstairs. It's very big.</li><li>There are 12 girls and 14 boys in my class.</li><li>There are lots of pictures and posters on the wall.</li><li>We sit at tables.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">the alphabet and initial letter sounds</span></h3>
+    
+    <p class="muted">No word families (recognition only — no generated phonics questions).</p>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">A, B, C, D, E, F, G,</div><div class="chant-line">Come and play this game with me.</div><div class="chant-line">H, I, J, K, L, M, N,</div><div class="chant-line">Close your eyes and count to ten.</div><div class="chant-line">O, P, Q, R, S, T,</div><div class="chant-line">Touch your nose and touch your knee.</div><div class="chant-line">U, V, W, X, Y, Z,</div><div class="chant-line">Touch your feet and jump with me.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-2">
+    <header class="unit-head">
+      <span class="unit-num">2</span>
+      <h2 class="unit-topic">They're happy now!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Adjectives</span><div class="chips"><span class="chip">hot</span><span class="chip">cold</span><span class="chip">hungry</span><span class="chip">thirsty</span><span class="chip">happy</span><span class="chip">sad</span><span class="chip">tired</span><span class="chip">angry</span><span class="chip">scared</span><span class="chip">brave</span><span class="chip">nervous</span><span class="chip">good</span><span class="chip">bad</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">6</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">We're/They're [adjective].</div>
+        <ul class="examples"><li>We're happy.</li><li>They're hungry.</li><li>They're happy now.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Are they [adjective]? Yes, they are. / No, they aren't.</div>
+        <ul class="examples"><li>Are they hot? No, they aren't.</li><li>Are they happy? Yes, they are.</li><li>No, they aren't cold.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">He's/She's [adjective].</div>
+        <ul class="examples"><li>He's happy.</li><li>She's thirsty.</li><li>He's cold.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">I'm/You're/We're/They're [adjective]. (long and short forms)</div>
+        <ul class="examples"><li>I'm cold.</li><li>We're scared.</li><li>They are nervous.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Demonstrative] [noun] are/aren't [adjective].</div>
+        <ul class="examples"><li>These girls are hungry.</li><li>These boys aren't cold.</li><li>We aren't tired.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">I [verb] when I am [adjective].</div>
+        <ul class="examples"><li>I cry when I am sad.</li><li>I smile when I am brave.</li><li>I smile when I do something good.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>We're happy.</li><li>They're hungry.</li><li>Are they hot? No, they aren't.</li><li>Are they happy? Yes, they are.</li><li>He's happy.</li><li>She's thirsty.</li><li>These girls are hungry.</li><li>These boys aren't cold.</li><li>They're happy now and we're happy, too.</li><li>I cry when I am sad.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">ch, sh, and th</span></h3>
+    <p class="desc">The digraphs ch, sh, and th. Words are grouped by their shared sound.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">ch</span><div class="chips"><span class="chip phon">chair</span><span class="chip phon">teacher</span></div></div><div class="fam"><span class="fam-label">sh</span><div class="chips"><span class="chip phon">shoes</span><span class="chip phon">fish</span></div></div><div class="fam"><span class="fam-label">th</span><div class="chips"><span class="chip phon">thumb</span><span class="chip phon">bath</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">Look at my teacher,</div><div class="chant-line">Sitting on a chair.</div><div class="chant-line">Her shoes are blue,</div><div class="chant-line">She has long, black hair.</div><div class="chant-line">A picture of a bath,</div><div class="chant-line">And a picture of a fish.</div><div class="chant-line">Look at my teacher,</div><div class="chant-line">Her name's Miss Wish.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-3">
+    <header class="unit-head">
+      <span class="unit-num">3</span>
+      <h2 class="unit-topic">I can ride a bike!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">ride a bike</span><span class="chip">ride a horse</span><span class="chip">skate</span><span class="chip">skateboard</span><span class="chip">play tennis</span><span class="chip">play soccer</span><span class="chip">swim</span><span class="chip">scooter</span><span class="chip">skates</span><span class="chip">swing</span></div></div><div class="bank"><span class="bank-label">Verbs</span><div class="chips"><span class="chip">ride</span><span class="chip">skate</span><span class="chip">skateboard</span><span class="chip">swim</span><span class="chip">play</span><span class="chip">run</span><span class="chip">cook</span><span class="chip">fly</span><span class="chip">dance</span><span class="chip">climb</span><span class="chip">sing</span><span class="chip">draw</span></div></div><div class="bank"><span class="bank-label">Prepositions</span><div class="chips"><span class="chip">behind</span><span class="chip">in front of</span><span class="chip">next to</span><span class="chip">between</span><span class="chip">on</span><span class="chip">under</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">6</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">I can [verb]. / I can't [verb].</div>
+        <ul class="examples"><li>I can skate.</li><li>I can swim.</li><li>I can't skateboard.</li><li>I can't ride a bike.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Can he/she [verb]? Yes, she can. / No, he can't.</div>
+        <ul class="examples"><li>Can she play tennis? Yes, she can.</li><li>Can he ride a bike? No, he can't.</li><li>Can he ride a horse? No, he can't.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Can they [verb]? Yes, they can. / No, they can't.</div>
+        <ul class="examples"><li>Can they play tennis? No, they can't.</li><li>Can they skateboard? Yes, they can.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Where's the [noun]? It's [preposition] the [noun].</div>
+        <ul class="examples"><li>Where's the skateboard? It's in front of the table.</li><li>Where is my teddy bear? Is he hiding there?</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">The [noun] is [preposition] the [noun].</div>
+        <ul class="examples"><li>The book is behind the teddy bear.</li><li>The teddy bear is on the bed.</li><li>The toy box is between the bed and the chair.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">This is / It's a [consonant-noun]. / This is / It's an [vowel-noun].</div>
+        <ul class="examples"><li>This is an apple.</li><li>It's a blue doll.</li><li>I have an ice pop.</li><li>She has an egg.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>I can skate.</li><li>I can't skateboard.</li><li>Can she play tennis? Yes, she can.</li><li>Can he ride a bike? No, he can't.</li><li>Where's the skateboard? It's in front of the table.</li><li>The book is behind the teddy bear.</li><li>This is an apple.</li><li>It's a blue doll.</li><li>Can they play tennis? No, they can't.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">short vowels</span></h3>
+    <p class="desc">CVC words with the short vowels a, e, i, o, u, grouped into rhyming families.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">-an</span><div class="chips"><span class="chip phon">van</span><span class="chip phon">man</span></div></div><div class="fam"><span class="fam-label">-ig</span><div class="chips"><span class="chip phon">pig</span><span class="chip phon">fig</span><span class="chip phon">big</span></div></div><div class="fam"><span class="fam-label">-ed</span><div class="chips"><span class="chip phon">bed</span><span class="chip phon">red</span></div></div><div class="fam"><span class="fam-label">-ug</span><div class="chips"><span class="chip phon">bug</span><span class="chip phon">rug</span></div></div><div class="fam"><span class="fam-label">-og</span><div class="chips"><span class="chip phon">dog</span><span class="chip phon">log</span></div></div><div class="fam"><span class="fam-label">-at</span><div class="chips"><span class="chip phon">cat</span></div></div><div class="fam"><span class="fam-label">-en</span><div class="chips"><span class="chip phon">pen</span></div></div><div class="fam"><span class="fam-label">-op</span><div class="chips"><span class="chip phon">mop</span></div></div><div class="fam"><span class="fam-label">-ox</span><div class="chips"><span class="chip phon">fox</span></div></div><div class="fam"><span class="fam-label">-us</span><div class="chips"><span class="chip phon">bus</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">A cat, cat, cat</div><div class="chant-line">is in a van, van, van.</div><div class="chant-line">A pen, pen, pen</div><div class="chant-line">is on my bed, bed, bed.</div><div class="chant-line">A pig, pig, pig</div><div class="chant-line">has a fig, fig, fig.</div><div class="chant-line">A dog, dog, dog</div><div class="chant-line">is on the bus, bus, bus.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-4">
+    <header class="unit-head">
+      <span class="unit-num">4</span>
+      <h2 class="unit-topic">Do you have a milkshake?</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">salad</span><span class="chip">fries</span><span class="chip">pizza</span><span class="chip">milkshake</span><span class="chip">cheese sandwich</span><span class="chip">chicken</span><span class="chip">yogurt</span><span class="chip">cookie</span><span class="chip">juice</span><span class="chip">apple</span><span class="chip">banana</span><span class="chip">orange</span></div></div><div class="bank"><span class="bank-label">Numbers</span><div class="chips"><span class="chip">ten</span><span class="chip">twenty</span><span class="chip">thirty</span><span class="chip">forty</span><span class="chip">fifty</span><span class="chip">sixty</span><span class="chip">seventy</span><span class="chip">eighty</span><span class="chip">ninety</span><span class="chip">one hundred</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">6</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">Do you have a [noun]? Yes, I do. / No, I don't.</div>
+        <ul class="examples"><li>Do you have a milkshake? Yes, I do.</li><li>Do you have fries? No, I don't.</li><li>Do you have pizza?</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Does he/she have a [noun]? Yes, he does. / No, she doesn't.</div>
+        <ul class="examples"><li>Does he have a sandwich? No, he doesn't.</li><li>Does she have a pizza? Yes, she does.</li><li>He doesn't have his fries.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">They like [plural noun].</div>
+        <ul class="examples"><li>They like sandwiches.</li><li>They like bananas.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">I'm not [adjective].</div>
+        <ul class="examples"><li>I'm not hungry.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Let's count to [number]!</div>
+        <ul class="examples"><li>Let's count to one hundred!</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[number]-[number] (compound numbers)</div>
+        <ul class="examples"><li>twenty-one</li><li>twenty-two</li><li>twenty-nine</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Do you have a milkshake? Yes, I do.</li><li>Does he have a sandwich? No, he doesn't.</li><li>He doesn't have his salad.</li><li>They like sandwiches.</li><li>I'm not hungry.</li><li>Let's count to one hundred!</li><li>Kate has a yogurt.</li><li>We have more food.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">gr, br, and fr</span></h3>
+    <p class="desc">The consonant blends gr, br, and fr. Words are grouped by their beginning blend.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">gr</span><div class="chips"><span class="chip phon">grapes</span><span class="chip phon">grass</span></div></div><div class="fam"><span class="fam-label">br</span><div class="chips"><span class="chip phon">bread</span><span class="chip phon">brush</span><span class="chip phon">brown</span></div></div><div class="fam"><span class="fam-label">fr</span><div class="chips"><span class="chip phon">frog</span><span class="chip phon">frisbee</span><span class="chip phon">friends</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">There are grapes and bread,</div><div class="chant-line">And juice in a glass.</div><div class="chant-line">Friends together,</div><div class="chant-line">In the green, green, grass.</div><div class="chant-line">Play with a frisbee,</div><div class="chant-line">Play with a ball.</div><div class="chant-line">The friends have fun</div><div class="chant-line">With the big, brown ball.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-5">
+    <header class="unit-head">
+      <span class="unit-num">5</span>
+      <h2 class="unit-topic">We have English!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">art</span><span class="chip">math</span><span class="chip">English</span><span class="chip">science</span><span class="chip">P.E.</span><span class="chip">music</span><span class="chip">school yard</span><span class="chip">field</span><span class="chip">art room</span><span class="chip">computer room</span><span class="chip">gym</span></div></div><div class="bank"><span class="bank-label">Prepositions</span><div class="chips"><span class="chip">on</span><span class="chip">in</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">6</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">What do we have on [day]? We have [subject].</div>
+        <ul class="examples"><li>What do we have on Monday? We have English.</li><li>Then we have math.</li><li>What do we have on Wednesday?</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">When do we have [subject]? We have [subject] on [day].</div>
+        <ul class="examples"><li>When do we have P.E.? We have P.E. on Thursday.</li><li>When do we have math? On Wednesday.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">These are our [plural noun]. / Those are their [plural noun].</div>
+        <ul class="examples"><li>These are our P.E. bags.</li><li>Those are their lunchboxes.</li><li>These are our lunchboxes.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">We have a [noun] in the [room].</div>
+        <ul class="examples"><li>We have a big computer room.</li><li>We have a garbage can in the school yard.</li><li>We have books in the classroom.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">You can wear their [plural noun].</div>
+        <ul class="examples"><li>You can wear their clothes.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">We don't have [subject] on [day].</div>
+        <ul class="examples"><li>We don't have school on Saturday.</li><li>We don't have math on Monday.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>What do we have on Monday? We have English.</li><li>When do we have P.E.? We have P.E. on Thursday.</li><li>These are our P.E. bags.</li><li>Those are their lunchboxes.</li><li>You can wear their clothes.</li><li>At our school we have a big computer room.</li><li>We have a garbage can in the school yard.</li><li>We don't have school on Saturday.</li><li>In the school yard we have lots of fun.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">dr, tr, and cr</span></h3>
+    <p class="desc">The consonant blends dr, tr, and cr. Words are grouped by their beginning blend.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">dr</span><div class="chips"><span class="chip phon">drum</span><span class="chip phon">dress</span></div></div><div class="fam"><span class="fam-label">tr</span><div class="chips"><span class="chip phon">truck</span><span class="chip phon">tree</span><span class="chip phon">train</span></div></div><div class="fam"><span class="fam-label">cr</span><div class="chips"><span class="chip phon">crayon</span><span class="chip phon">crab</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">A train and a truck,</div><div class="chant-line">A crab and a drum.</div><div class="chant-line">I draw with my crayons,</div><div class="chant-line">And I have fun.</div><div class="chant-line">A girl in a dress,</div><div class="chant-line">A bird in a tree.</div><div class="chant-line">Get your crayons,</div><div class="chant-line">And draw with me.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-6">
+    <header class="unit-head">
+      <span class="unit-num">6</span>
+      <h2 class="unit-topic">Let's play after school!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">help my mom</span><span class="chip">do my homework</span><span class="chip">visit my grandma</span><span class="chip">go swimming</span><span class="chip">have a music lesson</span><span class="chip">watch TV</span><span class="chip">read a book</span><span class="chip">write an email</span><span class="chip">listen to music</span><span class="chip">play with my friends</span></div></div><div class="bank"><span class="bank-label">Verbs</span><div class="chips"><span class="chip">help</span><span class="chip">do</span><span class="chip">visit</span><span class="chip">go</span><span class="chip">watch</span><span class="chip">read</span><span class="chip">write</span><span class="chip">listen</span><span class="chip">play</span><span class="chip">cook</span><span class="chip">draw</span><span class="chip">paint</span><span class="chip">sing</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">5</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">I [activity] every [day].</div>
+        <ul class="examples"><li>I visit my grandma every Tuesday.</li><li>I have a music lesson every Monday.</li><li>I go swimming every Thursday.</li><li>I help my mom every Wednesday.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">I don't [activity].</div>
+        <ul class="examples"><li>I don't watch TV.</li><li>I don't have a music lesson.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Can you play after school on [day]?</div>
+        <ul class="examples"><li>Can you play after school on Monday?</li><li>How about Tuesday?</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">After school, I [activity].</div>
+        <ul class="examples"><li>After school, I do my homework.</li><li>I read a book.</li><li>I listen to music.</li><li>I help to cook.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Name] can [verb] with us.</div>
+        <ul class="examples"><li>Alice can go swimming with us!</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Can you play after school on Monday?</li><li>I have a music lesson every Monday.</li><li>I visit my grandma every Tuesday.</li><li>I help my mom every Wednesday.</li><li>I go swimming every Thursday.</li><li>I don't watch TV.</li><li>After school, I do my homework.</li><li>I listen to music. I help to cook.</li><li>Alice can go swimming with us!</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">fl, pl, and bl</span></h3>
+    <p class="desc">The consonant blends fl, pl, and bl. Words are grouped by their beginning blend.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">fl</span><div class="chips"><span class="chip phon">flower</span><span class="chip phon">flag</span></div></div><div class="fam"><span class="fam-label">pl</span><div class="chips"><span class="chip phon">plum</span><span class="chip phon">plate</span></div></div><div class="fam"><span class="fam-label">bl</span><div class="chips"><span class="chip phon">blanket</span><span class="chip phon">blue</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">Plums on a plate,</div><div class="chant-line">Plums on a plate.</div><div class="chant-line">Blue plums, black plums,</div><div class="chant-line">Plums on a plate.</div><div class="chant-line">A blanket on a bed,</div><div class="chant-line">A blanket on a bed.</div><div class="chant-line">There's a pretty flower</div><div class="chant-line">On the blanket on the bed.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-7">
+    <header class="unit-head">
+      <span class="unit-num">7</span>
+      <h2 class="unit-topic">Let's buy presents!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">chocolate</span><span class="chip">candy</span><span class="chip">balloon</span><span class="chip">present</span><span class="chip">cake</span><span class="chip">card</span><span class="chip">pastries</span><span class="chip">nuts</span><span class="chip">tie</span><span class="chip">neighbor</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">5</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">What do you like? I like [noun].</div>
+        <ul class="examples"><li>What do you like? I like balloons.</li><li>I like chocolate.</li><li>I like trains and cars.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What does he/she like? He/She likes [noun].</div>
+        <ul class="examples"><li>What does he like? He likes chocolate.</li><li>What does she like? She likes candy.</li><li>He likes trains and cars.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">He/She doesn't like [noun].</div>
+        <ul class="examples"><li>He doesn't like balloons.</li><li>She doesn't like eggs.</li><li>Billy is scared of balloons.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Subject] do/does not like [noun]. (long and short forms)</div>
+        <ul class="examples"><li>I do not like candy. / I don't like candy.</li><li>She does not like eggs. / She doesn't like eggs.</li><li>My grandpa doesn't like cake.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Let's buy a present for [name].</div>
+        <ul class="examples"><li>Let's buy a present for Mrs. Guss.</li><li>Let's buy presents.</li><li>What can we buy?</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>It's Billy's birthday tomorrow.</li><li>Let's buy presents. What does he like?</li><li>He likes trains and cars.</li><li>Billy doesn't like balloons. He's scared of balloons.</li><li>What do you like? I like balloons.</li><li>She doesn't like eggs.</li><li>My grandpa doesn't like cake.</li><li>Let's buy a present for Mrs. Guss.</li><li>Thank you for my presents.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">cl, gl, and sl</span></h3>
+    <p class="desc">The consonant blends cl, gl, and sl. Words are grouped by their beginning blend.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">cl</span><div class="chips"><span class="chip phon">cloud</span><span class="chip phon">clock</span></div></div><div class="fam"><span class="fam-label">gl</span><div class="chips"><span class="chip phon">gloves</span><span class="chip phon">glue</span></div></div><div class="fam"><span class="fam-label">sl</span><div class="chips"><span class="chip phon">slide</span><span class="chip phon">slippers</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">I take off my slippers,</div><div class="chant-line">I go outside.</div><div class="chant-line">I put on my gloves,</div><div class="chant-line">And I play on the slide.</div><div class="chant-line">I look at the clock,</div><div class="chant-line">I see clouds in the sky.</div><div class="chant-line">Time to take off my gloves,</div><div class="chant-line">Time to say, &quot;Goodbye.&quot;</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-8">
+    <header class="unit-head">
+      <span class="unit-num">8</span>
+      <h2 class="unit-topic">What time is it?</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">get up</span><span class="chip">have breakfast</span><span class="chip">go to school</span><span class="chip">go home</span><span class="chip">have dinner</span><span class="chip">go to bed</span><span class="chip">have lunch</span><span class="chip">do my homework</span><span class="chip">brush my teeth</span><span class="chip">play with my toys</span><span class="chip">in the morning</span><span class="chip">in the afternoon</span><span class="chip">in the evening</span><span class="chip">at night</span></div></div><div class="bank"><span class="bank-label">Numbers</span><div class="chips"><span class="chip">one</span><span class="chip">two</span><span class="chip">three</span><span class="chip">four</span><span class="chip">five</span><span class="chip">six</span><span class="chip">seven</span><span class="chip">eight</span><span class="chip">nine</span><span class="chip">ten</span><span class="chip">eleven</span><span class="chip">twelve</span></div></div><div class="bank"><span class="bank-label">Prepositions</span><div class="chips"><span class="chip">at</span><span class="chip">in</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">5</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">What time is it? It's [number] o'clock.</div>
+        <ul class="examples"><li>What time is it? It's seven o'clock.</li><li>It's three o'clock.</li><li>It's nine o'clock.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">He/She [verb-s] at [number] o'clock.</div>
+        <ul class="examples"><li>He gets up at six o'clock.</li><li>She goes to bed at nine o'clock.</li><li>He has dinner at seven o'clock.</li><li>She starts work at six o'clock.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">I [activity] in the morning/afternoon/evening / at night.</div>
+        <ul class="examples"><li>I have breakfast in the morning.</li><li>I go home at four o'clock in the afternoon.</li><li>I go to bed at night.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What do you do in the [part of day]? I [activity].</div>
+        <ul class="examples"><li>What do you do in the morning? I get up.</li><li>What do you do in the evening? I do my homework.</li><li>What do you do at night? I brush my teeth.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What/Where/When question words.</div>
+        <ul class="examples"><li>What's your name?</li><li>When do you have P.E.?</li><li>Where do you go?</li><li>When does she get up?</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>What time is it? It's seven o'clock.</li><li>He gets up at six o'clock.</li><li>She goes to bed at nine o'clock.</li><li>He has dinner at seven o'clock.</li><li>My dad's asleep. He works at night.</li><li>I go home at four o'clock in the afternoon.</li><li>What do you do in the morning? I get up.</li><li>I brush my teeth. I go to bed.</li><li>When does she get up? She gets up in the morning.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">sm, sn, st, and sk</span></h3>
+    <p class="desc">The consonant blends sm, sn, st, and sk. Words are grouped by their beginning blend.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">sm</span><div class="chips"><span class="chip phon">smile</span><span class="chip phon">small</span></div></div><div class="fam"><span class="fam-label">sn</span><div class="chips"><span class="chip phon">snow</span><span class="chip phon">snake</span></div></div><div class="fam"><span class="fam-label">st</span><div class="chips"><span class="chip phon">stairs</span><span class="chip phon">star</span></div></div><div class="fam"><span class="fam-label">sk</span><div class="chips"><span class="chip phon">sky</span><span class="chip phon">skates</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">Look at the snake</div><div class="chant-line">In the snow.</div><div class="chant-line">A snake with a smile.</div><div class="chant-line">Watch it go.</div><div class="chant-line">Look at the stars</div><div class="chant-line">In the sky.</div><div class="chant-line">Look at the stairs</div><div class="chant-line">In the evening.</div><div class="chant-line">It's time for bed, snake.</div><div class="chant-line">Say, &quot;Goodbye.&quot;</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-9">
+    <header class="unit-head">
+      <span class="unit-num">9</span>
+      <h2 class="unit-topic">Where does she work?</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">hospital</span><span class="chip">school</span><span class="chip">airport</span><span class="chip">police station</span><span class="chip">fire station</span><span class="chip">store</span><span class="chip">station</span><span class="chip">zoo</span><span class="chip">supermarket</span><span class="chip">bank</span><span class="chip">garage</span><span class="chip">office</span></div></div><div class="bank"><span class="bank-label">Prepositions</span><div class="chips"><span class="chip">in</span><span class="chip">at</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">4</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">Where does he/she work? He/She works in a [place].</div>
+        <ul class="examples"><li>Where does he work? He works in a police station.</li><li>She works in a store.</li><li>Molly works at the zoo.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Does he/she work in a/an [place]? Yes, he does. / No, she doesn't.</div>
+        <ul class="examples"><li>Does your mom work in an airport? No, she doesn't.</li><li>Does she work in a store? Yes, she does.</li><li>Does he work in a hospital?</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Subject] [item], [item], and [item]. (lists with commas and 'and')</div>
+        <ul class="examples"><li>She looks after elephants, giraffes, lions, and tigers.</li><li>I get up, have breakfast, and go to school.</li><li>He likes chicken, pizza, and salad.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">My [family member]'s a [job].</div>
+        <ul class="examples"><li>My dad's a police officer.</li><li>My mom works in a cake store!</li><li>Jason's dad works in an office.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Where does he work? He works in a police station.</li><li>Does your mom work in an airport? No, she doesn't.</li><li>Does she work in a store? Yes, she does.</li><li>My dad's a police officer.</li><li>My mom works in a cake store!</li><li>Molly works at the zoo.</li><li>She looks after elephants, giraffes, lions, and tigers.</li><li>I get up, have breakfast, and go to school.</li><li>Jason's dad works in an office.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">long a</span></h3>
+    <p class="desc">Long vowel a with magic e (a_e), as in cake. The silent e makes the a say its name.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">a_e</span><div class="chips"><span class="chip phon">lake</span><span class="chip phon">gate</span><span class="chip phon">face</span><span class="chip phon">plane</span><span class="chip phon">cake</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">Open the gate,</div><div class="chant-line">The gate, gate, gate.</div><div class="chant-line">See the lake,</div><div class="chant-line">The lake, lake, lake.</div><div class="chant-line">A smile on your face,</div><div class="chant-line">Your face, face, face.</div><div class="chant-line">Here is a cake,</div><div class="chant-line">A cake, cake, cake.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-10">
+    <header class="unit-head">
+      <span class="unit-num">10</span>
+      <h2 class="unit-topic">It's hot today!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">raining</span><span class="chip">windy</span><span class="chip">hot</span><span class="chip">cold</span><span class="chip">snowing</span><span class="chip">sunny</span><span class="chip">fly a kite</span><span class="chip">make a snowman</span><span class="chip">go ice skating</span><span class="chip">go outside</span><span class="chip">sun hat</span><span class="chip">coat</span><span class="chip">umbrella</span><span class="chip">raincoat</span><span class="chip">sunscreen</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">5</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">What's the weather like? It's [weather].</div>
+        <ul class="examples"><li>What's the weather like? It's windy.</li><li>It's sunny.</li><li>It's hot today.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">It's [verb-ing].</div>
+        <ul class="examples"><li>It's raining.</li><li>It's snowing.</li><li>It's raining now.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Put on your [clothing]. / Don't put on your [clothing].</div>
+        <ul class="examples"><li>Put on your sun hats, please.</li><li>Don't put on your coat, Billy.</li><li>Don't forget your umbrellas and your raincoats.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">We don't have our [plural noun].</div>
+        <ul class="examples"><li>We don't have our umbrellas.</li><li>We don't have our raincoats.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">When it's [weather], we [activity].</div>
+        <ul class="examples"><li>When it's windy, we fly a kite.</li><li>When it's snowing, we make a snowman.</li><li>When it's sunny, we play outside.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>What's the weather like? It's sunny.</li><li>Put on your sun hats, please.</li><li>Don't put on your coat. It's hot today.</li><li>It's raining now.</li><li>Don't forget your umbrellas and your raincoats.</li><li>When it's windy, we fly a kite.</li><li>When it's snowing, we make a snowman.</li><li>The kite goes high up in the sky.</li><li>We don't have our umbrellas.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">long i</span></h3>
+    <p class="desc">Long vowel i with magic e (i_e), as in bike. The silent e makes the i say its name.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">i_e</span><div class="chips"><span class="chip phon">bike</span><span class="chip phon">kite</span><span class="chip phon">nine</span><span class="chip phon">white</span><span class="chip phon">line</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">Ride your bike. Fly your kite.</div><div class="chant-line">The bike is red. The kite is white.</div><div class="chant-line">White kite, white kite.</div><div class="chant-line">Count the children in the line.</div><div class="chant-line">All together there are nine.</div><div class="chant-line">Nine in the line. Nine in the line.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-11">
+    <header class="unit-head">
+      <span class="unit-num">11</span>
+      <h2 class="unit-topic">What are you wearing?</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">skirt</span><span class="chip">scarf</span><span class="chip">gloves</span><span class="chip">jeans</span><span class="chip">boots</span><span class="chip">shirt</span><span class="chip">dress</span><span class="chip">T-shirt</span><span class="chip">hat</span><span class="chip">socks</span><span class="chip">shoes</span><span class="chip">shorts</span><span class="chip">pants</span></div></div><div class="bank"><span class="bank-label">Numbers</span><div class="chips"><span class="chip">one</span><span class="chip">two</span><span class="chip">three</span><span class="chip">four</span><span class="chip">five</span><span class="chip">six</span><span class="chip">seven</span><span class="chip">eight</span><span class="chip">nine</span><span class="chip">ten</span><span class="chip">eleven</span><span class="chip">twelve</span><span class="chip">fifteen</span><span class="chip">thirty</span><span class="chip">forty-five</span></div></div><div class="bank"><span class="bank-label">Colors</span><div class="chips"><span class="chip"><span class="sw" style="background:#3b6fe2"></span>blue</span><span class="chip"><span class="sw" style="background:#e23b3b"></span>red</span><span class="chip"><span class="sw" style="background:#f2c200"></span>yellow</span><span class="chip"><span class="sw" style="background:#2b2b2b"></span>black</span><span class="chip"><span class="sw" style="background:#3aa655"></span>green</span><span class="chip"><span class="sw" style="background:#9b6a3f"></span>brown</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">4</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">What are you wearing? I'm wearing [clothes].</div>
+        <ul class="examples"><li>What are you wearing? I'm wearing a blue skirt.</li><li>I'm wearing a blue skirt and a red scarf.</li><li>I'm wearing a T-shirt.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What's he/she wearing? He's/She's wearing [clothes].</div>
+        <ul class="examples"><li>What's he wearing? He's wearing a yellow shirt.</li><li>What's she wearing? She's wearing red pants.</li><li>She's wearing red pants and black boots.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What time is it? It's [time].</div>
+        <ul class="examples"><li>What time is it? It's four o'clock.</li><li>It's three fifteen.</li><li>It's three thirty.</li><li>It's three forty-five.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">This is a [singular clothing]. / These are [plural clothing].</div>
+        <ul class="examples"><li>This is a shirt.</li><li>These are gloves.</li><li>These are jeans.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>What time is it, Grandma? It's four o'clock.</li><li>We can't see you. What are you wearing?</li><li>I'm wearing a blue skirt and a red scarf.</li><li>She's wearing red pants and black boots.</li><li>What's he wearing? He's wearing a yellow shirt.</li><li>It's three fifteen.</li><li>It's three thirty.</li><li>It's three forty-five.</li><li>These are gloves. This is a shirt.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">long o</span></h3>
+    <p class="desc">Long vowel o with magic e (o_e), as in home. The silent e makes the o say its name.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">o_e</span><div class="chips"><span class="chip phon">nose</span><span class="chip phon">rope</span><span class="chip phon">stone</span><span class="chip phon">bone</span><span class="chip phon">home</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">The fox has my rope.</div><div class="chant-line">The fox is on a stone.</div><div class="chant-line">Hurry up, fox.</div><div class="chant-line">I want to go home.</div><div class="chant-line">My nose is cold.</div><div class="chant-line">Here is a bone.</div><div class="chant-line">Hurry up, fox.</div><div class="chant-line">I want to go home.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-12">
+    <header class="unit-head">
+      <span class="unit-num">12</span>
+      <h2 class="unit-topic">You're sleeping!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">wedding</span><span class="chip">guests</span><span class="chip">cake</span><span class="chip">bride</span><span class="chip">band</span><span class="chip">invitation</span><span class="chip">dress</span><span class="chip">make a cake</span><span class="chip">wash the car</span><span class="chip">brush my hair</span><span class="chip">take photos</span><span class="chip">choose a dress</span></div></div><div class="bank"><span class="bank-label">Verbs</span><div class="chips"><span class="chip">dance</span><span class="chip">eat</span><span class="chip">sing</span><span class="chip">talk</span><span class="chip">sleep</span><span class="chip">watch</span><span class="chip">play</span><span class="chip">drink</span><span class="chip">swim</span><span class="chip">listen</span><span class="chip">look</span><span class="chip">wear</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">5</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">What are you doing? I'm/We're [verb-ing].</div>
+        <ul class="examples"><li>What are you doing? I'm dancing with Dad.</li><li>We're watching our wedding.</li><li>I'm wearing a shirt and a tie.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What's he/she doing? He's/She's [verb-ing].</div>
+        <ul class="examples"><li>What's he doing? He's eating the wedding cake.</li><li>Mom's making cakes for the wedding.</li><li>My sister is taking lots of photos.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">What are they doing? They're [verb-ing].</div>
+        <ul class="examples"><li>What are they doing? They're talking.</li><li>Everyone is singing and talking.</li><li>The band is playing music.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Are they / Is he/she [verb-ing]? Yes, they are. / No, he isn't.</div>
+        <ul class="examples"><li>Are they dancing? Yes, they are.</li><li>Is she singing? Yes, she is.</li><li>Are they drinking? No, they aren't.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Subject] is [verb-ing] [object].</div>
+        <ul class="examples"><li>Dad is washing the car.</li><li>Now I'm brushing my hair.</li><li>My sister is choosing a dress.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>We're watching our wedding.</li><li>The band is playing music.</li><li>I'm dancing with Dad.</li><li>What's he doing? He's eating the wedding cake.</li><li>They're talking.</li><li>Everyone is singing and talking. And you're sleeping!</li><li>Are they dancing? Yes, they are.</li><li>Mom's making cakes for the wedding.</li><li>Dad is washing the car.</li><li>My sister is taking lots of photos.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">long u</span></h3>
+    <p class="desc">Long vowel u with magic e (u_e), as in cube. The silent e makes the u say its name.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">u_e</span><div class="chips"><span class="chip phon">cube</span><span class="chip phon">flute</span><span class="chip phon">tube</span><span class="chip phon">mule</span><span class="chip phon">June</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">This month is June</div><div class="chant-line">And it's my birthday!</div><div class="chant-line">I have a fun cube,</div><div class="chant-line">I can play all day.</div><div class="chant-line">I have a new flute</div><div class="chant-line">For my birthday,</div><div class="chant-line">And a poster in a tube.</div><div class="chant-line">What a happy day!</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-13">
+    <header class="unit-head">
+      <span class="unit-num">13</span>
+      <h2 class="unit-topic">Look at all the animals!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">cow</span><span class="chip">goat</span><span class="chip">horse</span><span class="chip">sheep</span><span class="chip">donkey</span><span class="chip">goose</span><span class="chip">hen</span><span class="chip">chick</span></div></div><div class="bank"><span class="bank-label">Adjectives</span><div class="chips"><span class="chip">big</span><span class="chip">small</span><span class="chip">tall</span><span class="chip">short</span><span class="chip">loud</span><span class="chip">quiet</span><span class="chip">fast</span><span class="chip">slow</span></div></div><div class="bank"><span class="bank-label">Prepositions</span><div class="chips"><span class="chip">behind</span><span class="chip">in front of</span><span class="chip">between</span><span class="chip">next to</span><span class="chip">on</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">4</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">This [noun] is [comparative] than that [noun].</div>
+        <ul class="examples"><li>This cow is bigger than that cow.</li><li>This sheep is smaller than that sheep.</li><li>That goat is bigger than the other goats.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">The [noun] is [comparative] than the [noun].</div>
+        <ul class="examples"><li>The horse is bigger than the goat.</li><li>The girl is taller than the boy.</li><li>The boy is shorter than the girl.</li><li>The sheep is smaller than the cow.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">The [noun] is [comparative: louder/quieter/faster/slower] than the [noun].</div>
+        <ul class="examples"><li>The hen is louder than the chick.</li><li>The goat is faster than the cow.</li><li>The cow is slower than the goat.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There's a [animal] [preposition] the [noun].</div>
+        <ul class="examples"><li>There's a cow behind the gate.</li><li>There's a goat between the horse and the van.</li><li>There's a goose behind the tree.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Look at all the animals!</li><li>This cow is bigger than that cow.</li><li>This sheep is smaller than that sheep.</li><li>The horse is bigger than the goat.</li><li>The girl is taller than the boy.</li><li>The boy is shorter than the girl.</li><li>The hen is louder than the chick.</li><li>The goat is faster than the cow.</li><li>There's a cow behind the gate.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">long e</span></h3>
+    <p class="desc">Long vowel e spelled ee, as in tree. Two e's together make the long e sound.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">ee</span><div class="chips"><span class="chip phon">tree</span><span class="chip phon">green</span><span class="chip phon">three</span><span class="chip phon">cheese</span><span class="chip phon">feet</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">Look up at the green tree.</div><div class="chant-line">What can you see?</div><div class="chant-line">Two feet and a tail.</div><div class="chant-line">What's hiding there?</div><div class="chant-line">Count them: one, two, three!</div><div class="chant-line">A monkey with a piece of cheese,</div><div class="chant-line">That's what's hiding there!</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-14">
+    <header class="unit-head">
+      <span class="unit-num">14</span>
+      <h2 class="unit-topic">Look at the photos!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">fridge</span><span class="chip">photo</span><span class="chip">floor</span><span class="chip">trash</span></div></div><div class="bank"><span class="bank-label">Adjectives</span><div class="chips"><span class="chip">kind</span><span class="chip">bad</span><span class="chip">wet</span><span class="chip">dry</span><span class="chip">neat</span><span class="chip">messy</span><span class="chip">dirty</span><span class="chip">happy</span><span class="chip">sad</span><span class="chip">hungry</span><span class="chip">proud</span><span class="chip">good</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">5</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">[Subject] was / wasn't [adjective].</div>
+        <ul class="examples"><li>I was happy.</li><li>She wasn't wet. She was dry!</li><li>This goat was hungry.</li><li>Billy was little then.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Subject] were / weren't [adjective].</div>
+        <ul class="examples"><li>We were in the park.</li><li>You were good, Tim.</li><li>The babies weren't sad. They were hungry.</li><li>These birds were bad.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Subject] [verb] [noun] and [noun]. (and)</div>
+        <ul class="examples"><li>I like donkeys and horses.</li><li>Everyone was happy.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Subject] doesn't/don't [verb] [noun] or [noun]. (or)</div>
+        <ul class="examples"><li>I don't like dogs or cats.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Plurals: [noun]+s (vowel + y) / +ies (consonant + y).</div>
+        <ul class="examples"><li>boy -&gt; boys, turkey -&gt; turkeys, monkey -&gt; monkeys</li><li>family -&gt; families, baby -&gt; babies, party -&gt; parties</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Look at the photos.</li><li>We were in the park. You were good, Tim.</li><li>The babies weren't sad. They were hungry.</li><li>We were very wet. Mom wasn't wet. She was dry!</li><li>These birds were bad. This goat was hungry.</li><li>I was little then, but I'm not little now.</li><li>The house was so messy!</li><li>Everyone was happy.</li><li>The house is very neat.</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">short and long vowels</span></h3>
+    <p class="desc">Contrasting short vowels with long vowels (magic e): cap/cape, cub/cube, pin/pine. Best practiced as a listening task.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">short vowel</span><div class="chips"><span class="chip phon">cap</span><span class="chip phon">cub</span><span class="chip phon">pin</span></div></div><div class="fam"><span class="fam-label">magic e</span><div class="chips"><span class="chip phon">cape</span><span class="chip phon">cube</span><span class="chip phon">pine</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">A lion cub plays with a cube.</div><div class="chant-line">Cub, cub, cub.</div><div class="chant-line">Cube, cube, cube.</div><div class="chant-line">There's a big pin under the pine.</div><div class="chant-line">Pin, pin, pin.</div><div class="chant-line">Pine, pine, pine.</div><div class="chant-line">She has a red cap and a cape.</div><div class="chant-line">Cap, cap, cap.</div><div class="chant-line">Cape, cape, cape.</div></div>
+  </div>
+    </div>
+  </section>
+<section class="unit" id="unit-15">
+    <header class="unit-head">
+      <span class="unit-num">15</span>
+      <h2 class="unit-topic">Good job!</h2>
+      <a class="top-link" href="#top">↑ top</a>
+    </header>
+    <div class="unit-body">
+      <div class="field"><h3 class="field-title">Words</h3><div class="bank"><span class="bank-label">Vocabulary</span><div class="chips"><span class="chip">man</span><span class="chip">men</span><span class="chip">woman</span><span class="chip">women</span><span class="chip">child</span><span class="chip">children</span><span class="chip">finish line</span></div></div><div class="bank"><span class="bank-label">Numbers</span><div class="chips"><span class="chip">first</span><span class="chip">second</span><span class="chip">third</span><span class="chip">fourth</span><span class="chip">one</span><span class="chip">two</span><span class="chip">three</span><span class="chip">four</span></div></div></div>
+      <div class="field">
+    <h3 class="field-title">Grammar patterns <span class="count">5</span></h3>
+    <div class="patterns"><div class="pattern">
+        <div class="pattern-head">There were some [plural noun].</div>
+        <ul class="examples"><li>There were some teachers.</li><li>There were some chairs in the classroom.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There weren't any [plural noun].</div>
+        <ul class="examples"><li>There weren't any children.</li><li>There weren't any tables in the school yard.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">There was a/an [singular noun].</div>
+        <ul class="examples"><li>There was an award for English.</li><li>The awards ceremony was in the school yard.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">Irregular plurals: man -&gt; men, woman -&gt; women, child -&gt; children.</div>
+        <ul class="examples"><li>Lots of men, women, and children.</li><li>How many men are there? There are two men.</li><li>How many children are there? There are four children.</li></ul>
+      </div><div class="pattern">
+        <div class="pattern-head">[Subject] was [ordinal].</div>
+        <ul class="examples"><li>Kim was first.</li><li>Joe was fourth.</li><li>Emily was third.</li></ul>
+      </div></div>
+  </div>
+      <div class="field">
+    <h3 class="field-title">Key sentences</h3>
+    <ul class="key-sentences"><li>Was it good? It was great!</li><li>It was the school awards ceremony. We were late.</li><li>There weren't any children in the classroom. But there were some teachers.</li><li>The awards ceremony was in the school yard.</li><li>Look! Lots of men, women, and children.</li><li>There was an award for English.</li><li>How many men are there? There are two men.</li><li>Kim was first. Joe was fourth.</li><li>It was a great day!</li></ul>
+  </div>
+      <div class="field phonics">
+    <h3 class="field-title">Phonics <span class="sound-badge">ng and nk</span></h3>
+    <p class="desc">The ending sounds ng (as in ring) and nk (as in bank). Listen for the final sound of each word.</p>
+    <div class="fams"><div class="fam"><span class="fam-label">ng</span><div class="chips"><span class="chip phon">ring</span><span class="chip phon">king</span><span class="chip phon">swing</span></div></div><div class="fam"><span class="fam-label">nk</span><div class="chips"><span class="chip phon">bank</span><span class="chip phon">drink</span><span class="chip phon">pink</span></div></div></div>
+    <div class="field-sub">Chant</div><div class="chant"><div class="chant-line">Sing a song while you swing, swing, swing.</div><div class="chant-line">Look at the king with his ring, ring, ring.</div><div class="chant-line">Now you're thirsty, have a drink, drink, drink.</div><div class="chant-line">Look at the king with his drink, drink, drink.</div></div>
+  </div>
+    </div>
+  </section>
+  <footer>Generated from <code>src/lib/curriculum/family-friends-2/</code> — distilled vocabulary, grammar, key sentences &amp; phonics per unit.</footer>
+</div>
+</body>
+</html>

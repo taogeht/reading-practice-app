@@ -1,0 +1,114 @@
+{
+  "unit": 8,
+  "topic": "What time is it?",
+  "vocabulary": [
+    { "word": "get up",            "image": "/images/family-friends-2/unit-8/get-up.png" },
+    { "word": "have breakfast",    "image": "/images/family-friends-2/unit-8/have-breakfast.png" },
+    { "word": "go to school",      "image": "/images/family-friends-2/unit-8/go-to-school.png" },
+    { "word": "go home",           "image": "/images/family-friends-2/unit-8/go-home.png" },
+    { "word": "have dinner",       "image": "/images/family-friends-2/unit-8/have-dinner.png" },
+    { "word": "go to bed",         "image": "/images/family-friends-2/unit-8/go-to-bed.png" },
+    { "word": "have lunch",        "image": "/images/family-friends-2/unit-8/have-lunch.png" },
+    { "word": "do my homework",    "image": "/images/family-friends-2/unit-8/do-my-homework.png" },
+    { "word": "brush my teeth",    "image": "/images/family-friends-2/unit-8/brush-my-teeth.png" },
+    { "word": "play with my toys", "image": "/images/family-friends-2/unit-8/play-with-my-toys.png" },
+    { "word": "in the morning",    "image": "/images/family-friends-2/unit-8/in-the-morning.png" },
+    { "word": "in the afternoon",  "image": "/images/family-friends-2/unit-8/in-the-afternoon.png" },
+    { "word": "in the evening",    "image": "/images/family-friends-2/unit-8/in-the-evening.png" },
+    { "word": "at night",          "image": "/images/family-friends-2/unit-8/at-night.png" }
+  ],
+  "numbers": [
+    "one", "two", "three", "four", "five", "six",
+    "seven", "eight", "nine", "ten", "eleven", "twelve"
+  ],
+  "prepositions": ["at", "in"],
+  "grammar_patterns": [
+    {
+      "pattern": "What time is it? It's [number] o'clock.",
+      "examples": [
+        "What time is it? It's seven o'clock.",
+        "It's three o'clock.",
+        "It's nine o'clock."
+      ]
+    },
+    {
+      "pattern": "He/She [verb-s] at [number] o'clock.",
+      "examples": [
+        "He gets up at six o'clock.",
+        "She goes to bed at nine o'clock.",
+        "He has dinner at seven o'clock.",
+        "She starts work at six o'clock."
+      ]
+    },
+    {
+      "pattern": "I [activity] in the morning/afternoon/evening / at night.",
+      "examples": [
+        "I have breakfast in the morning.",
+        "I go home at four o'clock in the afternoon.",
+        "I go to bed at night."
+      ]
+    },
+    {
+      "pattern": "What do you do in the [part of day]? I [activity].",
+      "examples": [
+        "What do you do in the morning? I get up.",
+        "What do you do in the evening? I do my homework.",
+        "What do you do at night? I brush my teeth."
+      ]
+    },
+    {
+      "pattern": "What/Where/When question words.",
+      "examples": [
+        "What's your name?",
+        "When do you have P.E.?",
+        "Where do you go?",
+        "When does she get up?"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "What time is it? It's seven o'clock.",
+    "He gets up at six o'clock.",
+    "She goes to bed at nine o'clock.",
+    "He has dinner at seven o'clock.",
+    "My dad's asleep. He works at night.",
+    "I go home at four o'clock in the afternoon.",
+    "What do you do in the morning? I get up.",
+    "I brush my teeth. I go to bed.",
+    "When does she get up? She gets up in the morning."
+  ],
+  "phonics": {
+    "sound": "sm, sn, st, and sk",
+    "description": "The consonant blends sm, sn, st, and sk. Words are grouped by their beginning blend.",
+    "word_families": [
+      {
+        "family": "sm",
+        "words": [{ "word": "smile" }, { "word": "small" }]
+      },
+      {
+        "family": "sn",
+        "words": [{ "word": "snow" }, { "word": "snake" }]
+      },
+      {
+        "family": "st",
+        "words": [{ "word": "stairs" }, { "word": "star" }]
+      },
+      {
+        "family": "sk",
+        "words": [{ "word": "sky" }, { "word": "skates" }]
+      }
+    ],
+    "chant": [
+      "Look at the snake",
+      "In the snow.",
+      "A snake with a smile.",
+      "Watch it go.",
+      "Look at the stars",
+      "In the sky.",
+      "Look at the stairs",
+      "In the evening.",
+      "It's time for bed, snake.",
+      "Say, \"Goodbye.\""
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "unit": 15,
+  "topic": "Good job!",
+  "vocabulary": [
+    { "word": "man",         "image": "/images/family-friends-2/unit-15/man.png" },
+    { "word": "men",         "image": "/images/family-friends-2/unit-15/men.png" },
+    { "word": "woman",       "image": "/images/family-friends-2/unit-15/woman.png" },
+    { "word": "women",       "image": "/images/family-friends-2/unit-15/women.png" },
+    { "word": "child",       "image": "/images/family-friends-2/unit-15/child.png" },
+    { "word": "children",    "image": "/images/family-friends-2/unit-15/children.png" },
+    { "word": "finish line", "image": "/images/family-friends-2/unit-15/finish-line.png" }
+  ],
+  "numbers": ["first", "second", "third", "fourth", "one", "two", "three", "four"],
+  "grammar_patterns": [
+    {
+      "pattern": "There were some [plural noun].",
+      "examples": [
+        "There were some teachers.",
+        "There were some chairs in the classroom."
+      ]
+    },
+    {
+      "pattern": "There weren't any [plural noun].",
+      "examples": [
+        "There weren't any children.",
+        "There weren't any tables in the school yard."
+      ]
+    },
+    {
+      "pattern": "There was a/an [singular noun].",
+      "examples": [
+        "There was an award for English.",
+        "The awards ceremony was in the school yard."
+      ]
+    },
+    {
+      "pattern": "Irregular plurals: man -> men, woman -> women, child -> children.",
+      "examples": [
+        "Lots of men, women, and children.",
+        "How many men are there? There are two men.",
+        "How many children are there? There are four children."
+      ]
+    },
+    {
+      "pattern": "[Subject] was [ordinal].",
+      "examples": [
+        "Kim was first.",
+        "Joe was fourth.",
+        "Emily was third."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Was it good? It was great!",
+    "It was the school awards ceremony. We were late.",
+    "There weren't any children in the classroom. But there were some teachers.",
+    "The awards ceremony was in the school yard.",
+    "Look! Lots of men, women, and children.",
+    "There was an award for English.",
+    "How many men are there? There are two men.",
+    "Kim was first. Joe was fourth.",
+    "It was a great day!"
+  ],
+  "phonics": {
+    "sound": "ng and nk",
+    "description": "The ending sounds ng (as in ring) and nk (as in bank). Listen for the final sound of each word.",
+    "word_families": [
+      {
+        "family": "ng",
+        "words": [{ "word": "ring" }, { "word": "king" }, { "word": "swing" }]
+      },
+      {
+        "family": "nk",
+        "words": [{ "word": "bank" }, { "word": "drink" }, { "word": "pink" }]
+      }
+    ],
+    "chant": [
+      "Sing a song while you swing, swing, swing.",
+      "Look at the king with his ring, ring, ring.",
+      "Now you're thirsty, have a drink, drink, drink.",
+      "Look at the king with his drink, drink, drink."
+    ]
+  }
+}

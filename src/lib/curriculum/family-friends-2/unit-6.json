@@ -1,0 +1,96 @@
+{
+  "unit": 6,
+  "topic": "Let's play after school!",
+  "vocabulary": [
+    { "word": "help my mom",         "image": "/images/family-friends-2/unit-6/help-my-mom.png" },
+    { "word": "do my homework",      "image": "/images/family-friends-2/unit-6/do-my-homework.png" },
+    { "word": "visit my grandma",    "image": "/images/family-friends-2/unit-6/visit-my-grandma.png" },
+    { "word": "go swimming",         "image": "/images/family-friends-2/unit-6/go-swimming.png" },
+    { "word": "have a music lesson", "image": "/images/family-friends-2/unit-6/have-a-music-lesson.png" },
+    { "word": "watch TV",            "image": "/images/family-friends-2/unit-6/watch-tv.png" },
+    { "word": "read a book",         "image": "/images/family-friends-2/unit-6/read-a-book.png" },
+    { "word": "write an email",      "image": "/images/family-friends-2/unit-6/write-an-email.png" },
+    { "word": "listen to music",     "image": "/images/family-friends-2/unit-6/listen-to-music.png" },
+    { "word": "play with my friends","image": "/images/family-friends-2/unit-6/play-with-my-friends.png" }
+  ],
+  "verbs": ["help", "do", "visit", "go", "watch", "read", "write", "listen", "play", "cook", "draw", "paint", "sing"],
+  "grammar_patterns": [
+    {
+      "pattern": "I [activity] every [day].",
+      "examples": [
+        "I visit my grandma every Tuesday.",
+        "I have a music lesson every Monday.",
+        "I go swimming every Thursday.",
+        "I help my mom every Wednesday."
+      ]
+    },
+    {
+      "pattern": "I don't [activity].",
+      "examples": [
+        "I don't watch TV.",
+        "I don't have a music lesson."
+      ]
+    },
+    {
+      "pattern": "Can you play after school on [day]?",
+      "examples": [
+        "Can you play after school on Monday?",
+        "How about Tuesday?"
+      ]
+    },
+    {
+      "pattern": "After school, I [activity].",
+      "examples": [
+        "After school, I do my homework.",
+        "I read a book.",
+        "I listen to music.",
+        "I help to cook."
+      ]
+    },
+    {
+      "pattern": "[Name] can [verb] with us.",
+      "examples": [
+        "Alice can go swimming with us!"
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Can you play after school on Monday?",
+    "I have a music lesson every Monday.",
+    "I visit my grandma every Tuesday.",
+    "I help my mom every Wednesday.",
+    "I go swimming every Thursday.",
+    "I don't watch TV.",
+    "After school, I do my homework.",
+    "I listen to music. I help to cook.",
+    "Alice can go swimming with us!"
+  ],
+  "phonics": {
+    "sound": "fl, pl, and bl",
+    "description": "The consonant blends fl, pl, and bl. Words are grouped by their beginning blend.",
+    "word_families": [
+      {
+        "family": "fl",
+        "words": [{ "word": "flower" }, { "word": "flag" }]
+      },
+      {
+        "family": "pl",
+        "words": [{ "word": "plum" }, { "word": "plate" }]
+      },
+      {
+        "family": "bl",
+        "words": [{ "word": "blanket" }, { "word": "blue" }]
+      }
+    ],
+    "chant": [
+      "Plums on a plate,",
+      "Plums on a plate.",
+      "Blue plums, black plums,",
+      "Plums on a plate.",
+      "A blanket on a bed,",
+      "A blanket on a bed.",
+      "There's a pretty flower",
+      "On the blanket on the bed."
+    ]
+  }
+}

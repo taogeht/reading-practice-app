@@ -1,0 +1,103 @@
+{
+  "unit": 5,
+  "topic": "We have English!",
+  "vocabulary": [
+    { "word": "art",           "image": "/images/family-friends-2/unit-5/art.png" },
+    { "word": "math",          "image": "/images/family-friends-2/unit-5/math.png" },
+    { "word": "English",       "image": "/images/family-friends-2/unit-5/english.png" },
+    { "word": "science",       "image": "/images/family-friends-2/unit-5/science.png" },
+    { "word": "P.E.",          "image": "/images/family-friends-2/unit-5/pe.png" },
+    { "word": "music",         "image": "/images/family-friends-2/unit-5/music.png" },
+    { "word": "school yard",   "image": "/images/family-friends-2/unit-5/school-yard.png" },
+    { "word": "field",         "image": "/images/family-friends-2/unit-5/field.png" },
+    { "word": "art room",      "image": "/images/family-friends-2/unit-5/art-room.png" },
+    { "word": "computer room", "image": "/images/family-friends-2/unit-5/computer-room.png" },
+    { "word": "gym",           "image": "/images/family-friends-2/unit-5/gym.png" }
+  ],
+  "prepositions": ["on", "in"],
+  "grammar_patterns": [
+    {
+      "pattern": "What do we have on [day]? We have [subject].",
+      "examples": [
+        "What do we have on Monday? We have English.",
+        "Then we have math.",
+        "What do we have on Wednesday?"
+      ]
+    },
+    {
+      "pattern": "When do we have [subject]? We have [subject] on [day].",
+      "examples": [
+        "When do we have P.E.? We have P.E. on Thursday.",
+        "When do we have math? On Wednesday."
+      ]
+    },
+    {
+      "pattern": "These are our [plural noun]. / Those are their [plural noun].",
+      "examples": [
+        "These are our P.E. bags.",
+        "Those are their lunchboxes.",
+        "These are our lunchboxes."
+      ]
+    },
+    {
+      "pattern": "We have a [noun] in the [room].",
+      "examples": [
+        "We have a big computer room.",
+        "We have a garbage can in the school yard.",
+        "We have books in the classroom."
+      ]
+    },
+    {
+      "pattern": "You can wear their [plural noun].",
+      "examples": [
+        "You can wear their clothes."
+      ]
+    },
+    {
+      "pattern": "We don't have [subject] on [day].",
+      "examples": [
+        "We don't have school on Saturday.",
+        "We don't have math on Monday."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "What do we have on Monday? We have English.",
+    "When do we have P.E.? We have P.E. on Thursday.",
+    "These are our P.E. bags.",
+    "Those are their lunchboxes.",
+    "You can wear their clothes.",
+    "At our school we have a big computer room.",
+    "We have a garbage can in the school yard.",
+    "We don't have school on Saturday.",
+    "In the school yard we have lots of fun."
+  ],
+  "phonics": {
+    "sound": "dr, tr, and cr",
+    "description": "The consonant blends dr, tr, and cr. Words are grouped by their beginning blend.",
+    "word_families": [
+      {
+        "family": "dr",
+        "words": [{ "word": "drum" }, { "word": "dress" }]
+      },
+      {
+        "family": "tr",
+        "words": [{ "word": "truck" }, { "word": "tree" }, { "word": "train" }]
+      },
+      {
+        "family": "cr",
+        "words": [{ "word": "crayon" }, { "word": "crab" }]
+      }
+    ],
+    "chant": [
+      "A train and a truck,",
+      "A crab and a drum.",
+      "I draw with my crayons,",
+      "And I have fun.",
+      "A girl in a dress,",
+      "A bird in a tree.",
+      "Get your crayons,",
+      "And draw with me."
+    ]
+  }
+}

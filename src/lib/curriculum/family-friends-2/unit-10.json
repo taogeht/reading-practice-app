@@ -1,0 +1,97 @@
+{
+  "unit": 10,
+  "topic": "It's hot today!",
+  "vocabulary": [
+    { "word": "raining",        "image": "/images/family-friends-2/unit-10/raining.png" },
+    { "word": "windy",          "image": "/images/family-friends-2/unit-10/windy.png" },
+    { "word": "hot",            "image": "/images/family-friends-2/unit-10/hot.png" },
+    { "word": "cold",           "image": "/images/family-friends-2/unit-10/cold.png" },
+    { "word": "snowing",        "image": "/images/family-friends-2/unit-10/snowing.png" },
+    { "word": "sunny",          "image": "/images/family-friends-2/unit-10/sunny.png" },
+    { "word": "fly a kite",     "image": "/images/family-friends-2/unit-10/fly-a-kite.png" },
+    { "word": "make a snowman", "image": "/images/family-friends-2/unit-10/make-a-snowman.png" },
+    { "word": "go ice skating", "image": "/images/family-friends-2/unit-10/go-ice-skating.png" },
+    { "word": "go outside",     "image": "/images/family-friends-2/unit-10/go-outside.png" },
+    { "word": "sun hat",        "image": "/images/family-friends-2/unit-10/sun-hat.png" },
+    { "word": "coat",           "image": "/images/family-friends-2/unit-10/coat.png" },
+    { "word": "umbrella",       "image": "/images/family-friends-2/unit-10/umbrella.png" },
+    { "word": "raincoat",       "image": "/images/family-friends-2/unit-10/raincoat.png" },
+    { "word": "sunscreen",      "image": "/images/family-friends-2/unit-10/sunscreen.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "What's the weather like? It's [weather].",
+      "examples": [
+        "What's the weather like? It's windy.",
+        "It's sunny.",
+        "It's hot today."
+      ]
+    },
+    {
+      "pattern": "It's [verb-ing].",
+      "examples": [
+        "It's raining.",
+        "It's snowing.",
+        "It's raining now."
+      ]
+    },
+    {
+      "pattern": "Put on your [clothing]. / Don't put on your [clothing].",
+      "examples": [
+        "Put on your sun hats, please.",
+        "Don't put on your coat, Billy.",
+        "Don't forget your umbrellas and your raincoats."
+      ]
+    },
+    {
+      "pattern": "We don't have our [plural noun].",
+      "examples": [
+        "We don't have our umbrellas.",
+        "We don't have our raincoats."
+      ]
+    },
+    {
+      "pattern": "When it's [weather], we [activity].",
+      "examples": [
+        "When it's windy, we fly a kite.",
+        "When it's snowing, we make a snowman.",
+        "When it's sunny, we play outside."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "What's the weather like? It's sunny.",
+    "Put on your sun hats, please.",
+    "Don't put on your coat. It's hot today.",
+    "It's raining now.",
+    "Don't forget your umbrellas and your raincoats.",
+    "When it's windy, we fly a kite.",
+    "When it's snowing, we make a snowman.",
+    "The kite goes high up in the sky.",
+    "We don't have our umbrellas."
+  ],
+  "phonics": {
+    "sound": "long i",
+    "description": "Long vowel i with magic e (i_e), as in bike. The silent e makes the i say its name.",
+    "word_families": [
+      {
+        "family": "i_e",
+        "words": [
+          { "word": "bike" },
+          { "word": "kite" },
+          { "word": "nine" },
+          { "word": "white" },
+          { "word": "line" }
+        ]
+      }
+    ],
+    "chant": [
+      "Ride your bike. Fly your kite.",
+      "The bike is red. The kite is white.",
+      "White kite, white kite.",
+      "Count the children in the line.",
+      "All together there are nine.",
+      "Nine in the line. Nine in the line."
+    ]
+  }
+}
