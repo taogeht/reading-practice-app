@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
 import { r2Client } from '@/lib/storage/r2-client';
+import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-// GET /api/images/[...key] - Stream images from R2
+// GET /api/images/[...key] - Stream images from R2.
+// All image content is shared/non-PII (spelling, passage, practice, and avatar
+// snapshots — the classmates gallery intentionally shows peers' avatars), so a
+// valid session is the only gate; no per-key ownership. Safe to cache.
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ key: string[] }> }
 ) {
     try {
+        const user = await getCurrentUser();
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { key: keyParts } = await params;
+        if (keyParts.some((p) => p === '..')) {
+            return NextResponse.json({ error: 'Invalid image key' }, { status: 400 });
+        }
         const imageKey = keyParts.join('/');
 
         if (!imageKey) {
@@ -38,7 +52,7 @@ export async function GET(
             headers,
         });
     } catch (error) {
-        console.error('[api/images] Error:', error);
+        logError(error, 'api/images/[...key]');
         return NextResponse.json(
             { error: 'Failed to stream image' },
             { status: 500 }

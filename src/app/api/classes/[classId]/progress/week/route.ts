@@ -8,6 +8,7 @@ import {
     classBooks,
 } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
+import { userCanManageClass } from '@/lib/auth/class-access';
 import { eq, and, gte, lte, asc } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
@@ -25,6 +26,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!(await userCanManageClass(user.id, user.role, classId))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);

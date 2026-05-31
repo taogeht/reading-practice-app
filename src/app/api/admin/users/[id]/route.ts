@@ -6,9 +6,14 @@ import {
   schoolMemberships,
   schools,
   teachers,
+  recordings,
+  passagePageRecordings,
+  studentMedia,
+  studentAvatars,
 } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
+import { r2Client, r2KeyFromStoredUrl } from '@/lib/storage/r2-client';
 import { alias } from 'drizzle-orm/pg-core';
 import { recordAuditEvent } from '@/lib/audit';
 
@@ -273,7 +278,51 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Collect this user's private R2 objects BEFORE the cascade delete removes
+    // the rows. The DB delete is the security-critical step; the R2 purge runs
+    // best-effort afterward and must never block account deletion.
+    const r2Keys = new Set<string>();
+    const addUrlKey = (u: string | null | undefined) => {
+      const k = r2KeyFromStoredUrl(u);
+      if (k) r2Keys.add(k);
+    };
+    const [recs, pageRecs, media, avatars] = await Promise.all([
+      db
+        .select({ audioUrl: recordings.audioUrl, replyUrl: recordings.teacherReplyAudioUrl })
+        .from(recordings)
+        .where(eq(recordings.studentId, userId)),
+      db
+        .select({ audioUrl: passagePageRecordings.audioUrl })
+        .from(passagePageRecordings)
+        .where(eq(passagePageRecordings.studentId, userId)),
+      db
+        .select({ fileKey: studentMedia.fileKey, thumbnailKey: studentMedia.thumbnailKey })
+        .from(studentMedia)
+        .where(eq(studentMedia.studentId, userId)),
+      db
+        .select({ snapshotUrl: studentAvatars.snapshotUrl })
+        .from(studentAvatars)
+        .where(eq(studentAvatars.studentId, userId)),
+    ]);
+    for (const r of recs) {
+      addUrlKey(r.audioUrl);
+      addUrlKey(r.replyUrl);
+    }
+    for (const r of pageRecs) addUrlKey(r.audioUrl);
+    for (const m of media) {
+      // fileKey/thumbnailKey are already raw R2 keys, not URLs.
+      if (m.fileKey) r2Keys.add(m.fileKey);
+      if (m.thumbnailKey) r2Keys.add(m.thumbnailKey);
+    }
+    for (const a of avatars) addUrlKey(a.snapshotUrl);
+
     await db.delete(users).where(eq(users.id, userId));
+
+    if (r2Keys.size > 0) {
+      await r2Client
+        .deleteFiles(Array.from(r2Keys))
+        .catch((err) => logError(err, 'api/admin/users/[id]: R2 purge'));
+    }
 
     await recordAuditEvent({
       userId: currentUser.id,

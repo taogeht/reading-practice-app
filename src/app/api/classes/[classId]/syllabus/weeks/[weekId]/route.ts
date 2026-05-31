@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { classSyllabusWeeks, classSyllabusAssignments } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
+import { userCanManageClass } from '@/lib/auth/class-access';
 import { eq, and } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
@@ -17,6 +18,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!(await userCanManageClass(user.id, user.role, classId))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const body = await request.json();
@@ -71,6 +76,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!(await userCanManageClass(user.id, user.role, classId))) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
         const existing = await db

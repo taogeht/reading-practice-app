@@ -464,3 +464,51 @@ export function toProxyAudioUrl(stored: string): string {
     return stored;
   }
 }
+
+/**
+ * Audio object-key prefixes that are a specific student's PRIVATE content
+ * (their own recorded voice). Everything else under audio/ — TTS, spelling,
+ * story narration, teacher replies — is shared classroom content readable by
+ * any authenticated user. Kept in sync with generateRecordingKey /
+ * generatePassageRecordingKey; the studentId is the 3rd path segment
+ * (audio/recordings/<studentId>/...).
+ */
+export const SENSITIVE_AUDIO_PREFIXES = [
+  'audio/recordings/',
+  'audio/passage-recordings/',
+] as const;
+
+/**
+ * Normalize any stored media reference back to its raw R2 object key:
+ *   - proxy URLs:  /api/audio/<key>, /api/images/<key>, /api/media/<key>
+ *   - legacy direct-R2 URLs (r2.dev / R2_PUBLIC_URL / r2.cloudflarestorage.com)
+ *   - a bare key already
+ * Returns null if it can't be resolved. Strips any ?query string (avatar
+ * snapshot URLs carry ?v=<ts>). R2_PUBLIC_URL has no bucket segment, so for a
+ * direct URL the pathname IS the key — we don't strip a leading segment.
+ */
+export function r2KeyFromStoredUrl(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  let key: string | null = null;
+  for (const prefix of ['/api/audio/', '/api/images/', '/api/media/']) {
+    if (stored.startsWith(prefix)) {
+      key = stored.slice(prefix.length);
+      break;
+    }
+  }
+  if (key === null) {
+    if (stored.includes('://')) {
+      try {
+        key = new URL(stored).pathname.replace(/^\/+/, '');
+      } catch {
+        return null;
+      }
+    } else if (!stored.startsWith('/')) {
+      key = stored; // already a bare key
+    } else {
+      return null; // an app path we don't recognize
+    }
+  }
+  key = key.split('?')[0];
+  return key.length ? key : null;
+}

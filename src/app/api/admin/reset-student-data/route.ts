@@ -11,6 +11,7 @@ import {
     users,
 } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { r2Client, r2KeyFromStoredUrl } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
 
@@ -32,6 +33,21 @@ export async function POST(request: NextRequest) {
 
         console.log('[RESET] Starting student data reset...');
         const results: Record<string, number> = {};
+
+        // Collect recording R2 keys BEFORE the rows are deleted, so the audio
+        // can be purged afterward (best-effort). Scoped to exactly what this
+        // route deletes (recordings), so it doesn't touch media/avatars the
+        // reset intentionally leaves in place.
+        const r2Keys = new Set<string>();
+        const recAudio = await db
+            .select({ audioUrl: recordings.audioUrl, replyUrl: recordings.teacherReplyAudioUrl })
+            .from(recordings);
+        for (const row of recAudio) {
+            const ka = r2KeyFromStoredUrl(row.audioUrl);
+            if (ka) r2Keys.add(ka);
+            const kr = r2KeyFromStoredUrl(row.replyUrl);
+            if (kr) r2Keys.add(kr);
+        }
 
         // 1. Delete spelling game results
         const gameRes = await db.delete(spellingGameResults).returning({ id: spellingGameResults.id });
@@ -79,6 +95,16 @@ export async function POST(request: NextRequest) {
             results.auditLogs = 0;
             results.sessions = 0;
         }
+
+        // Best-effort R2 purge of the now-deleted recordings' audio objects.
+        const r2KeyList = Array.from(r2Keys);
+        if (r2KeyList.length > 0) {
+            await r2Client
+                .deleteFiles(r2KeyList)
+                .catch((e) => console.error('[RESET] R2 purge failed:', e));
+        }
+        results.r2ObjectsDeleted = r2KeyList.length;
+        console.log(`[RESET] Purged ${r2KeyList.length} R2 objects`);
 
         console.log('[RESET] Student data reset complete:', results);
 

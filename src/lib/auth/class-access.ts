@@ -6,8 +6,8 @@
 // without each route having to reimplement the check.
 
 import { db } from '@/lib/db';
-import { classes, classTeachers, assignments } from '@/lib/db/schema';
-import { and, eq, or, sql } from 'drizzle-orm';
+import { classes, classTeachers, assignments, classEnrollments } from '@/lib/db/schema';
+import { and, eq, or, sql, inArray } from 'drizzle-orm';
 
 // True iff the user is the primary teacher OR a co-teacher OR an admin.
 // Admins are checked first to avoid a DB round-trip when not needed.
@@ -29,6 +29,32 @@ export async function userCanManageClass(
       and(
         eq(classes.id, classId),
         or(eq(classes.teacherId, userId), eq(classTeachers.teacherId, userId)),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+// True iff the user may view a given student's private media/recordings:
+// admins always; teachers iff the student is enrolled in a class the teacher
+// owns or co-teaches. Used by the R2 proxy routes to scope a minor's audio/
+// media to its owner + their managing teachers.
+export async function userCanAccessStudentMedia(
+  userId: string,
+  role: string,
+  studentId: string,
+): Promise<boolean> {
+  if (role === 'admin') return true;
+  if (role !== 'teacher') return false;
+  const classIds = await accessibleClassIds(userId, role);
+  if (classIds.length === 0) return false;
+  const rows = await db
+    .select({ id: classEnrollments.id })
+    .from(classEnrollments)
+    .where(
+      and(
+        eq(classEnrollments.studentId, studentId),
+        inArray(classEnrollments.classId, classIds),
       ),
     )
     .limit(1);
