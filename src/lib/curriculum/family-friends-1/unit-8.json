@@ -14,6 +14,7 @@
     { "word": "upstairs",    "image": "/images/unit-8/upstairs.png" }
   ],
   "verbs": [],
+  "numbers": ["one", "two", "three", "four"],
   "prepositions": ["in"],
   "grammar_patterns": [
     {
@@ -40,6 +41,14 @@
       "examples": [
         "Are they in the living room? No, they aren't."
       ]
+    },
+    {
+      "pattern": "I live in a/an [home]. There are [number] [rooms].",
+      "examples": [
+        "I live in an apartment.",
+        "There are three bedrooms.",
+        "There is a kitchen, a living room, and a bathroom."
+      ]
     }
   ],
   "key_sentences": [
@@ -47,11 +56,24 @@
     "Is she in the kitchen? No, she isn't.",
     "Where are Dad and Billy? They're in the dining room, too.",
     "Are they in the living room? No, they aren't.",
-    "This is my house."
+    "This is my house.",
+    "I live in an apartment.",
+    "There are three bedrooms."
   ],
   "phonics": {
     "sound": "digraph sh",
-    "word_families": [],
+    "description": "The digraph sh — words that contain the sh sound, at the start (shoes) or the end (fish).",
+    "word_families": [
+      {
+        "family": "sh",
+        "words": [
+          { "word": "shoes", "emoji": "👟" },
+          { "word": "shirt", "emoji": "👕" },
+          { "word": "sheep", "emoji": "🐑" },
+          { "word": "fish",  "emoji": "🐟" }
+        ]
+      }
+    ],
     "chant": [
       "Shirley's shoes are red,",
       "Her T-shirt is blue.",

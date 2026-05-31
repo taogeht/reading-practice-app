@@ -11,14 +11,16 @@
     { "word": "snake",      "image": "/images/unit-11/snake.png" },
     { "word": "tiger",      "image": "/images/unit-11/tiger.png" }
   ],
-  "adjectives": ["big", "little", "tall", "funny"],
+  "adjectives": ["big", "little", "tall", "short", "funny"],
   "verbs": ["like"],
   "grammar_patterns": [
     {
       "pattern": "I like / I don't like [plural noun].",
       "examples": [
         "I like monkeys.",
-        "I don't like elephants."
+        "I don't like elephants.",
+        "I like zebras.",
+        "I don't like giraffes."
       ]
     },
     {
@@ -28,6 +30,14 @@
         "I'm little.",
         "They're tall!"
       ]
+    },
+    {
+      "pattern": "What are these? They're [plural animal].",
+      "examples": [
+        "What are these? They're giraffes.",
+        "They're tall.",
+        "What are these? They're monkeys."
+      ]
     }
   ],
   "key_sentences": [
@@ -36,7 +46,9 @@
     "They're big.",
     "I'm little.",
     "They're tall!",
-    "They're funny and you're funny, too!"
+    "They're funny and you're funny, too!",
+    "What are these? They're giraffes.",
+    "Tall ones, short ones, big ones, little ones."
   ],
   "phonics": {
     "sound": "short a",

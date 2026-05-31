@@ -9,7 +9,7 @@
     { "word": "triangle",  "image": "/images/unit-10/triangle.png" }
   ],
   "adjectives": ["blond", "brown", "curly", "long", "short", "straight"],
-  "colors": ["blond", "brown", "black", "blue"],
+  "colors": ["blond", "brown", "black", "blue", "green"],
   "grammar_patterns": [
     {
       "pattern": "[Pronoun] has [adjective] [object].",
@@ -45,11 +45,23 @@
     "He doesn't have straight hair.",
     "She doesn't have brown eyes.",
     "It's a square! It has four sides.",
-    "It's a circle! It doesn't have sides."
+    "It's a circle! It doesn't have sides.",
+    "My name is Freddy. I have three best friends.",
+    "Simon has black hair. His eyes are brown."
   ],
   "phonics": {
     "sound": "digraph th",
-    "word_families": [],
+    "description": "The digraph th — words that contain the th sound.",
+    "word_families": [
+      {
+        "family": "th",
+        "words": [
+          { "word": "three", "emoji": "3️⃣" },
+          { "word": "teeth", "emoji": "🦷" },
+          { "word": "bath",  "emoji": "🛁" }
+        ]
+      }
+    ],
     "chant": [
       "Baby Theo's in the bath,",
       "One, two, three.",

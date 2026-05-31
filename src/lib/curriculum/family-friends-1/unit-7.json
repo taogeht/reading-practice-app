@@ -14,18 +14,20 @@
     { "word": "t-shirt",   "image": "/images/unit-7/t-shirt.png" }
   ],
   "verbs": ["put on"],
-  "colors": ["red", "orange", "blue", "green", "pink"],
+  "colors": ["red", "orange", "blue", "green", "pink", "yellow", "purple"],
   "grammar_patterns": [
     {
       "pattern": "This is [possessive] [object].",
       "examples": [
-        "This is her dress."
+        "This is her dress.",
+        "This is his sweater."
       ]
     },
     {
       "pattern": "These are [possessive] [plural object].",
       "examples": [
-        "These are his shorts."
+        "These are his shorts.",
+        "These are her socks."
       ]
     },
     {
@@ -38,7 +40,17 @@
     {
       "pattern": "What color are [possessive] [plural object]? They're [color].",
       "examples": [
-        "What color are these pants? They're pink."
+        "What color are these pants? They're pink.",
+        "Tim's pants are blue.",
+        "Rosy's socks are yellow."
+      ]
+    },
+    {
+      "pattern": "I like these [clothes]. They're [adjective].",
+      "examples": [
+        "I like these pants and this coat.",
+        "They're nice.",
+        "Orange is my favorite color."
       ]
     }
   ],
@@ -48,7 +60,8 @@
     "Are these her socks? Yes, they are.",
     "Are these his pants? No, they aren't.",
     "What color are these pants? They're pink.",
-    "It's my favorite color."
+    "It's my favorite color.",
+    "I like these pants and this coat. They're nice."
   ],
   "phonics": {
     "sound": "the alphabet",

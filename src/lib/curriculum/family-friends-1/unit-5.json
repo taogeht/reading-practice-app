@@ -23,6 +23,24 @@
         "Where's the ball? It's on the slide.",
         "Where's the ball? It's under the seesaw."
       ]
+    },
+    {
+      "pattern": "What's this? It's a [object].",
+      "examples": [
+        "What's this? It's a swing.",
+        "It's a seesaw.",
+        "It's a slide.",
+        "It's a tree."
+      ]
+    },
+    {
+      "pattern": "A [toy] is [preposition] the [park object].",
+      "examples": [
+        "A toy is under the tree.",
+        "A ball is in the goal.",
+        "The kite is in the tree.",
+        "A doll is on the slide."
+      ]
     }
   ],
   "key_sentences": [
@@ -31,7 +49,9 @@
     "It's on the slide.",
     "It's under the seesaw.",
     "The ball's on the slide.",
-    "And now it's in the goal!"
+    "And now it's in the goal!",
+    "What's this? It's a swing.",
+    "A toy is under the tree. What is it?"
   ],
   "phonics": {
     "sound": "initial sounds q, r, s, t, u",

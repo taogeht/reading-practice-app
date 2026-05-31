@@ -27,7 +27,17 @@
     {
       "pattern": "I don't have [possessive] [object].",
       "examples": [
-        "I don't have my lunchbox."
+        "I don't have my lunchbox.",
+        "I don't have a cookie today."
+      ]
+    },
+    {
+      "pattern": "This is a/an [food]. / Is this a/an [food]? Yes, it is. / No, it isn't.",
+      "examples": [
+        "This is an apple.",
+        "This is a banana.",
+        "Is this an orange? Yes, it is.",
+        "Is this a ball? No, it isn't. It's an apple."
       ]
     }
   ],
@@ -36,11 +46,24 @@
     "I have two sandwiches.",
     "I don't have my lunchbox.",
     "It's lunchtime.",
-    "Open my lunchbox."
+    "Open my lunchbox.",
+    "I have two sandwiches. One is an egg sandwich.",
+    "Is this an apple? Yes, it is."
   ],
   "phonics": {
     "sound": "digraph ch",
-    "word_families": [],
+    "description": "The digraph ch — words that contain the ch sound.",
+    "word_families": [
+      {
+        "family": "ch",
+        "words": [
+          { "word": "chick",    "emoji": "🐤" },
+          { "word": "chair",    "emoji": "🪑" },
+          { "word": "teacher",  "emoji": "👩‍🏫" },
+          { "word": "lunchbox", "emoji": "🍱" }
+        ]
+      }
+    ],
     "chant": [
       "My name's Charlie.",
       "This is my teacher.",

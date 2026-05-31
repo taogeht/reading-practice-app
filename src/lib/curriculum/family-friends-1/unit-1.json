@@ -14,6 +14,7 @@
     { "word": "window",   "image": "/images/unit-1/window.png" }
   ],
   "verbs": ["open", "close"],
+  "colors": ["red", "yellow", "blue", "green", "pink", "orange", "purple"],
   "grammar_patterns": [
     {
       "pattern": "What's this? It's a/an [object].",
@@ -22,7 +23,7 @@
         "It's a pen.",
         "It's an eraser.",
         "It's a book.",
-        "It's a door."
+        "It's a ruler."
       ]
     },
     {
@@ -33,6 +34,15 @@
         "Open the door.",
         "Close the window."
       ]
+    },
+    {
+      "pattern": "This is my [object]. It's [color].",
+      "examples": [
+        "This is my school bag. It's blue.",
+        "This is my pencil. It's red.",
+        "This is my ruler. It's yellow.",
+        "It's a blue pen."
+      ]
     }
   ],
   "key_sentences": [
@@ -40,7 +50,9 @@
     "It's a pen.",
     "It's an eraser.",
     "Open the book.",
-    "Close the book."
+    "Close the book.",
+    "This is my school bag. It's blue.",
+    "This is a blue pen."
   ],
   "phonics": {
     "sound": "initial sounds a, b, c, d",

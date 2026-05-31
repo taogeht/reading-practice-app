@@ -14,12 +14,14 @@
     { "word": "train",      "image": "/images/unit-2/train.png" }
   ],
   "verbs": [],
+  "colors": ["red", "orange", "green", "blue", "yellow", "pink", "purple", "white"],
   "grammar_patterns": [
     {
       "pattern": "This is [possessive] [object].",
       "examples": [
         "This is my bag.",
-        "This is your doll."
+        "This is your doll.",
+        "This is my puzzle."
       ]
     },
     {
@@ -27,7 +29,25 @@
       "examples": [
         "Is this your teddy bear?",
         "Yes, it is.",
-        "No, it isn't."
+        "No, it isn't.",
+        "Is it a doll? Yes, it is."
+      ]
+    },
+    {
+      "pattern": "The [toy] is [color]. / It's a [color] [toy].",
+      "examples": [
+        "The ball is green.",
+        "The car is red.",
+        "The teddy bear is orange.",
+        "It's a blue doll."
+      ]
+    },
+    {
+      "pattern": "My favorite [noun] is [noun].",
+      "examples": [
+        "My favorite toy is a doll.",
+        "My favorite color is pink.",
+        "My favorite animal is a zebra."
       ]
     }
   ],
@@ -36,7 +56,10 @@
     "This is your doll.",
     "Is this your teddy bear?",
     "Yes, it is.",
-    "No, it isn't."
+    "No, it isn't.",
+    "The ball is green. The car is red.",
+    "My favorite toy is a doll.",
+    "My favorite color is pink."
   ],
   "phonics": {
     "sound": "initial sounds e, f, g, h",

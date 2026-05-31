@@ -19,14 +19,31 @@
       "examples": [
         "This is Mom's book.",
         "This is Billy's teddy bear.",
-        "This is Mom's umbrella."
+        "This is Mom's umbrella.",
+        "This is my brother's ball."
       ]
     },
     {
       "pattern": "Where's [name]'s [object]? [Name]'s [object] is [preposition] the [object].",
       "examples": [
         "Where's Grandpa's hat?",
-        "Grandpa's hat is in the tree!"
+        "Grandpa's hat is in the tree!",
+        "My sister's kite is in the tree."
+      ]
+    },
+    {
+      "pattern": "[Name]'s [object] is [color].",
+      "examples": [
+        "Rosy's hat is red.",
+        "Tim's kite is green and orange.",
+        "Rosy's ice cream is pink."
+      ]
+    },
+    {
+      "pattern": "Who's this? It's [name]'s [family member].",
+      "examples": [
+        "Who's this? It's Beth's aunt.",
+        "Who's this? It's Rosy's mom."
       ]
     }
   ],
@@ -36,7 +53,9 @@
     "This is Mom's umbrella.",
     "Where's Grandpa's hat?",
     "Grandpa's hat is in the tree!",
-    "Who's this? It's Beth's aunt."
+    "Who's this? It's Beth's aunt.",
+    "My sister's kite is in the tree.",
+    "This is my brother's ball."
   ],
   "phonics": {
     "sound": "initial sounds v, w, x, y, z",

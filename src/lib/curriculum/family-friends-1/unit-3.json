@@ -14,6 +14,8 @@
     { "word": "leg",      "image": "/images/unit-3/leg.png" }
   ],
   "verbs": [],
+  "numbers": ["one", "two"],
+  "colors": ["yellow", "blue", "green", "red", "pink", "orange", "purple"],
   "grammar_patterns": [
     {
       "pattern": "This is [possessive] [object].",
@@ -26,7 +28,26 @@
       "pattern": "These are [possessive] [plural object].",
       "examples": [
         "These are my arms.",
-        "These are my hands."
+        "These are my hands.",
+        "These are my eyes."
+      ]
+    },
+    {
+      "pattern": "[Number] [body part]. (count and write)",
+      "examples": [
+        "one nose",
+        "two arms",
+        "two eyes",
+        "two ears"
+      ]
+    },
+    {
+      "pattern": "The [body part] is [color]. / The [body parts] are [color].",
+      "examples": [
+        "The eyes are blue.",
+        "The nose is orange.",
+        "The legs are yellow.",
+        "The hands are pink."
       ]
     }
   ],
@@ -35,7 +56,9 @@
     "This is my face.",
     "These are my arms.",
     "These are my hands.",
-    "Put it on your arms, your nose, your face, and your legs."
+    "Put it on your arms, your nose, your face, and your legs.",
+    "I have two eyes and one nose.",
+    "The eyes are blue. The nose is orange."
   ],
   "phonics": {
     "sound": "initial sounds i, j, k, l",

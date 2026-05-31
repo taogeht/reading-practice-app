@@ -47,6 +47,14 @@
       "examples": [
         "What do you like?"
       ]
+    },
+    {
+      "pattern": "[Name] has [food], [food], and [food].",
+      "examples": [
+        "Steve has eggs, bread, and tomatoes.",
+        "He has grapes and ice cream.",
+        "Alice has fish, rice, and carrots."
+      ]
     }
   ],
   "key_sentences": [
@@ -55,7 +63,9 @@
     "I like hot chocolate.",
     "I don't like rice.",
     "What do you like?",
-    "I like bread and yogurt."
+    "I like bread and yogurt.",
+    "Steve has eggs, bread, and tomatoes.",
+    "For dessert, he has grapes and ice cream."
   ],
   "phonics": {
     "sound": "short e",
