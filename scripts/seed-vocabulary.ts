@@ -1,16 +1,23 @@
 // One-shot seeder for the vocabulary master table from the AF&F curriculum
-// JSON in src/lib/curriculum/family-friends-1/unit-{0..15}.json. Idempotent —
+// JSON in src/lib/curriculum/<book-slug>/unit-{0..N}.json. Idempotent —
 // safe to re-run; uses ON CONFLICT (word) DO UPDATE with COALESCE so we
 // never overwrite an existing non-null value with null.
 //
-// Defaults to dry-run. Pass --write to actually upsert.
+// Defaults to dry-run, and to book family-friends-1. Pass --write to upsert,
+// and --book=<slug> to seed a different book (sets that book's af_f_level tag).
 //
 // Usage:
-//   npm run seed:vocab           # dry-run, prints stats + writes the JSON report
-//   npm run seed:vocab -- --write
+//   npm run seed:vocab                                       # FAF1, dry-run
+//   npm run seed:vocab -- --write                            # FAF1, write
+//   npm run seed:vocab -- --book=family-friends-2            # FAF2, dry-run
+//   npm run seed:vocab -- --book=family-friends-2 --write    # FAF2, write
+//
+// Because COALESCE keeps a word's earliest level on conflict, seed books in
+// order (FAF1, then FAF2, …) so a word shared across books keeps the level of
+// the first book that introduced it.
 //
 // A structured report of skipped/ambiguous/multi-word/duplicate entries is
-// written to scripts/seed-vocabulary.report.json on every run.
+// written to scripts/seed-vocabulary[.<slug>].report.json on every run.
 
 // IMPORTANT: ./_bootstrap-env runs loadEnvConfig() at import-time so
 // DATABASE_URL is set BEFORE ../src/lib/db evaluates its top-level pool
@@ -27,15 +34,52 @@ import { vocabulary } from '../src/lib/db/schema';
 const ARGS = new Set(process.argv.slice(2));
 const WRITE = ARGS.has('--write');
 
+// Which book to seed. Defaults to family-friends-1 so the bare
+// `npm run seed:vocab` keeps its original behavior. The slug picks both the
+// curriculum directory and the af_f_level tag applied to every row from it.
+const bookArg = process.argv.slice(2).find((a) => a.startsWith('--book='));
+const BOOK_SLUG = bookArg ? bookArg.slice('--book='.length) : 'family-friends-1';
+
+type AfFLevel =
+  | 'starter'
+  | 'grade1'
+  | 'grade2'
+  | 'grade3'
+  | 'grade4'
+  | 'grade5'
+  | 'grade6';
+
+// Book → curriculum grade. Mirrors targetAfFLevel in src/lib/reading/levels.ts
+// (grade1 → reading Level 2, grade2 → Level 3, …).
+const BOOK_AF_LEVEL: Record<string, AfFLevel> = {
+  'family-friends-1': 'grade1',
+  'family-friends-2': 'grade2',
+  'family-friends-3': 'grade3',
+  'family-friends-4': 'grade4',
+  'family-friends-5': 'grade5',
+};
+const AF_LEVEL = BOOK_AF_LEVEL[BOOK_SLUG];
+if (!AF_LEVEL) {
+  console.error(
+    `Unknown --book "${BOOK_SLUG}". Known: ${Object.keys(BOOK_AF_LEVEL).join(', ')}`,
+  );
+  process.exit(1);
+}
+
 // ---------- Constants ----------
 
 const CURRICULUM_DIR = path.resolve(
   process.cwd(),
-  'src/lib/curriculum/family-friends-1',
+  'src/lib/curriculum',
+  BOOK_SLUG,
 );
+// Per-book report; FAF1 keeps the original filename so its tracked report
+// updates in place rather than orphaning.
 const REPORT_PATH = path.resolve(
   process.cwd(),
-  'scripts/seed-vocabulary.report.json',
+  BOOK_SLUG === 'family-friends-1'
+    ? 'scripts/seed-vocabulary.report.json'
+    : `scripts/seed-vocabulary.${BOOK_SLUG}.report.json`,
 );
 
 type PartOfSpeech =
@@ -113,7 +157,7 @@ const WORD_OVERRIDES: Record<string, string> = {
 // is_scaffold = false (these are curriculum-introduced, not scaffold).
 // is_function_word inherits from FUNCTION_WORDS check below — none of
 // these words are in that set, so all land as content words.
-const NARRATIVE_EXTRACTION: Array<{
+type NarrativeEntry = {
   word: string;
   partOfSpeech: PartOfSpeech;
   earliestUnit: number;
@@ -121,7 +165,13 @@ const NARRATIVE_EXTRACTION: Array<{
    *  word was located, so a reviewer can verify without re-running the
    *  audit. */
   context: string;
-}> = [
+};
+
+// Per-book narrative audits. Unit numbers and contexts are book-specific, so
+// each book needs its own list; books without one fall through to [] (FAF2+
+// rely on their richer formal arrays and have no audit yet).
+const NARRATIVE_EXTRACTION_BY_BOOK: Record<string, NarrativeEntry[]> = {
+  'family-friends-1': [
   { word: 'look', partOfSpeech: 'verb', earliestUnit: 14,
     context: 'unit-14 phonics chant: "Look at the fox / Look at the box"' },
   { word: 'good', partOfSpeech: 'adjective', earliestUnit: 15,
@@ -138,7 +188,10 @@ const NARRATIVE_EXTRACTION: Array<{
     context: 'unit-13 phonics chant: "Give the fig to a pig"' },
   { word: "can't", partOfSpeech: 'verb', earliestUnit: 14,
     context: 'unit-14 grammar pattern: "[Subject] can\'t [verb]."' },
-];
+  ],
+};
+const NARRATIVE_EXTRACTION: NarrativeEntry[] =
+  NARRATIVE_EXTRACTION_BY_BOOK[BOOK_SLUG] ?? [];
 
 // ---------- Types ----------
 
@@ -156,7 +209,7 @@ interface UnitJson {
 interface Candidate {
   word: string;          // normalised: lowercased + trimmed
   partOfSpeech: PartOfSpeech;
-  afFLevel: 'grade1';
+  afFLevel: AfFLevel;
   afFUnit: number;
   isFunctionWord: boolean;
   isMultiWord: boolean;
@@ -190,6 +243,34 @@ interface SeedReport {
 }
 
 // ---------- Helpers ----------
+
+// Multi-word entries that are verb/time/place PHRASES — not compound-noun
+// lexemes — don't belong in the single-lemma master vocab table (their
+// constituent verbs are already seeded from each unit's verbs[]). Skip a
+// multi-word candidate when it's a multi-word preposition ("in front of",
+// "next to") or its first token is a phrase-leading verb/preposition.
+// Compound nouns ("teddy bear", "school yard", "police station") start with a
+// noun/adjective and survive. Everything skipped is logged in the report.
+const PHRASE_LEAD_TOKENS = new Set<string>([
+  // verbs that lead activity phrases
+  'ride', 'play', 'help', 'do', 'visit', 'go', 'have', 'watch', 'read',
+  'write', 'listen', 'get', 'brush', 'fly', 'make', 'wash', 'take', 'choose',
+  'sing', 'dance', 'cook', 'climb', 'run', 'skate', 'draw', 'paint', 'eat',
+  'drink', 'wear', 'put', 'swim',
+  // prepositions that lead time/place phrases ("in the morning", "at night")
+  'in', 'on', 'at', 'under',
+]);
+
+function shouldSkipMultiWord(c: {
+  word: string;
+  partOfSpeech: PartOfSpeech;
+  isMultiWord: boolean;
+}): boolean {
+  if (!c.isMultiWord) return false;
+  if (c.partOfSpeech === 'preposition') return true; // "in front of", "next to"
+  const first = c.word.split(/\s+/)[0] ?? '';
+  return PHRASE_LEAD_TOKENS.has(first);
+}
 
 function normaliseWord(raw: string): string {
   const trimmed = raw.trim().toLowerCase();
@@ -248,7 +329,7 @@ function extractFromUnit(u: UnitJson, sourceFile: string): Candidate[] {
     result.push({
       word: w,
       partOfSpeech: pos,
-      afFLevel: 'grade1',
+      afFLevel: AF_LEVEL,
       afFUnit: u.unit,
       isFunctionWord: FUNCTION_WORDS.has(w),
       isMultiWord: isMultiWord(w),
@@ -269,7 +350,7 @@ function extractFromUnit(u: UnitJson, sourceFile: string): Candidate[] {
       result.push({
         word: w,
         partOfSpeech: pos,
-        afFLevel: 'grade1',
+        afFLevel: AF_LEVEL,
         afFUnit: u.unit,
         isFunctionWord: FUNCTION_WORDS.has(w),
         isMultiWord: isMultiWord(w),
@@ -316,7 +397,7 @@ async function main() {
     allCandidates.push({
       word: w,
       partOfSpeech: item.partOfSpeech,
-      afFLevel: 'grade1',
+      afFLevel: AF_LEVEL,
       afFUnit: item.earliestUnit,
       isFunctionWord: FUNCTION_WORDS.has(w),
       isMultiWord: isMultiWord(w),
@@ -343,14 +424,23 @@ async function main() {
   }
   const unique = Array.from(uniqueByWord.values());
 
-  // 3. Build the report buckets.
-  const byAfFLevel = tally(unique.map((c) => c.afFLevel));
-  const byPartOfSpeech = tally(unique.map((c) => c.partOfSpeech));
+  // 2b. Drop multi-word verb/time/place phrases — keep them out of the
+  //     single-lemma master table (see shouldSkipMultiWord). Everything
+  //     dropped is reported under `skipped` so it's verifiable.
+  const kept: Candidate[] = [];
+  const skippedCandidates: Candidate[] = [];
+  for (const c of unique) {
+    (shouldSkipMultiWord(c) ? skippedCandidates : kept).push(c);
+  }
+
+  // 3. Build the report buckets (from the KEPT set — that's what gets written).
+  const byAfFLevel = tally(kept.map((c) => c.afFLevel));
+  const byPartOfSpeech = tally(kept.map((c) => c.partOfSpeech));
   // CEFR isn't inferred yet — every row's cefr_level is null. Reported as
   // a single bucket so the shape stays consistent for future passes.
-  const byCefrLevel: Record<string, number> = { 'null': unique.length };
+  const byCefrLevel: Record<string, number> = { 'null': kept.length };
 
-  const multiWord: ReportEntry[] = unique
+  const multiWord: ReportEntry[] = kept
     .filter((c) => c.isMultiWord)
     .map((c) => ({
       word: c.word,
@@ -363,16 +453,19 @@ async function main() {
   const ambiguous: ReportEntry[] = [
     ...duplicates.filter((d) => d.detail.includes('review if you want')),
   ];
-  const functionWordCollisions: ReportEntry[] = unique
+  const functionWordCollisions: ReportEntry[] = kept
     .filter((c) => c.isFunctionWord)
     .map((c) => ({
       word: c.word,
       detail: `seeded as POS=${c.partOfSpeech} from ${c.source}; is_function_word=true on insert`,
     }));
 
-  // Skipped: nothing is silently dropped today. If we add filters later
-  // (e.g. phonics-only words explicitly), they'd land here.
-  const skipped: ReportEntry[] = [];
+  // Skipped: multi-word verb/time/place phrases excluded from the master
+  // table (their constituent verbs are seeded separately from verbs[]).
+  const skipped: ReportEntry[] = skippedCandidates.map((c) => ({
+    word: c.word,
+    detail: `multi-word ${c.partOfSpeech} phrase from ${c.source} — excluded from master vocab`,
+  }));
 
   const report: SeedReport = {
     generatedAt: new Date().toISOString(),
@@ -400,6 +493,8 @@ async function main() {
   console.log(`Total candidates before dedupe: ${report.totals.candidatesBeforeDedupe}`);
   console.log(`Unique after dedupe:            ${report.totals.uniqueAfterDedupe}`);
   console.log(`Duplicates collapsed:           ${report.totals.duplicatesCollapsed}`);
+  console.log(`Phrases skipped (multi-word):   ${report.totals.skipped}`);
+  console.log(`Kept (written to vocab):        ${kept.length}`);
   console.log('');
   console.log('By source file:');
   for (const [k, v] of Object.entries(bySourceFile)) console.log(`  ${k}: ${v}`);
@@ -416,8 +511,11 @@ async function main() {
   console.log(`Top ${report.topAmbiguous.length} ambiguous (POS conflicts across units):`);
   for (const e of report.topAmbiguous) console.log(`  ${e.word} — ${e.detail}`);
   console.log('');
-  console.log(`Top ${report.topMultiWord.length} multi-word entries:`);
+  console.log(`Top ${report.topMultiWord.length} multi-word entries kept (compound nouns):`);
   for (const e of report.topMultiWord) console.log(`  ${e.word} — ${e.detail}`);
+  console.log('');
+  console.log(`Skipped multi-word phrases (${skipped.length}):`);
+  for (const e of skipped) console.log(`  ${e.word}`);
   console.log('');
   if (functionWordCollisions.length) {
     console.log(`Function-word collisions (${functionWordCollisions.length}):`);
@@ -437,12 +535,12 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`\nUpserting ${unique.length} rows into vocabulary…`);
+  console.log(`\nUpserting ${kept.length} rows into vocabulary…`);
   // Idempotent upsert: on word conflict, keep existing non-null values and
   // fill in nulls with whatever this run computed. is_function_word is
   // promoted false→true but never demoted (manual edits stick). word and
   // id are immutable; created_at is preserved.
-  const rows = unique.map((c) => ({
+  const rows = kept.map((c) => ({
     word: c.word,
     partOfSpeech: c.partOfSpeech,
     afFLevel: c.afFLevel,

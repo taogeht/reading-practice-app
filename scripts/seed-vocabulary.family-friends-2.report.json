@@ -1,0 +1,584 @@
+{
+  "generatedAt": "2026-05-31T22:20:53.238Z",
+  "mode": "write",
+  "totals": {
+    "candidatesBeforeDedupe": 353,
+    "uniqueAfterDedupe": 278,
+    "duplicatesCollapsed": 75,
+    "skipped": 38
+  },
+  "bySourceFile": {
+    "unit-0.json": 59,
+    "unit-1.json": 21,
+    "unit-2.json": 13,
+    "unit-3.json": 25,
+    "unit-4.json": 22,
+    "unit-5.json": 13,
+    "unit-6.json": 23,
+    "unit-7.json": 10,
+    "unit-8.json": 28,
+    "unit-9.json": 14,
+    "unit-10.json": 15,
+    "unit-11.json": 34,
+    "unit-12.json": 24,
+    "unit-13.json": 21,
+    "unit-14.json": 16,
+    "unit-15.json": 15,
+    "<narrative-audit>": 0
+  },
+  "byAfFLevel": {
+    "grade2": 240
+  },
+  "byCefrLevel": {
+    "null": 240
+  },
+  "byPartOfSpeech": {
+    "noun": 127,
+    "adjective": 47,
+    "other": 33,
+    "preposition": 6,
+    "verb": 27
+  },
+  "topAmbiguous": [
+    {
+      "word": "orange",
+      "detail": "kept unit-0.json#colors as adjective; later seen in unit-4.json#vocabulary as noun — review if you want the later POS instead"
+    },
+    {
+      "word": "hot",
+      "detail": "kept unit-2.json#adjectives as adjective; later seen in unit-10.json#vocabulary as noun — review if you want the later POS instead"
+    },
+    {
+      "word": "cold",
+      "detail": "kept unit-2.json#adjectives as adjective; later seen in unit-10.json#vocabulary as noun — review if you want the later POS instead"
+    }
+  ],
+  "topMultiWord": [
+    {
+      "word": "teddy bear",
+      "detail": "from unit-0.json#vocabulary, unit 0, POS=noun"
+    },
+    {
+      "word": "coat hook",
+      "detail": "from unit-1.json#vocabulary, unit 1, POS=noun"
+    },
+    {
+      "word": "pencil case",
+      "detail": "from unit-1.json#vocabulary, unit 1, POS=noun"
+    },
+    {
+      "word": "cd player",
+      "detail": "from unit-1.json#vocabulary, unit 1, POS=noun"
+    },
+    {
+      "word": "cheese sandwich",
+      "detail": "from unit-4.json#vocabulary, unit 4, POS=noun"
+    },
+    {
+      "word": "one hundred",
+      "detail": "from unit-4.json#numbers, unit 4, POS=other"
+    },
+    {
+      "word": "school yard",
+      "detail": "from unit-5.json#vocabulary, unit 5, POS=noun"
+    },
+    {
+      "word": "art room",
+      "detail": "from unit-5.json#vocabulary, unit 5, POS=noun"
+    },
+    {
+      "word": "computer room",
+      "detail": "from unit-5.json#vocabulary, unit 5, POS=noun"
+    },
+    {
+      "word": "police station",
+      "detail": "from unit-9.json#vocabulary, unit 9, POS=noun"
+    },
+    {
+      "word": "fire station",
+      "detail": "from unit-9.json#vocabulary, unit 9, POS=noun"
+    },
+    {
+      "word": "sun hat",
+      "detail": "from unit-10.json#vocabulary, unit 10, POS=noun"
+    },
+    {
+      "word": "finish line",
+      "detail": "from unit-15.json#vocabulary, unit 15, POS=noun"
+    }
+  ],
+  "duplicates": [
+    {
+      "word": "long",
+      "detail": "kept unit-0.json#adjectives (unit 0); also seen in unit-1.json#adjectives (unit 1)"
+    },
+    {
+      "word": "short",
+      "detail": "kept unit-0.json#adjectives (unit 0); also seen in unit-1.json#adjectives (unit 1)"
+    },
+    {
+      "word": "happy",
+      "detail": "kept unit-0.json#adjectives (unit 0); also seen in unit-2.json#adjectives (unit 2)"
+    },
+    {
+      "word": "under",
+      "detail": "kept unit-0.json#prepositions (unit 0); also seen in unit-3.json#prepositions (unit 3)"
+    },
+    {
+      "word": "orange",
+      "detail": "kept unit-0.json#colors as adjective; later seen in unit-4.json#vocabulary as noun — review if you want the later POS instead"
+    },
+    {
+      "word": "ten",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-4.json#numbers (unit 4)"
+    },
+    {
+      "word": "twenty",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-4.json#numbers (unit 4)"
+    },
+    {
+      "word": "on",
+      "detail": "kept unit-3.json#prepositions (unit 3); also seen in unit-5.json#prepositions (unit 5)"
+    },
+    {
+      "word": "play",
+      "detail": "kept unit-3.json#verbs (unit 3); also seen in unit-6.json#verbs (unit 6)"
+    },
+    {
+      "word": "cook",
+      "detail": "kept unit-3.json#verbs (unit 3); also seen in unit-6.json#verbs (unit 6)"
+    },
+    {
+      "word": "draw",
+      "detail": "kept unit-3.json#verbs (unit 3); also seen in unit-6.json#verbs (unit 6)"
+    },
+    {
+      "word": "sing",
+      "detail": "kept unit-3.json#verbs (unit 3); also seen in unit-6.json#verbs (unit 6)"
+    },
+    {
+      "word": "do my homework",
+      "detail": "kept unit-6.json#vocabulary (unit 6); also seen in unit-8.json#vocabulary (unit 8)"
+    },
+    {
+      "word": "one",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "two",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "three",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "four",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "five",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "six",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "seven",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "eight",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "nine",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "ten",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "eleven",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "twelve",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-8.json#numbers (unit 8)"
+    },
+    {
+      "word": "in",
+      "detail": "kept unit-5.json#prepositions (unit 5); also seen in unit-8.json#prepositions (unit 8)"
+    },
+    {
+      "word": "in",
+      "detail": "kept unit-5.json#prepositions (unit 5); also seen in unit-9.json#prepositions (unit 9)"
+    },
+    {
+      "word": "at",
+      "detail": "kept unit-8.json#prepositions (unit 8); also seen in unit-9.json#prepositions (unit 9)"
+    },
+    {
+      "word": "hot",
+      "detail": "kept unit-2.json#adjectives as adjective; later seen in unit-10.json#vocabulary as noun — review if you want the later POS instead"
+    },
+    {
+      "word": "cold",
+      "detail": "kept unit-2.json#adjectives as adjective; later seen in unit-10.json#vocabulary as noun — review if you want the later POS instead"
+    },
+    {
+      "word": "one",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "two",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "three",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "four",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "five",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "six",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "seven",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "eight",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "nine",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "ten",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "eleven",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "twelve",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "fifteen",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "thirty",
+      "detail": "kept unit-4.json#numbers (unit 4); also seen in unit-11.json#numbers (unit 11)"
+    },
+    {
+      "word": "blue",
+      "detail": "kept unit-0.json#colors (unit 0); also seen in unit-11.json#colors (unit 11)"
+    },
+    {
+      "word": "red",
+      "detail": "kept unit-0.json#colors (unit 0); also seen in unit-11.json#colors (unit 11)"
+    },
+    {
+      "word": "yellow",
+      "detail": "kept unit-0.json#colors (unit 0); also seen in unit-11.json#colors (unit 11)"
+    },
+    {
+      "word": "black",
+      "detail": "kept unit-0.json#colors (unit 0); also seen in unit-11.json#colors (unit 11)"
+    },
+    {
+      "word": "green",
+      "detail": "kept unit-0.json#colors (unit 0); also seen in unit-11.json#colors (unit 11)"
+    },
+    {
+      "word": "brown",
+      "detail": "kept unit-0.json#colors (unit 0); also seen in unit-11.json#colors (unit 11)"
+    },
+    {
+      "word": "cake",
+      "detail": "kept unit-7.json#vocabulary (unit 7); also seen in unit-12.json#vocabulary (unit 12)"
+    },
+    {
+      "word": "dress",
+      "detail": "kept unit-11.json#vocabulary (unit 11); also seen in unit-12.json#vocabulary (unit 12)"
+    },
+    {
+      "word": "dance",
+      "detail": "kept unit-3.json#verbs (unit 3); also seen in unit-12.json#verbs (unit 12)"
+    },
+    {
+      "word": "sing",
+      "detail": "kept unit-3.json#verbs (unit 3); also seen in unit-12.json#verbs (unit 12)"
+    },
+    {
+      "word": "watch",
+      "detail": "kept unit-6.json#verbs (unit 6); also seen in unit-12.json#verbs (unit 12)"
+    },
+    {
+      "word": "play",
+      "detail": "kept unit-3.json#verbs (unit 3); also seen in unit-12.json#verbs (unit 12)"
+    },
+    {
+      "word": "swim",
+      "detail": "kept unit-3.json#vocabulary (unit 3); also seen in unit-12.json#verbs (unit 12)"
+    },
+    {
+      "word": "listen",
+      "detail": "kept unit-6.json#verbs (unit 6); also seen in unit-12.json#verbs (unit 12)"
+    },
+    {
+      "word": "big",
+      "detail": "kept unit-1.json#adjectives (unit 1); also seen in unit-13.json#adjectives (unit 13)"
+    },
+    {
+      "word": "small",
+      "detail": "kept unit-1.json#adjectives (unit 1); also seen in unit-13.json#adjectives (unit 13)"
+    },
+    {
+      "word": "short",
+      "detail": "kept unit-0.json#adjectives (unit 0); also seen in unit-13.json#adjectives (unit 13)"
+    },
+    {
+      "word": "behind",
+      "detail": "kept unit-3.json#prepositions (unit 3); also seen in unit-13.json#prepositions (unit 13)"
+    },
+    {
+      "word": "in front of",
+      "detail": "kept unit-3.json#prepositions (unit 3); also seen in unit-13.json#prepositions (unit 13)"
+    },
+    {
+      "word": "between",
+      "detail": "kept unit-3.json#prepositions (unit 3); also seen in unit-13.json#prepositions (unit 13)"
+    },
+    {
+      "word": "next to",
+      "detail": "kept unit-3.json#prepositions (unit 3); also seen in unit-13.json#prepositions (unit 13)"
+    },
+    {
+      "word": "on",
+      "detail": "kept unit-3.json#prepositions (unit 3); also seen in unit-13.json#prepositions (unit 13)"
+    },
+    {
+      "word": "bad",
+      "detail": "kept unit-2.json#adjectives (unit 2); also seen in unit-14.json#adjectives (unit 14)"
+    },
+    {
+      "word": "happy",
+      "detail": "kept unit-0.json#adjectives (unit 0); also seen in unit-14.json#adjectives (unit 14)"
+    },
+    {
+      "word": "sad",
+      "detail": "kept unit-2.json#adjectives (unit 2); also seen in unit-14.json#adjectives (unit 14)"
+    },
+    {
+      "word": "hungry",
+      "detail": "kept unit-2.json#adjectives (unit 2); also seen in unit-14.json#adjectives (unit 14)"
+    },
+    {
+      "word": "good",
+      "detail": "kept unit-2.json#adjectives (unit 2); also seen in unit-14.json#adjectives (unit 14)"
+    },
+    {
+      "word": "one",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-15.json#numbers (unit 15)"
+    },
+    {
+      "word": "two",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-15.json#numbers (unit 15)"
+    },
+    {
+      "word": "three",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-15.json#numbers (unit 15)"
+    },
+    {
+      "word": "four",
+      "detail": "kept unit-0.json#numbers (unit 0); also seen in unit-15.json#numbers (unit 15)"
+    }
+  ],
+  "skipped": [
+    {
+      "word": "ride a bike",
+      "detail": "multi-word noun phrase from unit-3.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "ride a horse",
+      "detail": "multi-word noun phrase from unit-3.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play tennis",
+      "detail": "multi-word noun phrase from unit-3.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play soccer",
+      "detail": "multi-word noun phrase from unit-3.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "in front of",
+      "detail": "multi-word preposition phrase from unit-3.json#prepositions — excluded from master vocab"
+    },
+    {
+      "word": "next to",
+      "detail": "multi-word preposition phrase from unit-3.json#prepositions — excluded from master vocab"
+    },
+    {
+      "word": "help my mom",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "do my homework",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "visit my grandma",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "go swimming",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "have a music lesson",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "watch tv",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "read a book",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "write an email",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "listen to music",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play with my friends",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "get up",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "have breakfast",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "go to school",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "go home",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "have dinner",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "go to bed",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "have lunch",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "brush my teeth",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play with my toys",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "in the morning",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "in the afternoon",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "in the evening",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "at night",
+      "detail": "multi-word noun phrase from unit-8.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "fly a kite",
+      "detail": "multi-word noun phrase from unit-10.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "make a snowman",
+      "detail": "multi-word noun phrase from unit-10.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "go ice skating",
+      "detail": "multi-word noun phrase from unit-10.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "go outside",
+      "detail": "multi-word noun phrase from unit-10.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "make a cake",
+      "detail": "multi-word noun phrase from unit-12.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "wash the car",
+      "detail": "multi-word noun phrase from unit-12.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "brush my hair",
+      "detail": "multi-word noun phrase from unit-12.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "take photos",
+      "detail": "multi-word noun phrase from unit-12.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "choose a dress",
+      "detail": "multi-word noun phrase from unit-12.json#vocabulary — excluded from master vocab"
+    }
+  ],
+  "functionWordCollisions": [
+    {
+      "word": "on",
+      "detail": "seeded as POS=preposition from unit-3.json#prepositions; is_function_word=true on insert"
+    },
+    {
+      "word": "in",
+      "detail": "seeded as POS=preposition from unit-5.json#prepositions; is_function_word=true on insert"
+    },
+    {
+      "word": "do",
+      "detail": "seeded as POS=verb from unit-6.json#verbs; is_function_word=true on insert"
+    },
+    {
+      "word": "at",
+      "detail": "seeded as POS=preposition from unit-8.json#prepositions; is_function_word=true on insert"
+    }
+  ]
+}
