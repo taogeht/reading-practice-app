@@ -19,7 +19,7 @@ import { StudentHomeworkSection } from "@/components/student/student-homework-se
 import { StudentAttemptCard } from "@/components/student/student-attempt-card";
 import { StudentProgressionCard } from "@/components/gamification/student-progression-card";
 import { ShopCalloutCard } from "@/components/gamification/shop-callout-card";
-import { STUDENT_SHOP_ENABLED } from "@/lib/feature-flags";
+import { STUDENT_SHOP_ENABLED, STUDENT_DASHBOARD_V2 } from "@/lib/feature-flags";
 import { StudentMediaGallery } from "@/components/student-media/student-media-gallery";
 import { RecordedPassagesSection } from "@/components/recordings/recorded-passages-section";
 import { PracticeSession } from "@/components/practice/practice-session";
@@ -121,6 +121,12 @@ export default function StudentDashboardPage() {
   // Track student activity with periodic heartbeats
   useHeartbeat();
 
+  // When the V2 young-learner dashboard is enabled, send students there.
+  // V1 stays intact for instant rollback (flip the flag off).
+  useEffect(() => {
+    if (STUDENT_DASHBOARD_V2) router.replace('/student/dashboard-v2');
+  }, [router]);
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -192,6 +198,14 @@ export default function StudentDashboardPage() {
       setUpdatingAvatar(false);
     }
   };
+
+  if (STUDENT_DASHBOARD_V2) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-gray-600">Loading…</div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

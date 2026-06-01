@@ -18,3 +18,12 @@
  * Flip to true when the shop is ready for student use.
  */
 export const STUDENT_SHOP_ENABLED = false;
+
+/**
+ * When true, the student dashboard route redirects to the young-learner V2
+ * dashboard at /student/dashboard-v2 (big buttons, bilingual + read-aloud,
+ * 4 tabs). V2 lives at its own route so it can be previewed with real data
+ * and rolled back instantly; flip this on to send every student to it, or
+ * visit /student/dashboard-v2 directly while it's off.
+ */
+export const STUDENT_DASHBOARD_V2 = true;

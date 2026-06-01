@@ -149,3 +149,28 @@
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ---- Student dashboard V2 (young-learner) motion ---- */
+/* Staggered "pop up" entrance for the big tiles. Pair with an inline
+   animation-delay for the stagger. */
+@keyframes kid-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.kid-rise {
+  animation: kid-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* Gentle attention pulse for the "playing" speaker state. */
+@keyframes kid-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.kid-pulse {
+  animation: kid-pulse 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kid-rise,
+  .kid-pulse {
+    animation: none;
+  }
+}
