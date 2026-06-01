@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Multi-tenant Plan — mschool.com.tw → per-school subdomains</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1.5rem; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 0.4rem; }
+  h2 { margin-top: 2.2rem; color: #2a4a6a; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+  h3 { margin-top: 1.4rem; color: #444; }
+  code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 0.92em; }
+  pre { background: #f4f4f4; padding: 0.8rem 1rem; border-radius: 5px; overflow-x: auto; font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; }
+  th { background: #f0f4f8; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.78em; font-weight: 600; }
+  .pill-arch { background: #e4f0ff; color: #1050a0; }
+  .pill-schema { background: #ffe9d6; color: #8a4810; }
+  .pill-risk { background: #ffe4e4; color: #a01010; }
+  .pill-punt { background: #f0eee4; color: #6a5510; }
+  .pill-phase { background: #e6f7e0; color: #2a6620; }
+  blockquote { border-left: 3px solid #ccc; margin: 1rem 0; padding: 0.4rem 1rem; color: #555; }
+  ul, ol { padding-left: 1.6rem; }
+  li { margin: 0.25rem 0; }
+  .note { background: #fffae0; border-left: 3px solid #d9b400; padding: 0.6rem 1rem; margin: 1rem 0; font-size: 0.95em; }
+  .recommend { background: #e6f7e0; border-left: 3px solid #2a6620; padding: 0.6rem 1rem; margin: 1rem 0; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<h1>Multi-tenant Plan — Platform Admin vs. Per-School Admin</h1>
+
+<h2>Context</h2>
+<p>
+  The platform runs single-tenant today on <code>huaxia.mschool.com.tw</code>. The "admin panel" does two jobs at once: it manages <em>platform-level</em> data (schools, global story library, audit log, R2 browser, system settings) <em>and</em> school-level data (users, classes, recordings for the one school). If a second school is added — e.g. <code>fongshan.mschool.com.tw</code> — that conflation forces either a duplicated panel or a confused permission model.
+</p>
+<p>
+  Goal: design the cleanest path to a clean split, without disrupting Huaxia.
+</p>
+<ul>
+  <li><strong><code>mschool.com.tw/admin</code></strong> = platform admin (schools, billing, global library, system).</li>
+  <li><strong><code>&lt;school&gt;.mschool.com.tw/admin</code></strong> = school admin (their users, classes, audit log, recordings).</li>
+</ul>
+<p>
+  The data model is already 90% set up for this. <code>classes.schoolId</code> is a foreign key (<code>src/lib/db/schema.ts:185</code>), assignments → classes, recordings → assignments. School-scoping is implicit in joins today; formalising it is mostly adding tenant context to the request and narrowing one role check.
+</p>
+<div class="note">This document is a think-piece. No code changes are committed by reading it; it's here so the architecture decision is on paper before we choose to act.</div>
+
+<h2>Recommended Architecture <span class="pill pill-arch">arch</span></h2>
+<div class="recommend">
+  Single Next.js deployment, single Postgres, <strong>wildcard cert <code>*.mschool.com.tw</code></strong>. <code>src/middleware.ts</code> parses <code>Host</code>, looks up the subdomain against a new <code>schools.slug</code> column, and injects an <code>x-tenant-school-id</code> header on the forwarded request. Every server component / API route reads the header via a <code>getTenantSchool()</code> helper.
+</div>
+<p>
+  Per-school admin authority lives on <code>school_memberships.role</code>, <em>not</em> on <code>users.role</code>. Rationale: a user <em>is</em> a teacher in one school and an admin in another; expressing that on the membership row keeps things flat.
+</p>
+<p>
+  Critical companion move: <strong>rename the <code>admin</code> value in the <code>users.role</code> enum to <code>platform_admin</code></strong> in the same migration. The ~24 existing <code>role === 'admin'</code> checks in API routes today silently grant cross-school access; if we leave the word "admin" ambiguous, every refactor risks a tenant leak. Force the rename so the word unambiguously means "global root."
+</p>
+
+<h2>Role + Permission Model</h2>
+<p>Two-axis model:</p>
+<ul>
+  <li><code>users.role</code>: <code>student</code> | <code>teacher</code> | <code>platform_admin</code></li>
+  <li><code>school_memberships.role</code>: <code>member</code> | <code>admin</code> (new enum, default <code>member</code>)</li>
+</ul>
+<p>Translation of today's <code>admin</code> checks:</p>
+<table>
+  <tr><th>Today</th><th>After</th></tr>
+  <tr>
+    <td><code>role === 'admin'</code> for platform-only resources (schools, global stories, settings, R2)</td>
+    <td><code>role === 'platform_admin'</code> only</td>
+  </tr>
+  <tr>
+    <td><code>role === 'admin'</code> for a school-scoped resource (users, classes, audit log for one school)</td>
+    <td><code>platform_admin</code> <em>or</em> membership.role = <code>'admin'</code> on the tenant school</td>
+  </tr>
+  <tr>
+    <td><code>role === 'admin'</code> short-circuit in <code>userCanManageClass()</code> (<code>src/lib/auth/class-access.ts:19</code>)</td>
+    <td>
+      <code>platform_admin</code> → all classes;<br>
+      school-admin → classes whose <code>schoolId</code> matches one of their admin memberships;<br>
+      teacher branch unchanged.
+    </td>
+  </tr>
+</table>
+<p>
+  <code>/api/admin/*</code> becomes the <strong>platform</strong> admin surface. Per-school admin can live under the same <code>/api/admin/*</code> tree, but every handler asserts <code>getTenantSchool()</code> and filters by it; routes that have no tenant (e.g. "create school") require <code>platform_admin</code>.
+</p>
+
+<h2>Tenant Context Propagation</h2>
+<p>Middleware-injected header. Not session, not async context.</p>
+<ol>
+  <li><code>src/middleware.ts</code> reads <code>Host</code>, strips <code>.mschool.com.tw</code>, looks up <code>schools.slug = subdomain</code> (in-memory TTL cache, ~60s), sets <code>x-tenant-school-id</code> on the forwarded request via <code>NextResponse.next({ request: { headers } })</code>.</li>
+  <li>Server side: <code>getTenantSchool()</code> reads the header via <code>headers()</code> from <code>next/headers</code> (server components) or <code>request.headers.get(...)</code> (route handlers).</li>
+</ol>
+<h3>Failure modes</h3>
+<table>
+  <tr><th>Host</th><th>Behavior</th></tr>
+  <tr><td><code>localhost</code> / <code>localhost:3000</code></td><td>Null tenant; routes that require one return 404. Dev override via <code>X-Dev-School</code> header (gated by <code>NODE_ENV !== 'production'</code>).</td></tr>
+  <tr><td>Apex <code>mschool.com.tw</code></td><td>Null tenant; only platform-admin and marketing render.</td></tr>
+  <tr><td>Unknown subdomain</td><td>Render a clean "school not found" page. Never fall through to a random tenant. Same page whether the slug is unknown or the school is inactive (don't leak enumeration).</td></tr>
+  <tr><td>DB lookup fails</td><td>Fail closed (403). Do not silently treat as platform.</td></tr>
+</table>
+
+<h2>Schema Deltas (minimum set) <span class="pill pill-schema">schema</span></h2>
+<ol>
+  <li><code>schools.slug varchar(63) unique not null</code> — RFC-1035 label rules (lowercase, digits, hyphens). Backfill <code>huaxia</code> for the existing row, then enforce <code>NOT NULL</code>.</li>
+  <li>New enum <code>school_membership_role = ['member', 'admin']</code>. Add <code>school_memberships.role</code> (default <code>member</code>).</li>
+  <li>Rename enum value <code>users.role.admin</code> → <code>platform_admin</code> (<code>ALTER TYPE ... RENAME VALUE</code>). Update ~24 code call sites in the same PR.</li>
+  <li><code>audit_logs.school_id uuid null references schools(id)</code>, indexed. Nullable because platform-level events ("school created") have no school.</li>
+  <li><strong>Stories / reading passages:</strong> add nullable <code>school_id</code> but <strong>don't start scoping queries on it.</strong> Zero-cost optionality; the column is there waiting if we later decide to scope.</li>
+</ol>
+
+<h2>Cookie Strategy</h2>
+<div class="recommend">
+  <strong>Host-only cookies (status quo) — do NOT set <code>Domain=.mschool.com.tw</code>.</strong>
+</div>
+<p>
+  <code>COOKIE_OPTIONS</code> in <code>src/lib/auth.ts:171</code> already omits <code>domain</code>, so the session cookie is host-bound. Keep it that way:
+</p>
+<ul>
+  <li>Smaller blast radius if a session is stolen.</li>
+  <li>Student tokens (<code>/s/[token]</code>) are issued to a user globally; allowing them to authenticate on a subdomain the student doesn't belong to would be a leak.</li>
+  <li>Tenancy becomes a hard wall, not a convention.</li>
+</ul>
+<p>
+  Platform-admin DX (jumping between schools without re-logging in) gets a one-shot signed redirect token: a "switch school" button on <code>mschool.com.tw/admin</code> mints a 5-second single-use token, redirects to <code>&lt;school&gt;.mschool.com.tw/admin/_resume?token=...</code>, which sets a fresh session cookie scoped to that subdomain. Same pattern as Google's account chooser.
+</p>
+<div class="note">
+  Code-comment the cookie config loudly. "Convenience" requests to add <code>domain=.mschool.com.tw</code> later would collapse the tenant wall instantly.
+</div>
+
+<h2>DNS + Cert + Deploy</h2>
+<ul>
+  <li>Wildcard DNS A record <code>*.mschool.com.tw</code> → VPS IP.</li>
+  <li>Wildcard ACME cert via <strong>DNS-01 challenge</strong> (HTTP-01 cannot issue wildcards). Caddy + Cloudflare DNS module or Coolify's wildcard support. <em>Confirm the registrar exposes an API token for DNS-01 before committing to the timeline.</em></li>
+  <li>No changes needed in <code>next.config.mjs</code>.</li>
+  <li>Single Next.js process serves every subdomain; no per-tenant deploy.</li>
+</ul>
+
+<h2>Migration in Phases <span class="pill pill-phase">phased</span></h2>
+<p>Each phase ships independently. Phase 1 is a no-op for end users.</p>
+<table>
+  <tr><th>Phase</th><th>What ships</th><th>End-user impact</th></tr>
+  <tr>
+    <td>1</td>
+    <td>Add <code>schools.slug</code>, backfill <code>huaxia</code>. Middleware resolves Host → schoolId and sets the header, but no route reads it yet.</td>
+    <td>None. Staging subdomains used to verify the header lands.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Membership role column + <code>audit_logs.school_id</code>. Migrations only; defaults populate everyone as <code>member</code>.</td>
+    <td>None.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Rename <code>admin</code> → <code>platform_admin</code>. Single PR updates all ~24 call sites; same deploy runs <code>ALTER TYPE</code>. The existing one admin user becomes <code>platform_admin</code>.</td>
+    <td>None (behavior identical, name is now honest). <strong>Fragile</strong> — green-deploy the code before the migration runs.</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><code>userCanManageClass</code>, <code>accessibleClassIds</code>, and the user/class/audit-log admin APIs grow the membership-role branch. Dead code until phase 5.</td>
+    <td>None.</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Wildcard DNS + cert active. Create <code>fongshan</code> school + slug. Promote a teacher to <code>school_memberships.role = 'admin'</code> for Fongshan. Both panels go live.</td>
+    <td>Fongshan onboards. Huaxia URL unchanged.</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Audit every API route for "does this respect the tenant header?" Add CI lint that fails if a school-scoped route doesn't call <code>getTenantSchool()</code>. Ship the cross-school redirect-token flow.</td>
+    <td>None directly; safety net + platform-admin DX.</td>
+  </tr>
+</table>
+
+<h2>Decision Matrix</h2>
+<table>
+  <tr><th>Decision</th><th>Recommendation</th><th>Why</th></tr>
+  <tr>
+    <td>Database topology</td>
+    <td><strong>Single DB with <code>school_id</code> columns</strong></td>
+    <td>Schema is FK-clean already. Per-tenant DBs would force migrations × N forever and complicate platform-level reporting.</td>
+  </tr>
+  <tr>
+    <td>URL shape</td>
+    <td><strong>Subdomain</strong> (<code>huaxia.mschool.com.tw</code>)</td>
+    <td>Cleaner cookie/CSP boundary, no rewriting of student QR codes or email links, visually distinct in the URL bar.</td>
+  </tr>
+  <tr>
+    <td>Session cookie scope</td>
+    <td><strong>Host-only</strong></td>
+    <td>Smaller blast radius on session theft; student tokens stay tenant-bound; platform-admin DX solved with the one-shot redirect token.</td>
+  </tr>
+  <tr>
+    <td>Admin role location</td>
+    <td><strong>Membership-level</strong> (<code>school_memberships.role</code>)</td>
+    <td>A user can be a teacher in one school and admin in another. Expresses cleanly without a parallel <code>school_admins</code> table.</td>
+  </tr>
+</table>
+
+<h2>What We Punt <span class="pill pill-punt">deferred</span></h2>
+<ul>
+  <li><strong>Custom per-school domains</strong> (e.g. <code>fongshan.edu.tw</code> instead of subdomain). Needs per-tenant cert provisioning + Host allowlist. Add when a school asks.</li>
+  <li><strong>Per-tenant databases.</strong> Operational cost is huge. Only revisit for data-residency requirements.</li>
+  <li><strong>Story / passage library scoping.</strong> Today every school sees every story. Ship the nullable <code>school_id</code> column for future-us but don't scope queries.</li>
+  <li><strong>Per-school theming / branding</strong> (logo, colors). Trivial to add later — <code>schools.logoUrl</code>, <code>schools.primaryColor</code>.</li>
+  <li><strong>Cross-school class sharing.</strong> If two schools want to share a teacher, that teacher gets two memberships and switches subdomains. No native sharing.</li>
+  <li><strong>Audit-log unification.</strong> Platform admin will want a global audit view that ignores tenant header. Fine, but document it so it isn't an accidental leak.</li>
+</ul>
+
+<h2>Risks Worth Naming <span class="pill pill-risk">risk</span></h2>
+<ul>
+  <li><strong>Silent tenant leak.</strong> If a route forgets <code>getTenantSchool()</code> after phase 5, it returns cross-school data without complaint. Hence the phase-6 lint.</li>
+  <li><strong>Cookie scope mistake.</strong> Adding <code>domain=.mschool.com.tw</code> "for convenience" later would collapse the tenant wall instantly. Comment loudly in <code>auth.ts</code>.</li>
+  <li><strong>Migration ordering.</strong> Phase 3 (enum rename) is fragile; running <code>ALTER TYPE</code> before the code is deployed will throw 500s on every <code>role === 'admin'</code> check. Use a green-deploy where the new code rolls out before the migration runs.</li>
+  <li><strong>Subdomain enumeration.</strong> <code>unknown.mschool.com.tw</code> should not leak whether a school exists. Same "school not found" page whether the slug is unknown or the school is inactive.</li>
+  <li><strong>Platform-admin DX entropy.</strong> Constant re-login is annoying; without the redirect-token flow, the demand for wildcard cookies will eventually arrive. Build the redirect flow as part of phase 6, not "later".</li>
+</ul>
+
+<h2>Critical Files (if we build this)</h2>
+<table>
+  <tr><th>File</th><th>What changes</th></tr>
+  <tr><td><code>src/middleware.ts</code></td><td>Host parsing + tenant header injection + unknown-subdomain page</td></tr>
+  <tr><td><code>src/lib/db/schema.ts</code></td><td>slug, membership role, audit_log.school_id, enum rename</td></tr>
+  <tr><td><code>src/lib/auth.ts</code></td><td>Loud cookie comment; token-issuance check</td></tr>
+  <tr><td><code>src/lib/auth/class-access.ts</code></td><td>Membership-role branches in every helper</td></tr>
+  <tr><td><code>src/lib/audit.ts</code></td><td><code>schoolId</code> capture on every write</td></tr>
+  <tr><td><code>src/lib/tenant.ts</code> (new)</td><td><code>getTenantSchool()</code>, dev override</td></tr>
+  <tr><td><code>src/app/(admin)/*</code> + <code>src/app/api/admin/*</code></td><td>Split between platform-only and school-scoped routes; tenant guard per route</td></tr>
+</table>
+
+<h2>TL;DR</h2>
+<ol>
+  <li>One Next.js app + one Postgres + wildcard cert. Subdomain → <code>schoolId</code> via middleware-injected header.</li>
+  <li>Rename <code>admin</code> → <code>platform_admin</code>. Add <code>school_memberships.role</code>. School admins live on the membership, not on the user.</li>
+  <li>Cookies stay host-only. Platform admin gets a one-shot redirect token to hop schools.</li>
+  <li>Six small phases; phase 1 is invisible to users; phase 5 is when Fongshan goes live.</li>
+  <li>Punt custom domains, per-tenant DBs, library scoping, and theming until someone asks.</li>
+</ol>
+
+</body>
+</html>

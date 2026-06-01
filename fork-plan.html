@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fork Plan — recording-homework-app → New School Deployment</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1.5rem; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 0.4rem; }
+  h2 { margin-top: 2.2rem; color: #2a4a6a; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+  h3 { margin-top: 1.4rem; color: #444; }
+  code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 0.92em; }
+  pre { background: #f4f4f4; padding: 0.8rem 1rem; border-radius: 5px; overflow-x: auto; font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; }
+  th { background: #f0f4f8; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.78em; font-weight: 600; }
+  .pill-must { background: #ffe4e4; color: #a01010; }
+  .pill-data { background: #e4f0ff; color: #1050a0; }
+  .pill-infra { background: #e6f7e0; color: #2a6620; }
+  .pill-keep { background: #f0eee4; color: #6a5510; }
+  blockquote { border-left: 3px solid #ccc; margin: 1rem 0; padding: 0.4rem 1rem; color: #555; }
+  ul, ol { padding-left: 1.6rem; }
+  li { margin: 0.25rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Fork Plan — Spawn a New School Deployment</h1>
+
+<h2>Context</h2>
+<p>
+  The current <code>recording-homework-app</code> is functionally generic (auth, recording loop, spelling, attendance, syllabus tracking, AI-generated reading passages), but its <em>content layer</em> is hardwired to Macmillan Language School in Kaohsiung — specifically to the American Family &amp; Friends (AF&amp;F) curriculum. The goal is to stand up a second deployment for a different school using everything we've built so far, then let the two codebases evolve independently. The new school targets the same demographic (Mandarin-speaking ESL kids in Taiwan, ages 6–10) but with a different curriculum.
+</p>
+<p>
+  Decision summary (already made):
+</p>
+<ul>
+  <li><strong>Hard fork</strong> — new git repo, no upstream merges, fully independent.</li>
+  <li><strong>Fully separate infrastructure</strong> — new Postgres, new R2 bucket, new GCP TTS project, new domain, new Coolify app, new API keys.</li>
+  <li><strong>Only the curriculum changes.</strong> Cultural prompt cues (night market, scooter, temples) and the <code>mandarinTranslation</code> column stay.</li>
+  <li>Credential rotation for the leaked keys in <code>.env.production.backup</code> handled separately (out of scope here).</li>
+</ul>
+
+<h2>Strategy at a Glance</h2>
+<p>Four work streams, roughly sequential, with one parallelizable subtree:</p>
+<ol>
+  <li><strong>Provision</strong> — stand up the new infrastructure and verify each service in isolation before touching code.</li>
+  <li><strong>Clone &amp; rebrand</strong> — fork the repo, set new identity, scrub Macmillan references from prompts and metadata.</li>
+  <li><strong>Replace curriculum</strong> — swap the AF&amp;F-bound data (books, levels, vocabulary, units, workbooks). This is the bulk of the work.</li>
+  <li><strong>Deploy &amp; verify</strong> — push to Coolify, run a full smoke test of the reading loop end-to-end with the new curriculum.</li>
+</ol>
+
+<h2>Phase 1 — Provision the New Stack <span class="pill pill-infra">infra</span></h2>
+<table>
+  <tr><th>Service</th><th>What to create</th><th>Why a new one</th></tr>
+  <tr><td>Postgres</td><td>New database (Coolify Postgres add-on or Railway). Note the connection string.</td><td>The current DB has Macmillan student records — full isolation.</td></tr>
+  <tr><td>Cloudflare R2</td><td>New bucket (e.g. <code>recordings-school2</code>), API token, public URL.</td><td>Global keys (<code>audio/tts/</code>, <code>story-images/</code>, <code>practice-images/</code>) would collide if shared.</td></tr>
+  <tr><td>Google Cloud TTS</td><td>New GCP project, service account, JSON key.</td><td>Quota + billing isolation; cleaner audit trail.</td></tr>
+  <tr><td>Anthropic API</td><td>New API key.</td><td>Separate usage accounting; reading-generation is the dominant spend.</td></tr>
+  <tr><td>OpenAI API</td><td>New API key (only if AI grading is enabled).</td><td>AI-graded mode uses Whisper; flag is off by default.</td></tr>
+  <tr><td>Gemini</td><td>New API key.</td><td>Used for spelling-word image generation; per-school billing.</td></tr>
+  <tr><td>Domain + Coolify app</td><td>New subdomain, new Coolify project pointed at the new git repo (set up in Phase 2).</td><td>Self-hosted deployment, completely isolated.</td></tr>
+</table>
+<p><strong>Verification:</strong> before writing any code, confirm each service is reachable with its new credentials (R2 bucket put/get, GCP TTS test synthesis, Anthropic <code>messages.create</code> hello-world).</p>
+
+<h2>Phase 2 — Clone the Repo &amp; Rebrand <span class="pill pill-must">code</span></h2>
+
+<h3>2.1 Git fork</h3>
+<pre>git clone &lt;current-repo-url&gt; recording-homework-app-school2
+cd recording-homework-app-school2
+git remote rename origin upstream-reference   # optional, keeps a pointer
+git remote add origin &lt;new-remote-url&gt;
+git push -u origin main</pre>
+<p>Treat this as a clean break — no merging from upstream after this point.</p>
+
+<h3>2.2 Identity rename</h3>
+<table>
+  <tr><th>File</th><th>What to change</th></tr>
+  <tr><td><code>package.json</code></td><td><code>name</code> field</td></tr>
+  <tr><td><code>src/app/layout.tsx</code></td><td>Page <code>title</code> and <code>description</code> metadata (currently "Reading Practice Platform")</td></tr>
+  <tr><td><code>src/app/page.tsx</code></td><td>Homepage headline "Reading Practice Platform for Schools"</td></tr>
+  <tr><td><code>public/</code> favicon, OG image</td><td>Swap for new school's branding if any</td></tr>
+  <tr><td><code>.env.local</code> / Coolify env</td><td>All new credentials from Phase 1, plus <code>NEXT_PUBLIC_APP_URL</code> = new domain</td></tr>
+  <tr><td><code>docker-compose.dev.yml</code></td><td>Optional: rename DB credentials so a fresh dev clone doesn't collide</td></tr>
+</table>
+
+<h3>2.3 Scrub Macmillan/Kaohsiung from AI prompts</h3>
+<p>Five files hardcode the school name. Cultural cues (night market, scooter, temples) stay — only the school identity needs changing:</p>
+<ul>
+  <li><code>src/lib/reading/generate/plan.ts:56,63,77</code> — system prompt + example with "Mei"</li>
+  <li><code>src/lib/reading/generate/prose.ts:52</code></li>
+  <li><code>src/lib/reading/generate/questions.ts:46</code></li>
+  <li><code>src/lib/reading/generate/regen-page.ts:177</code></li>
+  <li><code>src/lib/reading/generate/regen-question.ts:318</code></li>
+</ul>
+
+<h2>Phase 3 — Replace Curriculum Data <span class="pill pill-data">data</span></h2>
+<p>This is the part where "AF&amp;F" becomes "<em>new curriculum</em>". Roughly five touchpoints:</p>
+
+<h3>3.1 Book definitions</h3>
+<p><code>src/lib/practice/books.ts</code> — replace the hardcoded "Family and Friends 1–5" series (lines 14–60) with the new curriculum's books and units. Update the default <code>book-slug</code>.</p>
+
+<h3>3.2 Curriculum unit data</h3>
+<p><code>src/lib/curriculum/family-friends-1/</code> — 16 unit JSON files containing vocabulary and topics. Either:</p>
+<ul>
+  <li>Rename the folder (e.g. <code>src/lib/curriculum/new-book-1/</code>) and re-author each unit file, or</li>
+  <li>Delete and rebuild based on the new curriculum's scope-and-sequence.</li>
+</ul>
+<p>Update all import paths accordingly.</p>
+
+<h3>3.3 Reading-level mapping</h3>
+<p><code>src/lib/reading/levels.ts</code> — currently maps internal reading levels to AF&amp;F's Starter → Grade 6. Remap to whatever progression the new curriculum uses. Keep the level-constraint shape (word counts, sentence caps, allowed POS) — only the label and AF&amp;F unit references change.</p>
+
+<h3>3.4 Vocabulary seeding</h3>
+<p>The <code>vocabulary</code> table is global and currently populated from AF&amp;F scope-and-sequence via:</p>
+<ul>
+  <li><code>scripts/seed-vocabulary.ts</code></li>
+  <li><code>scripts/seed-scaffold-vocabulary.ts</code></li>
+  <li><code>scripts/seed-function-words.ts</code></li>
+  <li><code>scripts/promote-core-vocabulary.ts</code></li>
+</ul>
+<p>For the new school: either author equivalent seed data for the new curriculum, or start empty and let teachers add words as they teach. The vocab schema fields (<code>afFLevel</code>, <code>afFUnit</code>) are AF&amp;F-specific — keep the columns but treat them as nullable / repurpose them to the new curriculum's level/unit naming. Simplest: rename the columns via a fresh migration.</p>
+
+<h3>3.5 Static curriculum assets</h3>
+<ul>
+  <li><code>public/pdfs/Family And Friends 1 Unit 13–15 Workbook.pdf</code> (3 files) — delete</li>
+  <li><code>public/pdfs/ct_unit*.pdf</code> — Classroom Training PDFs, delete</li>
+  <li><code>public/Anchin_Grade1_2nd_Semester.xlsx</code>, <code>public/Middle_Class_Syllabus_2026.xlsx</code> — Macmillan-specific syllabi, delete</li>
+  <li>Replace with the new school's workbook PDFs and syllabus spreadsheets.</li>
+</ul>
+
+<h3>3.6 The Oxford link</h3>
+<p><code>src/app/student/dashboard/page.tsx</code> — hardcoded <code>https://afaf2e.ouponlinepractice.com/auth/index</code>. Replace with the new curriculum's online practice link, or remove the link entirely.</p>
+
+<h2>Phase 4 — Schema &amp; Seed Cleanup <span class="pill pill-data">data</span></h2>
+
+<h3>4.1 Decide the fate of AF&amp;F-named columns</h3>
+<p>The schema has AF&amp;F-coded enums/columns in <code>src/lib/db/schema.ts</code> (<code>afFLevel</code>, <code>afFUnit</code>, comments referencing AF&amp;F). For a clean fork:</p>
+<ol>
+  <li>Create a migration that renames <code>af_f_level</code> → <code>curriculum_level</code> and <code>af_f_unit</code> → <code>curriculum_unit</code> (or whatever naming fits the new curriculum).</li>
+  <li>Update the corresponding enum values to match the new curriculum's levels.</li>
+  <li>Update all TypeScript references via project-wide rename.</li>
+</ol>
+<p>Alternative for speed: keep the names, just feed the new curriculum's labels into them. Uglier but reduces churn. Recommendation: <strong>rename</strong>, since the fork is meant to develop independently and the cosmetic debt will compound otherwise.</p>
+
+<h3>4.2 Fresh seed data</h3>
+<p>Edit <code>src/lib/db/seed.ts</code>:</p>
+<ul>
+  <li>Demo school name "Riverside Elementary School" → new school</li>
+  <li>Remove the three sample stories with stub URLs (already cleaned out of the current DB; re-clean for the new one)</li>
+  <li>Admin email/password — set to a known dev credential for the new instance</li>
+</ul>
+
+<h3>4.3 Run the fresh DB</h3>
+<pre>npm run db:push     # build schema from src/lib/db/schema.ts
+npm run db:seed     # demo data
+# then run any curriculum seed scripts authored in Phase 3.4</pre>
+
+<h2>Phase 5 — Deploy &amp; Verify <span class="pill pill-infra">infra</span></h2>
+
+<h3>5.1 Coolify deployment</h3>
+<ol>
+  <li>Create new Coolify app pointing at the new git repo.</li>
+  <li>Set all env vars from Phase 1 (DB, R2, GCP TTS, Anthropic, Gemini, <code>NEXT_PUBLIC_APP_URL</code>, <code>BETTER_AUTH_SECRET</code>).</li>
+  <li>Attach the new domain.</li>
+  <li>Deploy. The Dockerfile entrypoint runs <code>drizzle-kit push --force</code> on boot, so the schema will be created automatically.</li>
+</ol>
+
+<h3>5.2 End-to-end smoke test on the new domain</h3>
+<ol>
+  <li>Log in as admin, create a school + teacher.</li>
+  <li>Teacher creates a class, enrolls a test student, prints a class shortcode.</li>
+  <li>Student logs in via <code>/c/&lt;shortcode&gt;</code>; visual-password flow works.</li>
+  <li>Teacher creates a story → AI plan generates with new prompt branding → prose + questions follow → student records → playback works (R2 + audio proxy route).</li>
+  <li>Teacher creates a spelling list → words get Gemini images + GCP TTS audio → student plays snowman game.</li>
+  <li>Attendance + syllabus pages load, file uploads to R2 succeed.</li>
+  <li>Confirm no calls go to the old Macmillan R2 / DB / TTS project (check network tab + Coolify logs).</li>
+</ol>
+
+<h2>What Stays Untouched <span class="pill pill-keep">keep</span></h2>
+<p>These directories are school-agnostic — no edits needed:</p>
+<ul>
+  <li><code>src/lib/auth.ts</code>, <code>src/middleware.ts</code>, <code>src/components/auth/</code></li>
+  <li><code>src/lib/storage/r2-client.ts</code> (only env vars change)</li>
+  <li><code>src/app/api/recordings/</code>, <code>src/app/api/upload/presigned-url/</code></li>
+  <li><code>src/components/spelling/</code> (game logic, flashcard mechanics)</li>
+  <li>Attendance, syllabus, weekly recap features</li>
+  <li>Drizzle infrastructure (<code>src/lib/db/index.ts</code>, <code>drizzle.config.ts</code>)</li>
+</ul>
+
+<h2>Files Touched — Quick Reference</h2>
+<table>
+  <tr><th>File / path</th><th>Reason</th></tr>
+  <tr><td><code>package.json</code></td><td>Rename</td></tr>
+  <tr><td><code>src/app/layout.tsx</code>, <code>src/app/page.tsx</code></td><td>Branding</td></tr>
+  <tr><td><code>src/lib/reading/generate/{plan,prose,questions,regen-page,regen-question}.ts</code></td><td>School name in system prompts</td></tr>
+  <tr><td><code>src/lib/practice/books.ts</code></td><td>Replace AF&amp;F book list</td></tr>
+  <tr><td><code>src/lib/curriculum/family-friends-1/*</code></td><td>Rename/rebuild folder + units</td></tr>
+  <tr><td><code>src/lib/reading/levels.ts</code></td><td>Re-map level → new curriculum progression</td></tr>
+  <tr><td><code>src/lib/db/schema.ts</code></td><td>Rename <code>afFLevel</code>/<code>afFUnit</code> columns + enums</td></tr>
+  <tr><td><code>scripts/seed-vocabulary.ts</code> et al.</td><td>Reauthor or empty out</td></tr>
+  <tr><td><code>src/lib/db/seed.ts</code></td><td>New demo school + admin</td></tr>
+  <tr><td><code>src/app/student/dashboard/page.tsx</code></td><td>Replace OUP external link</td></tr>
+  <tr><td><code>public/pdfs/*</code>, <code>public/Anchin_*.xlsx</code>, <code>public/Middle_Class_*.xlsx</code></td><td>Delete / replace</td></tr>
+</table>
+
+<h2>Risks &amp; Watch-outs</h2>
+<ul>
+  <li><strong>Schema rename migration:</strong> renaming <code>af_f_level</code> after the schema is already deployed is a <code>ALTER COLUMN RENAME</code> — safe, but coordinate with the first deployment so it runs against the empty DB rather than retrofitting later.</li>
+  <li><strong>Coolify build cache:</strong> Coolify caches Node modules between builds. After cloning, the first build will be slow; subsequent ones fast.</li>
+  <li><strong>R2 public URL format:</strong> if you use the Cloudflare public bucket URL rather than a custom domain, audio proxy routes (<code>/api/audio/[...key]</code>) still work — but consider whether the new school wants a vanity domain for media.</li>
+  <li><strong>Forgetting the seed vocab:</strong> reading-passage generation will fail with "Target vocabulary IDs not found" if you forget to seed words after schema push. Run the new seed scripts before any teacher tries to use the reading feature.</li>
+  <li><strong>Two codebases diverging:</strong> after the fork, any bug you fix in one is on you to manually port to the other. Keep a personal note of fixes that should cross over.</li>
+</ul>
+
+<h2>Verification Checklist</h2>
+<ol>
+  <li>[ ] All new infra reachable with new creds (Phase 1)</li>
+  <li>[ ] Repo cloned to new remote, branding scrubbed (Phase 2)</li>
+  <li>[ ] Curriculum data replaced, no AF&amp;F string remaining (<code>grep -r "AF&amp;F\|Family and Friends\|Macmillan\|Kaohsiung" src/ public/</code> returns empty)</li>
+  <li>[ ] Schema push succeeds on empty DB</li>
+  <li>[ ] End-to-end smoke test (Phase 5.2) passes</li>
+  <li>[ ] Old Macmillan deployment still works (sanity check: didn't accidentally break it)</li>
+</ol>
+
+</body>
+</html>
