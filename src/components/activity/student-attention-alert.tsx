@@ -42,15 +42,19 @@ export function StudentAttentionAlert({ classes }: StudentAttentionAlertProps) {
                         const response = await fetch(`/api/classes/${cls.id}/login-activity?days=7`);
                         if (response.ok) {
                             const data = await response.json();
-                            const neverLoggedIn = (data.activity || []).filter(
-                                (s: { lastLoginAt: string | null }) => !s.lastLoginAt
+                            // "Needs attention" = no activity in the window (the
+                            // request asks for ?days=7). Use the windowed signal,
+                            // not lifetime lastLoginAt — otherwise this would only
+                            // flag students who have literally never logged in.
+                            const inactiveThisWeek = (data.activity || []).filter(
+                                (s: { activeInWindow?: boolean }) => !s.activeInWindow
                             ).length;
 
-                            if (neverLoggedIn > 0) {
+                            if (inactiveThisWeek > 0) {
                                 results.push({
                                     classId: cls.id,
                                     className: cls.name,
-                                    inactiveCount: neverLoggedIn,
+                                    inactiveCount: inactiveThisWeek,
                                 });
                             }
                         }

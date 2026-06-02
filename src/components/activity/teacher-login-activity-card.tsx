@@ -14,12 +14,18 @@ import {
 } from "@/components/ui/select";
 import {
     Activity,
+    BookOpen,
     ChevronDown,
     ChevronRight,
+    Clock,
+    Flame,
+    HelpCircle,
     Loader2,
     RefreshCw,
     ArrowUpDown,
 } from "lucide-react";
+
+type ActivityStatus = "online" | "active" | "slipping" | "never";
 
 interface StudentEnrollmentActivity {
     studentId: string;
@@ -28,32 +34,93 @@ interface StudentEnrollmentActivity {
     firstName: string;
     lastName: string;
     avatarUrl: string | null;
+    status: ActivityStatus;
+    hasEverLoggedIn: boolean;
+    isCurrentlyOnline: boolean;
     lastLoginAt: string | null;
     lastActivityAt: string | null;
+    activeInWindow: boolean;
     sessionCount: number;
     totalMinutesOnline: number;
-    isCurrentlyOnline: boolean;
+    recordingsCount: number;
+    questionsAnswered: number;
+    spellingGames: number;
+    actionsCount: number;
+    currentStreakDays: number;
+}
+
+interface ActivityCounts {
+    total: number;
+    online: number;
+    active: number;
+    slipping: number;
+    everLoggedIn: number;
+    neverLoggedIn: number;
 }
 
 interface ApiResponse {
     activity: StudentEnrollmentActivity[];
-    daysIncluded: number;
+    daysIncluded: number | "all";
     totalEnrollments: number;
-    studentsLoggedIn: number;
     uniqueStudents: number;
+    studentsLoggedIn: number;
+    counts: ActivityCounts;
 }
 
-type SortOption = "lastLogin" | "timeOnline" | "name" | "class";
+type SortOption = "status" | "lastLogin" | "mostActive" | "name" | "class";
 type DateRange = "7" | "30" | "all";
+
+const BUCKET_RANK: Record<ActivityStatus, number> = {
+    online: 0,
+    active: 1,
+    slipping: 2,
+    never: 3,
+};
+
+const STATUS_META: Record<
+    ActivityStatus,
+    { label: string; card: string; chip: string; dot: string }
+> = {
+    online: {
+        label: "Online now",
+        card: "bg-green-50 border-green-200 hover:bg-green-100",
+        chip: "bg-green-100 text-green-700 border-green-200",
+        dot: "bg-green-500",
+    },
+    active: {
+        label: "Active",
+        card: "bg-white border-gray-200 hover:bg-gray-50",
+        chip: "bg-blue-50 text-blue-700 border-blue-200",
+        dot: "bg-blue-400",
+    },
+    slipping: {
+        label: "Slipping",
+        card: "bg-amber-50/60 border-amber-200 hover:bg-amber-50",
+        chip: "bg-amber-100 text-amber-800 border-amber-200",
+        dot: "bg-amber-400",
+    },
+    never: {
+        label: "Never logged in",
+        card: "bg-red-50 border-red-200 hover:bg-red-100",
+        chip: "bg-red-100 text-red-700 border-red-200",
+        dot: "bg-red-400",
+    },
+};
+
+const RANGE_LABEL: Record<DateRange, string> = {
+    "7": "last 7 days",
+    "30": "last 30 days",
+    all: "all time",
+};
 
 export function TeacherLoginActivityCard() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<ApiResponse | null>(null);
-    const [sortBy, setSortBy] = useState<SortOption>("lastLogin");
+    const [sortBy, setSortBy] = useState<SortOption>("status");
     const [dateRange, setDateRange] = useState<DateRange>("7");
-    // Collapsed by default — the dashboard summary line is enough at a glance,
-    // teachers can expand for the full per-student breakdown.
+    // Collapsed by default — the summary line is enough at a glance; teachers
+    // expand for the full per-student breakdown.
     const [expanded, setExpanded] = useState(false);
 
     useEffect(() => {
@@ -78,29 +145,36 @@ export function TeacherLoginActivityCard() {
 
     const sortedActivity = useMemo(() => {
         const sorted = [...(data?.activity ?? [])];
+        const byName = (a: StudentEnrollmentActivity, b: StudentEnrollmentActivity) =>
+            `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
         switch (sortBy) {
+            case "status":
+                sorted.sort((a, b) => {
+                    if (BUCKET_RANK[a.status] !== BUCKET_RANK[b.status])
+                        return BUCKET_RANK[a.status] - BUCKET_RANK[b.status];
+                    const at = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+                    const bt = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+                    return bt - at;
+                });
+                break;
             case "name":
-                sorted.sort((a, b) =>
-                    `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
-                );
+                sorted.sort(byName);
                 break;
             case "lastLogin":
                 sorted.sort((a, b) => {
-                    if (a.isCurrentlyOnline !== b.isCurrentlyOnline) return a.isCurrentlyOnline ? -1 : 1;
                     if (!a.lastLoginAt && !b.lastLoginAt) return 0;
                     if (!a.lastLoginAt) return 1;
                     if (!b.lastLoginAt) return -1;
                     return new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime();
                 });
                 break;
-            case "timeOnline":
-                sorted.sort((a, b) => b.totalMinutesOnline - a.totalMinutesOnline);
+            case "mostActive":
+                sorted.sort((a, b) => b.actionsCount - a.actionsCount || b.totalMinutesOnline - a.totalMinutesOnline);
                 break;
             case "class":
                 sorted.sort((a, b) => {
                     const classCmp = a.className.localeCompare(b.className);
-                    if (classCmp !== 0) return classCmp;
-                    return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+                    return classCmp !== 0 ? classCmp : byName(a, b);
                 });
                 break;
         }
@@ -108,42 +182,57 @@ export function TeacherLoginActivityCard() {
     }, [data, sortBy]);
 
     const formatTimeAgo = (dateStr: string | null) => {
-        if (!dateStr) return "Never";
+        if (!dateStr) return "never";
         const date = new Date(dateStr);
         const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
+        const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
         const diffHours = Math.floor(diffMins / 60);
         const diffDays = Math.floor(diffHours / 24);
-        if (diffMins < 5) return "Just now";
+        if (diffMins < 5) return "just now";
         if (diffMins < 60) return `${diffMins}m ago`;
         if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays === 1) return "Yesterday";
+        if (diffDays === 1) return "yesterday";
         if (diffDays < 7) return `${diffDays}d ago`;
         return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     };
 
     const formatDuration = (minutes: number) => {
-        if (minutes < 1) return "< 1 min";
-        if (minutes < 60) return `${minutes} min`;
+        if (minutes < 1) return "<1m";
+        if (minutes < 60) return `${minutes}m`;
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
-        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        return mins > 0 ? `${hours}h${mins}m` : `${hours}h`;
     };
 
-    const onlineCount = data?.activity.filter((s) => s.isCurrentlyOnline).length ?? 0;
-    const neverLoggedIn = data?.activity.filter((s) => !s.lastLoginAt).length ?? 0;
+    const counts = data?.counts;
+
+    // Compact summary chips, lifetime-honest. "Never" never moves with the window.
+    const summaryChips = counts ? (
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+            {counts.online > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    {counts.online} online
+                </span>
+            )}
+            <span className="text-xs text-gray-600">{counts.active} active</span>
+            {counts.slipping > 0 && (
+                <span className="text-xs text-amber-700">· {counts.slipping} slipping</span>
+            )}
+            {counts.neverLoggedIn > 0 && (
+                <span className="text-xs text-red-600">
+                    · {counts.neverLoggedIn} never logged in
+                </span>
+            )}
+        </span>
+    ) : null;
 
     return (
         <Card className="mb-8">
-            {/* Header is the click-target when collapsed. Buttons inside the
-                header (refresh, dropdowns) stop propagation to avoid toggling
-                when the teacher just wants to interact with them. */}
             <CardHeader
                 className={`pb-3 ${expanded ? '' : 'cursor-pointer hover:bg-gray-50 rounded-t-xl transition-colors'}`}
                 onClick={(e) => {
                     if (expanded) return;
-                    // Don't toggle when interacting with controls inside the header.
                     if ((e.target as HTMLElement).closest('button, [role="combobox"], select')) return;
                     setExpanded(true);
                 }}
@@ -167,31 +256,25 @@ export function TeacherLoginActivityCard() {
                         </button>
                         <div className="min-w-0">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                Student Login Activity
-                                {!expanded && data && onlineCount > 0 && (
+                                Student Engagement
+                                {!expanded && counts && counts.online > 0 && (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                        {onlineCount} online
+                                        {counts.online} online
                                     </span>
                                 )}
                             </CardTitle>
                             <p className="text-sm text-gray-500 mt-0.5">
-                                {loading ? (
+                                {loading && !data ? (
                                     "Loading…"
-                                ) : data ? (
-                                    <>
-                                        {data.studentsLoggedIn} of {data.uniqueStudents} students logged in
-                                        {onlineCount > 0 && expanded && (
-                                            <span className="text-green-600 font-medium ml-2">
-                                                • {onlineCount} active now
-                                            </span>
-                                        )}
-                                        {neverLoggedIn > 0 && (
-                                            <span className="text-red-600 ml-2">
-                                                • {neverLoggedIn} never logged in
-                                            </span>
-                                        )}
-                                    </>
+                                ) : counts ? (
+                                    <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5">
+                                        <span className="text-gray-700 font-medium">
+                                            {counts.everLoggedIn} of {counts.total} have logged in
+                                        </span>
+                                        {!expanded && <span className="text-gray-300">·</span>}
+                                        {!expanded && summaryChips}
+                                    </span>
                                 ) : (
                                     "Activity unavailable"
                                 )}
@@ -202,24 +285,26 @@ export function TeacherLoginActivityCard() {
                     {expanded ? (
                         <div className="flex items-center gap-2 flex-wrap">
                             <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-                                <SelectTrigger className="h-9 w-[120px] text-sm">
+                                <SelectTrigger className="h-9 w-[150px] text-sm">
+                                    <Clock className="w-3.5 h-3.5 mr-1 shrink-0 text-gray-400" />
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="7">Last 7 days</SelectItem>
-                                    <SelectItem value="30">Last 30 days</SelectItem>
-                                    <SelectItem value="all">All time</SelectItem>
+                                    <SelectItem value="7">Activity: 7 days</SelectItem>
+                                    <SelectItem value="30">Activity: 30 days</SelectItem>
+                                    <SelectItem value="all">Activity: all time</SelectItem>
                                 </SelectContent>
                             </Select>
 
                             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                                <SelectTrigger className="h-9 w-[140px] text-sm">
+                                <SelectTrigger className="h-9 w-[150px] text-sm">
                                     <ArrowUpDown className="w-3.5 h-3.5 mr-1 shrink-0" />
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="status">Status</SelectItem>
                                     <SelectItem value="lastLogin">Last login</SelectItem>
-                                    <SelectItem value="timeOnline">Time online</SelectItem>
+                                    <SelectItem value="mostActive">Most active</SelectItem>
                                     <SelectItem value="name">Name</SelectItem>
                                     <SelectItem value="class">Class</SelectItem>
                                 </SelectContent>
@@ -261,6 +346,16 @@ export function TeacherLoginActivityCard() {
 
             {expanded && (
             <CardContent className="pt-0">
+                {/* Summary + the one line that defuses the old confusion. */}
+                {counts && (
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-3 pb-3 border-b">
+                        {summaryChips}
+                        <p className="text-[11px] text-gray-400">
+                            Practice counts cover {RANGE_LABEL[dateRange]}. “Never logged in” is all-time.
+                        </p>
+                    </div>
+                )}
+
                 {loading && !data ? (
                     <div className="flex items-center justify-center py-10">
                         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -271,25 +366,30 @@ export function TeacherLoginActivityCard() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[480px] overflow-y-auto pr-1">
-                        {sortedActivity.map((s) => (
+                        {sortedActivity.map((s) => {
+                            const meta = STATUS_META[s.status];
+                            // What to show as the timestamp/hint under the name.
+                            const statusLine =
+                                s.status === "online"
+                                    ? "Online now"
+                                    : s.status === "never"
+                                        ? "Check their login"
+                                        : s.status === "slipping"
+                                            ? `Last seen ${formatTimeAgo(s.lastActivityAt ?? s.lastLoginAt)}`
+                                            : formatTimeAgo(s.lastActivityAt ?? s.lastLoginAt);
+                            return (
                             <button
                                 key={`${s.studentId}-${s.classId}`}
                                 onClick={() => router.push(`/teacher/students/${s.studentId}`)}
-                                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-colors group ${
-                                    s.isCurrentlyOnline
-                                        ? "bg-green-50 border-green-200 hover:bg-green-100"
-                                        : s.lastLoginAt
-                                            ? "bg-white border-gray-200 hover:bg-gray-50"
-                                            : "bg-red-50 border-red-200 hover:bg-red-100"
-                                }`}
+                                className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors group ${meta.card}`}
                             >
                                 <div className="relative shrink-0">
                                     <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg">
                                         {s.avatarUrl || "👤"}
                                     </div>
-                                    {s.isCurrentlyOnline && (
-                                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
-                                    )}
+                                    <span
+                                        className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${meta.dot} ${s.status === "online" ? "" : "opacity-80"}`}
+                                    />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
@@ -304,25 +404,64 @@ export function TeacherLoginActivityCard() {
                                             {s.className}
                                         </Badge>
                                     </div>
-                                    <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                        {s.isCurrentlyOnline ? (
-                                            <span className="text-green-600 font-medium">Online now</span>
-                                        ) : s.lastLoginAt ? (
-                                            <span>{formatTimeAgo(s.lastLoginAt)}</span>
-                                        ) : (
-                                            <span className="text-red-600 font-medium">Never logged in</span>
-                                        )}
-                                        {s.lastLoginAt && (
-                                            <span className="text-gray-400">
-                                                · {formatDuration(s.totalMinutesOnline)} active
-                                            </span>
-                                        )}
+
+                                    {/* Status pill + when */}
+                                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                        <span className={`inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[10px] font-medium border ${meta.chip}`}>
+                                            {meta.label}
+                                            {s.status === "slipping" && s.lastActivityAt && (
+                                                <>
+                                                    {" "}·{" "}
+                                                    {Math.max(
+                                                        1,
+                                                        Math.floor(
+                                                            (Date.now() - new Date(s.lastActivityAt).getTime()) /
+                                                                86400000,
+                                                        ),
+                                                    )}
+                                                    d
+                                                </>
+                                            )}
+                                        </span>
+                                        <span className="text-[11px] text-gray-500">{statusLine}</span>
                                     </div>
+
+                                    {/* Meaningful-activity metrics for the window */}
+                                    {s.status !== "never" && s.actionsCount + s.totalMinutesOnline > 0 ? (
+                                        <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-gray-500">
+                                            {s.recordingsCount > 0 && (
+                                                <span className="inline-flex items-center gap-0.5" title="Readings recorded">
+                                                    <BookOpen className="w-3 h-3 text-gray-400" />
+                                                    {s.recordingsCount}
+                                                </span>
+                                            )}
+                                            {s.questionsAnswered > 0 && (
+                                                <span className="inline-flex items-center gap-0.5" title="Questions answered">
+                                                    <HelpCircle className="w-3 h-3 text-gray-400" />
+                                                    {s.questionsAnswered}
+                                                </span>
+                                            )}
+                                            {s.currentStreakDays > 0 && (
+                                                <span className="inline-flex items-center gap-0.5 text-orange-500" title="Day streak">
+                                                    <Flame className="w-3 h-3" />
+                                                    {s.currentStreakDays}d
+                                                </span>
+                                            )}
+                                            {s.totalMinutesOnline > 0 && (
+                                                <span className="inline-flex items-center gap-0.5 text-gray-400" title="Approx. time with app open">
+                                                    <Clock className="w-3 h-3" />~{formatDuration(s.totalMinutesOnline)}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : s.status === "slipping" ? (
+                                        <div className="mt-1 text-[11px] text-amber-600">No practice in {RANGE_LABEL[dateRange]}</div>
+                                    ) : null}
                                 </div>
 
-                                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 shrink-0" />
+                                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 shrink-0 mt-0.5" />
                             </button>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </CardContent>

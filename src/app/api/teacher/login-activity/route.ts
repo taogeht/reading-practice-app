@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { session, users, students, classes, classEnrollments } from '@/lib/db/schema';
+import { users, students, classes, classEnrollments } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq, and, desc, gte, inArray } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { accessibleClassIds } from '@/lib/auth/class-access';
+import { computeStudentActivity, summarizeActivity } from '@/lib/activity/login-activity';
 
 export const runtime = 'nodejs';
-
-// A student is considered "online" if their last heartbeat was within this window.
-const ONLINE_THRESHOLD_MS = 3 * 60 * 1000; // 3 minutes
 
 // GET /api/teacher/login-activity?days=7
 // Aggregated student activity across every class this teacher owns. Returns one
 // row per student-class enrollment, so a student in two of the teacher's classes
-// shows up twice with each class tag.
+// shows up twice with each class tag. `days` scopes the *activity* metrics only;
+// "never logged in" is always lifetime (see computeStudentActivity).
 export async function GET(request: NextRequest) {
     try {
         const user = await getCurrentUser();
@@ -23,17 +22,18 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days');
-        // No `days` param means "all time" — skip the date filter entirely.
-        const days = daysParam ? parseInt(daysParam, 10) : null;
+        // No `days` param means "all time". Malformed / non-positive input also
+        // degrades to all-time rather than producing an Invalid Date (which
+        // would 500 on serialization) or a future window that hides everyone.
+        const parsedDays = daysParam ? parseInt(daysParam, 10) : null;
+        const days = parsedDays != null && Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : null;
 
-        const startDate = days !== null ? new Date() : null;
+        const now = new Date();
+        const startDate = days !== null ? new Date(now) : null;
         if (startDate && days !== null) {
             startDate.setDate(startDate.getDate() - days);
             startDate.setHours(0, 0, 0, 0);
         }
-
-        const now = new Date();
-        const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
 
         // Every class the user can manage (primary + co-teacher; admins see
         // all). Excludes classes marked untracked.
@@ -57,7 +57,9 @@ export async function GET(request: NextRequest) {
                 activity: [],
                 daysIncluded: days ?? 'all',
                 totalEnrollments: 0,
+                uniqueStudents: 0,
                 studentsLoggedIn: 0,
+                counts: { total: 0, online: 0, active: 0, slipping: 0, everLoggedIn: 0, neverLoggedIn: 0 },
             });
         }
 
@@ -82,54 +84,19 @@ export async function GET(request: NextRequest) {
                 activity: [],
                 daysIncluded: days ?? 'all',
                 totalEnrollments: 0,
+                uniqueStudents: 0,
                 studentsLoggedIn: 0,
+                counts: { total: 0, online: 0, active: 0, slipping: 0, everLoggedIn: 0, neverLoggedIn: 0 },
             });
         }
 
-        // One sessions query for every student in scope, grouped client-side. Avoids
-        // the N+1 of the per-class endpoint.
         const studentIds = Array.from(new Set(enrollments.map((e) => e.studentId)));
-        const recentSessions = await db
-            .select({
-                userId: session.userId,
-                createdAt: session.createdAt,
-                lastActivityAt: session.lastActivityAt,
-            })
-            .from(session)
-            .where(
-                startDate
-                    ? and(inArray(session.userId, studentIds), gte(session.createdAt, startDate))
-                    : inArray(session.userId, studentIds)
-            )
-            .orderBy(desc(session.createdAt))
-            .limit(50 * studentIds.length);
-
-        const sessionsByStudent = new Map<string, typeof recentSessions>();
-        for (const s of recentSessions) {
-            if (!s.userId) continue;
-            const bucket = sessionsByStudent.get(s.userId);
-            if (bucket) bucket.push(s);
-            else sessionsByStudent.set(s.userId, [s]);
-        }
+        const metricsById = await computeStudentActivity(studentIds, startDate, now);
 
         const classNameById = new Map(teacherClasses.map((c) => [c.id, c.name]));
 
         const activity = enrollments.map((e) => {
-            const sessions = sessionsByStudent.get(e.studentId) ?? [];
-
-            let totalMinutes = 0;
-            for (const s of sessions) {
-                const start = new Date(s.createdAt!);
-                const end = s.lastActivityAt ? new Date(s.lastActivityAt) : start;
-                const duration = Math.max(0, (end.getTime() - start.getTime()) / 60000);
-                totalMinutes += Math.min(duration, 240);
-            }
-
-            const lastSession = sessions[0];
-            const isCurrentlyOnline = lastSession?.lastActivityAt
-                ? new Date(lastSession.lastActivityAt) > onlineThreshold
-                : false;
-
+            const m = metricsById.get(e.studentId)!;
             return {
                 studentId: e.studentId,
                 classId: e.classId,
@@ -137,33 +104,44 @@ export async function GET(request: NextRequest) {
                 firstName: e.firstName,
                 lastName: e.lastName,
                 avatarUrl: e.avatarUrl,
-                lastLoginAt: lastSession?.createdAt ?? null,
-                lastActivityAt: lastSession?.lastActivityAt ?? null,
-                sessionCount: sessions.length,
-                totalMinutesOnline: Math.round(totalMinutes),
-                isCurrentlyOnline,
+                status: m.status,
+                hasEverLoggedIn: m.hasEverLoggedIn,
+                isCurrentlyOnline: m.isCurrentlyOnline,
+                lastLoginAt: m.lastLoginAt,
+                lastActivityAt: m.lastActivityAt,
+                activeInWindow: m.activeInWindow,
+                sessionCount: m.sessionCount,
+                totalMinutesOnline: m.totalMinutesOnline,
+                recordingsCount: m.recordingsCount,
+                questionsAnswered: m.questionsAnswered,
+                spellingGames: m.spellingGames,
+                actionsCount: m.actionsCount,
+                currentStreakDays: m.currentStreakDays,
             };
         });
 
-        // Sort: currently online first, then most recent login, then never-logged-in last.
+        // Sort: online → active → slipping → never; within a bucket, most
+        // recent login first.
+        const bucketRank = { online: 0, active: 1, slipping: 2, never: 3 } as const;
         activity.sort((a, b) => {
-            if (a.isCurrentlyOnline !== b.isCurrentlyOnline) return a.isCurrentlyOnline ? -1 : 1;
-            if (!a.lastLoginAt && !b.lastLoginAt) return 0;
-            if (!a.lastLoginAt) return 1;
-            if (!b.lastLoginAt) return -1;
-            return new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime();
+            if (bucketRank[a.status] !== bucketRank[b.status]) {
+                return bucketRank[a.status] - bucketRank[b.status];
+            }
+            const at = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0;
+            const bt = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0;
+            return bt - at;
         });
 
-        const studentsLoggedIn = new Set(
-            activity.filter((a) => a.lastLoginAt).map((a) => a.studentId)
-        ).size;
+        const counts = summarizeActivity(metricsById);
 
         return NextResponse.json({
             activity,
             daysIncluded: days ?? 'all',
             totalEnrollments: enrollments.length,
-            studentsLoggedIn,
             uniqueStudents: studentIds.length,
+            // Lifetime — honest "ever logged in" count, unaffected by the window.
+            studentsLoggedIn: counts.everLoggedIn,
+            counts,
         });
     } catch (error) {
         console.error('[GET /api/teacher/login-activity] Error:', error);
