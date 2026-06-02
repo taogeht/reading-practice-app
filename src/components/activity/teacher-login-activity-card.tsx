@@ -94,7 +94,7 @@ const STATUS_META: Record<
         dot: "bg-blue-400",
     },
     slipping: {
-        label: "Slipping",
+        label: "Inactive",
         card: "bg-amber-50/60 border-amber-200 hover:bg-amber-50",
         chip: "bg-amber-100 text-amber-800 border-amber-200",
         dot: "bg-amber-400",
@@ -205,24 +205,29 @@ export function TeacherLoginActivityCard() {
     };
 
     const counts = data?.counts;
+    const activeThisWeek = counts ? counts.online + counts.active : 0;
+    const windowWord = dateRange === "7" ? "this week" : dateRange === "30" ? "this month" : "all-time";
 
-    // Compact summary chips, lifetime-honest. "Never" never moves with the window.
-    const summaryChips = counts ? (
-        <span className="inline-flex flex-wrap items-center gap-1.5">
+    // One blunt, scannable line. The alarming old "N never logged in" is split
+    // into "inactive" (logged in before, just not lately — a nudge) and the
+    // genuinely never-logged-in (lifetime — an access problem), so a teacher
+    // can't misread "hasn't practiced this week" as "never used the app".
+    const summaryLine = counts ? (
+        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5">
             {counts.online > 0 && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    {counts.online} online
+                    {counts.online} online now
                 </span>
             )}
-            <span className="text-xs text-gray-600">{counts.active} active</span>
+            <span className="text-sm font-medium text-gray-700">
+                {activeThisWeek} of {counts.total} active {windowWord}
+            </span>
             {counts.slipping > 0 && (
-                <span className="text-xs text-amber-700">· {counts.slipping} slipping</span>
+                <span className="text-xs text-amber-700">· {counts.slipping} inactive</span>
             )}
             {counts.neverLoggedIn > 0 && (
-                <span className="text-xs text-red-600">
-                    · {counts.neverLoggedIn} never logged in
-                </span>
+                <span className="text-xs text-red-600">· {counts.neverLoggedIn} never logged in</span>
             )}
         </span>
     ) : null;
@@ -257,27 +262,9 @@ export function TeacherLoginActivityCard() {
                         <div className="min-w-0">
                             <CardTitle className="text-lg flex items-center gap-2">
                                 Student Engagement
-                                {!expanded && counts && counts.online > 0 && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                        {counts.online} online
-                                    </span>
-                                )}
                             </CardTitle>
                             <p className="text-sm text-gray-500 mt-0.5">
-                                {loading && !data ? (
-                                    "Loading…"
-                                ) : counts ? (
-                                    <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5">
-                                        <span className="text-gray-700 font-medium">
-                                            {counts.everLoggedIn} of {counts.total} have logged in
-                                        </span>
-                                        {!expanded && <span className="text-gray-300">·</span>}
-                                        {!expanded && summaryChips}
-                                    </span>
-                                ) : (
-                                    "Activity unavailable"
-                                )}
+                                {loading && !data ? "Loading…" : counts ? summaryLine : "Activity unavailable"}
                             </p>
                         </div>
                     </div>
@@ -346,12 +333,13 @@ export function TeacherLoginActivityCard() {
 
             {expanded && (
             <CardContent className="pt-0">
-                {/* Summary + the one line that defuses the old confusion. */}
+                {/* Plain-language legend so the buckets can't be misread. */}
                 {counts && (
-                    <div className="flex items-center justify-between gap-2 flex-wrap mb-3 pb-3 border-b">
-                        {summaryChips}
-                        <p className="text-[11px] text-gray-400">
-                            Practice counts cover {RANGE_LABEL[dateRange]}. “Never logged in” is all-time.
+                    <div className="flex items-center justify-end gap-2 flex-wrap mb-3 pb-2 border-b">
+                        <p className="text-[11px] text-gray-400 text-right">
+                            <span className="text-blue-600">Active</span> = practiced or logged in within the {RANGE_LABEL[dateRange]}.{" "}
+                            <span className="text-amber-700">Inactive</span> = logged in before, but not in the {RANGE_LABEL[dateRange]}.{" "}
+                            <span className="text-red-600">Never logged in</span> = no login ever (all-time).
                         </p>
                     </div>
                 )}

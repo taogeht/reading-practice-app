@@ -69,7 +69,7 @@ const BUCKET_RANK: Record<ActivityStatus, number> = { online: 0, active: 1, slip
 const STATUS_META: Record<ActivityStatus, { label: string; card: string; text: string; dot: string }> = {
     online: { label: "Online", card: "bg-green-50 border-green-200 hover:bg-green-100", text: "text-green-600", dot: "bg-green-500" },
     active: { label: "Active", card: "bg-white border-gray-200 hover:bg-gray-50", text: "text-blue-600", dot: "bg-blue-400" },
-    slipping: { label: "Slipping", card: "bg-amber-50/60 border-amber-200 hover:bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
+    slipping: { label: "Inactive", card: "bg-amber-50/60 border-amber-200 hover:bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
     never: { label: "Never", card: "bg-red-50 border-red-200 hover:bg-red-100", text: "text-red-600", dot: "bg-red-400" },
 };
 
@@ -189,7 +189,7 @@ export function LoginActivitySection({ classId, defaultExpanded = true }: LoginA
                 <div className="flex items-center gap-2 shrink-0">
                     {counts && counts.slipping > 0 && (
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
-                            {counts.slipping} slipping
+                            {counts.slipping} inactive
                         </Badge>
                     )}
                     {counts && counts.neverLoggedIn > 0 && (
