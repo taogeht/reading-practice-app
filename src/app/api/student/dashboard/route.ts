@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
+import { assignments, recordings, stories, classes, users, students, classEnrollments, gradebookTests, gradebookScores } from '@/lib/db/schema';
 import { eq, and, desc, count, inArray, sql } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
@@ -253,6 +253,29 @@ export async function GET(request: NextRequest) {
     const submittedAssignments = activeAssignments.filter((a) => a.status === 'submitted');
     const completedAssignments = activeAssignments.filter((a) => a.status === 'completed');
 
+    // Recent gradebook scores (only entered ones) — shown on the kid's
+    // dashboard. All entered scores are visible to the student.
+    const testScoreRows = await db
+      .select({
+        testId: gradebookTests.id,
+        testName: gradebookTests.name,
+        testType: gradebookTests.testType,
+        testDate: gradebookTests.testDate,
+        score: gradebookScores.score,
+      })
+      .from(gradebookScores)
+      .innerJoin(gradebookTests, eq(gradebookScores.testId, gradebookTests.id))
+      .where(and(eq(gradebookScores.studentId, user.id), sql`${gradebookScores.score} IS NOT NULL`))
+      .orderBy(desc(gradebookTests.testDate), desc(gradebookTests.createdAt))
+      .limit(12);
+    const recentTestScores = testScoreRows.map((r) => ({
+      testId: r.testId,
+      testName: r.testName,
+      testType: r.testType,
+      testDate: r.testDate,
+      score: r.score != null ? Number(r.score) : null,
+    }));
+
     const dashboardData = {
       student: {
         id: student.id,
@@ -290,7 +313,8 @@ export async function GET(request: NextRequest) {
             completedAssignments.filter(a => a.bestScore).length)
           : null,
       },
-      showPracticeStories
+      showPracticeStories,
+      recentTestScores,
     };
 
     return NextResponse.json(dashboardData, { status: 200 });

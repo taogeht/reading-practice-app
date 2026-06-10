@@ -48,6 +48,10 @@ export const UI_STRINGS = {
   'status.completed': { en: 'Completed', zh: '完成' },
   'status.feedback': { en: 'Teacher said…', zh: '老師回覆' },
 
+  // Test scores
+  'scores.title': { en: 'My Test Scores', zh: '我的測驗成績' },
+  'scores.none': { en: 'No scores yet', zh: '還沒有成績' },
+
   // Section headings
   'section.myWork': { en: 'My work', zh: '我的作業' },
   'section.more': { en: 'More', zh: '更多' },

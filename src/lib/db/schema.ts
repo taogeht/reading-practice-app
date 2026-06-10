@@ -302,6 +302,46 @@ export const studentReadingLevelHistory = pgTable(
   })
 );
 
+// Gradebook-lite: a teacher records per-student percentage scores for tests/
+// quizzes they give offline. A test is class-scoped (name + type + date); each
+// enrolled student gets one score row per test. Scores are 0–100 percentages.
+// Distinct from `generated_tests` (printable worksheets — document-only, no
+// scoring). Students see their own scores on the dashboard.
+export const gradebookTests = pgTable(
+  'gradebook_tests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    classId: uuid('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 120 }).notNull(),
+    // Free-ish category for filtering/labelling (e.g. quiz, test, spelling, oral).
+    testType: varchar('test_type', { length: 40 }).notNull().default('quiz'),
+    testDate: date('test_date'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    classDateIdx: index('idx_gradebook_tests_class_date').on(table.classId, table.testDate),
+  })
+);
+
+export const gradebookScores = pgTable(
+  'gradebook_scores',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    testId: uuid('test_id').notNull().references(() => gradebookTests.id, { onDelete: 'cascade' }),
+    studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    // Percentage 0–100. Null = not yet entered / student absent.
+    score: decimal('score', { precision: 5, scale: 2 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueTestStudent: uniqueIndex('unique_gradebook_test_student').on(table.testId, table.studentId),
+    studentIdx: index('idx_gradebook_scores_student').on(table.studentId),
+  })
+);
+
 export const assignments = pgTable(
   'assignments',
   {
@@ -784,6 +824,17 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
 export const studentReadingLevelHistoryRelations = relations(studentReadingLevelHistory, ({ one }) => ({
   student: one(students, { fields: [studentReadingLevelHistory.studentId], references: [students.id] }),
   changedBy: one(users, { fields: [studentReadingLevelHistory.changedByUserId], references: [users.id] }),
+}));
+
+export const gradebookTestsRelations = relations(gradebookTests, ({ one, many }) => ({
+  class: one(classes, { fields: [gradebookTests.classId], references: [classes.id] }),
+  createdByUser: one(users, { fields: [gradebookTests.createdBy], references: [users.id] }),
+  scores: many(gradebookScores),
+}));
+
+export const gradebookScoresRelations = relations(gradebookScores, ({ one }) => ({
+  test: one(gradebookTests, { fields: [gradebookScores.testId], references: [gradebookTests.id] }),
+  student: one(students, { fields: [gradebookScores.studentId], references: [students.id] }),
 }));
 
 export const teachersRelations = relations(teachers, ({ one, many }) => ({

@@ -25,6 +25,7 @@ import { HomeworkHeroCard, type HeroAssignment } from '@/components/student/home
 import { LatestRecordingCard, type LatestRecording } from '@/components/student/latest-recording-card';
 import { ReadAloudLabel } from '@/components/student/read-aloud-label';
 import { StudentProgressionCard } from '@/components/gamification/student-progression-card';
+import { StudentTestScoresCard } from '@/components/student/student-test-scores-card';
 import { StudentAttemptCard } from '@/components/student/student-attempt-card';
 import { StudentSpellingSection } from '@/components/spelling/student-spelling-section';
 import { SnowmanGame } from '@/components/spelling/snowman-game';
@@ -73,11 +74,19 @@ type Student = {
   readingLevel: string | null;
   gradeLevel: number | null;
 };
+type TestScore = {
+  testId: string;
+  testName: string;
+  testType: string;
+  testDate: string | null;
+  score: number | null;
+};
 type DashboardData = {
   student: Student;
   assignments: Assignment[];
   pastAssignments: Assignment[];
   showPracticeStories: boolean;
+  recentTestScores?: TestScore[];
 };
 
 // Newest submitted attempt across all assignments → the "my last recording" hero.
@@ -210,6 +219,10 @@ export default function StudentDashboardV2Page() {
             <LatestRecordingCard recording={latest} onSeeAll={() => setTab('recordings')} />
 
             <div className="kid-rise"><StudentProgressionCard /></div>
+
+            {(data.recentTestScores?.length ?? 0) > 0 && (
+              <StudentTestScoresCard scores={data.recentTestScores!} />
+            )}
 
             {submitted.length > 0 && (
               <section className="kid-rise rounded-3xl border-2 border-amber-100 bg-white/70 p-5">

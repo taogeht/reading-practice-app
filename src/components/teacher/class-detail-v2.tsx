@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SpellingWordsSection } from "@/components/spelling/spelling-words-section";
 import { AttendanceSection } from "@/components/attendance/attendance-section";
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
+import { GradebookSection } from "@/components/teacher/gradebook-section";
 import { ClassEngagementSection } from "@/components/gamification/class-engagement-section";
 import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-units-section";
 import { ClassPracticeSection } from "@/components/practice/class-practice-section";
@@ -170,6 +171,7 @@ export function ClassBodyV2({
       {hasSpelling && <SpellingWordsSection classId={classId} defaultExpanded={false} />}
       <AttendanceSection classId={classId} className={className} />
       <MakeupWorkSection classId={classId} />
+      <GradebookSection classId={classId} defaultExpanded={false} />
 
       {/* Everything occasional / advanced, one click away */}
       <details className="group rounded-xl border bg-white">
