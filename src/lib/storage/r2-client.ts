@@ -272,6 +272,15 @@ class R2Client {
   }
 
   /**
+   * Generate a file key for a printable test listening-item audio clip.
+   * Versioned (timestamp) so a regenerated clip gets a fresh URL past any cache.
+   * Layout: test-audio/{testId}/{itemId}-{version}.mp3
+   */
+  generateTestAudioKey(testId: string, itemId: string, version: number): string {
+    return `test-audio/${testId}/${itemId}-${version}.mp3`;
+  }
+
+  /**
    * Generate a file key for a reading-passage page illustration.
    * Layout: story-images/{passageId}/page-{pageNumber}.png
    */

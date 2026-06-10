@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { generatedTests } from '@/lib/db/schema';
 import { generateTest } from '@/lib/practice/generate-test';
 import { generateTestImages } from '@/lib/practice/test-images';
+import { generateTestAudio } from '@/lib/practice/test-audio';
 import {
   DEFAULT_COMPOSITION,
   isTestExerciseType,
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
     composition?: unknown;
     title?: unknown;
     cloneFrom?: unknown;
+    voiceId?: unknown;
   };
   try {
     body = await request.json();
@@ -178,17 +180,22 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Fire-and-forget image generation (same pattern as practice-questions):
-    // the row is returned immediately; the print page polls until images land.
+    // Fire-and-forget media generation (same pattern as practice-questions): the
+    // row is returned immediately; the test page polls until images + audio land.
+    // Images (Gemini) and audio (TTS) hit different services, so run concurrently.
+    const voiceId = typeof body.voiceId === 'string' ? body.voiceId : undefined;
     void generateTestImages(inserted.id, document).catch((err) =>
       logError(err, 'tests.generateImages'),
     );
+    void generateTestAudio(inserted.id, document, voiceId).catch((err) =>
+      logError(err, 'tests.generateAudio'),
+    );
 
-    const imagesPending = document.sections
-      .flatMap((s) => s.items)
-      .filter((it) => it.imagePrompt).length;
+    const allItems = document.sections.flatMap((s) => s.items);
+    const imagesPending = allItems.filter((it) => it.imagePrompt).length;
+    const audioPending = allItems.filter((it) => it.audioText).length;
 
-    return NextResponse.json({ test: inserted, sectionStats, imagesPending });
+    return NextResponse.json({ test: inserted, sectionStats, imagesPending, audioPending });
   } catch (error) {
     logError(error, 'tests.generate');
     const message = error instanceof Error ? error.message : 'Generation failed';

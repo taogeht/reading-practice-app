@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,14 +8,17 @@ import {
   Check,
   Loader2,
   Pencil,
+  Play,
   Printer,
   RefreshCw,
+  Square,
   Trash2,
+  Volume2,
   X,
 } from 'lucide-react';
 import { getBook, type BookSlug } from '@/lib/practice/books';
 import {
-  EXERCISE_META,
+  isListeningType,
   type TestDocument,
   type TestItem,
   type TestSection,
@@ -101,16 +104,25 @@ export default function TestPrintPage() {
     }));
   }, [test]);
 
-  // Poll while any item still lacks its image (background generation).
-  const pendingImages = useMemo(
+  // Listening items in document order — drives the teacher play console.
+  const listeningItems = useMemo(
     () =>
-      test
-        ? test.document.sections.flatMap((s) => s.items).some((it) => it.imagePrompt && !it.imageUrl)
-        : false,
+      numbered.flatMap(({ section, items }) =>
+        isListeningType(section.type) ? items : [],
+      ),
+    [numbered],
+  );
+
+  // Poll while any item still lacks its image OR audio (background generation).
+  const allItems = useMemo(
+    () => (test ? test.document.sections.flatMap((s) => s.items) : []),
     [test],
   );
+  const pendingImages = allItems.some((it) => it.imagePrompt && !it.imageUrl);
+  const pendingAudio = allItems.some((it) => it.audioText && !it.audioUrl);
+  const pendingMedia = pendingImages || pendingAudio;
   useEffect(() => {
-    if (!pendingImages) return;
+    if (!pendingMedia) return;
     const start = Date.now();
     const interval = setInterval(() => {
       if (Date.now() - start > 3 * 60 * 1000) {
@@ -120,7 +132,85 @@ export default function TestPrintPage() {
       load(true);
     }, 8000);
     return () => clearInterval(interval);
-  }, [pendingImages, load]);
+  }, [pendingMedia, load]);
+
+  // ---- Teacher audio playback (single <audio>, supports play-one + play-all) ----
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const seqRef = useRef<{ items: { id: string; url: string }[]; idx: number } | null>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
+  const playUrl = useCallback((itemId: string, url: string) => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.src = url;
+    void a
+      .play()
+      .then(() => setPlayingId(itemId))
+      .catch(() => setPlayingId(null));
+  }, []);
+
+  const stopAudio = useCallback(() => {
+    seqRef.current = null;
+    const a = audioRef.current;
+    if (a) {
+      a.pause();
+      a.currentTime = 0;
+    }
+    setPlayingId(null);
+  }, []);
+
+  const playOne = useCallback(
+    (item: TestItem) => {
+      if (!item.audioUrl) return;
+      seqRef.current = null;
+      playUrl(item.id, item.audioUrl);
+    },
+    [playUrl],
+  );
+
+  const playAll = useCallback(() => {
+    const queue = listeningItems
+      .filter(({ item }) => item.audioUrl)
+      .map(({ item }) => ({ id: item.id, url: item.audioUrl as string }));
+    if (queue.length === 0) return;
+    seqRef.current = { items: queue, idx: 0 };
+    playUrl(queue[0].id, queue[0].url);
+  }, [listeningItems, playUrl]);
+
+  // On clip end: advance the play-all queue with a gap for answering, else stop.
+  const handleEnded = useCallback(() => {
+    const seq = seqRef.current;
+    if (seq) {
+      const next = seq.idx + 1;
+      if (next < seq.items.length) {
+        seq.idx = next;
+        setPlayingId(null);
+        setTimeout(() => {
+          if (seqRef.current === seq) playUrl(seq.items[next].id, seq.items[next].url);
+        }, 2500);
+        return;
+      }
+      seqRef.current = null;
+    }
+    setPlayingId(null);
+  }, [playUrl]);
+
+  const regenerateAudio = async (item: TestItem) => {
+    setBusyItem(item.id);
+    try {
+      const res = await fetch(`/api/tests/${id}/regenerate-audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: item.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTest((prev) => prev && patchItem(prev, item.id, { audioUrl: data.audioUrl }));
+      }
+    } finally {
+      setBusyItem(null);
+    }
+  };
 
   const saveTitle = async () => {
     const t = titleDraft.trim();
@@ -213,12 +303,37 @@ export default function TestPrintPage() {
                 Drawing pictures…
               </span>
             )}
+            {pendingAudio && (
+              <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Preparing audio…
+              </span>
+            )}
+            {listeningItems.length > 0 &&
+              (playingId !== null ? (
+                <Button variant="outline" onClick={stopAudio} title="Stop audio">
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={playAll}
+                  disabled={listeningItems.every(({ item }) => !item.audioUrl)}
+                  title="Play the listening clips in order, with a gap between each"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Play all
+                </Button>
+              ))}
             <Button onClick={() => window.print()}>
               <Printer className="w-4 h-4 mr-2" />
               Print
             </Button>
           </div>
         </div>
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <audio ref={audioRef} onEnded={handleEnded} className="hidden" />
       </div>
 
       {/* The sheet */}
@@ -288,8 +403,11 @@ export default function TestPrintPage() {
                       number={number}
                       type={section.type}
                       busy={busyItem === item.id}
+                      playing={playingId === item.id}
                       onRegenerate={() => regenerate(item)}
                       onRemove={() => removeItem(item)}
+                      onPlay={() => playOne(item)}
+                      onRegenerateAudio={() => regenerateAudio(item)}
                     />
                   ))}
                 </div>
@@ -341,16 +459,25 @@ function ItemRow({
   number,
   type,
   busy,
+  playing,
   onRegenerate,
   onRemove,
+  onPlay,
+  onRegenerateAudio,
 }: {
   item: TestItem;
   number: number;
   type: TestSection['type'];
   busy: boolean;
+  playing: boolean;
   onRegenerate: () => void;
   onRemove: () => void;
+  onPlay: () => void;
+  onRegenerateAudio: () => void;
 }) {
+  const listening = isListeningType(type);
+  const choices = seededOrder(item.id, [item.correctAnswer, ...item.distractors]);
+
   return (
     <div className="test-item flex items-start gap-3 group">
       <span className="font-semibold text-gray-700 pt-0.5 w-5 shrink-0">{number}.</span>
@@ -375,7 +502,7 @@ function ItemRow({
           <>
             <div>{renderBlank(item.prompt, 'short')}</div>
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-gray-900">
-              {seededOrder(item.id, [item.correctAnswer, ...item.distractors]).map((w, i) => (
+              {choices.map((w, i) => (
                 <span key={i} className="px-1">
                   {w}
                 </span>
@@ -405,32 +532,94 @@ function ItemRow({
             <div className="border-b border-gray-800 h-5" />
           </>
         )}
+
+        {/* Listening — the prompt is SPOKEN, not printed. Show only the 🔊 marker
+            and the answer area (choices / True-False). */}
+        {type === 'listen_circle_word' && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <Volume2 className="w-4 h-4 text-gray-700 shrink-0" />
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-gray-900">
+              {choices.map((w, i) => (
+                <span key={i} className="px-1">
+                  {w}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {type === 'listen_true_false' && (
+          <div className="flex items-center gap-4">
+            <Volume2 className="w-4 h-4 text-gray-700 shrink-0" />
+            <span className="text-gray-900 whitespace-nowrap">True&nbsp;&nbsp;/&nbsp;&nbsp;False</span>
+          </div>
+        )}
+
+        {/* Teacher-only reminder of what the audio says (never printed). */}
+        {listening && item.audioText && (
+          <div className="no-print text-[11px] text-gray-400 italic">plays: “{item.audioText}”</div>
+        )}
       </div>
 
-      {/* Per-item controls (screen only) */}
-      <div className="no-print flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition">
-        {item.imagePrompt && (
+      {/* Per-item controls (screen only). Play stays visible for listening items
+          during a live test; the management buttons reveal on hover. */}
+      <div className="no-print flex flex-col items-end gap-1 shrink-0">
+        {listening && (
+          <Button
+            variant="outline"
+            size="icon"
+            className={`h-7 w-7 ${playing ? 'border-indigo-500 text-indigo-600' : ''}`}
+            onClick={onPlay}
+            disabled={!item.audioUrl}
+            title={item.audioUrl ? 'Play audio' : 'Audio not ready yet'}
+          >
+            <Play className="w-3.5 h-3.5" />
+          </Button>
+        )}
+        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition">
+          {item.imagePrompt && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onRegenerate}
+              disabled={busy}
+              title="Regenerate picture"
+            >
+              {busy ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+            </Button>
+          )}
+          {listening && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onRegenerateAudio}
+              disabled={busy}
+              title="Regenerate audio"
+            >
+              {busy ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5" />
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={onRegenerate}
+            onClick={onRemove}
             disabled={busy}
-            title="Regenerate picture"
+            title="Remove question"
           >
-            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+            <Trash2 className="w-3.5 h-3.5 text-red-500" />
           </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={onRemove}
-          disabled={busy}
-          title="Remove question"
-        >
-          <Trash2 className="w-3.5 h-3.5 text-red-500" />
-        </Button>
+        </div>
       </div>
     </div>
   );
