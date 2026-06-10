@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, generateLoginToken } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, students, teachers, classEnrollments, classes, schoolMemberships, schools } from '@/lib/db/schema';
+import { users, students, teachers, classEnrollments, classes, schoolMemberships, schools, studentReadingLevelHistory } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
@@ -191,6 +191,18 @@ export async function POST(request: NextRequest) {
         avatarUrl: avatarEmoji,
       })
       .returning();
+
+    // Seed the reading-level history with the starting level (mirrors the
+    // migration backfill for pre-existing students) so the journey timeline has
+    // a baseline entry from day one.
+    if (readingLevel?.trim()) {
+      await db.insert(studentReadingLevelHistory).values({
+        studentId: userId,
+        level: readingLevel.trim(),
+        changedByUserId: user.id,
+        note: 'Set at creation',
+      });
+    }
 
     // Add student to school
     await db

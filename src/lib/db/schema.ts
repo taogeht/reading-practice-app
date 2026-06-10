@@ -193,6 +193,28 @@ export const stories = pgTable(
   })
 );
 
+// Academic terms (school-scoped). A term is a named span of the school year
+// (e.g. "2025-2026 Fall"). Classes optionally belong to a term via
+// classes.term_id; legacy classes with a null term_id render as "Ungrouped".
+// At most one term per school may have is_current = true — enforced by a
+// partial unique index added in the 0053 migration (Drizzle can't emit it).
+export const academicTerms = pgTable(
+  'academic_terms',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    schoolId: uuid('school_id').notNull().references(() => schools.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 60 }).notNull(),
+    startDate: date('start_date'),
+    endDate: date('end_date'),
+    isCurrent: boolean('is_current').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    uniqueSchoolName: uniqueIndex('unique_term_school_name').on(table.schoolId, table.name),
+    schoolCurrentIdx: index('idx_academic_terms_school_current').on(table.schoolId, table.isCurrent),
+  })
+);
+
 export const classes = pgTable('classes', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
@@ -206,6 +228,9 @@ export const classes = pgTable('classes', {
   schoolId: uuid('school_id').notNull().references(() => schools.id, { onDelete: 'cascade' }),
   gradeLevel: integer('grade_level'),
   academicYear: varchar('academic_year', { length: 20 }),
+  // Optional academic term this class belongs to (school-scoped). Nullable so
+  // legacy classes predating the term model keep working (shown as "Ungrouped").
+  termId: uuid('term_id').references(() => academicTerms.id, { onDelete: 'set null' }),
   active: boolean('active').default(true),
   showPracticeStories: boolean('show_practice_stories').default(false),
   syllabusUrl: varchar('syllabus_url', { length: 500 }),
@@ -255,6 +280,25 @@ export const classTeachers = pgTable(
     classIdIdx: index('idx_class_teachers_class_id').on(table.classId),
     teacherIdIdx: index('idx_class_teachers_teacher_id').on(table.teacherId),
     uniqueClassTeacher: uniqueIndex('unique_class_teacher').on(table.classId, table.teacherId),
+  })
+);
+
+// Append-only audit of a student's reading-level changes. The current value
+// still lives on students.reading_level; this records each change (level, who,
+// when, optional note) so the teacher "journey" view can show progression over
+// time. Backfilled from the existing reading_level in the 0053 migration.
+export const studentReadingLevelHistory = pgTable(
+  'student_reading_level_history',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    level: varchar('level', { length: 50 }).notNull(),
+    changedByUserId: uuid('changed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    studentTimeIdx: index('idx_reading_level_history_student_time').on(table.studentId, table.createdAt),
   })
 );
 
@@ -715,6 +759,12 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 export const schoolsRelations = relations(schools, ({ many }) => ({
   memberships: many(schoolMemberships),
   classes: many(classes),
+  terms: many(academicTerms),
+}));
+
+export const academicTermsRelations = relations(academicTerms, ({ one, many }) => ({
+  school: one(schools, { fields: [academicTerms.schoolId], references: [schools.id] }),
+  classes: many(classes),
 }));
 
 export const schoolMembershipsRelations = relations(schoolMemberships, ({ one }) => ({
@@ -728,6 +778,12 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   recordings: many(recordings),
   progress: many(studentProgress),
   media: many(studentMedia),
+  readingLevelHistory: many(studentReadingLevelHistory),
+}));
+
+export const studentReadingLevelHistoryRelations = relations(studentReadingLevelHistory, ({ one }) => ({
+  student: one(students, { fields: [studentReadingLevelHistory.studentId], references: [students.id] }),
+  changedBy: one(users, { fields: [studentReadingLevelHistory.changedByUserId], references: [users.id] }),
 }));
 
 export const teachersRelations = relations(teachers, ({ one, many }) => ({
@@ -745,6 +801,7 @@ export const storiesRelations = relations(stories, ({ one, many }) => ({
 export const classesRelations = relations(classes, ({ one, many }) => ({
   teacher: one(teachers, { fields: [classes.teacherId], references: [teachers.id] }),
   school: one(schools, { fields: [classes.schoolId], references: [schools.id] }),
+  term: one(academicTerms, { fields: [classes.termId], references: [academicTerms.id] }),
   enrollments: many(classEnrollments),
   assignments: many(assignments),
   spellingLists: many(spellingLists),

@@ -28,6 +28,7 @@ import {
   Trash2,
   Wrench,
   ChevronDown,
+  GraduationCap,
 } from "lucide-react";
 
 /**
@@ -46,6 +47,7 @@ export function ClassMoreMenu({
   onEdit,
   onDelete,
   onSyllabus,
+  onPromote,
 }: {
   classId: string;
   studentCount: number;
@@ -55,6 +57,7 @@ export function ClassMoreMenu({
   onEdit: () => void;
   onDelete: () => void;
   onSyllabus: () => void;
+  onPromote: () => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -133,6 +136,7 @@ export function ClassMoreMenu({
           {isPrimary && (
             <>
               <div className="my-1 border-t" />
+              <Item icon={GraduationCap} label="Promote to Term" onClick={onPromote} />
               <Item icon={Edit3} label="Edit Class" onClick={onEdit} />
               <Item
                 icon={Trash2}

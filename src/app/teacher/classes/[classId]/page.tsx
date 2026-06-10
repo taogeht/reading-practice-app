@@ -25,6 +25,7 @@ import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
 import { TEACHER_NAV_V2 } from "@/lib/feature-flags";
 import { ClassBodyV2, ClassMoreMenu } from "@/components/teacher/class-detail-v2";
+import { PromoteClassDialog } from "@/components/teacher/promote-class-dialog";
 import { GRADE_LEVELS } from "@/lib/grade-levels";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -61,6 +62,7 @@ interface Class {
   slug: string | null;
   gradeLevel: number | null;
   academicYear: string | null;
+  termId: string | null;
   active: boolean;
   showPracticeStories: boolean;
   trackLoginActivity: boolean;
@@ -97,6 +99,7 @@ export default function ClassDetailPage() {
   const [showStudentsSheet, setShowStudentsSheet] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [showSyllabusImport, setShowSyllabusImport] = useState(false);
+  const [showPromote, setShowPromote] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const hasSpelling = classData?.gradeLevel !== null && classData?.gradeLevel !== undefined && classData.gradeLevel >= 1;
@@ -106,6 +109,7 @@ export default function ClassDetailPage() {
     description: "",
     gradeLevel: "",
     academicYear: "",
+    termId: "",
     active: true,
     showPracticeStories: false,
     trackLoginActivity: true,
@@ -113,12 +117,32 @@ export default function ClassDetailPage() {
     slug: "",
   });
   const [editError, setEditError] = useState<string | null>(null);
+  const [terms, setTerms] = useState<{ id: string; name: string; isCurrent: boolean }[]>([]);
 
   useEffect(() => {
     if (classId) {
       fetchClassData();
     }
   }, [classId]);
+
+  // Academic terms for this teacher's school — populates the term <select> in
+  // the edit dialog. Optional; if none exist the control is hidden.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/teacher/terms");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setTerms(data.terms || []);
+      } catch {
+        /* terms optional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchClassData = async () => {
     try {
@@ -134,6 +158,7 @@ export default function ClassDetailPage() {
           description: data.class.description || "",
           gradeLevel: data.class.gradeLevel?.toString() || "",
           academicYear: data.class.academicYear || "",
+          termId: data.class.termId || "",
           active: data.class.active,
           showPracticeStories: data.class.showPracticeStories || false,
           trackLoginActivity: data.class.trackLoginActivity ?? true,
@@ -165,6 +190,7 @@ export default function ClassDetailPage() {
           description: editForm.description || null,
           gradeLevel: editForm.gradeLevel ? parseInt(editForm.gradeLevel) : null,
           academicYear: editForm.academicYear || null,
+          termId: editForm.termId || null,
           active: editForm.active,
           showPracticeStories: editForm.showPracticeStories,
           trackLoginActivity: editForm.trackLoginActivity,
@@ -259,6 +285,7 @@ export default function ClassDetailPage() {
       description: classData?.description || "",
       gradeLevel: classData?.gradeLevel?.toString() || "",
       academicYear: classData?.academicYear || "",
+      termId: classData?.termId || "",
       active: classData?.active || true,
       showPracticeStories: classData?.showPracticeStories || false,
       trackLoginActivity: classData?.trackLoginActivity ?? true,
@@ -497,10 +524,18 @@ export default function ClassDetailPage() {
               onEdit={() => setIsEditing(true)}
               onDelete={handleDeleteClass}
               onSyllabus={() => setShowSyllabusImport(true)}
+              onPromote={() => setShowPromote(true)}
             />
           )}
         </div>
       </div>
+
+      <PromoteClassDialog
+        classId={classId}
+        className={classData.name}
+        open={showPromote}
+        onOpenChange={setShowPromote}
+      />
 
       {!TEACHER_NAV_V2 && (
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -682,6 +717,24 @@ export default function ClassDetailPage() {
                 />
               </div>
             </div>
+            {terms.length > 0 && (
+              <div>
+                <Label htmlFor="termId">Term</Label>
+                <select
+                  id="termId"
+                  value={editForm.termId}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, termId: e.target.value }))}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">No term (ungrouped)</option>
+                  {terms.map((term) => (
+                    <option key={term.id} value={term.id}>
+                      {term.name}{term.isCurrent ? " (current)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <Label htmlFor="slug">Class URL</Label>
               <Input

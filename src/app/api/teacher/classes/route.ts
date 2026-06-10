@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { classes, schools, schoolMemberships, teachers, classEnrollments } from '@/lib/db/schema';
+import { classes, schools, schoolMemberships, teachers, classEnrollments, academicTerms } from '@/lib/db/schema';
 import { eq, and, count, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 import { accessibleClassIds, isCoTeacherOnly } from '@/lib/auth/class-access';
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, gradeLevel, academicYear, slug: requestedSlug } = body;
+    const { name, description, gradeLevel, academicYear, termId, slug: requestedSlug } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -184,6 +184,23 @@ export async function POST(request: NextRequest) {
       teacherSchool = [{ schoolId: defaultSchool[0].id }];
     }
 
+    // Validate the optional term: it must belong to this class's school.
+    let resolvedTermId: string | null = null;
+    if (termId) {
+      const term = await db
+        .select({ id: academicTerms.id })
+        .from(academicTerms)
+        .where(and(eq(academicTerms.id, termId), eq(academicTerms.schoolId, teacherSchool[0].schoolId)))
+        .limit(1);
+      if (!term.length) {
+        return NextResponse.json(
+          { error: 'Selected term does not belong to this school.' },
+          { status: 400 },
+        );
+      }
+      resolvedTermId = termId;
+    }
+
     // Create new class
     const newClass = await db
       .insert(classes)
@@ -192,6 +209,7 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         gradeLevel: gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== '' ? Number(gradeLevel) : null,
         academicYear: academicYear?.trim() || null,
+        termId: resolvedTermId,
         teacherId: user.id,
         schoolId: teacherSchool[0].schoolId,
         slug,

@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
-import { Home, Users, School, Settings, BookOpen, LogOut, Layers, History } from "lucide-react";
+import { Home, Users, School, Settings, BookOpen, LogOut, Layers, History, CalendarRange } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 
 interface AdminLayoutShellProps {
@@ -72,6 +72,15 @@ export function AdminLayoutShell({ user, children }: AdminLayoutShellProps) {
               >
                 <Layers className="w-6 h-6 mr-3" />
                 Classes
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/terms"
+                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <CalendarRange className="w-6 h-6 mr-3" />
+                Academic Terms
               </Link>
             </li>
             <li>

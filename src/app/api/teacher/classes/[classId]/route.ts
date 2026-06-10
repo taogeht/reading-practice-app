@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { classes, classEnrollments, users, students } from '@/lib/db/schema';
+import { classes, classEnrollments, users, students, academicTerms } from '@/lib/db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 import { userCanManageClass, userIsClassPrimary } from '@/lib/auth/class-access';
@@ -37,6 +37,7 @@ export async function GET(
         slug: classes.slug,
         gradeLevel: classes.gradeLevel,
         academicYear: classes.academicYear,
+        termId: classes.termId,
         active: classes.active,
         showPracticeStories: classes.showPracticeStories,
         trackLoginActivity: classes.trackLoginActivity,
@@ -125,6 +126,7 @@ export async function PUT(
       description,
       gradeLevel,
       academicYear,
+      termId,
       active,
       showPracticeStories,
       trackLoginActivity,
@@ -140,7 +142,7 @@ export async function PUT(
     }
 
     const existingClass = await db
-      .select({ id: classes.id })
+      .select({ id: classes.id, schoolId: classes.schoolId })
       .from(classes)
       .where(eq(classes.id, classId))
       .limit(1);
@@ -150,6 +152,28 @@ export async function PUT(
         { error: 'Class not found' },
         { status: 404 }
       );
+    }
+
+    // Resolve the optional term. undefined => leave unchanged; null/empty =>
+    // ungroup; a value must belong to this class's school.
+    let termUpdate: { termId: string | null } | undefined;
+    if (termId !== undefined) {
+      if (!termId) {
+        termUpdate = { termId: null };
+      } else {
+        const term = await db
+          .select({ id: academicTerms.id })
+          .from(academicTerms)
+          .where(and(eq(academicTerms.id, termId), eq(academicTerms.schoolId, existingClass[0].schoolId)))
+          .limit(1);
+        if (!term.length) {
+          return NextResponse.json(
+            { error: 'Selected term does not belong to this school.' },
+            { status: 400 },
+          );
+        }
+        termUpdate = { termId };
+      }
     }
 
     // Validate the slug if the teacher edited it. An empty/whitespace value
@@ -192,6 +216,7 @@ export async function PUT(
         trackLoginActivity: trackLoginActivity !== undefined ? trackLoginActivity : true,
         weeklyRecapEnabled: weeklyRecapEnabled !== undefined ? weeklyRecapEnabled : true,
         ...(slugUpdate !== undefined ? { slug: slugUpdate } : {}),
+        ...(termUpdate ?? {}),
         updatedAt: new Date(),
       })
       .where(eq(classes.id, classId))

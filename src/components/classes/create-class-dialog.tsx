@@ -30,16 +30,53 @@ function suggestSlugClient(name: string, year: string): string {
   return slug;
 }
 
+interface TermOption {
+  id: string;
+  name: string;
+  isCurrent: boolean;
+}
+
+const NO_TERM = "none";
+
 export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClassDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [terms, setTerms] = useState<TermOption[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     gradeLevel: "",
     academicYear: "",
+    termId: NO_TERM,
     slug: "",
   });
+
+  // Load the school's terms when the dialog opens and default to the current
+  // term if one is set. Terms are optional — "No term" leaves the class
+  // ungrouped.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/teacher/terms");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const list: TermOption[] = data.terms || [];
+        setTerms(list);
+        const current = list.find((t) => t.isCurrent);
+        if (current) {
+          setFormData((prev) => (prev.termId === NO_TERM ? { ...prev, termId: current.id } : prev));
+        }
+      } catch {
+        /* terms are optional; ignore fetch errors */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
   // Tracks whether the teacher has manually typed in the slug field. Once
   // they have, auto-suggestion stops so we don't clobber their custom value.
   const [slugTouched, setSlugTouched] = useState(false);
@@ -59,6 +96,7 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
       description: "",
       gradeLevel: "",
       academicYear: "",
+      termId: NO_TERM,
       slug: "",
     });
     setSlugTouched(false);
@@ -81,6 +119,7 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
           description: formData.description || null,
           gradeLevel: formData.gradeLevel ? parseInt(formData.gradeLevel) : null,
           academicYear: formData.academicYear || null,
+          termId: formData.termId === NO_TERM ? null : formData.termId,
           slug: formData.slug.trim() || undefined,
         }),
       });
@@ -185,6 +224,32 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
               </SelectContent>
             </Select>
           </div>
+
+          {terms.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="termId">Term</Label>
+              <Select
+                value={formData.termId}
+                onValueChange={(value) => setFormData({ ...formData, termId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a term" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_TERM}>No term (ungrouped)</SelectItem>
+                  {terms.map((term) => (
+                    <SelectItem key={term.id} value={term.id}>
+                      {term.name}
+                      {term.isCurrent ? " (current)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                Groups this class into an academic term for progress tracking and roster promotion.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="slug" className="flex items-center gap-1.5">

@@ -8,13 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building, ExternalLink, Save } from "lucide-react";
+import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building, ExternalLink, Save, Pencil, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { TeacherMediaSection } from "@/components/student-media/teacher-media-section";
 import { TeacherStudentPracticeSection } from "@/components/practice/teacher-student-practice-section";
 import { StudentWordMasterySection } from "@/components/spelling/student-word-mastery-section";
 import { StudentReadingMasterySection } from "@/components/reading/student-reading-mastery-section";
 import { StudentPassageRecordingsSection } from "@/components/recordings/student-passage-recordings-section";
 import { TeacherStarGrantsCard } from "@/components/gamification/teacher-star-grants-card";
+import { StudentJourneySection } from "@/components/teacher/student-journey-section";
 
 interface StudentClass {
   id: string;
@@ -52,6 +54,42 @@ export default function TeacherStudentProfilePage() {
   const [oupPassword, setOupPassword] = useState("");
   const [oupSaving, setOupSaving] = useState(false);
   const [oupSaved, setOupSaved] = useState(false);
+  // Inline reading-level editing. Each save logs a dated history entry that the
+  // journey timeline below reads — bump journeyKey to refresh it.
+  const [editingLevel, setEditingLevel] = useState(false);
+  const [levelInput, setLevelInput] = useState("");
+  const [levelSaving, setLevelSaving] = useState(false);
+  const [journeyKey, setJourneyKey] = useState(0);
+
+  const saveReadingLevel = async () => {
+    const next = levelInput.trim();
+    if (!next) {
+      toast.error("Enter a reading level");
+      return;
+    }
+    setLevelSaving(true);
+    try {
+      const res = await fetch(`/api/teacher/students/${studentId}/reading-level`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ level: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to update reading level");
+      setProfile((prev) => (prev ? { ...prev, readingLevel: next } : prev));
+      setEditingLevel(false);
+      if (data.changed) {
+        setJourneyKey((k) => k + 1);
+        toast.success("Reading level updated");
+      } else {
+        toast.info("Reading level unchanged");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update reading level");
+    } finally {
+      setLevelSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!studentId) return;
@@ -136,14 +174,45 @@ export default function TeacherStudentProfilePage() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-3">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {profile.gradeLevel !== null && (
                   <Badge variant="secondary" className="flex items-center gap-1">
                     <GraduationCap className="w-3 h-3" /> Grade {profile.gradeLevel}
                   </Badge>
                 )}
-                {profile.readingLevel && (
-                  <Badge variant="outline">Reading Level: {profile.readingLevel}</Badge>
+                {editingLevel ? (
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      value={levelInput}
+                      onChange={(e) => setLevelInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveReadingLevel();
+                        if (e.key === "Escape") setEditingLevel(false);
+                      }}
+                      placeholder="e.g., C or Level 2"
+                      className="h-7 w-36 text-sm"
+                      autoFocus
+                    />
+                    <Button size="sm" className="h-7 px-2" onClick={saveReadingLevel} disabled={levelSaving}>
+                      {levelSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingLevel(false)} disabled={levelSaving}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLevelInput(profile.readingLevel || "");
+                      setEditingLevel(true);
+                    }}
+                    className="group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    title="Update reading level"
+                  >
+                    Reading Level: {profile.readingLevel || "Not set"}
+                    <Pencil className="w-3 h-3 text-gray-400 group-hover:text-gray-600" />
+                  </button>
                 )}
               </div>
               <div className="text-sm text-gray-700 space-y-1">
@@ -232,6 +301,8 @@ export default function TeacherStudentProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {studentId && <StudentJourneySection studentId={studentId} refreshKey={journeyKey} />}
 
         {studentId && <TeacherStarGrantsCard studentId={studentId} />}
 
