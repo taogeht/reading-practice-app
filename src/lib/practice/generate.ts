@@ -14,7 +14,7 @@ export type GeneratedQuestion = {
   payload?: Record<string, unknown> | null;
 };
 
-type UnitCurriculum = {
+export type UnitCurriculum = {
   unit: number;
   topic: string;
   vocabulary: Array<{ word: string; image?: string }>;
@@ -545,4 +545,77 @@ export async function generateQuestions(params: {
 
   const results = await Promise.all(calls);
   return results.flat();
+}
+
+// ---------- Multi-unit (printable test) helpers ----------
+
+// Merges the curriculum of an arbitrary SET of units into one spec: vocabulary
+// (and every category array) is unioned across the chosen units, and the
+// grammar patterns + key sentences are concatenated from all of them. Used by
+// the test generator, where a worksheet spans several chosen units at once
+// (unlike loadCumulativeCurriculum, which always merges the 0..N prefix).
+export async function loadUnionCurriculum(
+  bookSlug: string,
+  units: number[],
+): Promise<UnitCurriculum | null> {
+  const sorted = [...new Set(units)].sort((a, b) => a - b);
+  let merged: UnitCurriculum | null = null;
+
+  for (const u of sorted) {
+    const unit = await loadUnitJson(bookSlug, u);
+    if (!unit) continue;
+    if (!merged) {
+      merged = {
+        unit: unit.unit,
+        topic: unit.topic,
+        vocabulary: [...unit.vocabulary],
+        numbers: [...(unit.numbers ?? [])],
+        prepositions: [...(unit.prepositions ?? [])],
+        colors: [...(unit.colors ?? [])],
+        verbs: [...(unit.verbs ?? [])],
+        adjectives: [...(unit.adjectives ?? [])],
+        grammar_patterns: [...(unit.grammar_patterns ?? [])],
+        key_sentences: [...(unit.key_sentences ?? [])],
+      };
+      continue;
+    }
+    appendUnique(merged.vocabulary, unit.vocabulary, (v) => v.word.toLowerCase());
+    appendUnique(merged.numbers!, unit.numbers ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.prepositions!, unit.prepositions ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.colors!, unit.colors ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.verbs!, unit.verbs ?? [], (s) => s.toLowerCase());
+    appendUnique(merged.adjectives!, unit.adjectives ?? [], (s) => s.toLowerCase());
+    merged.grammar_patterns = [
+      ...(merged.grammar_patterns ?? []),
+      ...(unit.grammar_patterns ?? []),
+    ];
+    merged.key_sentences = [...(merged.key_sentences ?? []), ...(unit.key_sentences ?? [])];
+  }
+
+  if (!merged) return null;
+  // Header label for the prompt — the word/grammar lists are authoritative, this
+  // only colours the "UNIT N — …" line the LLM sees.
+  merged.unit = sorted[sorted.length - 1] ?? merged.unit;
+  merged.topic = `Combined review (units ${sorted.join(', ')})`;
+  return merged;
+}
+
+// Runs ONE generation call of a given question type against an already-built
+// curriculum spec. The test generator calls this once per worksheet section.
+// Always uses 'unit-only' framing ("use only these words") because the union
+// spec already contains every word the test is allowed to use.
+export async function generateForCurriculum(params: {
+  curriculum: UnitCurriculum;
+  questionType: QuestionType;
+  count: number;
+}): Promise<GeneratedQuestion[]> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  if (params.count < 1) return [];
+  if (!params.curriculum.grammar_patterns?.length) {
+    throw new Error('Curriculum has no grammar_patterns — cannot generate.');
+  }
+  const bundle = bundleForType(params.questionType);
+  const client = new Anthropic({ apiKey });
+  return runGenerationCall(client, bundle, params.curriculum, 'unit-only', params.count);
 }

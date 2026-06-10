@@ -10,6 +10,8 @@ import { CreateStoryDialog } from "@/components/stories/create-story-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
 import { TeacherLoginActivityCard } from "@/components/activity/teacher-login-activity-card";
 import { TeacherActivityFeed } from "@/components/activity/teacher-activity-feed";
+import { TeacherHomeV2 } from "@/components/teacher/teacher-home-v2";
+import { TEACHER_NAV_V2 } from "@/lib/feature-flags";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ import {
   LogOut,
   List,
   Trophy,
+  FileText,
   Sparkles
 } from "lucide-react";
 
@@ -90,6 +93,13 @@ type DashboardData = {
 };
 
 export default function TeacherDashboardPage() {
+  // Redesigned Home lives in its own component so the original stays intact and
+  // the flag can roll back instantly. TEACHER_NAV_V2 is a compile-time const, so
+  // this branch is stable across renders (no hook-order concern).
+  if (TEACHER_NAV_V2) {
+    return <TeacherHomeV2 />;
+  }
+
   const router = useRouter();
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [showCreateClass, setShowCreateClass] = useState(false);
@@ -231,6 +241,12 @@ export default function TeacherDashboardPage() {
                     <Button variant="outline" onClick={() => router.push('/teacher/practice-questions')}>
                       <Trophy className="w-4 h-4 mr-2" />
                       Practice Questions
+                    </Button>
+                  )}
+                  {dashboardData.canGeneratePracticeQuestions && (
+                    <Button variant="outline" onClick={() => router.push('/teacher/tests')}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Tests
                     </Button>
                   )}
                   {dashboardData.canUseSunnyPreview && (

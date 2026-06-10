@@ -18,6 +18,7 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
+import type { TestDocument } from '@/lib/practice/test-types';
 
 // Enums
 export const userRoleEnum = pgEnum('user_role', ['student', 'teacher', 'admin']);
@@ -884,6 +885,34 @@ export const practiceAttempts = pgTable(
       table.questionId,
       table.answeredAt,
     ),
+  })
+);
+
+// Printable practice tests. A teacher picks a book + a set of units and the
+// generator composes a worksheet (mixed exercise kinds) over the union of those
+// units' curriculum. The whole worksheet — sections, items, answers, image
+// prompts/urls — lives in the `document` jsonb blob (TestDocument); a test is
+// printed as a unit, never served item-by-item, so it isn't normalised into
+// rows the way practice_questions is. Saved so teachers can reprint / clone.
+export const generatedTests = pgTable(
+  'generated_tests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    generatedBy: uuid('generated_by').references(() => users.id, { onDelete: 'set null' }),
+    // Scopes future sharing/visibility; populated from the teacher's school.
+    schoolId: uuid('school_id').references(() => schools.id, { onDelete: 'set null' }),
+    bookSlug: varchar('book_slug', { length: 50 }).notNull().default('family-friends-1'),
+    // The chosen unit numbers, e.g. [12, 13]. jsonb (not int[]) to match the
+    // project's everything-is-jsonb convention and keep the apply script simple.
+    units: jsonb('units').$type<number[]>().notNull(),
+    title: text('title').notNull(),
+    document: jsonb('document').$type<TestDocument>().notNull(),
+    active: boolean('active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    createdByIdx: index('idx_generated_tests_generated_by').on(table.generatedBy),
+    schoolIdx: index('idx_generated_tests_school').on(table.schoolId),
   })
 );
 

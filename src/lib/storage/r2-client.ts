@@ -264,6 +264,14 @@ class R2Client {
   }
 
   /**
+   * Generate a file key for a printable test item image.
+   * Layout: test-images/{testId}/{itemId}.png
+   */
+  generateTestImageKey(testId: string, itemId: string): string {
+    return `test-images/${testId}/${itemId}.png`;
+  }
+
+  /**
    * Generate a file key for a reading-passage page illustration.
    * Layout: story-images/{passageId}/page-{pageNumber}.png
    */
