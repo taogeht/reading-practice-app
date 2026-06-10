@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Check, Smile } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 
 interface AvatarOption {
   id: string;
@@ -52,9 +53,7 @@ export function AvatarPickerDialog({
                 onClick={() => onSelect(avatar.emoji)}
                 disabled={loading}
               >
-                <span className="text-3xl" aria-hidden>
-                  {avatar.emoji}
-                </span>
+                <Icon set="login/people" id={avatar.id} emoji={avatar.emoji} size={40} />
                 <span className="sr-only">{avatar.name}</span>
                 {isSelected && <Check className="w-4 h-4" />}
               </Button>

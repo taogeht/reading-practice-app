@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft } from "lucide-react";
 import { getVisualPasswordOptions, AVATARS } from "./visual-password-options";
+import { Icon } from "@/components/ui/icon";
 
 interface Student {
   id: string;
@@ -34,6 +35,7 @@ export function VisualPasswordInput({ student, onBack, onAttempt }: VisualPasswo
   const LOCK_DURATION_MS = 30_000;
 
   const options = getVisualPasswordOptions(student.visualPasswordType);
+  const iconSet = student.visualPasswordType === "animal" ? "login/animals" : "login/objects";
 
   const isLocked = lockedUntil !== null && lockedUntil > Date.now();
 
@@ -179,8 +181,8 @@ export function VisualPasswordInput({ student, onBack, onAttempt }: VisualPasswo
               disabled={isLocked || isSubmitting}
             >
               <div className="text-center">
-                <div className="text-4xl mb-2">
-                  {option.emoji}
+                <div className="mb-2 flex justify-center">
+                  <Icon set={iconSet} id={option.id} emoji={option.emoji} size={44} alt={option.name} />
                 </div>
                 <div className="text-xs font-medium">{option.name}</div>
               </div>

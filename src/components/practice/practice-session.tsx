@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Trophy, Check, X, RotateCw, ArrowLeft, Loader2, Wand2, Sparkles, Volume2 } from 'lucide-react';
 
@@ -305,7 +306,7 @@ export function PracticeSession() {
                           onClick={() => startUnit(b.slug, u.unit)}
                           className="text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition rounded-xl p-4 cursor-pointer"
                         >
-                          {u.emoji && <div className="text-3xl mb-1">{u.emoji}</div>}
+                          {u.emoji && <div className="mb-1"><Icon set="units" id={`unit-${u.unit}`} emoji={u.emoji} size={30} /></div>}
                           <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
                             Unit {u.unit}
                           </div>
@@ -408,7 +409,7 @@ export function PracticeSession() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <Badge variant="outline" className="text-sm">
-            {unitInfo?.emoji} Unit {view.unit}
+            <Icon set="units" id={`unit-${view.unit}`} emoji={unitInfo?.emoji ?? ""} size={16} className="mr-1" /> Unit {view.unit}
           </Badge>
           <span className="text-sm font-semibold text-gray-600">
             Question {view.index + 1} of {view.questions.length}

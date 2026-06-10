@@ -1,0 +1,193 @@
+{
+  "description": "Static app icon set. Replace emoji with these PNGs (transparent). Referenced as /images/icons/...",
+  "basePath": "/images/icons",
+  "publicDir": "public/images/icons",
+  "format": "png (transparent), 1024x1024 source, square",
+  "totalExpected": 91,
+  "sets": {
+    "login/animals": {
+      "title": "Login picker — Animals",
+      "source": "visual-password-options.ts ANIMALS",
+      "count": 13,
+      "files": [
+        "/images/icons/login/animals/cat.png",
+        "/images/icons/login/animals/dog.png",
+        "/images/icons/login/animals/rabbit.png",
+        "/images/icons/login/animals/bear.png",
+        "/images/icons/login/animals/lion.png",
+        "/images/icons/login/animals/tiger.png",
+        "/images/icons/login/animals/fox.png",
+        "/images/icons/login/animals/panda.png",
+        "/images/icons/login/animals/koala.png",
+        "/images/icons/login/animals/monkey.png",
+        "/images/icons/login/animals/elephant.png",
+        "/images/icons/login/animals/pig.png",
+        "/images/icons/login/animals/frog.png"
+      ]
+    },
+    "login/objects": {
+      "title": "Login picker — Objects",
+      "source": "visual-password-options.ts OBJECTS",
+      "count": 12,
+      "files": [
+        "/images/icons/login/objects/apple.png",
+        "/images/icons/login/objects/banana.png",
+        "/images/icons/login/objects/car.png",
+        "/images/icons/login/objects/house.png",
+        "/images/icons/login/objects/tree.png",
+        "/images/icons/login/objects/flower.png",
+        "/images/icons/login/objects/star.png",
+        "/images/icons/login/objects/heart.png",
+        "/images/icons/login/objects/sun.png",
+        "/images/icons/login/objects/moon.png",
+        "/images/icons/login/objects/book.png",
+        "/images/icons/login/objects/ball.png"
+      ]
+    },
+    "login/people": {
+      "title": "Login picker — People avatars",
+      "source": "visual-password-options.ts AVATARS",
+      "count": 12,
+      "files": [
+        "/images/icons/login/people/girl_blonde.png",
+        "/images/icons/login/people/boy_blonde.png",
+        "/images/icons/login/people/girl_brown.png",
+        "/images/icons/login/people/boy_brown.png",
+        "/images/icons/login/people/girl_dark.png",
+        "/images/icons/login/people/boy_dark.png",
+        "/images/icons/login/people/student_yellow.png",
+        "/images/icons/login/people/student_light.png",
+        "/images/icons/login/people/student_medium.png",
+        "/images/icons/login/people/student_dark.png",
+        "/images/icons/login/people/dino.png",
+        "/images/icons/login/people/rocket.png"
+      ]
+    },
+    "avatar-types": {
+      "title": "Avatar character-type fallbacks",
+      "source": "avatar-display.tsx BASE_EMOJI",
+      "count": 3,
+      "files": [
+        "/images/icons/avatar-types/human.png",
+        "/images/icons/avatar-types/animal.png",
+        "/images/icons/avatar-types/robot.png"
+      ]
+    },
+    "units": {
+      "title": "Curriculum unit icons",
+      "source": "practice/units.ts",
+      "count": 15,
+      "files": [
+        "/images/icons/units/unit-1.png",
+        "/images/icons/units/unit-2.png",
+        "/images/icons/units/unit-3.png",
+        "/images/icons/units/unit-4.png",
+        "/images/icons/units/unit-5.png",
+        "/images/icons/units/unit-6.png",
+        "/images/icons/units/unit-7.png",
+        "/images/icons/units/unit-8.png",
+        "/images/icons/units/unit-9.png",
+        "/images/icons/units/unit-10.png",
+        "/images/icons/units/unit-11.png",
+        "/images/icons/units/unit-12.png",
+        "/images/icons/units/unit-13.png",
+        "/images/icons/units/unit-14.png",
+        "/images/icons/units/unit-15.png"
+      ]
+    },
+    "spelling": {
+      "title": "Spelling-game icons",
+      "source": "dashboard-v2 tabs + snowman-game themes",
+      "count": 9,
+      "files": [
+        "/images/icons/spelling/snowman.png",
+        "/images/icons/spelling/listen.png",
+        "/images/icons/spelling/unscramble.png",
+        "/images/icons/spelling/missing.png",
+        "/images/icons/spelling/flashcards.png",
+        "/images/icons/spelling/hangman.png",
+        "/images/icons/spelling/bomb.png",
+        "/images/icons/spelling/balloons.png",
+        "/images/icons/spelling/snowflake.png"
+      ]
+    },
+    "rewards": {
+      "title": "Reward / XP / wallet icons",
+      "source": "gamification/labels.ts",
+      "count": 16,
+      "files": [
+        "/images/icons/rewards/stars.png",
+        "/images/icons/rewards/xp.png",
+        "/images/icons/rewards/trophy.png",
+        "/images/icons/rewards/gift.png",
+        "/images/icons/rewards/shop.png",
+        "/images/icons/rewards/recording.png",
+        "/images/icons/rewards/read-page.png",
+        "/images/icons/rewards/story-complete.png",
+        "/images/icons/rewards/correct.png",
+        "/images/icons/rewards/attempt.png",
+        "/images/icons/rewards/streak.png",
+        "/images/icons/rewards/level-up.png",
+        "/images/icons/rewards/daily-login.png",
+        "/images/icons/rewards/reroll.png",
+        "/images/icons/rewards/sparkle.png",
+        "/images/icons/rewards/target.png"
+      ]
+    },
+    "helper": {
+      "title": "Homework helper (Sunny)",
+      "source": "homework-helper.tsx",
+      "count": 5,
+      "files": [
+        "/images/icons/helper/sunny.png",
+        "/images/icons/helper/define.png",
+        "/images/icons/helper/check-sentence.png",
+        "/images/icons/helper/practice.png",
+        "/images/icons/helper/how-to-say.png"
+      ]
+    },
+    "status": {
+      "title": "Status / feedback (optional)",
+      "source": "inline toasts",
+      "count": 6,
+      "files": [
+        "/images/icons/status/celebration.png",
+        "/images/icons/status/success.png",
+        "/images/icons/status/error.png",
+        "/images/icons/status/thumbs-up.png",
+        "/images/icons/status/clap.png",
+        "/images/icons/status/strong.png"
+      ]
+    }
+  },
+  "reuse": {
+    "login/people: cat": "/images/icons/login/animals/cat.png",
+    "login/people: dog": "/images/icons/login/animals/dog.png",
+    "login/people: panda": "/images/icons/login/animals/panda.png",
+    "login/people: star": "/images/icons/login/objects/star.png",
+    "status: sparkle": "/images/icons/rewards/sparkle.png"
+  },
+  "rewardEventMap": {
+    "recording_submitted": "recording.png",
+    "reading_page_finished": "read-page.png",
+    "reading_question_correct": "read-page.png",
+    "reading_question_first_try_correct": "xp.png",
+    "reading_story_completed": "story-complete.png",
+    "reading_perfect_score": "stars.png",
+    "spelling_won": "trophy.png",
+    "spelling_lost": "attempt.png",
+    "practice_correct": "correct.png",
+    "practice_first_try_bonus": "xp.png",
+    "practice_wrong_first_attempt": "attempt.png",
+    "vocab_word_mastered": "story-complete.png",
+    "daily_login": "daily-login.png",
+    "streak_7_bonus": "streak.png",
+    "streak_30_bonus": "streak.png",
+    "streak_100_bonus": "streak.png",
+    "level_up": "level-up.png",
+    "teacher_grant": "gift.png",
+    "shop_purchase": "shop.png",
+    "reroll": "reroll.png",
+    "_default": "stars.png"
+  }
+}

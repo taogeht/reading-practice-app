@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
+import { Icon } from '@/components/ui/icon';
 import { useHeartbeat } from '@/hooks/use-heartbeat';
 import { UI_STRINGS, type UiStringId } from '@/lib/i18n/ui-strings';
 
@@ -326,11 +327,11 @@ export default function StudentDashboardV2Page() {
               </h2>
               <Tabs defaultValue="snowman" className="w-full">
                 <TabsList className="grid grid-cols-2 sm:grid-cols-5 gap-1 h-auto bg-white/60 border border-sky-100 p-1">
-                  <TabsTrigger value="snowman" className="text-xs sm:text-sm data-[state=active]:bg-sky-100">⛄ Snowman</TabsTrigger>
-                  <TabsTrigger value="listen" className="text-xs sm:text-sm data-[state=active]:bg-sky-100">🎧 Listen</TabsTrigger>
-                  <TabsTrigger value="unscramble" className="text-xs sm:text-sm data-[state=active]:bg-sky-100">🔀 Unscramble</TabsTrigger>
-                  <TabsTrigger value="missing" className="text-xs sm:text-sm data-[state=active]:bg-sky-100">✏️ Missing</TabsTrigger>
-                  <TabsTrigger value="flash" className="text-xs sm:text-sm data-[state=active]:bg-sky-100">🃏 Flashcards</TabsTrigger>
+                  <TabsTrigger value="snowman" className="text-xs sm:text-sm data-[state=active]:bg-sky-100"><Icon set="spelling" id="snowman" emoji="⛄" size={16} className="mr-1" /> Snowman</TabsTrigger>
+                  <TabsTrigger value="listen" className="text-xs sm:text-sm data-[state=active]:bg-sky-100"><Icon set="spelling" id="listen" emoji="🎧" size={16} className="mr-1" /> Listen</TabsTrigger>
+                  <TabsTrigger value="unscramble" className="text-xs sm:text-sm data-[state=active]:bg-sky-100"><Icon set="spelling" id="unscramble" emoji="🔀" size={16} className="mr-1" /> Unscramble</TabsTrigger>
+                  <TabsTrigger value="missing" className="text-xs sm:text-sm data-[state=active]:bg-sky-100"><Icon set="spelling" id="missing" emoji="✏️" size={16} className="mr-1" /> Missing</TabsTrigger>
+                  <TabsTrigger value="flash" className="text-xs sm:text-sm data-[state=active]:bg-sky-100"><Icon set="spelling" id="flashcards" emoji="🃏" size={16} className="mr-1" /> Flashcards</TabsTrigger>
                 </TabsList>
                 <TabsContent value="snowman" className="mt-3"><SnowmanGame /></TabsContent>
                 <TabsContent value="listen" className="mt-3"><ListenAndSpellGame /></TabsContent>

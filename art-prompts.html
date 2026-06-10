@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>App Icon Art Prompts — Reading Homework App</title>
+<style>
+  :root {
+    --bg: #f6f7fb; --card: #ffffff; --ink: #1f2430; --muted: #6b7280;
+    --line: #e6e8ef; --accent: #6d3bf5; --ok: #16a34a; --chip: #f1f0fe; --path: #0b7285;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { position: sticky; top: 0; z-index: 10; background: rgba(246,247,251,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); padding: 14px 20px; }
+  header h1 { margin: 0 0 4px; font-size: 18px; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 20px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #fff; }
+  .seg button { border: 0; background: #fff; padding: 7px 12px; font-size: 12px; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.copied { background: var(--ok) !important; color: #fff !important; border-color: var(--ok) !important; }
+  .style-box { background: #0f1117; color: #e7eaf3; border-radius: 12px; padding: 16px;
+    font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap; margin: 10px 0 6px; border: 1px solid #232838; }
+  .note { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  .note code, code.inline { background: var(--chip); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+  section.group { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin: 18px 0; }
+  .group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 2px; }
+  .group-head h2 { font-size: 16px; margin: 0; }
+  .group-head .sub { color: var(--muted); font-size: 12.5px; }
+  .group .reuse { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 8px; margin-top: 12px; }
+  .item { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
+  .item:hover { border-color: #cdd2e0; }
+  .item .name { font-weight: 700; font-size: 13.5px; }
+  .item .subj { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .item .path { display: inline-block; margin-top: 6px; font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--path); background: #e9f6f9; padding: 2px 7px; border-radius: 6px; cursor: pointer; border: 1px solid #cdeaf0; }
+  .item .path:hover { background: #d7eef3; }
+  .item .btn { flex: none; }
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: .18s; z-index: 50; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  details summary { cursor: pointer; font-weight: 600; color: var(--accent); font-size: 13px; }
+  .legend { font-size: 12.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap" style="padding:0">
+    <h1>🎨 App Icon Art Prompts</h1>
+    <p>Children's ESL reading app · <b>91 icons</b>. Each <b>Copy</b> = full prompt (style + subject + background). Click the teal path to copy where the PNG goes.</p>
+    <div class="toolbar">
+      <span class="legend">Background:</span>
+      <div class="seg" id="bgseg">
+        <button data-bg="transparent" class="on">OpenAI · transparent</button>
+        <button data-bg="chroma">Gemini · chroma-green</button>
+        <button data-bg="white">Plain white</button>
+      </div>
+      <button class="btn" id="copyStyle">Copy style block</button>
+      <button class="btn primary" id="copyAll">Copy ALL prompts</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="group">
+    <div class="group-head"><h2>Master style block</h2><span class="sub">prepended to every prompt automatically</span></div>
+    <div class="style-box" id="styleView"></div>
+    <p class="note"><b>Where these live:</b> static app icons → <code>public/images/icons/…</code>, referenced in code as <code>/images/icons/…</code> (same pattern as <code>rules.ts</code>’s <code>/images/avatars/*.png</code>). Folders + <code>public/images/icons/manifest.json</code> are already scaffolded. Save each PNG to the path shown on its card.</p>
+    <p class="note"><b>Consistency trick:</b> generate ONE icon, then pass it back as a reference image (“match this exact art style, palette &amp; lighting”) for the rest.</p>
+    <details style="margin-top:8px">
+      <summary>Per-tool background notes</summary>
+      <p class="note"><b>OpenAI gpt-image-1</b>: set <code>background: "transparent"</code>, <code>size: 1024x1024</code>.<br>
+      <b>Gemini 2.5 Flash Image</b>: ask for a flat <code>#00FF00</code> fill, then run your <code>stripGeminiBackground()</code> flood-fill (same as avatars/cosmetics).</p>
+    </details>
+  </section>
+
+  <div id="sections"></div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+const DISK = "public/images/icons";
+const STYLE = `A single {SUBJECT}, as one icon in a cohesive icon set for a children's English-learning app (ages 5-9). Soft semi-3D "claymation / Pixar-lite" look: smooth rounded forms, thick gentle edges, soft gradient shading, one soft top-down light with a subtle contact shadow. Bright, cheerful, candy-bright palette (not neon), big friendly expression. Centered, front-facing, subject fills ~80% of a square frame with even padding. No text, no letters, no UI, no frame or border. Clean and crisp, consistent line weight and proportions across the whole set. 1:1 square.`;
+
+const BG = {
+  transparent: "Background: fully transparent (PNG with alpha). Render at 1024x1024.",
+  chroma: "Background: a single flat solid chroma-green (#00FF00) fill — no gradient, no texture (it will be keyed out). Render at 1024x1024.",
+  white: "Background: plain pure white (#FFFFFF), no shadow box. Render at 1024x1024."
+};
+
+// [name, subject, file]  — file (no extension) joins dir → public/images/icons/<dir>/<file>.png
+const SECTIONS = [
+  { dir: "login/animals", title: "A · Login picker — Animals", sub: "friendly mascot faces, big eyes", items: [
+    ["Cat","smiling orange tabby kitten mascot face, big round eyes, tiny pink nose","cat"],
+    ["Dog","happy golden puppy mascot face, floppy ears, friendly grin","dog"],
+    ["Rabbit","cheerful white bunny mascot, long ears up, pink inner ears","rabbit"],
+    ["Bear","cuddly brown bear cub mascot face, round ears","bear"],
+    ["Lion","friendly lion cub mascot with a fluffy golden mane","lion"],
+    ["Tiger","playful orange tiger cub mascot with black stripes, big grin","tiger"],
+    ["Fox","clever cute orange fox mascot, white cheeks, perky ears","fox"],
+    ["Panda","roly-poly panda mascot face, black eye patches, happy smile","panda"],
+    ["Koala","soft grey koala mascot, big fuzzy ears, black nose","koala"],
+    ["Monkey","cheeky brown monkey mascot face, big ears, playful smile","monkey"],
+    ["Elephant","friendly grey baby elephant mascot, big ears, little trunk raised","elephant"],
+    ["Pig","happy pink piggy mascot face, round snout, tiny ears","pig"],
+    ["Frog","smiley green frog mascot, big round eyes on top of its head","frog"],
+  ]},
+  { dir: "login/objects", title: "B · Login picker — Objects", sub: "single hero object, glossy & rounded", items: [
+    ["Apple","glossy red apple with a single green leaf","apple"],
+    ["Banana","cheerful curved ripe yellow banana","banana"],
+    ["Car","chubby rounded red toy car with big friendly wheels","car"],
+    ["House","cozy little cottage with a red roof and a yellow door","house"],
+    ["Tree","round leafy green tree with a short brown trunk","tree"],
+    ["Flower","bright pink daisy flower with a yellow center","flower"],
+    ["Star","plump golden five-point star with a soft warm glow","star"],
+    ["Heart","glossy rounded red love heart","heart"],
+    ["Sun","smiling warm-yellow sun with soft rounded rays","sun"],
+    ["Moon","friendly pale-yellow crescent moon with a few small stars","moon"],
+    ["Book","cheerful closed book with a blue cover and visible page edges","book"],
+    ["Ball","glossy classic black-and-white soccer ball","ball"],
+  ]},
+  { dir: "login/people", title: "C · Login picker — People avatars", sub: "round-faced students, head & shoulders",
+    reuse: "The cat / dog / panda / star avatar options reuse the animal & object files — don't generate them again.", items: [
+    ["Girl · blonde","a friendly round-faced young girl student, head-and-shoulders, big happy smile, blonde hair, light skin, simple bright t-shirt","girl_blonde"],
+    ["Boy · blonde","a friendly round-faced young boy student, head-and-shoulders, big happy smile, blonde hair, light skin, simple bright t-shirt","boy_blonde"],
+    ["Girl · brown","a friendly round-faced young girl student, head-and-shoulders, big happy smile, brown hair, medium skin, simple bright t-shirt","girl_brown"],
+    ["Boy · brown","a friendly round-faced young boy student, head-and-shoulders, big happy smile, brown hair, medium skin, simple bright t-shirt","boy_brown"],
+    ["Girl · dark","a friendly round-faced young girl student, head-and-shoulders, big happy smile, dark hair, deep skin tone, simple bright t-shirt","girl_dark"],
+    ["Boy · dark","a friendly round-faced young boy student, head-and-shoulders, big happy smile, dark hair, deep skin tone, simple bright t-shirt","boy_dark"],
+    ["Student · classic","a friendly round-faced young student mascot, neutral cartoon look, big happy smile, short hair, simple bright t-shirt","student_yellow"],
+    ["Student · light","a friendly round-faced young student, head-and-shoulders, big happy smile, short hair, light skin, simple bright t-shirt","student_light"],
+    ["Student · medium","a friendly round-faced young student, head-and-shoulders, big happy smile, short hair, medium skin, simple bright t-shirt","student_medium"],
+    ["Student · deep","a friendly round-faced young student, head-and-shoulders, big happy smile, short hair, deep skin tone, simple bright t-shirt","student_dark"],
+    ["Dino","cute round baby dinosaur mascot, soft green, tiny friendly back spikes","dino"],
+    ["Rocket pilot","a happy little kid astronaut peeking out of a friendly cartoon rocket","rocket"],
+  ]},
+  { dir: "avatar-types", title: "D · Avatar character-type fallbacks", sub: "category icons (avatar-display.tsx)", items: [
+    ["Human","a generic cheerful kid mascot bust, simple and friendly, neutral colors","human"],
+    ["Animal","a generic friendly round cartoon creature mascot, soft and huggable","animal"],
+    ["Robot","a cute friendly robot with a glowing smiley-screen face and a rounded body","robot"],
+  ]},
+  { dir: "units", title: "E · Curriculum unit icons", sub: "Family & Friends 1 (units.ts)", items: [
+    ["Unit 1 · What's this?","a cheerful little red schoolhouse","unit-1"],
+    ["Unit 2 · Playtime!","a soft teddy bear sitting beside two colorful building blocks","unit-2"],
+    ["Unit 3 · This is my nose!","a smiling kid's face pointing one finger to its own nose","unit-3"],
+    ["Unit 4 · He's a hero!","a little kid superhero in a cape with one fist raised proudly","unit-4"],
+    ["Unit 5 · Where's the ball?","a colorful ball peeking out from behind a toy box","unit-5"],
+    ["Unit 6 · Billy's teddy bear!","a well-loved soft teddy bear, slightly worn and cuddly","unit-6"],
+    ["Unit 7 · Are these his pants?","a neat folded stack of colorful kids' clothes (t-shirt and pants)","unit-7"],
+    ["Unit 8 · Where's Grandma?","a cozy home with a warm glowing heart floating above it","unit-8"],
+    ["Unit 9 · Lunchtime!","a cute open lunchbox / bento full of colorful food","unit-9"],
+    ["Unit 10 · A new friend!","two little kids smiling and waving hello to each other","unit-10"],
+    ["Unit 11 · I like monkeys!","a playful brown monkey hanging from a green vine","unit-11"],
+    ["Unit 12 · Dinnertime!","a steaming bowl of rice with a pair of chopsticks","unit-12"],
+    ["Unit 13 · Clean up!","a friendly broom and dustpan with a little sparkle of clean","unit-13"],
+    ["Unit 14 · Action Boy can run!","an energetic happy kid captured mid-run","unit-14"],
+    ["Unit 15 · Let's play ball!","two kids happily playing ball on a sunny beach","unit-15"],
+  ]},
+  { dir: "spelling", title: "F · Spelling-game icons", sub: "modes + snowman-game themes", items: [
+    ["Snowman","a cheerful snowman with a carrot nose, a cozy scarf, and twig arms","snowman"],
+    ["Listen & Spell","a pair of friendly headphones with little floating music notes","listen"],
+    ["Unscramble","a small jumble of colorful letter tiles with curved shuffle arrows around them","unscramble"],
+    ["Missing Letters","a word card with one blank letter slot and a pencil resting on it","missing"],
+    ["Flashcards","a fanned stack of colorful flashcards, the top card showing a little picture","flashcards"],
+    ["Hangman (variant)","a friendly playful rope tied in a neat knot","hangman"],
+    ["Bomb (variant)","a round cartoon bomb with a sparkly lit fuse, cute and non-scary","bomb"],
+    ["Balloons (variant)","a cheerful bunch of colorful balloons on strings","balloons"],
+    ["Snowflake","a single pretty pale-blue snowflake","snowflake"],
+  ]},
+  { dir: "rewards", title: "G · Reward / XP / wallet icons", sub: "gamification/labels.ts", items: [
+    ["Stars (currency)","a plump glowing golden star, the app's reward coin","stars"],
+    ["XP / bonus","a bright yellow lightning bolt with a soft glow","xp"],
+    ["Trophy","a shiny gold trophy cup","trophy"],
+    ["Gift (teacher award)","a wrapped present with a big cheerful bow","gift"],
+    ["Shop","a colorful shopping bag","shop"],
+    ["Recording","a cute rounded studio microphone","recording"],
+    ["Read a page","a single open book","read-page"],
+    ["Story complete","a small neat stack of books","story-complete"],
+    ["Correct","a friendly green checkmark inside a soft rounded badge","correct"],
+    ["Attempt","a chunky yellow pencil","attempt"],
+    ["Streak","a warm friendly flame","streak"],
+    ["Level up","a party popper bursting with colorful confetti","level-up"],
+    ["Daily login","a cheerful waving hand","daily-login"],
+    ["Reroll","two circular refresh arrows forming a loop","reroll"],
+    ["Sparkle","a small cluster of soft sparkles","sparkle"],
+    ["Practice / target","a bright dartboard target with a dart in the bullseye","target"],
+  ]},
+  { dir: "helper", title: "H · Homework helper (Sunny)", sub: "homework-helper.tsx", items: [
+    ["Sunny mascot","a friendly smiling sun character with little waving arms, a helpful study buddy","sunny"],
+    ["Define a word","a few colorful alphabet ABC blocks stacked together","define"],
+    ["Check my sentence","a pencil drawing a green checkmark on a lined note card","check-sentence"],
+    ["Give me practice","a bright dartboard target with a dart in the bullseye","practice"],
+    ["How do I say...?","a rounded speech bubble with a question mark inside","how-to-say"],
+  ]},
+  { dir: "status", title: "I · Status / feedback (optional)", sub: "transient toasts — keep very simple",
+    reuse: "Sparkle reuses rewards/sparkle.png — not duplicated here.", items: [
+    ["Celebration","a colorful party popper with a confetti burst","celebration"],
+    ["Success","a friendly green checkmark badge","success"],
+    ["Error","a soft rounded red X mark, gentle and not harsh","error"],
+    ["Thumbs up","a cheerful thumbs-up hand","thumbs-up"],
+    ["Clap","two clapping hands with little motion sparkles","clap"],
+    ["Strong","a flexed strong arm, cute and encouraging","strong"],
+  ]},
+];
+
+let mode = "transparent";
+const diskPath = (dir, file) => `${DISK}/${dir}/${file}.png`;
+const fullPrompt = (subject) => STYLE.replace("{SUBJECT}", subject) + "\n\n" + BG[mode];
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 1400);
+}
+async function copyText(text, btn, label) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  if (btn) { const orig = btn.textContent; btn.textContent = "Copied ✓"; btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove("copied"); }, 1200); }
+  toast(label || "Copied to clipboard");
+}
+
+document.getElementById("styleView").textContent = STYLE;
+
+function render() {
+  const root = document.getElementById("sections");
+  root.innerHTML = "";
+  for (const sec of SECTIONS) {
+    const s = document.createElement("section");
+    s.className = "group";
+    const head = document.createElement("div");
+    head.className = "group-head";
+    head.innerHTML = `<h2>${sec.title}</h2><span class="sub">${sec.sub} · ${sec.items.length} icons → <code class="inline">${sec.dir}/</code></span>`;
+    const copySec = document.createElement("button");
+    copySec.className = "btn"; copySec.textContent = "Copy whole section";
+    copySec.onclick = () => {
+      const text = sec.items.map(([n, subj, f]) => `### ${n}  →  ${diskPath(sec.dir, f)}\n${fullPrompt(subj)}`).join("\n\n----------\n\n");
+      copyText(`# ${sec.title}\n\n${text}`, copySec, "Section copied");
+    };
+    head.appendChild(copySec);
+    s.appendChild(head);
+    if (sec.reuse) { const r = document.createElement("p"); r.className = "reuse"; r.textContent = "↻ " + sec.reuse; s.appendChild(r); }
+
+    const grid = document.createElement("div");
+    grid.className = "items";
+    for (const [name, subj, file] of sec.items) {
+      const path = diskPath(sec.dir, file);
+      const it = document.createElement("div");
+      it.className = "item";
+      const left = document.createElement("div");
+      left.innerHTML = `<div class="name">${name}</div><div class="subj">${subj}</div>`;
+      const pathEl = document.createElement("code");
+      pathEl.className = "path"; pathEl.textContent = path; pathEl.title = "Click to copy this path";
+      pathEl.onclick = () => copyText(path, null, "Path copied: " + path);
+      left.appendChild(pathEl);
+      const b = document.createElement("button");
+      b.className = "btn"; b.textContent = "Copy"; b.title = "Copy full prompt";
+      b.onclick = () => copyText(fullPrompt(subj), b, "Prompt copied");
+      it.appendChild(left); it.appendChild(b);
+      grid.appendChild(it);
+    }
+    s.appendChild(grid);
+    root.appendChild(s);
+  }
+}
+
+document.getElementById("bgseg").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-bg]"); if (!b) return;
+  mode = b.dataset.bg;
+  [...e.currentTarget.querySelectorAll("button")].forEach(x => x.classList.toggle("on", x === b));
+  toast("Background mode: " + mode);
+});
+document.getElementById("copyStyle").onclick = (e) => copyText(STYLE, e.target, "Style block copied");
+document.getElementById("copyAll").onclick = (e) => {
+  const parts = [];
+  for (const sec of SECTIONS) {
+    parts.push(`# ${sec.title}`);
+    for (const [n, subj, f] of sec.items) parts.push(`### ${n}  →  ${diskPath(sec.dir, f)}\n${fullPrompt(subj)}`);
+  }
+  copyText(parts.join("\n\n----------\n\n"), e.target, "All prompts copied");
+};
+
+render();
+</script>
+</body>
+</html>

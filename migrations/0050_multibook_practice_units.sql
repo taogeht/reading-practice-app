@@ -3,3 +3,4 @@ ALTER TABLE "class_practice_units" ADD COLUMN IF NOT EXISTS "book_slug" varchar(
 DROP INDEX IF EXISTS "unique_class_practice_unit";
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "unique_class_practice_book_unit" ON "class_practice_units" ("class_id","book_slug","unit");
+so if i've already run it i need to run ita
