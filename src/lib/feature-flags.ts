@@ -27,3 +27,15 @@ export const STUDENT_SHOP_ENABLED = false;
  * visit /student/dashboard-v2 directly while it's off.
  */
 export const STUDENT_DASHBOARD_V2 = true;
+
+/**
+ * When true, every /teacher/* route is wrapped in the new persistent navigation
+ * shell (left sidebar on desktop, hamburger drawer on mobile) — the backbone of
+ * the teacher-side redesign. Nav items are gated by the teacher's capability
+ * flags, so a default teacher sees a short list. The shell is additive: existing
+ * pages render unchanged inside it, so it's safe to flip on/off.
+ *
+ * Flip to true to preview the redesign; the decluttered Home + simplified class
+ * page land incrementally behind this same flag.
+ */
+export const TEACHER_NAV_V2 = true;

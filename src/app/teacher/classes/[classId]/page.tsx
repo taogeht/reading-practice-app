@@ -23,6 +23,8 @@ import { SyllabusImportDialog } from "@/components/syllabus/syllabus-import-dial
 import { ClassTeachersCard } from "@/components/teachers/class-teachers-card";
 import { ScheduleSection } from "@/components/schedule/schedule-section";
 import { SortableCardList } from "@/components/ui/sortable-card-list";
+import { TEACHER_NAV_V2 } from "@/lib/feature-flags";
+import { ClassBodyV2, ClassMoreMenu } from "@/components/teacher/class-detail-v2";
 import { GRADE_LEVELS } from "@/lib/grade-levels";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -425,6 +427,7 @@ export default function ClassDetailPage() {
               )}
             </div>
           </div>
+          {!TEACHER_NAV_V2 && (
           <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={() => setShowStudentsSheet(true)} variant="outline" size="sm">
               <Users className="w-4 h-4 mr-1.5" />
@@ -483,9 +486,23 @@ export default function ClassDetailPage() {
               Login Cards
             </Button>
           </div>
+          )}
+          {TEACHER_NAV_V2 && (
+            <ClassMoreMenu
+              classId={classId}
+              studentCount={classData.studentCount}
+              isPrimary={isPrimary}
+              onStudents={() => setShowStudentsSheet(true)}
+              onQR={handleQRCodeClick}
+              onEdit={() => setIsEditing(true)}
+              onDelete={handleDeleteClass}
+              onSyllabus={() => setShowSyllabusImport(true)}
+            />
+          )}
         </div>
       </div>
 
+      {!TEACHER_NAV_V2 && (
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Column - Secondary Items */}
@@ -592,6 +609,17 @@ export default function ClassDetailPage() {
           </div>
         </div>
       </div>
+      )}
+      {TEACHER_NAV_V2 && (
+        <div className="mx-auto max-w-5xl px-4 py-6">
+          <ClassBodyV2
+            classId={classId}
+            className={classData.name}
+            hasSpelling={hasSpelling}
+            isPrimary={isPrimary}
+          />
+        </div>
+      )}
 
       {/* Edit Class Dialog */}
       <Dialog open={isEditing} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
