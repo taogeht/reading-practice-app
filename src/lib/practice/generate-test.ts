@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import {
   generateForCurriculum,
   loadUnionCurriculum,
@@ -101,12 +103,110 @@ function buildListenCircleItems(curriculum: UnitCurriculum, count: number): Test
   });
 }
 
+// Returns the vocab image path if its file actually exists under public/ (the
+// curriculum JSON references some images that aren't on disk — e.g. FAF2's whole
+// set), else null. Keeps book-picture items from pointing at missing files.
+function resolveBookImage(image?: string): string | null {
+  if (!image) return null;
+  const abs = path.join(process.cwd(), 'public', image.replace(/^\//, ''));
+  return existsSync(abs) ? image : null;
+}
+
+// Unit vocabulary that has a real on-disk picture-dictionary image, deduped.
+function imagedVocab(curriculum: UnitCurriculum): Array<{ word: string; image: string }> {
+  const out: Array<{ word: string; image: string }> = [];
+  const seen = new Set<string>();
+  for (const v of curriculum.vocabulary) {
+    const img = resolveBookImage(v.image);
+    if (!img) continue;
+    const key = v.word.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ word: v.word, image: img });
+  }
+  return out;
+}
+
+// "Look & write": a book picture, student writes the word.
+function buildPictureWriteItems(curriculum: UnitCurriculum, count: number): TestItem[] {
+  const pool = imagedVocab(curriculum);
+  return sampleN(pool, Math.min(count, pool.length)).map(({ word, image }) => ({
+    id: randomUUID(),
+    prompt: word,
+    correctAnswer: word,
+    distractors: [],
+    imagePrompt: null,
+    imageUrl: image,
+  }));
+}
+
+// "Match the picture": a book picture + word choices, student circles the word.
+function buildPictureMatchItems(curriculum: UnitCurriculum, count: number): TestItem[] {
+  const pool = imagedVocab(curriculum);
+  if (pool.length < 2) return [];
+  // Distractor WORDS can be any vocab word (text choices need no image).
+  const allWords = Array.from(
+    new Set(
+      curriculum.vocabulary
+        .map((v) => v.word)
+        .filter((w): w is string => typeof w === 'string' && w.trim().length > 0),
+    ),
+  );
+  return sampleN(pool, Math.min(count, pool.length)).map(({ word, image }) => ({
+    id: randomUUID(),
+    prompt: word,
+    correctAnswer: word,
+    distractors: sampleN(
+      allWords.filter((w) => w.toLowerCase() !== word.toLowerCase()),
+      3,
+    ),
+    imagePrompt: null,
+    imageUrl: image,
+  }));
+}
+
+// "Listen & circle the picture": audio speaks a word; choices are book pictures.
+// Distractors must also have images, so it needs ≥2 imaged words.
+function buildListenPictureItems(curriculum: UnitCurriculum, count: number): TestItem[] {
+  const pool = imagedVocab(curriculum);
+  if (pool.length < 2) return [];
+  return sampleN(pool, Math.min(count, pool.length)).map(({ word, image }) => {
+    const distractorPics = sampleN(
+      pool.filter((p) => p.word.toLowerCase() !== word.toLowerCase()),
+      3,
+    );
+    const choices = shuffle(
+      [{ label: word, image }, ...distractorPics.map((p) => ({ label: p.word, image: p.image }))],
+    );
+    return {
+      id: randomUUID(),
+      prompt: word,
+      correctAnswer: word,
+      distractors: [],
+      pictureChoices: choices,
+      imagePrompt: null,
+      imageUrl: null,
+      audioText: word,
+      audioUrl: null,
+    };
+  });
+}
+
 async function buildItemsForEntry(
   entry: TestComposition[number],
   curriculum: UnitCurriculum,
 ): Promise<TestItem[]> {
-  if (entry.type === 'listen_circle_word') {
-    return buildListenCircleItems(curriculum, entry.count);
+  switch (entry.type) {
+    case 'listen_circle_word':
+      return buildListenCircleItems(curriculum, entry.count);
+    case 'picture_write':
+      return buildPictureWriteItems(curriculum, entry.count);
+    case 'picture_match':
+      return buildPictureMatchItems(curriculum, entry.count);
+    case 'listen_picture':
+      return buildListenPictureItems(curriculum, entry.count);
+    default:
+      break;
   }
   const questionType = LLM_TYPE[entry.type];
   if (!questionType) return [];

@@ -22,6 +22,7 @@ import {
   DEFAULT_COMPOSITION,
   EXERCISE_META,
   LISTENING_EXERCISE_TYPES,
+  PICTURE_EXERCISE_TYPES,
   READING_EXERCISE_TYPES,
   type TestExerciseType,
 } from '@/lib/practice/test-types';
@@ -237,6 +238,7 @@ export default function TestsPage() {
                 [
                   ['Reading', READING_EXERCISE_TYPES],
                   ['Listening (teacher plays audio)', LISTENING_EXERCISE_TYPES],
+                  ['Pictures (book art — Family & Friends 1)', PICTURE_EXERCISE_TYPES],
                 ] as const
               ).map(([groupLabel, types]) => (
                 <div key={groupLabel}>

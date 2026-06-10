@@ -26,6 +26,14 @@ RUN npm prune --omit=dev
 FROM base AS runner
 WORKDIR /app
 
+# Headless Chromium for server-side PDF rendering (puppeteer-core). puppeteer-core
+# ships no browser of its own, so we install Alpine's chromium + the font/nss deps
+# it needs and point puppeteer at the system binary. PUPPETEER_EXECUTABLE_PATH can
+# be overridden in Coolify if a future Alpine moves the binary (e.g. /usr/bin/chromium).
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 ENV NODE_ENV=production
 # Disable Next.js telemetry during runtime
 ENV NEXT_TELEMETRY_DISABLED=1

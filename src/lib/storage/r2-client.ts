@@ -199,6 +199,25 @@ class R2Client {
   }
 
   /**
+   * Fetch an object fully into a Buffer (server-side). Used for inlining images
+   * as base64 data URIs into the PDF HTML — the headless renderer has no session,
+   * so it can't hit the auth-gated /api/images proxy.
+   */
+  async getObjectBuffer(
+    key: string,
+  ): Promise<{ buffer: Buffer; contentType: string | undefined } | null> {
+    try {
+      const command = new GetObjectCommand({ Bucket: this.bucketName, Key: key });
+      const response = await this.client.send(command);
+      if (!response.Body) return null;
+      const bytes = await response.Body.transformToByteArray();
+      return { buffer: Buffer.from(bytes), contentType: response.ContentType };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Get a permanent proxy URL for an audio file (served via /api/audio/[...key])
    */
   getProxyUrl(key: string): string {

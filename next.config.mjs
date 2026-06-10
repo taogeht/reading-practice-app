@@ -8,6 +8,9 @@ const nextConfig = {
       bodySizeLimit: '200mb',
     },
   },
+  // puppeteer-core resolves a Chromium executable at runtime; keep it out of the
+  // server bundle so Next doesn't try to trace/bundle it (it's a runtime dep).
+  serverExternalPackages: ['puppeteer-core'],
   outputFileTracingExcludes: {
     '*': [
       'node_modules/@swc/core-linux-x64-gnu',

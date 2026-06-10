@@ -20,21 +20,30 @@ export type TestExerciseType =
   | 'true_false' // statement; student circles True or False
   | 'unscramble' // shuffled word tokens; student writes the sentence in order
   | 'listen_circle_word' // hear a word; circle it among printed choices
-  | 'listen_true_false'; // hear a statement about the picture; circle True or False
+  | 'listen_true_false' // hear a statement about the picture; circle True or False
+  // Book picture-dictionary art (real clipart, not Gemini scenes):
+  | 'picture_write' // see a picture; write the word
+  | 'picture_match' // see a picture; circle the matching word
+  | 'listen_picture'; // hear a word; circle the matching picture among choices
 
 export type TestItem = {
   // Stable id so per-item image/audio regeneration can target one item in the blob.
   id: string;
   // The sentence/statement. For circle_word/write_word it contains a "____" blank.
-  // For listen_* this is the teacher's reference text; it is NOT printed.
+  // For listen_*/picture_* this is the teacher's reference text; it is NOT printed.
   prompt: string;
   correctAnswer: string;
-  // Wrong choices (circle_word + listen_circle_word). Empty for the other kinds.
+  // Wrong choices (circle_word, listen_circle_word, picture_match). Empty otherwise.
   distractors: string[];
   // Canonical-order word tokens (unscramble only). The page shows them shuffled.
   tokens?: string[];
+  // For Gemini items this is a scene prompt; for book-picture items it's null and
+  // imageUrl is a static /images/... path (no generation needed).
   imagePrompt: string | null;
   imageUrl: string | null;
+  // Picture choices to circle (listen_picture only) — book-art paths, one of which
+  // matches correctAnswer (by label).
+  pictureChoices?: Array<{ label: string; image: string }>;
   // What the teacher's audio speaks (listen_* only). null for printed-text kinds.
   audioText?: string | null;
   // Generated TTS clip (R2 proxy url), populated in the background like imageUrl.
@@ -72,10 +81,17 @@ export const EXERCISE_META: Record<
     label: 'Listen: True/False',
     instruction: 'Listen and circle True or False.',
   },
+  picture_write: { label: 'Look & write', instruction: 'Look and write the word.' },
+  picture_match: { label: 'Match the picture', instruction: 'Look and circle the correct word.' },
+  listen_picture: {
+    label: 'Listen & circle the picture',
+    instruction: 'Listen and circle the correct picture.',
+  },
 };
 
 // Reading kinds print all their text; listening kinds carry teacher-played audio
-// and hide the spoken text on the printout. The UI groups the picker by these.
+// and hide the spoken text; picture kinds use the book picture-dictionary art.
+// The UI groups the picker by these.
 export const READING_EXERCISE_TYPES: TestExerciseType[] = [
   'circle_word',
   'write_word',
@@ -86,15 +102,26 @@ export const READING_EXERCISE_TYPES: TestExerciseType[] = [
 export const LISTENING_EXERCISE_TYPES: TestExerciseType[] = [
   'listen_circle_word',
   'listen_true_false',
+  'listen_picture',
 ];
+
+// Book picture-dictionary art (FAF1 has the most coverage; words without an
+// on-disk image are skipped by the generator).
+export const PICTURE_EXERCISE_TYPES: TestExerciseType[] = ['picture_write', 'picture_match'];
 
 export const ALL_EXERCISE_TYPES: TestExerciseType[] = [
   ...READING_EXERCISE_TYPES,
   ...LISTENING_EXERCISE_TYPES,
+  ...PICTURE_EXERCISE_TYPES,
 ];
 
 export function isListeningType(t: TestExerciseType): boolean {
   return (LISTENING_EXERCISE_TYPES as string[]).includes(t);
+}
+
+// Types backed by the book picture-dictionary (static /images art, no Gemini).
+export function usesBookPicture(t: TestExerciseType): boolean {
+  return t === 'picture_write' || t === 'picture_match' || t === 'listen_picture';
 }
 
 // Sensible default worksheet: ~13 items, about a page and a half before the key.

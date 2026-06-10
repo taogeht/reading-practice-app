@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   Check,
+  FileDown,
   Loader2,
   Pencil,
   Play,
@@ -74,6 +75,7 @@ export default function TestPrintPage() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [busyItem, setBusyItem] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -226,6 +228,30 @@ export default function TestPrintPage() {
     }
   };
 
+  const exportPdf = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/tests/${id}/pdf`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(test?.title || 'test').replace(/[^a-z0-9]+/gi, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const regenerate = async (item: TestItem) => {
     setBusyItem(item.id);
     try {
@@ -326,9 +352,17 @@ export default function TestPrintPage() {
                   Play all
                 </Button>
               ))}
-            <Button onClick={() => window.print()}>
+            <Button variant="outline" onClick={() => window.print()} title="Print via the browser dialog">
               <Printer className="w-4 h-4 mr-2" />
               Print
+            </Button>
+            <Button onClick={exportPdf} disabled={exporting} title="Download a PDF">
+              {exporting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4 mr-2" />
+              )}
+              Export PDF
             </Button>
           </div>
         </div>
@@ -552,6 +586,37 @@ function ItemRow({
           <div className="flex items-center gap-4">
             <Volume2 className="w-4 h-4 text-gray-700 shrink-0" />
             <span className="text-gray-900 whitespace-nowrap">True&nbsp;&nbsp;/&nbsp;&nbsp;False</span>
+          </div>
+        )}
+
+        {/* Book picture-dictionary types. The single picture renders in the thumb
+            block above; here we render the answer area. */}
+        {type === 'picture_write' && <div className="border-b border-gray-800 h-5 mt-1" />}
+
+        {type === 'picture_match' && (
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-gray-900">
+            {choices.map((w, i) => (
+              <span key={i} className="px-1">
+                {w}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {type === 'listen_picture' && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <Volume2 className="w-4 h-4 text-gray-700 shrink-0" />
+            <div className="flex flex-wrap gap-3">
+              {(item.pictureChoices ?? []).map((c, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={c.image}
+                  alt=""
+                  className="h-20 w-20 rounded border border-gray-300 object-contain bg-white p-1"
+                />
+              ))}
+            </div>
           </div>
         )}
 
