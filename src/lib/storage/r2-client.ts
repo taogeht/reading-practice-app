@@ -6,7 +6,8 @@ import {
   DeleteObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
-  DeleteObjectsCommand
+  DeleteObjectsCommand,
+  CopyObjectCommand
 } from "@aws-sdk/client-s3";
 
 // Reject path-traversal vectors and embedded slashes for any caller-supplied
@@ -121,6 +122,22 @@ class R2Client {
     }
 
     return this.getPublicUrl(key);
+  }
+
+  /**
+   * Server-side copy of an existing R2 object to a new key (no data flows
+   * through our server — R2 copies internally). Used by batch media upload to
+   * fan one uploaded file out to a per-student key for each recipient, so every
+   * student_media row owns an independent object (matching single-upload
+   * semantics). Keys produced by generateMediaKey are already path-sanitized.
+   */
+  async copyFile(srcKey: string, destKey: string): Promise<void> {
+    const command = new CopyObjectCommand({
+      Bucket: this.bucketName,
+      CopySource: `${this.bucketName}/${srcKey}`,
+      Key: destKey,
+    });
+    await this.client.send(command);
   }
 
   /**

@@ -9,6 +9,7 @@ import { SpellingWordsSection } from "@/components/spelling/spelling-words-secti
 import { AttendanceSection } from "@/components/attendance/attendance-section";
 import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { GradebookSection } from "@/components/teacher/gradebook-section";
+import { ClassMediaUploadSection } from "@/components/teacher/class-media-upload-section";
 import { ClassEngagementSection } from "@/components/gamification/class-engagement-section";
 import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-units-section";
 import { ClassPracticeSection } from "@/components/practice/class-practice-section";
@@ -184,6 +185,7 @@ export function ClassBodyV2({
         </summary>
         <div className="space-y-5 border-t p-4">
           {isPrimary && <RecapConfirmationSummary classId={classId} />}
+          <ClassMediaUploadSection classId={classId} defaultExpanded={false} />
           <ClassEngagementSection classId={classId} defaultExpanded={false} />
           <ClassPracticeUnitsSection classId={classId} defaultExpanded={false} />
           <ClassPracticeSection classId={classId} defaultExpanded={false} />
