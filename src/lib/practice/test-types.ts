@@ -119,6 +119,25 @@ export function isListeningType(t: TestExerciseType): boolean {
   return (LISTENING_EXERCISE_TYPES as string[]).includes(t);
 }
 
+// Exercise kinds short enough to print two-per-row (saves the wasted right half
+// of the page). The two genuinely wide kinds are excluded: `unscramble` needs a
+// full-width answer line, and `listen_picture` lays out a wide row of choice
+// pictures. Single source of truth for BOTH render paths — the on-screen
+// worksheet (test page) and the PDF HTML (test-html.ts).
+export const TWO_COLUMN_EXERCISE_TYPES: TestExerciseType[] = [
+  'circle_word',
+  'write_word',
+  'true_false',
+  'listen_circle_word',
+  'listen_true_false',
+  'picture_write',
+  'picture_match',
+];
+
+export function isTwoColumnType(t: TestExerciseType): boolean {
+  return (TWO_COLUMN_EXERCISE_TYPES as string[]).includes(t);
+}
+
 // Types backed by the book picture-dictionary (static /images art, no Gemini).
 export function usesBookPicture(t: TestExerciseType): boolean {
   return t === 'picture_write' || t === 'picture_match' || t === 'listen_picture';

@@ -20,6 +20,7 @@ import {
 import { getBook, type BookSlug } from '@/lib/practice/books';
 import {
   isListeningType,
+  isTwoColumnType,
   type TestDocument,
   type TestItem,
   type TestSection,
@@ -422,31 +423,37 @@ export default function TestPrintPage() {
             </div>
           </div>
 
-          {/* Sections */}
+          {/* Sections. Short item kinds pack into two columns (matches the PDF);
+              wide kinds (unscramble, listen_picture) stay full width. */}
           <div className="space-y-6">
-            {numbered.map(({ section, items }, si) => (
-              <section key={si} className="space-y-3">
-                <h2 className="font-bold text-gray-900">
-                  Part {PART_LETTERS[si]} — {section.instruction}
-                </h2>
-                <div className="space-y-4">
-                  {items.map(({ item, number }) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      number={number}
-                      type={section.type}
-                      busy={busyItem === item.id}
-                      playing={playingId === item.id}
-                      onRegenerate={() => regenerate(item)}
-                      onRemove={() => removeItem(item)}
-                      onPlay={() => playOne(item)}
-                      onRegenerateAudio={() => regenerateAudio(item)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+            {numbered.map(({ section, items }, si) => {
+              const cols2 = isTwoColumnType(section.type);
+              return (
+                <section key={si} className="space-y-3">
+                  <h2 className="font-bold text-gray-900">
+                    Part {PART_LETTERS[si]} — {section.instruction}
+                  </h2>
+                  <div className={cols2 ? 'sm:columns-2 gap-x-8' : 'space-y-4'}>
+                    {items.map(({ item, number }) => (
+                      <div key={item.id} className={cols2 ? 'break-inside-avoid mb-4' : undefined}>
+                        <ItemRow
+                          item={item}
+                          number={number}
+                          type={section.type}
+                          cols2={cols2}
+                          busy={busyItem === item.id}
+                          playing={playingId === item.id}
+                          onRegenerate={() => regenerate(item)}
+                          onRemove={() => removeItem(item)}
+                          onPlay={() => playOne(item)}
+                          onRegenerateAudio={() => regenerateAudio(item)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
 
           {/* Answer key (new page) */}
@@ -492,6 +499,7 @@ function ItemRow({
   item,
   number,
   type,
+  cols2,
   busy,
   playing,
   onRegenerate,
@@ -502,6 +510,7 @@ function ItemRow({
   item: TestItem;
   number: number;
   type: TestSection['type'];
+  cols2: boolean;
   busy: boolean;
   playing: boolean;
   onRegenerate: () => void;
@@ -511,6 +520,8 @@ function ItemRow({
 }) {
   const listening = isListeningType(type);
   const choices = seededOrder(item.id, [item.correctAnswer, ...item.distractors]);
+  // Smaller picture in two-column rows so the sentence/choices keep room.
+  const imgSize = cols2 ? 'h-20 w-20' : 'h-24 w-24';
 
   return (
     <div className="test-item flex items-start gap-3 group">
@@ -522,10 +533,10 @@ function ItemRow({
         <img
           src={item.imageUrl}
           alt=""
-          className="h-24 w-24 rounded border border-gray-200 object-contain shrink-0 bg-white"
+          className={`${imgSize} rounded border border-gray-200 object-contain shrink-0 bg-white`}
         />
       ) : item.imagePrompt ? (
-        <div className="no-print h-24 w-24 rounded border border-dashed border-gray-300 bg-gray-50 grid place-items-center text-[10px] text-gray-400 shrink-0">
+        <div className={`no-print ${imgSize} rounded border border-dashed border-gray-300 bg-gray-50 grid place-items-center text-[10px] text-gray-400 shrink-0`}>
           drawing…
         </div>
       ) : null}

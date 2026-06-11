@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getBook } from './books';
-import { type TestDocument, type TestItem, type TestSection } from './test-types';
+import { isTwoColumnType, type TestDocument, type TestItem, type TestSection } from './test-types';
 import { r2Client } from '@/lib/storage/r2-client';
 
 // Standalone HTML for the printable test, rendered to PDF by headless Chromium.
@@ -138,7 +138,12 @@ const STYLE = `
   .namebox div { margin-bottom: 10px; }
   .part { margin-bottom: 18px; }
   .part-title { font-weight: 700; margin: 0 0 8px; }
-  .item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; page-break-inside: avoid; }
+  /* Two-column packing for short item kinds. Items never split across a column
+     or page boundary. Wide kinds (unscramble, listen_picture) skip .cols2. */
+  .items.cols2 { column-count: 2; column-gap: 30px; }
+  .items.cols2 .item { margin-bottom: 12px; }
+  .items.cols2 .thumb { width: 74px; height: 74px; }
+  .item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; page-break-inside: avoid; break-inside: avoid; }
   .num { font-weight: 700; min-width: 20px; }
   .thumb { width: 90px; height: 90px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; flex: 0 0 auto; background: #fff; }
   .body { flex: 1; }
@@ -203,7 +208,8 @@ export async function renderTestHtml(test: TestForHtml): Promise<string> {
           return `<div class="item"><span class="num">${number}.</span>${thumb}<div class="body">${itemBody(item, section.type, imgFor)}</div></div>`;
         })
         .join('');
-      return `<div class="part"><div class="part-title">Part ${PART_LETTERS[si] ?? si + 1} — ${esc(section.instruction)}</div>${rows}</div>`;
+      const colClass = isTwoColumnType(section.type) ? ' cols2' : '';
+      return `<div class="part"><div class="part-title">Part ${PART_LETTERS[si] ?? si + 1} — ${esc(section.instruction)}</div><div class="items${colClass}">${rows}</div></div>`;
     })
     .join('');
 
