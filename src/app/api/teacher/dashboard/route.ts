@@ -151,14 +151,16 @@ export async function GET(request: NextRequest) {
       .from(assignments)
       .where(user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds));
 
-    // Get pending reviews count
+    // Get pending reviews count. New recordings land as 'pending' or
+    // 'submitted' depending on the upload path; both still need teacher
+    // attention. 'reviewed'/'flagged' mean the teacher already acted.
     const pendingReviewsResult = await db
       .select({ count: count() })
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
       .where(and(
         user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
-        eq(recordings.status, 'pending')
+        inArray(recordings.status, ['pending', 'submitted'])
       ));
 
     // Get stories without TTS audio count
@@ -167,7 +169,9 @@ export async function GET(request: NextRequest) {
       .from(stories)
       .where(sql`jsonb_array_length(${stories.ttsAudio}) = 0 AND ${stories.active} = true`);
 
-    // Get recent submissions (last 10)
+    // Get recent submissions awaiting review (last 10). Feeds the dashboard's
+    // "Needs review" card, so exclude anything the teacher already handled —
+    // filter server-side so handled rows don't eat the 10-row limit.
     const recentSubmissions = await db
       .select({
         id: recordings.id,
@@ -184,7 +188,10 @@ export async function GET(request: NextRequest) {
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
       .innerJoin(students, eq(recordings.studentId, students.id))
       .innerJoin(users, eq(students.id, users.id))
-      .where(user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds))
+      .where(and(
+        user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
+        inArray(recordings.status, ['pending', 'submitted'])
+      ))
       .orderBy(desc(recordings.submittedAt))
       .limit(10);
 
