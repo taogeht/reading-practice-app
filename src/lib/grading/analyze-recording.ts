@@ -15,6 +15,7 @@ import {
   classifyWcpm,
   computeFluencyScore,
   computeMetrics,
+  DEFAULT_READING_LEVEL,
   FLUENCY_VERSION,
   scoreProsody,
   type ClaudeAnalysis,
@@ -196,10 +197,17 @@ export async function analyzeAudioBuffer(opts: {
       durationSeconds: whisper.duration,
     });
 
+    // Prosody + composite score compute regardless of whether we know the
+    // reading level — accuracy/phrasing/smoothness don't need it, and pace
+    // (15%) falls back to a default level so the score never silently nulls.
+    // The persisted WCPM bands, though, stay null when the level is unknown:
+    // we won't show a teacher a band derived from a guessed level.
+    const effectiveLevel = opts.passageLevel ?? DEFAULT_READING_LEVEL;
+    const paceBand = classifyWcpm(metrics.wcpm, effectiveLevel, true);
+    prosody = scoreProsody(metrics, paceBand);
     if (opts.passageLevel != null) {
       eslBand = classifyWcpm(metrics.wcpm, opts.passageLevel, true);
       nativeBand = classifyWcpm(metrics.wcpm, opts.passageLevel, false);
-      prosody = scoreProsody(metrics, eslBand);
     }
 
     // Claude call is best-effort. Failures stay null on the row.
@@ -233,6 +241,7 @@ export async function analyzeAudioBuffer(opts: {
     analysisJson: {
       ...grade.breakdown,
       durationSec: whisper.duration,
+      speechSpanSec: metrics?.speechSpanSeconds ?? null,
       model: 'whisper-1',
       processedAt: new Date().toISOString(),
       hallucinationSuspected: grade.hallucinationSuspected,

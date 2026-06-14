@@ -8,7 +8,10 @@
 // Bump FLUENCY_VERSION whenever the formula changes. Stored on each row so a
 // future re-score sweep can target only rows below the current version.
 
-export const FLUENCY_VERSION = 1;
+// v2 (2026-06): WCPM now divides by speech span instead of clip length, and the
+// composite score no longer nulls out when a story's readingLevel can't be
+// parsed (prosody + score compute against a default level; bands stay null).
+export const FLUENCY_VERSION = 2;
 
 const SELF_CORRECTION_POINTS_PER = 2;
 const SELF_CORRECTION_MAX_BONUS = 10;

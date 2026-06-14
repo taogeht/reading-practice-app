@@ -7,6 +7,7 @@ export type { FluencyMetrics, ComputeMetricsArgs } from './compute-metrics';
 
 export {
     classifyWcpm,
+    DEFAULT_READING_LEVEL,
     ESL_WCPM_OFFSET,
     NATIVE_WCPM_50TH,
     NATIVE_WCPM_CONCERN,

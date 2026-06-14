@@ -11,6 +11,14 @@
 // 10th-percentile H&T columns.
 export const ESL_WCPM_OFFSET = 25;
 
+// Used only when a recording's reading level can't be determined (a story whose
+// free-text readingLevel doesn't contain a 1–5). We still want a composite
+// fluency score in that case — accuracy, phrasing, and smoothness are all
+// level-independent, and pace is the smallest term (15%). Pace is computed
+// against this mid-level assumption so the score never silently nulls out; the
+// persisted WCPM bands stay null because we genuinely don't know the level.
+export const DEFAULT_READING_LEVEL = 3;
+
 // 50th-percentile WCPM, spring administration, per H&T 2017. Key is the app's
 // readingLevel column (1..5). Level 1 (Emerging / Starter) uses the Grade 1
 // spring number; we don't bench kindergarten in this product.

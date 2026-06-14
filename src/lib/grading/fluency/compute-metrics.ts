@@ -19,6 +19,9 @@ const PHRASE_END_PUNCT = new Set(['.', ',', '?', '!', ':', ';']);
 
 export interface FluencyMetrics {
     durationSeconds: number;
+    // The span of actual speech (first word's start → last word's end). This,
+    // not the clip length, is the WCPM denominator — see speechSpanSeconds().
+    speechSpanSeconds: number;
     totalWords: number;
     correctWords: number;
     wcpm: number;
@@ -41,6 +44,25 @@ export interface ComputeMetricsArgs {
     durationSeconds: number;
 }
 
+// WCPM is words-correct-per-minute over actual READING time, not clip length.
+// Leading silence (fumbling with the record button) and trailing silence (not
+// stopping promptly after the last word) are dead air — dividing by them
+// understated WCPM, often badly. The speech span = first word's start → last
+// word's end strips exactly that dead air while keeping internal pauses inside
+// the span (a hesitant reader's pauses correctly drag WCPM down). Falls back to
+// the clip duration when there are no usable timings — e.g. backfilling rows
+// recorded before word timestamps were stored.
+function computeSpeechSpan(
+    words: Array<{ start: number; end: number }>,
+    clipDurationSeconds: number,
+): number {
+    if (words.length >= 2) {
+        const span = words[words.length - 1].end - words[0].start;
+        if (Number.isFinite(span) && span > 0) return span;
+    }
+    return clipDurationSeconds;
+}
+
 export function computeMetrics({
     whisperWords,
     passageText,
@@ -48,7 +70,8 @@ export function computeMetrics({
     durationSeconds,
 }: ComputeMetricsArgs): FluencyMetrics {
     const totalWords = tokenize(passageText).length;
-    const wcpm = durationSeconds > 0 ? (correctWords * 60) / durationSeconds : 0;
+    const speechSpan = computeSpeechSpan(whisperWords, durationSeconds);
+    const wcpm = speechSpan > 0 ? (correctWords * 60) / speechSpan : 0;
     const accuracyPct = totalWords > 0 ? (correctWords / totalWords) * 100 : 0;
 
     let longPauseCount = 0;
@@ -84,6 +107,7 @@ export function computeMetrics({
 
     return {
         durationSeconds,
+        speechSpanSeconds: Math.round(speechSpan * 100) / 100,
         totalWords,
         correctWords,
         wcpm: Math.round(wcpm * 100) / 100,

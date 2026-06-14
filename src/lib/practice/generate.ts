@@ -289,7 +289,7 @@ function validateMcqShape(raw: unknown): GeneratedQuestion[] {
   return questions.filter((q): q is GeneratedQuestion => {
     if (typeof q !== 'object' || q === null) return false;
     const obj = q as Record<string, unknown>;
-    return (
+    const shapeOk =
       typeof obj.prompt === 'string' &&
       obj.prompt.includes('____') &&
       typeof obj.correctAnswer === 'string' &&
@@ -298,8 +298,18 @@ function validateMcqShape(raw: unknown): GeneratedQuestion[] {
       obj.distractors.length === 3 &&
       obj.distractors.every((d) => typeof d === 'string' && d.length > 0) &&
       typeof obj.imagePrompt === 'string' &&
-      obj.imagePrompt.length > 0
-    );
+      obj.imagePrompt.length > 0;
+    if (!shapeOk) return false;
+    // All four options must be distinct (case-insensitive). The model
+    // occasionally repeats the correct answer as a distractor, or duplicates a
+    // distractor — either way the student sees the right answer twice and is
+    // marked WRONG if they pick the duplicate. Drop such questions rather than
+    // ship a broken one (callers already tolerate fewer than `count`).
+    const options = [
+      (obj.correctAnswer as string).trim().toLowerCase(),
+      ...(obj.distractors as string[]).map((d) => d.trim().toLowerCase()),
+    ];
+    return new Set(options).size === options.length;
   });
 }
 

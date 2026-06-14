@@ -11,48 +11,52 @@ interface SanitizedError {
 }
 
 /**
- * Sanitizes error objects to remove sensitive information
- * while preserving useful debugging information
+ * Redacts only genuine secrets (embedded credentials, key=value secret pairs)
+ * from a string, leaving the rest of the message intact. These logs go to the
+ * server console only — never to a client — so the goal is a readable,
+ * debuggable message with credentials masked, NOT a blanket rewrite.
+ */
+function redactSecrets(input: string): string {
+  return (
+    input
+      // Credentials embedded in a URI: scheme://user:password@host → scheme://user:***@host
+      .replace(/(\b[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+):[^\s@/]+@/gi, '$1:***@')
+      // key=value / key: value secrets (password, secret, token, api key, auth header)
+      .replace(
+        /\b(password|passwd|pwd|secret|token|api[_-]?key|authorization|bearer)\b(\s*[=:]\s*)('?[^\s'"&,}]+)/gi,
+        '$1$2***',
+      )
+  );
+}
+
+/**
+ * Normalizes an error into a structured, debuggable shape. Preserves the real
+ * message, name, and stack (with secrets redacted) — earlier versions replaced
+ * any message containing a "/", "connection", "SQL", etc. with a generic
+ * string, which destroyed nearly every real error and made prod un-debuggable.
  */
 export function sanitizeError(error: unknown, context?: string): SanitizedError {
   const timestamp = new Date().toISOString();
 
   if (error instanceof Error) {
-    // Remove potentially sensitive information from error messages
-    let sanitizedMessage = error.message;
-
-    // Remove database connection details
-    if (sanitizedMessage.includes('connection')) {
-      sanitizedMessage = 'Database connection error occurred';
-    }
-
-    // Remove file path information
-    if (sanitizedMessage.includes('/') || sanitizedMessage.includes('\\')) {
-      sanitizedMessage = 'File system error occurred';
-    }
-
-    // Remove SQL details but keep general query info
-    if (sanitizedMessage.includes('SQL') || sanitizedMessage.includes('query')) {
-      sanitizedMessage = 'Database query error occurred';
-    }
-
-    // Remove environment variable references
-    if (sanitizedMessage.includes('process.env') || sanitizedMessage.includes('NODE_ENV')) {
-      sanitizedMessage = 'Environment configuration error';
-    }
-
     return {
-      message: sanitizedMessage,
+      message: redactSecrets(error.message),
       name: error.name,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      stack: error.stack ? redactSecrets(error.stack) : undefined,
       timestamp,
       context
     };
   }
 
-  // Handle non-Error objects
+  // Handle non-Error throwables (strings, objects) without losing what they say.
+  let message: string;
+  try {
+    message = typeof error === 'string' ? error : JSON.stringify(error);
+  } catch {
+    message = String(error);
+  }
   return {
-    message: 'Unknown error occurred',
+    message: redactSecrets(message ?? 'Unknown error occurred'),
     name: 'UnknownError',
     timestamp,
     context
@@ -64,16 +68,14 @@ export function sanitizeError(error: unknown, context?: string): SanitizedError 
  */
 export function logError(error: unknown, context?: string): void {
   const sanitized = sanitizeError(error, context);
+  const prefix = `[${sanitized.timestamp}] ${context ? `[${context}] ` : ''}`;
 
-  if (process.env.NODE_ENV === 'development') {
-    // In development, log more details for debugging
-    console.error(`[${sanitized.timestamp}] ${context ? `[${context}] ` : ''}${sanitized.name}: ${sanitized.message}`);
-    if (sanitized.stack) {
-      console.error(sanitized.stack);
-    }
-  } else {
-    // In production, log minimal safe information
-    console.error(`[${sanitized.timestamp}] ${context ? `[${context}] ` : ''}Error: ${sanitized.message}`);
+  // Log the real message + stack in every environment (secrets are already
+  // redacted). These are server-side logs on a long-running container — losing
+  // the stack in prod is exactly what made past incidents hard to diagnose.
+  console.error(`${prefix}${sanitized.name}: ${sanitized.message}`);
+  if (sanitized.stack) {
+    console.error(sanitized.stack);
   }
 }
 
