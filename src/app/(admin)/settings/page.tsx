@@ -8,8 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type SettingType = 'boolean' | 'number' | 'string';
+type SettingType = 'boolean' | 'number' | 'string' | 'select';
+
+interface SettingOption {
+  value: string;
+  label: string;
+}
 
 interface Setting {
   key: string;
@@ -19,6 +31,7 @@ interface Setting {
   type: SettingType;
   value: boolean | number | string;
   defaultValue: boolean | number | string;
+  options?: SettingOption[];
   isDefault: boolean;
   helpText?: string | null;
   updatedAt: string | null;
@@ -236,6 +249,22 @@ export default function SystemSettingsPage() {
                           checked={Boolean(setting.value)}
                           onCheckedChange={(checked) => handleInputChange(setting.key, checked)}
                         />
+                      ) : setting.type === 'select' ? (
+                        <Select
+                          value={String(setting.value)}
+                          onValueChange={(value) => handleInputChange(setting.key, value)}
+                        >
+                          <SelectTrigger id={inputId} className="w-[320px] max-w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(setting.options ?? []).map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       ) : (
                         <Input
                           id={inputId}

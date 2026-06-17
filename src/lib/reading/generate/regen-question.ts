@@ -8,7 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { getReadingLevel, type ReadingLevel } from '@/lib/reading/levels';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logInfo } from '@/lib/logger';
 import {
@@ -258,7 +258,7 @@ export async function generateSingleQuestion(
           return { word: p.word, vocabId: '', imageKey: '' };
         }
         const key = r2Client.generateStoryVocabImageKey(input.passageId, vocabId);
-        const imgResult = await geminiImageClient.generateImagePanel({
+        const imgResult = await imageClient.generateImagePanel({
           prompt: buildVocabImagePromptForRegen(p.word),
           referenceImage: undefined,
           label: `vocab pair "${p.word}"`,

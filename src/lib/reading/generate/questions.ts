@@ -24,7 +24,7 @@ import {
   type QuestionTypeMix,
   type EffectiveReadingLevel,
 } from '@/lib/reading/levels';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logInfo } from '@/lib/logger';
 import {
@@ -459,7 +459,7 @@ export async function generateQuestions(
         }
         const key = r2Client.generateStoryVocabImageKey(input.passageId, p.vocabId);
         const prompt = buildVocabImagePrompt(p.word);
-        const result = await geminiImageClient.generateImagePanel({
+        const result = await imageClient.generateImagePanel({
           prompt,
           // Cold generation per the v2 design — we want a single object on
           // a clean white background, NOT the page-1 character reference

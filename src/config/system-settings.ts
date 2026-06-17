@@ -1,4 +1,9 @@
-export type SystemSettingType = 'boolean' | 'number' | 'string';
+export type SystemSettingType = 'boolean' | 'number' | 'string' | 'select';
+
+export interface SystemSettingOption {
+  value: string;
+  label: string;
+}
 
 export interface SystemSettingDefinition {
   key: string;
@@ -8,6 +13,8 @@ export interface SystemSettingDefinition {
   group: string;
   defaultValue: boolean | number | string;
   helpText?: string;
+  /** Only for `type: 'select'` — the allowed values shown as a dropdown. */
+  options?: SystemSettingOption[];
 }
 
 export const SYSTEM_SETTING_DEFINITIONS: SystemSettingDefinition[] = [
@@ -69,6 +76,19 @@ export const SYSTEM_SETTING_DEFINITIONS: SystemSettingDefinition[] = [
     type: 'boolean',
     group: 'Notifications',
     defaultValue: false,
+  },
+  {
+    key: 'image.generationModel',
+    label: 'Image Generation Model',
+    description: 'Which AI model generates images across the app — spelling words, practice scenes, reading passages, and avatars.',
+    type: 'select',
+    group: 'Image Generation',
+    defaultValue: 'gemini',
+    options: [
+      { value: 'gemini', label: 'Gemini 2.5 Flash (default)' },
+      { value: 'gpt-image-1-mini', label: 'GPT Image 1 mini — low quality (cheapest)' },
+    ],
+    helpText: 'GPT Image 1 mini (low) is the cheapest option — useful for testing image quality and cost. Requires OPENAI_API_KEY. Takes effect within a few seconds; no redeploy needed.',
   },
 ];
 

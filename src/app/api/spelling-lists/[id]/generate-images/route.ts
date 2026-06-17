@@ -4,7 +4,7 @@ import { spellingLists, spellingWords } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { eq, sql } from 'drizzle-orm';
 import { canManageSpellingLists } from '@/lib/auth/teacher-capabilities';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
                 // Generate image via Gemini
                 console.log(`[generate-images] Calling Gemini for "${word.word}"...`);
-                const imageResult = await geminiImageClient.generateImage(word.word);
+                const imageResult = await imageClient.generateImage(word.word);
                 console.log(`[generate-images] Gemini result for "${word.word}":`, imageResult.success ? 'success' : imageResult.error);
 
                 if (!imageResult.success || !imageResult.imageBuffer) {

@@ -5,7 +5,7 @@ import { canGenerateReadingContent } from '@/lib/auth/reading-content';
 import { db } from '@/lib/db';
 import { readingPassages, storyPages } from '@/lib/db/schema';
 import { r2Client } from '@/lib/storage/r2-client';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { logError, logInfo } from '@/lib/logger';
 import {
   buildImagePrompt,
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
     const imagePrompt = buildImagePrompt(planPage, planFromMeta);
-    const imageResult = await geminiImageClient.generateImagePanel({
+    const imageResult = await imageClient.generateImagePanel({
       prompt: imagePrompt,
       referenceImage,
       label: `regen page ${pageNumber} of ${passageId}`,

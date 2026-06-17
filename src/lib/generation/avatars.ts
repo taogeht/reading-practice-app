@@ -12,7 +12,7 @@ import { eq, sql } from 'drizzle-orm';
 import sharp from 'sharp';
 import { db } from '@/lib/db';
 import { baseCharacters, shopItems } from '@/lib/db/schema';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 
 // Gemini Flash routinely interprets "transparent background" visually — it
@@ -147,7 +147,7 @@ export async function generateBaseCharacter(characterId: string): Promise<void> 
         .where(eq(baseCharacters.id, characterId));
 
     try {
-        const result = await geminiImageClient.generateImagePanel({
+        const result = await imageClient.generateImagePanel({
             prompt,
             label: `character ${character.characterType}/${character.variantIndex} (${character.name})`,
         });
@@ -206,7 +206,7 @@ export async function generateScene(itemId: string): Promise<void> {
     const prompt = `${scenePrompt}. ${SCENE_STYLE_PROMPT}`;
 
     try {
-        const result = await geminiImageClient.generateImagePanel({
+        const result = await imageClient.generateImagePanel({
             prompt,
             label: `scene "${item.name}"`,
         });
@@ -258,7 +258,7 @@ export async function generateCosmeticItem(itemId: string): Promise<void> {
     const prompt = `${item.name}, a ${item.category} item. ${COSMETIC_STYLE_PROMPT}`;
 
     try {
-        const result = await geminiImageClient.generateImagePanel({
+        const result = await imageClient.generateImagePanel({
             prompt,
             label: `cosmetic "${item.name}" (${item.category})`,
         });

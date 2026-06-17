@@ -8,7 +8,7 @@ import { generateQuestions, type QuestionType } from '@/lib/practice/generate';
 import { generatePhonicsQuestions, type PhonicsKindOrMixed } from '@/lib/practice/generate-phonics';
 import { isAvailablePracticeUnit } from '@/lib/practice/units';
 import { DEFAULT_BOOK_SLUG, isUnitAvailableForBook, isValidBookSlug } from '@/lib/practice/books';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
 
@@ -27,7 +27,7 @@ async function generateImagesInBackground(
   for (const row of rows) {
     if (!row.imagePrompt) continue;
     try {
-      const result = await geminiImageClient.generateScene(row.imagePrompt);
+      const result = await imageClient.generateScene(row.imagePrompt);
       if (!result.success || !result.imageBuffer) {
         logError(new Error(result.error || 'Image generation failed'), `practice-questions.image[${row.id}]`);
         continue;

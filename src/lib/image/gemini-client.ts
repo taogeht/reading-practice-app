@@ -1,11 +1,15 @@
-export interface ImageGenerationResult {
-  success: boolean;
-  imageBuffer?: Buffer;
-  contentType?: string;
-  error?: string;
-}
+import type {
+  GenerateImagePanelOptions,
+  ImageClient,
+  ImageGenerationResult,
+} from './types';
+import { buildScenePrompt, buildSpellingPrompt } from './prompts';
 
-class GeminiImageClient {
+// Re-export so existing `import { ImageGenerationResult } from './gemini-client'`
+// references (if any) keep working; the canonical home is now ./types.
+export type { ImageGenerationResult } from './types';
+
+class GeminiImageClient implements ImageClient {
   private apiKey: string | null = null;
 
   constructor() {
@@ -34,8 +38,7 @@ class GeminiImageClient {
       };
     }
 
-    const prompt = `Create a simple, colorful clipart-style illustration of "${word}". The image should show a single clear object or concept on a plain white background, suitable for a young child's spelling flashcard. No text or letters in the image. Friendly, simple, and easy to recognize.`;
-    return this.generateFromPrompt(prompt, `"${word}"`);
+    return this.generateFromPrompt(buildSpellingPrompt(word), `"${word}"`);
   }
 
   /**
@@ -51,8 +54,7 @@ class GeminiImageClient {
       return { success: false, error: 'No description provided for image generation.' };
     }
 
-    const prompt = `Create a simple, colorful clipart-style illustration for a Grade 1 ESL practice question. Scene: ${description.trim()}. Plain white background. No text, letters, or numbers anywhere in the image. Friendly, child-appropriate, and visually unambiguous — counts and positions should be obvious at a glance.`;
-    return this.generateFromPrompt(prompt, description.slice(0, 60));
+    return this.generateFromPrompt(buildScenePrompt(description), description.slice(0, 60));
   }
 
   /**
@@ -65,11 +67,7 @@ class GeminiImageClient {
    * Sibling of generateScene/generateImage: those wrap their own
    * curated prompt templates; this one is fully caller-driven.
    */
-  async generateImagePanel(opts: {
-    prompt: string;
-    referenceImage?: { buffer: Buffer; mimeType: string };
-    label?: string;
-  }): Promise<ImageGenerationResult> {
+  async generateImagePanel(opts: GenerateImagePanelOptions): Promise<ImageGenerationResult> {
     if (!this.apiKey) {
       return { success: false, error: 'Gemini is not configured. Please provide GEMINI_API_KEY.' };
     }

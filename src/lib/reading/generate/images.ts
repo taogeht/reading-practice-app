@@ -13,7 +13,7 @@
 // matches the scene — that requires a vision model and is overkill
 // for v1; the teacher review queue catches semantic mistakes.
 
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { logInfo } from '@/lib/logger';
 import type {
   GeneratedPageImage,
@@ -89,8 +89,8 @@ export function buildImagePrompt(
 export async function generatePassageImages(
   input: GeneratePassageImagesInput,
 ): Promise<GeneratePassageImagesResult> {
-  if (!geminiImageClient.isConfigured()) {
-    throw new Error('Gemini is not configured. Set GEMINI_API_KEY.');
+  if (!(await imageClient.isConfigured())) {
+    throw new Error('Image generation is not configured. Set GEMINI_API_KEY (or OPENAI_API_KEY if using GPT Image), or check the image.generationModel setting.');
   }
   if (input.pages.length === 0) {
     throw new Error('generatePassageImages: pages[] is empty');
@@ -122,7 +122,7 @@ export async function generatePassageImages(
     const prompt = buildImagePrompt(planPage, input.plan, style);
     const t0 = Date.now();
 
-    const result = await geminiImageClient.generateImagePanel({
+    const result = await imageClient.generateImagePanel({
       prompt,
       referenceImage: isFirstPage
         ? undefined

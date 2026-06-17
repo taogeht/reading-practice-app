@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { canGeneratePracticeQuestions } from '@/lib/auth/teacher-capabilities';
 import { db } from '@/lib/db';
 import { practiceQuestions } from '@/lib/db/schema';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
 
@@ -55,7 +55,7 @@ export async function POST(
   }
 
   try {
-    const result = await geminiImageClient.generateScene(prompt);
+    const result = await imageClient.generateScene(prompt);
     if (!result.success || !result.imageBuffer) {
       return NextResponse.json(
         { error: result.error || 'Gemini did not return an image' },

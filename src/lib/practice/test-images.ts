@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { generatedTests } from '@/lib/db/schema';
-import { geminiImageClient } from '@/lib/image/gemini-client';
+import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
 import type { TestDocument, TestItem } from './test-types';
@@ -45,7 +45,7 @@ export async function generateTestImages(testId: string, document: TestDocument)
 
   for (const item of pending) {
     try {
-      const result = await geminiImageClient.generateScene(item.imagePrompt as string);
+      const result = await imageClient.generateScene(item.imagePrompt as string);
       if (!result.success || !result.imageBuffer) {
         logError(new Error(result.error || 'Image generation failed'), `tests.image[${item.id}]`);
         continue;
@@ -92,7 +92,7 @@ export async function regenerateTestItemImage(
   const prompt = (overridePrompt ?? target.imagePrompt ?? '').trim();
   if (!prompt) return null;
 
-  const result = await geminiImageClient.generateScene(prompt);
+  const result = await imageClient.generateScene(prompt);
   if (!result.success || !result.imageBuffer) {
     throw new Error(result.error || 'Image generation failed');
   }

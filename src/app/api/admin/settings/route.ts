@@ -8,6 +8,7 @@ import {
   SYSTEM_SETTING_DEFINITIONS,
   SYSTEM_SETTING_DEFINITION_MAP,
   SystemSettingDefinition,
+  SystemSettingOption,
 } from '@/config/system-settings';
 import { recordAuditEvent } from '@/lib/audit';
 
@@ -18,10 +19,11 @@ interface SettingResponse {
   label: string;
   description: string;
   group: string;
-  type: 'boolean' | 'number' | 'string';
+  type: 'boolean' | 'number' | 'string' | 'select';
   value: SerializableValue;
   defaultValue: SerializableValue;
   helpText?: string | null;
+  options?: SystemSettingOption[];
   isDefault: boolean;
   updatedAt: string | null;
   updatedBy?: {
@@ -67,6 +69,11 @@ function coerceValue(
         return Number.isFinite(parsed) ? parsed : definition.defaultValue;
       }
       return definition.defaultValue;
+    case 'select': {
+      const candidate = typeof raw === 'string' ? raw : String(raw);
+      const allowed = definition.options?.some((opt) => opt.value === candidate);
+      return allowed ? candidate : definition.defaultValue;
+    }
     default:
       return typeof raw === 'string' ? raw : JSON.stringify(raw);
   }
@@ -94,6 +101,7 @@ function buildSettingResponse(
     value: coercedValue,
     defaultValue: definition.defaultValue,
     helpText: definition.helpText ?? null,
+    options: definition.options,
     isDefault,
     updatedAt: meta?.updatedAt ? meta.updatedAt.toISOString() : null,
     updatedBy: meta?.updatedById
