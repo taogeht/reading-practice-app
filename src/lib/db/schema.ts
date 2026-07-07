@@ -248,7 +248,13 @@ export const classes = pgTable('classes', {
   weeklyRecapEnabled: boolean('weekly_recap_enabled').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => ({
+  // Hot path: accessibleClassIds() filters on teacher_id on essentially every
+  // teacher/admin request; school_id/term_id power admin + term groupings.
+  teacherIdx: index('idx_classes_teacher').on(table.teacherId),
+  schoolIdx: index('idx_classes_school').on(table.schoolId),
+  termIdx: index('idx_classes_term').on(table.termId),
+}));
 
 export const classEnrollments = pgTable(
   'class_enrollments',
@@ -260,6 +266,9 @@ export const classEnrollments = pgTable(
   },
   (table) => ({
     uniqueClassStudent: uniqueIndex('unique_class_student').on(table.classId, table.studentId),
+    // Hot path: student pages look up enrollments by student_id, which the
+    // classId-led composite above can't serve.
+    studentIdx: index('idx_class_enrollments_student').on(table.studentId),
   })
 );
 

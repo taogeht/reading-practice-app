@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AVATARS } from "./visual-password-options";
 
+// Roster entries deliberately exclude visualPasswordType — the API only
+// reveals it per-student after selection (see /api/classes/[classId]/students).
 interface Student {
   id: string;
   firstName: string;
   lastName: string;
   avatarUrl?: string | null;
-  visualPasswordType: 'animal' | 'object';
 }
 
 interface StudentSelectorProps {

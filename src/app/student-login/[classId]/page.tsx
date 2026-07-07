@@ -43,28 +43,29 @@ export default function ClassStudentLoginPage() {
     }
   }, [classId]);
 
+  // The roster list omits visualPasswordType, so both the URL preselect and a
+  // manual pick fetch the single-student endpoint to get the full record.
+  const selectStudentById = async (studentId: string) => {
+    try {
+      setLoadingStudent(true);
+      const response = await fetch(
+        `/api/classes/${classId}/students/${studentId}`,
+      );
+      if (!response.ok) {
+        throw new Error("Student not found");
+      }
+      const data = await response.json();
+      setSelectedStudent(data.student);
+    } catch (err) {
+      console.error("Failed to load student", err);
+    } finally {
+      setLoadingStudent(false);
+    }
+  };
+
   useEffect(() => {
     if (!classId || !studentIdFromUrl) return;
-
-    const autoSelectStudent = async () => {
-      try {
-        setLoadingStudent(true);
-        const response = await fetch(
-          `/api/classes/${classId}/students/${studentIdFromUrl}`,
-        );
-        if (!response.ok) {
-          throw new Error("Student not found");
-        }
-        const data = await response.json();
-        setSelectedStudent(data.student);
-      } catch (err) {
-        console.error("Failed to preselect student", err);
-      } finally {
-        setLoadingStudent(false);
-      }
-    };
-
-    autoSelectStudent();
+    selectStudentById(studentIdFromUrl);
   }, [classId, studentIdFromUrl]);
 
   const fetchClassInfo = async () => {
@@ -84,8 +85,8 @@ export default function ClassStudentLoginPage() {
     }
   };
 
-  const handleStudentSelect = (student: Student) => {
-    setSelectedStudent(student);
+  const handleStudentSelect = (student: { id: string }) => {
+    selectStudentById(student.id);
   };
 
   const handleBack = () => {

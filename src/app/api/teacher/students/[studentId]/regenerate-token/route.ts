@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, generateLoginToken } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { userCanAccessStudentMedia } from '@/lib/auth/class-access';
 
 interface RouteParams {
     params: Promise<{ studentId: string }>;
@@ -17,12 +18,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         const { studentId } = await params;
+
+        // Ownership: teachers may only mint tokens for students enrolled in a
+        // class they own or co-teach (admins always pass). Without this, any
+        // teacher could regenerate any user's login token and impersonate them
+        // via /s/[token].
+        const canAccess = await userCanAccessStudentMedia(user.id, user.role, studentId);
+        if (!canAccess) {
+            return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+        }
+
         const newToken = generateLoginToken();
 
         const [updated] = await db
             .update(users)
             .set({ loginToken: newToken })
-            .where(eq(users.id, studentId))
+            .where(and(eq(users.id, studentId), eq(users.role, 'student')))
             .returning({ id: users.id, loginToken: users.loginToken });
 
         if (!updated) {

@@ -27,13 +27,16 @@ export async function GET(
       );
     }
 
-    // Get students enrolled in this class with their login data
+    // Roster for the student-login picker. Deliberately does NOT return
+    // visualPasswordType — leaking every student's password type in one
+    // unauthenticated response narrows the tiny visual-password keyspace
+    // school-wide (same hardening as /api/students). The type is fetched
+    // per-student after selection via ./students/[studentId].
     const enrolledStudents = await db
       .select({
         id: students.id,
         firstName: users.firstName,
         lastName: users.lastName,
-        visualPasswordType: students.visualPasswordType,
         avatarUrl: students.avatarUrl,
       })
       .from(classEnrollments)

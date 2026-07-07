@@ -70,12 +70,23 @@ export async function awardXp(
 
         const today = todayDateString();
 
-        // Read current state (or initialize if missing)
-        const [existing] = await db
+        // All progression math runs inside one transaction holding a row lock
+        // on student_progression. Concurrent awards for the same student
+        // (recording-submit dual-fires events) previously both read the same
+        // starting totals and the last absolute write won, silently dropping
+        // XP and corrupting streak/level.
+        const txResult = await db.transaction(async (tx) => {
+        // Ensure the row exists, then lock it for the rest of the transaction.
+        await tx
+            .insert(studentProgression)
+            .values({ studentId })
+            .onConflictDoNothing();
+        const [existing] = await tx
             .select()
             .from(studentProgression)
             .where(eq(studentProgression.studentId, studentId))
-            .limit(1);
+            .limit(1)
+            .for('update');
 
         const startingTotalXp = existing?.totalXp ?? 0;
         const startingLevel = existing?.currentLevel ?? 1;
@@ -128,31 +139,21 @@ export async function awardXp(
                 sourceId: null,
             })),
         ];
-        await db.insert(studentXpEvents).values(allEvents);
+        await tx.insert(studentXpEvents).values(allEvents);
 
-        // Upsert progression
-        if (existing) {
-            await db
-                .update(studentProgression)
-                .set({
-                    totalXp: newTotalXp,
-                    currentLevel: newLevel,
-                    currentStreakDays: newStreakDays,
-                    longestStreakDays: newLongest,
-                    lastActivityDate: today,
-                    updatedAt: new Date(),
-                })
-                .where(eq(studentProgression.studentId, studentId));
-        } else {
-            await db.insert(studentProgression).values({
-                studentId,
+        // The row is guaranteed to exist (inserted above if missing) and is
+        // locked, so a plain update is safe.
+        await tx
+            .update(studentProgression)
+            .set({
                 totalXp: newTotalXp,
                 currentLevel: newLevel,
                 currentStreakDays: newStreakDays,
                 longestStreakDays: newLongest,
                 lastActivityDate: today,
-            });
-        }
+                updatedAt: new Date(),
+            })
+            .where(eq(studentProgression.studentId, studentId));
 
         // Unlocks: animal on level up, badge on streak milestone
         const unlockedBadges: string[] = [];
@@ -161,7 +162,7 @@ export async function awardXp(
         if (leveledUp) {
             const animal = newAnimalUnlockOnLevelUp(startingLevel, newLevel);
             if (animal) {
-                await db
+                await tx
                     .insert(studentUnlocks)
                     .values({ studentId, unlockType: 'avatar', unlockKey: `animal-${animal.key}` })
                     .onConflictDoNothing();
@@ -172,13 +173,26 @@ export async function awardXp(
         if (streakIncremented) {
             const milestone = STREAK_MILESTONES.find((m) => m.days === newStreakDays);
             if (milestone) {
-                await db
+                await tx
                     .insert(studentUnlocks)
                     .values({ studentId, unlockType: 'badge', unlockKey: milestone.badgeKey })
                     .onConflictDoNothing();
                 unlockedBadges.push(milestone.badgeKey);
             }
         }
+
+        return {
+            totalPoints,
+            newTotalXp,
+            leveledUp,
+            newLevel,
+            streakIncremented,
+            newStreakDays,
+            unlockedAnimal,
+            unlockedBadges,
+            bonusEvents,
+        };
+        }); // end transaction — stars are awarded after commit below
 
         // Star awards — dual-fired alongside every XP write. Primary event +
         // any bonus events (daily_login, streak milestones) each get their
@@ -187,11 +201,11 @@ export async function awardXp(
         const starAwardsForThisCall: Array<{ amount: number; ref: string }> = [];
         const primaryStars = STAR_RATES[eventType];
         if (primaryStars > 0) starAwardsForThisCall.push({ amount: primaryStars, ref: eventType });
-        for (const bonus of bonusEvents) {
+        for (const bonus of txResult.bonusEvents) {
             const bonusStars = STAR_RATES[bonus.eventType];
             if (bonusStars > 0) starAwardsForThisCall.push({ amount: bonusStars, ref: bonus.eventType });
         }
-        if (leveledUp && STAR_RATES.level_up > 0) {
+        if (txResult.leveledUp && STAR_RATES.level_up > 0) {
             starAwardsForThisCall.push({ amount: STAR_RATES.level_up, ref: 'level_up' });
         }
         for (const award of starAwardsForThisCall) {
@@ -204,15 +218,15 @@ export async function awardXp(
         }
 
         return {
-            pointsAwarded: totalPoints,
-            newTotalXp,
-            leveledUp,
-            newLevel,
-            streakIncremented,
-            newStreakDays,
-            unlockedAnimal,
-            unlockedBadges,
-            bonusEvents,
+            pointsAwarded: txResult.totalPoints,
+            newTotalXp: txResult.newTotalXp,
+            leveledUp: txResult.leveledUp,
+            newLevel: txResult.newLevel,
+            streakIncremented: txResult.streakIncremented,
+            newStreakDays: txResult.newStreakDays,
+            unlockedAnimal: txResult.unlockedAnimal,
+            unlockedBadges: txResult.unlockedBadges,
+            bonusEvents: txResult.bonusEvents,
         };
     } catch (error) {
         // Gamification must never block the underlying action.
