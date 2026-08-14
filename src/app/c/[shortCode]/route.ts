@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { classes } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { resolveClassLoginDestination } from '@/lib/classes/login-destination';
 
 export const runtime = 'nodejs';
 
@@ -44,8 +45,11 @@ export async function GET(
             .where(eq(classes.slug, code))
             .limit(1);
         if (slugMatch.length > 0) {
-            const url = new URL(`/student-login/${slugMatch[0].id}`, baseUrl).toString();
-            return NextResponse.redirect(url);
+            const destination = await resolveClassLoginDestination(slugMatch[0].id);
+            if (destination) {
+                const url = new URL(`/student-login/${destination.id}`, baseUrl).toString();
+                return NextResponse.redirect(url);
+            }
         }
 
         // Fall back to UUID-prefix match for backward compatibility with any
@@ -57,8 +61,11 @@ export async function GET(
                 .where(sql`${classes.id}::text LIKE ${code + '%'}`)
                 .limit(1);
             if (prefixMatch.length > 0) {
-                const url = new URL(`/student-login/${prefixMatch[0].id}`, baseUrl).toString();
-                return NextResponse.redirect(url);
+                const destination = await resolveClassLoginDestination(prefixMatch[0].id);
+                if (destination) {
+                    const url = new URL(`/student-login/${destination.id}`, baseUrl).toString();
+                    return NextResponse.redirect(url);
+                }
             }
         }
     } catch (err) {

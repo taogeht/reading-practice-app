@@ -23,12 +23,14 @@
     "mark:unpicturable": "tsx scripts/mark-unpicturable-vocab.ts",
     "cleanup:drafts": "tsx scripts/cleanup-draft-passages.ts",
     "migrate:passages": "tsx scripts/migrate-passages-to-prod.ts",
+    "migrate:class-promotion": "tsx scripts/apply-class-promotion-lineage.ts",
     "test:plan": "tsx scripts/test-plan-generation.ts",
     "test:prose": "tsx scripts/test-prose-generation.ts",
     "test:regen": "tsx scripts/test-regen.ts",
     "test:questions": "tsx scripts/test-questions.ts",
     "test:images": "tsx scripts/test-images.ts",
     "test:passage": "tsx scripts/test-passage.ts",
+    "test:class-promotion": "node --import tsx --test src/lib/classes/follow-promotion.test.ts",
     "bulk:passage": "tsx scripts/bulk-passage-run.ts"
   },
   "dependencies": {

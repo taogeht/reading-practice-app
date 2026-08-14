@@ -16,6 +16,7 @@ import {
   index,
   uniqueIndex,
   primaryKey,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import type { TestDocument } from '@/lib/practice/test-types';
@@ -231,6 +232,13 @@ export const classes = pgTable('classes', {
   // Optional academic term this class belongs to (school-scoped). Nullable so
   // legacy classes predating the term model keep working (shown as "Ungrouped").
   termId: uuid('term_id').references(() => academicTerms.id, { onDelete: 'set null' }),
+  // Promotion creates a new class so term-specific work remains historical.
+  // Archived classes point at their successor so previously printed class
+  // links and QR codes can follow the cohort into its current class.
+  promotedToClassId: uuid('promoted_to_class_id').references(
+    (): AnyPgColumn => classes.id,
+    { onDelete: 'set null' },
+  ),
   active: boolean('active').default(true),
   showPracticeStories: boolean('show_practice_stories').default(false),
   syllabusUrl: varchar('syllabus_url', { length: 500 }),
@@ -254,6 +262,7 @@ export const classes = pgTable('classes', {
   teacherIdx: index('idx_classes_teacher').on(table.teacherId),
   schoolIdx: index('idx_classes_school').on(table.schoolId),
   termIdx: index('idx_classes_term').on(table.termId),
+  promotedToIdx: index('idx_classes_promoted_to').on(table.promotedToClassId),
 }));
 
 export const classEnrollments = pgTable(

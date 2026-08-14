@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { classes, users } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { resolveClassLoginDestination } from '@/lib/classes/login-destination';
 
 export const runtime = 'nodejs';
 
@@ -17,39 +18,53 @@ export async function GET(
       ? eq(classes.id, classId)
       : sql`${classes.id}::text LIKE ${classId + '%'}`;
 
-    // Get class info with teacher name (public endpoint for login)
-    const classInfo = await db
-      .select({
-        id: classes.id,
-        name: classes.name,
-        slug: classes.slug,
-        teacherFirstName: users.firstName,
-        teacherLastName: users.lastName,
-        active: classes.active,
-      })
+    const [matchedClass] = await db
+      .select({ id: classes.id })
       .from(classes)
-      .innerJoin(users, eq(classes.teacherId, users.id))
       .where(condition)
       .limit(1);
 
-    if (!classInfo.length) {
+    if (!matchedClass) {
       return NextResponse.json(
         { error: 'Class not found' },
         { status: 404 }
       );
     }
 
-    const classData = classInfo[0];
-
-    // Only return active classes for student login
-    if (!classData.active) {
+    // An archived class created by promotion forwards to the active class at
+    // the end of its lineage. Manually archived classes remain unavailable.
+    const destination = await resolveClassLoginDestination(matchedClass.id);
+    if (!destination) {
       return NextResponse.json(
         { error: 'Class is not active' },
-        { status: 404 }
+        { status: 404 },
+      );
+    }
+
+    // Get the destination class info with teacher name (public login boundary).
+    const [classData] = await db
+      .select({
+        id: classes.id,
+        name: classes.name,
+        teacherFirstName: users.firstName,
+        teacherLastName: users.lastName,
+      })
+      .from(classes)
+      .innerJoin(users, eq(classes.teacherId, users.id))
+      .where(eq(classes.id, destination.id))
+      .limit(1);
+
+    if (!classData) {
+      return NextResponse.json(
+        { error: 'Class not found' },
+        { status: 404 },
       );
     }
 
     return NextResponse.json({
+      // Explicit canonical target for callers that arrived through a legacy
+      // UUID prefix or an archived class in a promotion lineage.
+      canonicalClassId: classData.id,
       class: {
         id: classData.id,
         name: classData.name,

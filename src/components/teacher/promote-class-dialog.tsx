@@ -24,18 +24,21 @@ interface TermOption {
 
 /**
  * Promote a class into a new term: spins up a fresh class in the chosen term
- * and copies the current roster across. Curriculum progress starts over; old
- * assignments/attendance/recaps are not carried. Primary-teacher only (gated by
- * the caller).
+ * and copies the current roster across. The previous class is archived, while
+ * its login links forward to the new class. Curriculum progress starts over;
+ * old assignments/attendance/recaps are not carried. Primary-teacher only
+ * (gated by the caller).
  */
 export function PromoteClassDialog({
   classId,
   className,
+  sourceTermId,
   open,
   onOpenChange,
 }: {
   classId: string;
   className: string;
+  sourceTermId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -44,31 +47,47 @@ export function PromoteClassDialog({
   const [targetTermId, setTargetTermId] = useState("");
   const [newName, setNewName] = useState(className);
   const [loading, setLoading] = useState(false);
+  const [loadingTerms, setLoadingTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setNewName(className);
     setError(null);
+    setTermsError(null);
+    setTerms([]);
+    setTargetTermId("");
+    setLoadingTerms(true);
     let cancelled = false;
     (async () => {
       try {
         const res = await fetch("/api/teacher/terms");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error("Failed to load terms");
         const data = await res.json();
         if (cancelled) return;
-        const list: TermOption[] = data.terms || [];
+        const list: TermOption[] = (data.terms || []).filter(
+          (term: TermOption) => term.id !== sourceTermId,
+        );
         setTerms(list);
         const current = list.find((t) => t.isCurrent);
-        if (current) setTargetTermId((prev) => prev || current.id);
+        setTargetTermId((prev) =>
+          list.some((term) => term.id === prev)
+            ? prev
+            : current?.id || list[0]?.id || "",
+        );
       } catch {
-        /* ignore */
+        if (!cancelled) {
+          setTermsError("Could not load academic terms. Close this dialog and try again.");
+        }
+      } finally {
+        if (!cancelled) setLoadingTerms(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, className]);
+  }, [open, className, sourceTermId]);
 
   const handlePromote = async () => {
     if (!targetTermId) {
@@ -107,12 +126,21 @@ export function PromoteClassDialog({
           <p className="text-sm text-gray-600">
             Creates a new class in the term you choose and copies this class's current
             roster into it. Curriculum progress starts fresh — assignments, attendance,
-            and recaps are not carried over.
+            and recaps are not carried over. The previous class is archived, but its
+            existing QR codes and login links will continue to work.
           </p>
 
-          {terms.length === 0 ? (
+          {loadingTerms ? (
+            <div className="flex items-center gap-2 rounded-md border p-3 text-sm text-gray-600">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading academic terms...
+            </div>
+          ) : termsError ? (
+            <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              {termsError}
+            </div>
+          ) : terms.length === 0 ? (
             <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
-              No terms exist yet. Ask your admin to create an academic term first.
+              No other terms exist yet. Ask your admin to create the next academic term first.
             </div>
           ) : (
             <>
@@ -154,7 +182,10 @@ export function PromoteClassDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button onClick={handlePromote} disabled={loading || terms.length === 0}>
+            <Button
+              onClick={handlePromote}
+              disabled={loading || loadingTerms || terms.length === 0 || !!termsError}
+            >
               {loading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (

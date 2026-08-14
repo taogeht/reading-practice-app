@@ -179,7 +179,7 @@ export default function LoginCardsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Login Cards for {classData.name}</h1>
               <p className="text-gray-600">
                 {layout === 'qr'
-                  ? 'Each student has a unique QR code for instant login — no password needed.'
+                  ? 'Each student has one reusable QR code for instant login across terms and levels.'
                   : 'Each student gets the class URL and the picture they tap on the login screen.'}
               </p>
             </div>
@@ -345,7 +345,7 @@ function QrCard({
               Scan to Log In
             </p>
             <p className="text-sm text-green-800 mt-1">
-              Point your camera at the QR code to log in instantly.
+              Keep this card — the QR code continues to work in future classes.
             </p>
           </div>
           <p className="text-xs text-gray-500">

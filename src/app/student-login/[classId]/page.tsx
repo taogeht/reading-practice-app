@@ -25,6 +25,7 @@ export default function ClassStudentLoginPage() {
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loadingClass, setLoadingClass] = useState(true);
   const [loadingStudent, setLoadingStudent] = useState(false);
+  const [forwarding, setForwarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { refreshUser } = useAuth();
@@ -73,6 +74,19 @@ export default function ClassStudentLoginPage() {
       const response = await fetch(`/api/classes/${classId}/info`);
       if (response.ok) {
         const data = await response.json();
+        // Promotion archives the old class but retains its URL as a pointer to
+        // the new one. Replace the URL before fetching roster/password data so
+        // every subsequent request is scoped to the active enrollment.
+        const canonicalClassId = data.canonicalClassId || data.class.id;
+        if (canonicalClassId !== classId) {
+          setForwarding(true);
+          const studentQuery = studentIdFromUrl
+            ? `?student=${encodeURIComponent(studentIdFromUrl)}`
+            : "";
+          router.replace(`/student-login/${canonicalClassId}${studentQuery}`);
+          return;
+        }
+        setForwarding(false);
         setClassInfo(data.class);
       } else {
         setError("Class not found or not accessible");
@@ -131,7 +145,7 @@ export default function ClassStudentLoginPage() {
     }
   };
 
-  if (loadingClass || loadingStudent) {
+  if (loadingClass || loadingStudent || forwarding) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-gray-600">Loading class information...</div>

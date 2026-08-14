@@ -533,6 +533,7 @@ export default function ClassDetailPage() {
       <PromoteClassDialog
         classId={classId}
         className={classData.name}
+        sourceTermId={classData.termId}
         open={showPromote}
         onOpenChange={setShowPromote}
       />
