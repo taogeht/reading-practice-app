@@ -1,0 +1,91 @@
+{
+  "unit": 13,
+  "topic": "The Ancient Mayans",
+  "vocabulary": [
+    { "word": "start",  "image": "/images/family-friends-3/unit-13/start.png" },
+    { "word": "finish", "image": "/images/family-friends-3/unit-13/finish.png" },
+    { "word": "love",   "image": "/images/family-friends-3/unit-13/love.png" },
+    { "word": "hate",   "image": "/images/family-friends-3/unit-13/hate.png" },
+    { "word": "want",   "image": "/images/family-friends-3/unit-13/want.png" },
+    { "word": "use",    "image": "/images/family-friends-3/unit-13/use.png" },
+    { "word": "laugh",  "image": "/images/family-friends-3/unit-13/laugh.png" },
+    { "word": "live",   "image": "/images/family-friends-3/unit-13/live.png" }
+  ],
+  "verbs": ["start", "finish", "love", "hate", "want", "use", "laugh", "live"],
+  "adjectives": ["heavy", "light", "hard", "soft", "easy", "difficult"],
+  "grammar_patterns": [
+    {
+      "pattern": "They lived [time phrase].",
+      "examples": [
+        "They lived 2,000 years ago.",
+        "The Mayans lived 2,000 years ago.",
+        "They lived in small wooden and stone houses."
+      ]
+    },
+    {
+      "pattern": "They didn't live in [noun].",
+      "examples": [
+        "They didn't live in apartments.",
+        "People didn't live in houses.",
+        "They didn't cook in kitchens."
+      ]
+    },
+    {
+      "pattern": "[Subject] [verb]-ed.",
+      "examples": [
+        "Ellie finished her homework last night.",
+        "Dad started reading a book yesterday.",
+        "The children loved the cake at the party."
+      ]
+    },
+    {
+      "pattern": "[Subject] didn't [verb].",
+      "examples": [
+        "Dad didn't start reading a book.",
+        "Mom didn't cook it. I cooked it!",
+        "They didn't watch TV and they didn't listen to music."
+      ]
+    },
+    {
+      "pattern": "[Subject] [verb]-ed [object].",
+      "examples": [
+        "The Mayans cooked soup.",
+        "They cooked corn, beans, meat, and vegetables.",
+        "I watched TV yesterday."
+      ]
+    },
+    {
+      "pattern": "[Noun] weren't [adjective]. They were [adjective].",
+      "examples": [
+        "Hammocks weren't heavy. They were light.",
+        "Hammocks were soft, so they were comfortable to sleep in.",
+        "It was difficult to sleep in hot weather."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "long o",
+    "description": "The long o sound spelled ow, oa, and o_e.",
+    "word_families": [
+      { "family": "ow",  "words": [{ "word": "snow" }, { "word": "elbow" }, { "word": "show" }, { "word": "slow" }] },
+      { "family": "oa",  "words": [{ "word": "coat" }, { "word": "soap" }, { "word": "boat" }, { "word": "goat" }] },
+      { "family": "o_e", "words": [{ "word": "nose" }, { "word": "stone" }, { "word": "bone" }, { "word": "home" }] }
+    ],
+    "chant": [
+      "I put on my coat",
+      "And go out in the snow.",
+      "There is snow on my nose",
+      "And on my elbow."
+    ]
+  },
+  "key_sentences": [
+    "The Mayans lived 2,000 years ago. They used pictures, not words.",
+    "The Mayans cooked soup.",
+    "They lived 2,000 years ago. They didn't live in apartments.",
+    "Mom didn't cook it. I cooked it!",
+    "I watched TV yesterday. I didn't play soccer yesterday.",
+    "Hammocks weren't heavy. They were light and easy to carry.",
+    "It was difficult to sleep in hot weather.",
+    "Hammocks were soft, so they were comfortable to sleep in."
+  ]
+}

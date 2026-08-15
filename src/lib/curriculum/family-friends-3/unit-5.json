@@ -1,0 +1,93 @@
+{
+  "unit": 5,
+  "topic": "A funny monkey!",
+  "vocabulary": [
+    { "word": "penguin",   "image": "/images/family-friends-3/unit-5/penguin.png" },
+    { "word": "zebra",     "image": "/images/family-friends-3/unit-5/zebra.png" },
+    { "word": "monkey",    "image": "/images/family-friends-3/unit-5/monkey.png" },
+    { "word": "kangaroo",  "image": "/images/family-friends-3/unit-5/kangaroo.png" },
+    { "word": "camel",     "image": "/images/family-friends-3/unit-5/camel.png" },
+    { "word": "lizard",    "image": "/images/family-friends-3/unit-5/lizard.png" },
+    { "word": "flamingo",  "image": "/images/family-friends-3/unit-5/flamingo.png" },
+    { "word": "crocodile", "image": "/images/family-friends-3/unit-5/crocodile.png" }
+  ],
+  "adjectives": ["angry", "scared", "free", "sorry", "funny", "kind"],
+  "grammar_patterns": [
+    {
+      "pattern": "Are you [verb]-ing? Yes, I am. / No, I'm not.",
+      "examples": [
+        "Are you reading? No, I'm not.",
+        "Are you watching the monkeys? Yes, I am.",
+        "Are you eating?"
+      ]
+    },
+    {
+      "pattern": "Is he/she/it [verb]-ing? Yes, it is. / No, it isn't.",
+      "examples": [
+        "Is the monkey eating the sandwich? No, it isn't.",
+        "Is the crocodile sleeping? No, it isn't.",
+        "Is the monkey playing with a ball? Yes, it is."
+      ]
+    },
+    {
+      "pattern": "Are they [verb]-ing? Yes, they are. / No, they aren't.",
+      "examples": [
+        "Are the flamingos flying? No, they aren't.",
+        "Are the monkeys eating bananas? Yes, they are.",
+        "Are the girls playing chess? Yes, they are."
+      ]
+    },
+    {
+      "pattern": "Is the [animal] [verb]-ing?",
+      "examples": [
+        "Is the lizard sleeping?",
+        "Is the woman painting?",
+        "Is Mom shopping? No, she isn't."
+      ]
+    },
+    {
+      "pattern": "Are the [animals] [verb]-ing?",
+      "examples": [
+        "Are the monkeys climbing? Yes, they are.",
+        "Are the zebras running? Yes, they are.",
+        "Are the penguins swimming? Yes, they are."
+      ]
+    },
+    {
+      "pattern": "[Subject] is [adjective].",
+      "examples": [
+        "The lion is angry.",
+        "The mouse is scared.",
+        "You are little, but you are kind."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "or and aw",
+    "description": "The or sound as in fork and the aw sound as in straw.",
+    "word_families": [
+      { "family": "or", "words": [{ "word": "fork" }, { "word": "horse" }, { "word": "corn" }] },
+      { "family": "aw", "words": [{ "word": "straw" }, { "word": "paw" }, { "word": "yawn" }] }
+    ],
+    "chant": [
+      "Look at the dog.",
+      "It's drinking with a straw.",
+      "It's holding the straw,",
+      "With its two front paws.",
+      "Look at the horse,",
+      "It's holding a fork,",
+      "It's eating corn,",
+      "With the farmer's fork."
+    ]
+  },
+  "key_sentences": [
+    "I love the zoo. I like the penguins.",
+    "Are you watching the monkeys? Yes, I am.",
+    "Is the monkey eating the sandwich? No, it isn't.",
+    "Are the monkeys climbing? Yes, they are.",
+    "One day, a lion is sleeping.",
+    "The lion is angry. The mouse is scared.",
+    "I'm very sorry, says the mouse.",
+    "You are little, but you are kind."
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "unit": 12,
+  "topic": "A clever baby!",
+  "vocabulary": [],
+  "adjectives": [
+    "old", "young", "handsome", "pretty", "short", "tall", "shy", "friendly",
+    "cheerful", "sad", "relaxed", "worried", "mean", "generous"
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "He/She was [adjective] then.",
+      "examples": [
+        "He was handsome then.",
+        "Grandma was pretty.",
+        "He was a happy boy."
+      ]
+    },
+    {
+      "pattern": "I wasn't [adjective] when I was [number].",
+      "examples": [
+        "I wasn't tall when I was five.",
+        "I wasn't shy.",
+        "It wasn't sunny."
+      ]
+    },
+    {
+      "pattern": "We were [adjective].",
+      "examples": [
+        "We were happy on vacation.",
+        "They were at the park on Sunday.",
+        "The sandwiches weren't small."
+      ]
+    },
+    {
+      "pattern": "You weren't [adjective] when you were [number].",
+      "examples": [
+        "You weren't shy when you were six.",
+        "The children weren't hungry.",
+        "The baby was happy."
+      ]
+    },
+    {
+      "pattern": "He had [adjective] [noun] when he was young.",
+      "examples": [
+        "He had black hair when he was young.",
+        "She had long hair.",
+        "Grandma had long, black, straight hair."
+      ]
+    },
+    {
+      "pattern": "You didn't have a [noun] when you were a baby.",
+      "examples": [
+        "You didn't have a book when you were a baby.",
+        "He had a book then, too!",
+        "He had a nice apartment, and a happy family."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "long i",
+    "description": "The long i sound spelled igh, y, and i_e.",
+    "word_families": [
+      { "family": "igh", "words": [{ "word": "night" }, { "word": "light" }] },
+      { "family": "y",   "words": [{ "word": "sky" }, { "word": "dry" }] },
+      { "family": "i_e", "words": [{ "word": "smile" }, { "word": "shine" }] }
+    ],
+    "chant": [
+      "In the dry, night sky",
+      "There's a light so white.",
+      "It makes me smile",
+      "As it shines all night."
+    ]
+  },
+  "key_sentences": [
+    "This is Dad when he was young. He was handsome then!",
+    "Grandma was pretty! I think Grandma is still pretty!",
+    "He had black hair when he was young.",
+    "This is a photo of you when you were a baby.",
+    "Look! I had a bag then, too!",
+    "When my grandpa was a boy, he had lots of friends.",
+    "When my grandma was a girl, her eyes were bright and blue.",
+    "He had blond hair when he was a boy."
+  ]
+}

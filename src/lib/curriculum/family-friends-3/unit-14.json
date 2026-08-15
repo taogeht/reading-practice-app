@@ -1,0 +1,99 @@
+{
+  "unit": 14,
+  "topic": "Did you have a good day?",
+  "vocabulary": [
+    { "word": "paint",       "image": "/images/family-friends-3/unit-14/paint.png" },
+    { "word": "paintbrush",  "image": "/images/family-friends-3/unit-14/paintbrush.png" },
+    { "word": "calculator",  "image": "/images/family-friends-3/unit-14/calculator.png" },
+    { "word": "lunchbox",    "image": "/images/family-friends-3/unit-14/lunchbox.png" },
+    { "word": "dictionary",  "image": "/images/family-friends-3/unit-14/dictionary.png" },
+    { "word": "P.E. clothes","image": "/images/family-friends-3/unit-14/pe-clothes.png" },
+    { "word": "backpack",    "image": "/images/family-friends-3/unit-14/backpack.png" },
+    { "word": "apron",       "image": "/images/family-friends-3/unit-14/apron.png" },
+    { "word": "tent",        "image": "/images/family-friends-3/unit-14/tent.png" },
+    { "word": "sleeping bag","image": "/images/family-friends-3/unit-14/sleeping-bag.png" },
+    { "word": "frying pan",  "image": "/images/family-friends-3/unit-14/frying-pan.png" },
+    { "word": "matches",     "image": "/images/family-friends-3/unit-14/matches.png" },
+    { "word": "rope",        "image": "/images/family-friends-3/unit-14/rope.png" },
+    { "word": "flashlight",  "image": "/images/family-friends-3/unit-14/flashlight.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "Did you have a good day? Yes, I did. / No, I didn't.",
+      "examples": [
+        "Did you have a good day? No!",
+        "Did you like the movie, Max?",
+        "Did you have lots of fun?"
+      ]
+    },
+    {
+      "pattern": "What did you [verb]?",
+      "examples": [
+        "What did you watch last night? A movie.",
+        "What did you eat? Amy had some of my lunch.",
+        "What did Katie use in her English class? Her dictionary."
+      ]
+    },
+    {
+      "pattern": "Where did you [verb]?",
+      "examples": [
+        "Where did you watch the movie? At home.",
+        "Where did the boys have a picnic? In the park.",
+        "Where did the girls play tennis? At the playground."
+      ]
+    },
+    {
+      "pattern": "When did [subject] [verb]?",
+      "examples": [
+        "When did the movie end? At nine o'clock.",
+        "When did Katie have English class? At one o'clock.",
+        "When did you visit your cousins? Last week."
+      ]
+    },
+    {
+      "pattern": "Did [subject] [verb]? Yes, ... did. / No, ... didn't.",
+      "examples": [
+        "Did he walk to school yesterday? No, he didn't.",
+        "Did the children stay in tents? Yes.",
+        "Did the children use rope to make a bridge?"
+      ]
+    },
+    {
+      "pattern": "We had [noun], but I didn't have my [noun].",
+      "examples": [
+        "First we had P.E., but I didn't have my P.E. clothes.",
+        "Next, we had math, but I didn't have my calculator.",
+        "Then we had lunch, but I didn't have my lunchbox."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "long u",
+    "description": "The long u sound spelled oo, ue, and u_e.",
+    "word_families": [
+      { "family": "oo",  "words": [{ "word": "moon" }, { "word": "boot" }] },
+      { "family": "ue",  "words": [{ "word": "blue" }, { "word": "glue" }] },
+      { "family": "u_e", "words": [{ "word": "tune" }, { "word": "tube" }] }
+    ],
+    "chant": [
+      "It's Tuesday night,",
+      "And I'm not at school.",
+      "I have glue and tubes,",
+      "And paint that's blue.",
+      "I make a toy flute,",
+      "I look up at the moon.",
+      "It's a hot June night,",
+      "And I play a tune."
+    ]
+  },
+  "key_sentences": [
+    "Did you have a good day?",
+    "What did you watch last night? A movie.",
+    "Where did you watch the movie? At home.",
+    "When did the movie end? At nine o'clock.",
+    "First we had P.E., but I didn't have my P.E. clothes.",
+    "We stayed in tents near a river. It was fun!",
+    "Did the children use rope to make a bridge?",
+    "We cooked food in frying pans on a fire."
+  ]
+}

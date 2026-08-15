@@ -1,0 +1,104 @@
+{
+  "unit": 6,
+  "topic": "Jim's day",
+  "vocabulary": [
+    { "word": "have a shower",  "image": "/images/family-friends-3/unit-6/have-a-shower.png" },
+    { "word": "brush my teeth", "image": "/images/family-friends-3/unit-6/brush-my-teeth.png" },
+    { "word": "get dressed",    "image": "/images/family-friends-3/unit-6/get-dressed.png" },
+    { "word": "have breakfast", "image": "/images/family-friends-3/unit-6/have-breakfast.png" },
+    { "word": "brush my hair",  "image": "/images/family-friends-3/unit-6/brush-my-hair.png" },
+    { "word": "get up",         "image": "/images/family-friends-3/unit-6/get-up.png" },
+    { "word": "catch the bus",  "image": "/images/family-friends-3/unit-6/catch-the-bus.png" },
+    { "word": "walk to school", "image": "/images/family-friends-3/unit-6/walk-to-school.png" },
+    { "word": "first",          "image": "/images/family-friends-3/unit-6/first.png" },
+    { "word": "then",           "image": "/images/family-friends-3/unit-6/then.png" },
+    { "word": "next",           "image": "/images/family-friends-3/unit-6/next.png" },
+    { "word": "finally",        "image": "/images/family-friends-3/unit-6/finally.png" },
+    { "word": "every day",      "image": "/images/family-friends-3/unit-6/every-day.png" },
+    { "word": "on the weekend", "image": "/images/family-friends-3/unit-6/on-the-weekend.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "I have [noun] at [time].",
+      "examples": [
+        "I have breakfast at eight o'clock.",
+        "I don't have breakfast at seven o'clock.",
+        "I have breakfast with my family."
+      ]
+    },
+    {
+      "pattern": "He gets up early. He doesn't get up late.",
+      "examples": [
+        "He gets up early.",
+        "He doesn't get up late.",
+        "But jackaroos get up early every morning."
+      ]
+    },
+    {
+      "pattern": "Does he [verb]? Yes, he does. / No, he doesn't.",
+      "examples": [
+        "Does he live in a big house? Yes, he does.",
+        "Does Jim see a lot of snakes? Yes, he does.",
+        "Does Katie have a shower in the morning?"
+      ]
+    },
+    {
+      "pattern": "What time does he [verb]?",
+      "examples": [
+        "What time does he start work?",
+        "What time does Tom get up? He gets up at seven thirty.",
+        "What time does she have breakfast?"
+      ]
+    },
+    {
+      "pattern": "We catch the bus. They don't catch the train.",
+      "examples": [
+        "We catch the bus.",
+        "They don't catch the train.",
+        "My mom and dad don't catch the bus to work."
+      ]
+    },
+    {
+      "pattern": "Do you [verb]? Yes, I do. / No, I don't.",
+      "examples": [
+        "Do you walk to school? Yes, I do.",
+        "What time do you go to school?",
+        "Do your friends brush their teeth at night?"
+      ]
+    },
+    {
+      "pattern": "First, I [verb]. Then, I [verb]. Next, I [verb]. Finally, I [verb].",
+      "examples": [
+        "First, I help on the farm.",
+        "Then, I watch my teachers on the Internet.",
+        "Next, I do my school work. Finally, I email my work to my teacher."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "oy and oi",
+    "description": "The oy sound as in boy and the oi sound as in coin.",
+    "word_families": [
+      { "family": "oy", "words": [{ "word": "boy" }, { "word": "toy" }, { "word": "oyster" }] },
+      { "family": "oi", "words": [{ "word": "coin" }, { "word": "oil" }, { "word": "soil" }] }
+    ],
+    "chant": [
+      "Roy is a boy,",
+      "A boy, boy, boy.",
+      "Playing with a toy,",
+      "A toy, toy, toy.",
+      "He can see a coin,",
+      "A coin, coin, coin."
+    ]
+  },
+  "key_sentences": [
+    "Jim is our cousin in Australia. He's a jackaroo.",
+    "He gets up early every morning. He rides a horse and he looks after the sheep.",
+    "What time does Tom get up? He gets up at seven thirty.",
+    "Does he live in a big house? Yes, he does.",
+    "I get up early every day. First, I help on the farm.",
+    "Finally, I email my work to my teacher.",
+    "What time do you have breakfast? I have breakfast at seven forty-five.",
+    "I'm busy all day long."
+  ]
+}

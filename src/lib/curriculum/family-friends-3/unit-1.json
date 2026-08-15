@@ -1,0 +1,115 @@
+{
+  "unit": 1,
+  "topic": "They're from Australia!",
+  "vocabulary": [
+    { "word": "South Korea",  "image": "/images/family-friends-3/unit-1/south-korea.png" },
+    { "word": "Vietnam",      "image": "/images/family-friends-3/unit-1/vietnam.png" },
+    { "word": "Mexico",       "image": "/images/family-friends-3/unit-1/mexico.png" },
+    { "word": "Spain",        "image": "/images/family-friends-3/unit-1/spain.png" },
+    { "word": "Thailand",     "image": "/images/family-friends-3/unit-1/thailand.png" },
+    { "word": "Australia",    "image": "/images/family-friends-3/unit-1/australia.png" },
+    { "word": "the U.S.A.",   "image": "/images/family-friends-3/unit-1/usa.png" },
+    { "word": "Brazil",       "image": "/images/family-friends-3/unit-1/brazil.png" },
+    { "word": "spring",       "image": "/images/family-friends-3/unit-1/spring.png" },
+    { "word": "summer",       "image": "/images/family-friends-3/unit-1/summer.png" },
+    { "word": "fall",         "image": "/images/family-friends-3/unit-1/fall.png" },
+    { "word": "winter",       "image": "/images/family-friends-3/unit-1/winter.png" },
+    { "word": "garden",       "image": "/images/family-friends-3/unit-1/garden.png" },
+    { "word": "season",       "image": "/images/family-friends-3/unit-1/season.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "I'm from [country].",
+      "examples": [
+        "I'm from South Korea.",
+        "I'm from Mexico.",
+        "I'm from the U.S.A."
+      ]
+    },
+    {
+      "pattern": "He's/She's from [country].",
+      "examples": [
+        "He's from Brazil.",
+        "She's from South Korea.",
+        "He's from Vietnam."
+      ]
+    },
+    {
+      "pattern": "We're/They're from [country].",
+      "examples": [
+        "They're from Mexico.",
+        "We're from Australia.",
+        "They're from Brazil."
+      ]
+    },
+    {
+      "pattern": "Where are you from? I'm from [country].",
+      "examples": [
+        "Where are you from? I'm from Spain.",
+        "Where are you from? I'm from Thailand.",
+        "Where are you from? I'm from the U.S.A."
+      ]
+    },
+    {
+      "pattern": "Where is he/she from? He's/She's from [country].",
+      "examples": [
+        "Where is he from? He's from Vietnam.",
+        "Where is she from? She's from South Korea.",
+        "Where is he from? He's from Brazil."
+      ]
+    },
+    {
+      "pattern": "Where are they from? They're from [country].",
+      "examples": [
+        "Where are they from? They're from the U.S.A.",
+        "They aren't from Australia. They're from Mexico.",
+        "They're from Vietnam."
+      ]
+    },
+    {
+      "pattern": "[Name] is [number]. He's/She's from [country].",
+      "examples": [
+        "Bao is nine. He's from Vietnam.",
+        "Jenny is eight. She's from Australia.",
+        "Maria and I are friends. We're from Mexico."
+      ]
+    },
+    {
+      "pattern": "It's [season] in the [place].",
+      "examples": [
+        "It's spring in the forest.",
+        "It's summer and there are lots of flowers.",
+        "Now it's winter and the animals are all asleep."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "consonant blends",
+    "description": "Two consonants blended together at the start of a word: cr, br, dr, sp, sn, pl.",
+    "word_families": [
+      { "family": "cr", "words": [{ "word": "crayon" }] },
+      { "family": "br", "words": [{ "word": "brush" }] },
+      { "family": "dr", "words": [{ "word": "draw" }, { "word": "drink" }] },
+      { "family": "sp", "words": [{ "word": "spoon" }] },
+      { "family": "sn", "words": [{ "word": "snake" }] },
+      { "family": "pl", "words": [{ "word": "play" }] }
+    ],
+    "chant": [
+      "We drink from a cup.",
+      "We eat with a spoon.",
+      "We draw with a crayon.",
+      "We play all afternoon."
+    ]
+  },
+  "key_sentences": [
+    "Where are you from? I'm from South Korea.",
+    "They aren't from Australia. They're from Mexico.",
+    "Our cousins are from Australia.",
+    "We're your cousins. It's nice to meet you!",
+    "It's spring in the forest. It's warm and sunny.",
+    "In the fall, the leaves are red, yellow, and orange.",
+    "My favorite season is summer.",
+    "He's from Brazil. It's nice to meet you!",
+    "How old is she? She's eight."
+  ]
+}

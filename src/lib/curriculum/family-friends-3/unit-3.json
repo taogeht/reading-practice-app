@@ -1,0 +1,118 @@
+{
+  "unit": 3,
+  "topic": "My things",
+  "vocabulary": [
+    { "word": "computer",   "image": "/images/family-friends-3/unit-3/computer.png" },
+    { "word": "TV",         "image": "/images/family-friends-3/unit-3/tv.png" },
+    { "word": "DVD player", "image": "/images/family-friends-3/unit-3/dvd-player.png" },
+    { "word": "CD player",  "image": "/images/family-friends-3/unit-3/cd-player.png" },
+    { "word": "MP3 player", "image": "/images/family-friends-3/unit-3/mp3-player.png" },
+    { "word": "camera",     "image": "/images/family-friends-3/unit-3/camera.png" },
+    { "word": "turn on",    "image": "/images/family-friends-3/unit-3/turn-on.png" },
+    { "word": "turn off",   "image": "/images/family-friends-3/unit-3/turn-off.png" },
+    { "word": "stickers",   "image": "/images/family-friends-3/unit-3/stickers.png" },
+    { "word": "posters",    "image": "/images/family-friends-3/unit-3/posters.png" },
+    { "word": "comics",     "image": "/images/family-friends-3/unit-3/comics.png" },
+    { "word": "postcards",  "image": "/images/family-friends-3/unit-3/postcards.png" },
+    { "word": "pins",       "image": "/images/family-friends-3/unit-3/pins.png" },
+    { "word": "shells",     "image": "/images/family-friends-3/unit-3/shells.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "This is your [noun].",
+      "examples": [
+        "This is your CD.",
+        "Is this your computer? Yes, it's your computer.",
+        "No, it's your MP3 player."
+      ]
+    },
+    {
+      "pattern": "That's our [noun].",
+      "examples": [
+        "That's our computer.",
+        "Our camera is big.",
+        "Our computer is small."
+      ]
+    },
+    {
+      "pattern": "That's their [noun].",
+      "examples": [
+        "That's their CD player.",
+        "Their computer is new.",
+        "Their dog is small."
+      ]
+    },
+    {
+      "pattern": "Can I use your [noun]? Yes, you can. / No, you can't.",
+      "examples": [
+        "Can I use your computer? Yes, you can.",
+        "Can I use your camera? No, you can't.",
+        "Can we turn on the TV? No, you can't."
+      ]
+    },
+    {
+      "pattern": "Can you [phrasal verb] the [noun], please?",
+      "examples": [
+        "Can you turn off the DVD player, please?",
+        "Can you turn on the TV, please?",
+        "Amy, can you turn on the TV, please?"
+      ]
+    },
+    {
+      "pattern": "Can you [action], please?",
+      "examples": [
+        "Can you open the window, please?",
+        "Can you help me with my homework, please?",
+        "Can you close the door, please?"
+      ]
+    },
+    {
+      "pattern": "I have a collection of [plural noun].",
+      "examples": [
+        "I have a collection of soccer stickers.",
+        "I have a great collection of pins.",
+        "He has a shell collection."
+      ]
+    },
+    {
+      "pattern": "I have [number] [plural noun].",
+      "examples": [
+        "I have 60 stickers.",
+        "I have 50 pins.",
+        "He has one hundred shells."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "ar",
+    "description": "Words with the ar sound, as in car.",
+    "word_families": [
+      {
+        "family": "ar",
+        "words": [
+          { "word": "car" },
+          { "word": "park" },
+          { "word": "shark" },
+          { "word": "star" },
+          { "word": "scarf" }
+        ]
+      }
+    ],
+    "chant": [
+      "I'm in the car,",
+      "After playing in the park.",
+      "I have an orange scarf,",
+      "I have a toy shark."
+    ]
+  },
+  "key_sentences": [
+    "Amy, can you turn on the TV, please?",
+    "Can I use your computer? Yes, you can.",
+    "Is this your computer? Yes, it's your computer.",
+    "Can you turn off the DVD player, please?",
+    "I love soccer and I have a collection of soccer stickers.",
+    "I have 60 stickers and they're in a special sticker book.",
+    "Does Jon have a collection? Yes, he does. He has a shell collection.",
+    "How many shells does he have? He has one hundred shells."
+  ]
+}

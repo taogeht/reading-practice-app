@@ -1,0 +1,84 @@
+{
+  "unit": 10,
+  "topic": "In the park!",
+  "vocabulary": [
+    { "word": "path",        "image": "/images/family-friends-3/unit-10/path.png" },
+    { "word": "grass",       "image": "/images/family-friends-3/unit-10/grass.png" },
+    { "word": "flowers",     "image": "/images/family-friends-3/unit-10/flowers.png" },
+    { "word": "garbage can", "image": "/images/family-friends-3/unit-10/garbage-can.png" },
+    { "word": "trees",       "image": "/images/family-friends-3/unit-10/trees.png" },
+    { "word": "playground",  "image": "/images/family-friends-3/unit-10/playground.png" },
+    { "word": "fountain",    "image": "/images/family-friends-3/unit-10/fountain.png" },
+    { "word": "litter",      "image": "/images/family-friends-3/unit-10/litter.png" }
+  ],
+  "verbs": ["shout", "chase", "catch", "meet", "cross", "laugh"],
+  "grammar_patterns": [
+    {
+      "pattern": "We must [verb].",
+      "examples": [
+        "We must do our homework.",
+        "You must turn off your cell phone.",
+        "You must walk on the path."
+      ]
+    },
+    {
+      "pattern": "They mustn't [verb].",
+      "examples": [
+        "They mustn't talk in class.",
+        "You mustn't walk on the grass.",
+        "You mustn't pick the flowers."
+      ]
+    },
+    {
+      "pattern": "You must [verb].",
+      "examples": [
+        "You must put litter in the garbage can.",
+        "You must be quiet.",
+        "You must wash your hands."
+      ]
+    },
+    {
+      "pattern": "You mustn't [verb] here.",
+      "examples": [
+        "You mustn't walk your dog here.",
+        "You mustn't take photos here.",
+        "You mustn't eat in the library."
+      ]
+    },
+    {
+      "pattern": "We must [verb] and we mustn't [verb].",
+      "examples": [
+        "We must walk on the path, and we mustn't climb the trees.",
+        "We must throw away our litter. Let's keep the park clean, please.",
+        "We must be very good, and we mustn't pick the flowers."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "long a",
+    "description": "The long a sound spelled ai, ay, and a_e.",
+    "word_families": [
+      { "family": "ai",  "words": [{ "word": "rain" }, { "word": "train" }] },
+      { "family": "ay",  "words": [{ "word": "Monday" }, { "word": "tray" }] },
+      { "family": "a_e", "words": [{ "word": "case" }, { "word": "race" }] }
+    ],
+    "chant": [
+      "It's Monday today,",
+      "And I can play.",
+      "Outside there's rain,",
+      "But I'm in with my trains.",
+      "I open my case,",
+      "And the trains have a race!"
+    ]
+  },
+  "key_sentences": [
+    "This is a beautiful park.",
+    "You mustn't pick the flowers.",
+    "You mustn't walk on the grass here. You must walk on the path.",
+    "You must put litter in the garbage can.",
+    "Oh, you must come to the park, so we can have some fun.",
+    "We must be very good, and we mustn't pick the flowers.",
+    "You mustn't eat in the library.",
+    "We must throw away our litter. Let's keep the park clean, please."
+  ]
+}

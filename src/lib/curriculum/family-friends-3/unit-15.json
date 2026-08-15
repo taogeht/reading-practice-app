@@ -1,0 +1,114 @@
+{
+  "unit": 15,
+  "topic": "Our vacation!",
+  "vocabulary": [
+    { "word": "suitcase",       "image": "/images/family-friends-3/unit-15/suitcase.png" },
+    { "word": "sunscreen",      "image": "/images/family-friends-3/unit-15/sunscreen.png" },
+    { "word": "towel",          "image": "/images/family-friends-3/unit-15/towel.png" },
+    { "word": "soap",           "image": "/images/family-friends-3/unit-15/soap.png" },
+    { "word": "shampoo",        "image": "/images/family-friends-3/unit-15/shampoo.png" },
+    { "word": "hairbrush",      "image": "/images/family-friends-3/unit-15/hairbrush.png" },
+    { "word": "toothbrush",     "image": "/images/family-friends-3/unit-15/toothbrush.png" },
+    { "word": "toothpaste",     "image": "/images/family-friends-3/unit-15/toothpaste.png" },
+    { "word": "tomorrow",       "image": "/images/family-friends-3/unit-15/tomorrow.png" },
+    { "word": "later",          "image": "/images/family-friends-3/unit-15/later.png" },
+    { "word": "tonight",        "image": "/images/family-friends-3/unit-15/tonight.png" },
+    { "word": "this afternoon", "image": "/images/family-friends-3/unit-15/this-afternoon.png" },
+    { "word": "soon",           "image": "/images/family-friends-3/unit-15/soon.png" },
+    { "word": "next week",      "image": "/images/family-friends-3/unit-15/next-week.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "I'm going to [verb].",
+      "examples": [
+        "I'm going to skateboard every day.",
+        "I'm going to read my book.",
+        "I'm going to swim in the ocean."
+      ]
+    },
+    {
+      "pattern": "He's/She's going to [verb] [time phrase].",
+      "examples": [
+        "He's going to play basketball tomorrow.",
+        "She's going to visit her cousins tomorrow.",
+        "She's going to read her new book."
+      ]
+    },
+    {
+      "pattern": "We're/They're going to [verb].",
+      "examples": [
+        "We're going to have a great vacation.",
+        "We're going to visit the aquarium.",
+        "They're going to take us to the beach every day."
+      ]
+    },
+    {
+      "pattern": "Are you going to [verb]? Yes, I am. / No, I'm not.",
+      "examples": [
+        "Are you going to swim in the ocean? Yes, I am.",
+        "Are you going to take your suitcase?",
+        "What are you going to wear?"
+      ]
+    },
+    {
+      "pattern": "Is he/she going to [verb]? Yes, she is. / No, she isn't.",
+      "examples": [
+        "Is she going to visit her cousins tomorrow? Yes, she is.",
+        "Is Emma going to take a camera? Yes, she is.",
+        "Is it going to rain?"
+      ]
+    },
+    {
+      "pattern": "Are they going to [verb]? Yes, they are. / No, they aren't.",
+      "examples": [
+        "Are they going to swim in the ocean? Yes, they are.",
+        "Are they going to make a cake?",
+        "Are you going to swim in the ocean?"
+      ]
+    },
+    {
+      "pattern": "[Subject] is going to [verb] [time word].",
+      "examples": [
+        "We're going to fly home next week.",
+        "This afternoon, we're going to visit the aquarium.",
+        "Later, we're going to visit Barcelona Zoo."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "oo",
+    "description": "The short oo sound, as in book.",
+    "word_families": [
+      {
+        "family": "oo",
+        "words": [
+          { "word": "book" },
+          { "word": "wool" },
+          { "word": "wood" },
+          { "word": "hood" },
+          { "word": "cook" }
+        ]
+      }
+    ],
+    "chant": [
+      "It's a very cold day.",
+      "I have a coat with a hood.",
+      "I have my wool scarf,",
+      "And I'm feeling good.",
+      "I'm sitting on some wood.",
+      "I'm looking at my book.",
+      "The book's very good.",
+      "It tells me how to cook."
+    ]
+  },
+  "key_sentences": [
+    "I'm going to read my book.",
+    "Our vacation is going to be great! I'm going to swim in the ocean.",
+    "I'm not going to take a suitcase. I have all my things in my backpack.",
+    "I'm going to skateboard every day!",
+    "I'm going to pack my suitcase, I'm going on vacation!",
+    "This afternoon, we're going to visit the aquarium.",
+    "We're going to fly home next week.",
+    "What are you going to do on Monday? I'm going to watch TV."
+  ]
+}

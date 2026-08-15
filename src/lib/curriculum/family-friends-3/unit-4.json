@@ -1,0 +1,110 @@
+{
+  "unit": 4,
+  "topic": "We're having fun at the beach!",
+  "vocabulary": [
+    { "word": "swim",      "image": "/images/family-friends-3/unit-4/swim.png" },
+    { "word": "sail",      "image": "/images/family-friends-3/unit-4/sail.png" },
+    { "word": "dive",      "image": "/images/family-friends-3/unit-4/dive.png" },
+    { "word": "surf",      "image": "/images/family-friends-3/unit-4/surf.png" },
+    { "word": "kayak",     "image": "/images/family-friends-3/unit-4/kayak.png" },
+    { "word": "windsurf",  "image": "/images/family-friends-3/unit-4/windsurf.png" },
+    { "word": "snorkel",   "image": "/images/family-friends-3/unit-4/snorkel.png" },
+    { "word": "waterski",  "image": "/images/family-friends-3/unit-4/waterski.png" }
+  ],
+  "verbs": ["swim", "sail", "dive", "surf", "kayak", "windsurf", "snorkel", "waterski", "play", "run", "ride"],
+  "adjectives": ["polluted", "clean", "dangerous", "safe", "beautiful", "ugly"],
+  "grammar_patterns": [
+    {
+      "pattern": "I'm [verb]-ing. / I'm not [verb]-ing.",
+      "examples": [
+        "I'm swimming.",
+        "I'm not swimming.",
+        "I'm sailing."
+      ]
+    },
+    {
+      "pattern": "He's/She's [verb]-ing. / He isn't [verb]-ing.",
+      "examples": [
+        "He's surfing.",
+        "He isn't snorkeling.",
+        "She's playing with her ball."
+      ]
+    },
+    {
+      "pattern": "We're/They're [verb]-ing. / They aren't [verb]-ing.",
+      "examples": [
+        "We're sailing.",
+        "They aren't waterskiing.",
+        "They're snorkeling."
+      ]
+    },
+    {
+      "pattern": "Is he/she [verb]-ing?",
+      "examples": [
+        "Is Max in the water? No, he isn't. He's reading his book.",
+        "Is Holly in the water? No, she isn't. She's playing with her ball.",
+        "Is he diving? Yes, he is."
+      ]
+    },
+    {
+      "pattern": "Spelling changes: [verb] + ing.",
+      "examples": [
+        "sail becomes sailing and play becomes playing.",
+        "swim becomes swimming and run becomes running.",
+        "dive becomes diving and ride becomes riding."
+      ]
+    },
+    {
+      "pattern": "[Noun] is/are [adjective].",
+      "examples": [
+        "Dolphins aren't dangerous. They are very friendly.",
+        "Dolphins can't live in polluted water. They can only live in clean water.",
+        "Dolphins aren't ugly. They are beautiful."
+      ]
+    },
+    {
+      "pattern": "You can [verb] with [noun].",
+      "examples": [
+        "You can swim with beautiful dolphins.",
+        "We take people in our boats and we visit dolphins.",
+        "There are lots of fish to see."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "all",
+    "description": "Words ending in all, as in ball.",
+    "word_families": [
+      {
+        "family": "all",
+        "words": [
+          { "word": "ball" },
+          { "word": "mall" },
+          { "word": "wall" },
+          { "word": "tall" },
+          { "word": "small" }
+        ]
+      }
+    ],
+    "chant": [
+      "I'm in a mall.",
+      "A mall, mall, mall.",
+      "Some people are tall,",
+      "Some are small, small, small.",
+      "I want a ball,",
+      "A ball, ball, ball.",
+      "I don't know which to buy,",
+      "I like them all, all, all."
+    ]
+  },
+  "key_sentences": [
+    "Hello, Mom! We're having fun at the beach!",
+    "He isn't snorkeling. He's surfing. He's very good.",
+    "Leo isn't surfing now. He's swimming!",
+    "We're swimming and we're surfing, and we're sitting in the sun.",
+    "Dolphins aren't dangerous. They are very friendly.",
+    "Dolphins can't live in polluted water. They can only live in clean water.",
+    "What do you like doing at the beach? I like snorkeling.",
+    "Dolphins aren't ugly. They are beautiful."
+  ]
+}

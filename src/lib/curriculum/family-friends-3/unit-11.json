@@ -1,0 +1,92 @@
+{
+  "unit": 11,
+  "topic": "In the museum",
+  "vocabulary": [
+    { "word": "ferry",      "image": "/images/family-friends-3/unit-11/ferry.png" },
+    { "word": "bus",        "image": "/images/family-friends-3/unit-11/bus.png" },
+    { "word": "helicopter", "image": "/images/family-friends-3/unit-11/helicopter.png" },
+    { "word": "motorcycle", "image": "/images/family-friends-3/unit-11/motorcycle.png" },
+    { "word": "plane",      "image": "/images/family-friends-3/unit-11/plane.png" },
+    { "word": "taxi",       "image": "/images/family-friends-3/unit-11/taxi.png" },
+    { "word": "train",      "image": "/images/family-friends-3/unit-11/train.png" },
+    { "word": "trolley",    "image": "/images/family-friends-3/unit-11/trolley.png" }
+  ],
+  "prepositions": ["along", "through", "in the middle of", "at the top of", "between", "inside"],
+  "grammar_patterns": [
+    {
+      "pattern": "There was a [noun] [time phrase].",
+      "examples": [
+        "There was a park in our town fifty years ago.",
+        "There was a hotel in the town ten years ago.",
+        "There were horse buses two hundred years ago."
+      ]
+    },
+    {
+      "pattern": "There wasn't a [noun] [time phrase].",
+      "examples": [
+        "There wasn't a shopping mall in our town fifty years ago.",
+        "There wasn't a singer at the party last Saturday.",
+        "There wasn't a movie theater then."
+      ]
+    },
+    {
+      "pattern": "There were lots of / some [plural noun] [time phrase].",
+      "examples": [
+        "There were some funny trains one hundred years ago.",
+        "In Australia, there were lots of kangaroos.",
+        "There were lots of buses twenty years ago."
+      ]
+    },
+    {
+      "pattern": "There weren't any [plural noun] [time phrase].",
+      "examples": [
+        "There weren't any planes two hundred years ago.",
+        "There weren't any motorcycles.",
+        "There weren't any taxis, and there weren't any trains."
+      ]
+    },
+    {
+      "pattern": "Time words for the past.",
+      "examples": [
+        "yesterday, last week, last year",
+        "last Monday, fifty years ago, then",
+        "There were skateboards fifty years ago!"
+      ]
+    },
+    {
+      "pattern": "[Noun] was [preposition] the [noun].",
+      "examples": [
+        "The English people's home was at the top of a hill.",
+        "Their home was in the middle of a large area of land.",
+        "Their home was along the east coast of America, between Massachusetts and Rhode Island."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "long e",
+    "description": "The long e sound spelled ea, ee, and y.",
+    "word_families": [
+      { "family": "ea", "words": [{ "word": "dream" }, { "word": "ice cream" }, { "word": "eat" }, { "word": "please" }] },
+      { "family": "ee", "words": [{ "word": "queen" }, { "word": "green" }, { "word": "tree" }, { "word": "week" }, { "word": "sheep" }] },
+      { "family": "y",  "words": [{ "word": "jelly" }, { "word": "happy" }, { "word": "family" }, { "word": "funny" }, { "word": "twenty" }] }
+    ],
+    "chant": [
+      "In my dream,",
+      "I am a queen, queen, queen.",
+      "I eat green jelly,",
+      "And ice cream, cream, cream.",
+      "I'm very happy,",
+      "In my dream, dream, dream."
+    ]
+  },
+  "key_sentences": [
+    "There were horse buses two hundred years ago.",
+    "There were skateboards fifty years ago! And they were very big!",
+    "In Australia, there were lots of kangaroos.",
+    "There weren't any motorcycles.",
+    "There weren't any buses then, and there weren't any trains.",
+    "There were shops and markets then, and there were hotels, too.",
+    "The English people's home was at the top of a hill, in the middle of a large area of land.",
+    "Our town has a history. It's very old, you know!"
+  ]
+}

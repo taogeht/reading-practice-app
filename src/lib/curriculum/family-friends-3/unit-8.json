@@ -1,0 +1,106 @@
+{
+  "unit": 8,
+  "topic": "I'd like a melon!",
+  "vocabulary": [
+    { "word": "noodles",  "image": "/images/family-friends-3/unit-8/noodles.png" },
+    { "word": "bread",    "image": "/images/family-friends-3/unit-8/bread.png" },
+    { "word": "cereal",   "image": "/images/family-friends-3/unit-8/cereal.png" },
+    { "word": "meat",     "image": "/images/family-friends-3/unit-8/meat.png" },
+    { "word": "melon",    "image": "/images/family-friends-3/unit-8/melon.png" },
+    { "word": "cucumber", "image": "/images/family-friends-3/unit-8/cucumber.png" },
+    { "word": "onion",    "image": "/images/family-friends-3/unit-8/onion.png" },
+    { "word": "lemon",    "image": "/images/family-friends-3/unit-8/lemon.png" },
+    { "word": "potato",   "image": "/images/family-friends-3/unit-8/potato.png" },
+    { "word": "butter",   "image": "/images/family-friends-3/unit-8/butter.png" },
+    { "word": "cheese",   "image": "/images/family-friends-3/unit-8/cheese.png" },
+    { "word": "salt",     "image": "/images/family-friends-3/unit-8/salt.png" },
+    { "word": "pepper",   "image": "/images/family-friends-3/unit-8/pepper.png" },
+    { "word": "peas",     "image": "/images/family-friends-3/unit-8/peas.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "I'd like a/an [countable noun].",
+      "examples": [
+        "I'd like a melon.",
+        "Edward would like a sandwich.",
+        "She would like an apple."
+      ]
+    },
+    {
+      "pattern": "We'd like some [uncountable or plural noun].",
+      "examples": [
+        "We'd like some noodles.",
+        "We'd like ice cream!",
+        "The children would like some pastries."
+      ]
+    },
+    {
+      "pattern": "Would you like some [noun]? Yes, please. / No, thanks.",
+      "examples": [
+        "Would you like some cereal? Yes, please.",
+        "Would you like a banana? No, thanks.",
+        "Would your friends like some drinks?"
+      ]
+    },
+    {
+      "pattern": "one [noun] / two [plural noun] / some [plural noun]",
+      "examples": [
+        "one melon, two melons, three melons",
+        "some melons",
+        "an apple and some oranges"
+      ]
+    },
+    {
+      "pattern": "some [uncountable noun]",
+      "examples": [
+        "some bread",
+        "some rice and some water",
+        "some salad and some milkshake"
+      ]
+    },
+    {
+      "pattern": "We need some [noun].",
+      "examples": [
+        "We need some noodles and some bread.",
+        "We need a lot of things today.",
+        "Can you get me some onions and a cucumber, please?"
+      ]
+    },
+    {
+      "pattern": "You need [quantity] [noun].",
+      "examples": [
+        "You need two big potatoes.",
+        "You need a piece of fish.",
+        "You need some salt and pepper."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "ld and lt",
+    "description": "Words ending in ld, as in child, and lt, as in belt.",
+    "word_families": [
+      { "family": "ld", "words": [{ "word": "child" }, { "word": "shield" }, { "word": "field" }] },
+      { "family": "lt", "words": [{ "word": "belt" }, { "word": "quilt" }, { "word": "adult" }] }
+    ],
+    "chant": [
+      "A child and an adult",
+      "Are standing in a field.",
+      "The adult has a quilt,",
+      "The child has a shield.",
+      "The quilt is red,",
+      "The shield is gray,",
+      "The adult sits down,",
+      "But the child wants to play."
+    ]
+  },
+  "key_sentences": [
+    "I'd like a melon.",
+    "We need some noodles and some bread.",
+    "Would you like a banana? No, thanks.",
+    "Can you get me some onions and a cucumber, please?",
+    "I would like some lemons, I would like some meat.",
+    "You need two big potatoes, and you need a piece of fish.",
+    "What would you like? I'd like some potatoes, please.",
+    "You need some salt and pepper, and you need some nice fresh peas."
+  ]
+}

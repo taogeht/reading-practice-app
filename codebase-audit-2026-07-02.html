@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codebase Audit — Recording Homework App — 2026-07-02</title>
+<style>
+  :root {
+    --ink: #1a1d23;
+    --ink-soft: #4b5261;
+    --ink-faint: #79808f;
+    --paper: #fafaf8;
+    --card: #ffffff;
+    --line: #e5e4df;
+    --accent: #2f5d8a;
+    --crit-bg: #fdeaea; --crit-fg: #a4262c; --crit-line: #e8b4b6;
+    --high-bg: #fdf0e5; --high-fg: #b25a12; --high-line: #ecc9a8;
+    --med-bg:  #fdf8e2; --med-fg:  #8a6d00; --med-line: #e6d896;
+    --low-bg:  #eef3f8; --low-fg:  #3d6285; --low-line: #c2d4e4;
+    --good-bg: #e9f5ec; --good-fg: #1e6b3a; --good-line: #b4dcc0;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 48px 28px 96px; }
+  header.masthead { border-bottom: 3px solid var(--ink); padding-bottom: 24px; margin-bottom: 36px; }
+  .masthead .kicker { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+  .masthead h1 { font-size: 34px; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .masthead .sub { color: var(--ink-soft); font-size: 15px; max-width: 72ch; }
+  .factrow { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 18px; font-size: 13px; color: var(--ink-soft); }
+  .factrow strong { color: var(--ink); font-weight: 600; }
+
+  nav.toc { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 22px; margin-bottom: 40px; }
+  nav.toc .toc-title { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 40px; }
+  nav.toc li { margin: 3px 0; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+
+  h2 { font-size: 23px; margin: 56px 0 6px; padding-top: 18px; border-top: 1px solid var(--line); letter-spacing: -0.01em; }
+  h2 .secno { color: var(--ink-faint); font-weight: 500; margin-right: 10px; }
+  h3 { font-size: 17px; margin: 30px 0 8px; }
+  p { max-width: 78ch; }
+  .lede { color: var(--ink-soft); font-size: 15px; max-width: 80ch; margin-top: 0; }
+
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    padding: 2px 9px; border-radius: 999px; text-transform: uppercase; white-space: nowrap;
+    border: 1px solid;
+  }
+  .badge.crit { background: var(--crit-bg); color: var(--crit-fg); border-color: var(--crit-line); }
+  .badge.high { background: var(--high-bg); color: var(--high-fg); border-color: var(--high-line); }
+  .badge.med  { background: var(--med-bg);  color: var(--med-fg);  border-color: var(--med-line); }
+  .badge.low  { background: var(--low-bg);  color: var(--low-fg);  border-color: var(--low-line); }
+  .badge.good { background: var(--good-bg); color: var(--good-fg); border-color: var(--good-line); }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 8px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 14px; }
+  th { text-align: left; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; padding: 10px 14px; border-bottom: 2px solid var(--line); background: #f4f4f1; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.sev { width: 92px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  code { font-family: var(--mono); font-size: 12.5px; background: #f0efeb; border: 1px solid #e3e2dc; border-radius: 4px; padding: 1px 5px; word-break: break-word; }
+  td code { background: #f5f4f0; }
+
+  .finding { background: var(--card); border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .finding.crit { border-left-color: var(--crit-fg); }
+  .finding.high { border-left-color: var(--high-fg); }
+  .finding.med  { border-left-color: var(--med-fg); }
+  .finding.low  { border-left-color: var(--low-fg); }
+  .finding.good { border-left-color: var(--good-fg); }
+  .finding .f-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+  .finding .f-title { font-weight: 650; font-size: 15.5px; }
+  .finding p { margin: 6px 0; color: var(--ink-soft); }
+  .finding p strong { color: var(--ink); }
+  .finding .loc { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
+
+  .callout { border-radius: 10px; padding: 18px 22px; margin: 18px 0; border: 1px solid; }
+  .callout.warn { background: var(--crit-bg); border-color: var(--crit-line); }
+  .callout.note { background: var(--low-bg); border-color: var(--low-line); }
+  .callout.good { background: var(--good-bg); border-color: var(--good-line); }
+  .callout h3 { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  ul.tight { margin: 8px 0; padding-left: 22px; }
+  ul.tight li { margin: 5px 0; }
+
+  .verdict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media (max-width: 760px) { .verdict-grid { grid-template-columns: 1fr; } nav.toc ol { columns: 1; } }
+  .verdict-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 22px; }
+  .verdict-card h3 { margin: 0 0 10px; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; }
+  .verdict-card.right h3 { color: var(--good-fg); }
+  .verdict-card.wrong h3 { color: var(--crit-fg); }
+  .verdict-card ul { margin: 0; padding-left: 20px; }
+  .verdict-card li { margin: 7px 0; font-size: 14px; }
+
+  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 13px; }
+  @media print {
+    body { background: #fff; }
+    .wrap { padding: 0; max-width: none; }
+    nav.toc ol { columns: 2; }
+    .finding, table, .callout { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">Codebase Audit &nbsp;·&nbsp; July 2, 2026</div>
+  <h1>Recording Homework App — State of the Codebase</h1>
+  <p class="sub">Five parallel deep audits across security &amp; API design, database layer, frontend architecture, AI pipeline &amp; external integrations, and overall architecture &amp; hygiene. Findings are reported with file references; nothing was changed.</p>
+  <div class="factrow">
+    <span><strong>~95,000</strong> lines TS/TSX</span>
+    <span><strong>461</strong> source files</span>
+    <span><strong>180</strong> API routes</span>
+    <span><strong>~40</strong> DB tables</span>
+    <span><strong>56</strong> migrations</span>
+    <span><strong>79</strong> hidden type errors</span>
+    <span><strong>0</strong> automated tests</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li><a href="#verdict">Executive verdict</a></li>
+    <li><a href="#critical">The five things to fix first</a></li>
+    <li><a href="#security">Security &amp; API layer</a></li>
+    <li><a href="#database">Database &amp; queries</a></li>
+    <li><a href="#frontend">Frontend architecture</a></li>
+    <li><a href="#ai">AI pipeline &amp; integrations</a></li>
+    <li><a href="#architecture">Architecture &amp; hygiene</a></li>
+    <li><a href="#remove">What to remove (dead-code inventory)</a></li>
+    <li><a href="#roadmap">Prioritized roadmap</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="verdict"><span class="secno">1</span>Executive verdict</h2>
+<p class="lede">This is a feature-rich, genuinely well-designed product with strong domain logic — the grading pipeline, reading-generation pipeline, and student-login threat model are better than most production apps. The debt is concentrated in three places: <strong>authorization consistency</strong> (one real IDOR, plus 180 routes each hand-rolling auth), <strong>duplication</strong> (no shared route wrapper, no data-fetching layer, five spelling games reimplementing the same loop), and <strong>disabled safety nets</strong> (type errors ignored at build, ESLint off, zero tests). None of it is architectural rot — it's the natural residue of fast solo iteration, and most of it is fixable with a handful of shared helpers.</p>
+
+<div class="verdict-grid">
+  <div class="verdict-card right">
+    <h3>✓ What you're doing right</h3>
+    <ul>
+      <li><strong>Recording durability.</strong> Audio lands in R2 before analysis; every recording is fully re-gradable. The pipeline degrades gracefully — Claude failure still leaves deterministic WCPM/bands.</li>
+      <li><strong>The reading-generation pipeline</strong> (<code>src/lib/reading/generate/</code>) is the most cohesive module in the tree: staged plan→prose→validate→questions→images with real job tracking (<code>reading_generation_jobs</code>: queued/running/failed, retry lineage).</li>
+      <li><strong>Student-login threat model</strong> — dual per-student + per-IP rate limiting, enrollment verification to block school-wide targeting, well-documented reasoning.</li>
+      <li><strong>Sensitive R2 proxies done properly</strong> — audio/media proxies resolve the owning student, gate via ownership helpers, return 404 (not 403) to avoid existence oracles, and set <code>Cache-Control: private</code> for minors' content.</li>
+      <li><strong>Ownership helpers exist and account for co-teachers</strong> (<code>src/lib/auth/class-access.ts</code>) and ~58 routes use them.</li>
+      <li><strong>Image clients have real resilience</strong> — 3-attempt backoff, transient-vs-SAFETY-block classification, and a 5s settings cache on the provider lookup.</li>
+      <li><strong>Spelling audio/image cost discipline</strong> — skip-if-exists, cross-word/same-school reuse. Best-in-repo pattern.</li>
+      <li><strong>Feature flags &amp; v2-route migration strategy</strong> are clean, documented, and instantly reversible.</li>
+      <li><strong>Session/crypto hygiene</strong> — bcrypt cost 12, httpOnly/secure/sameSite cookies, Web Crypto session IDs, real logout.</li>
+      <li><strong>logger.ts</strong> with secret redaction; heaviest read paths (teacher dashboard, gradebook, student dashboard) correctly avoid N+1 via joined aggregates.</li>
+    </ul>
+  </div>
+  <div class="verdict-card wrong">
+    <h3>✗ What's biting you</h3>
+    <ul>
+      <li><strong>One real security hole:</strong> any teacher can mint a working login token for <em>any</em> student school-wide (IDOR, full account impersonation of minors).</li>
+      <li><strong>No shared route abstraction:</strong> 239 <code>getCurrentUser()</code> call sites, ~240 hand-rolled 401s, 170 copy-pasted try/catch blocks — the root cause of every per-route inconsistency found.</li>
+      <li><strong>Zero zod in the API:</strong> 0 of 180 routes validate bodies with a schema.</li>
+      <li><strong>Missing hot indexes:</strong> <code>classes</code> has no FK indexes at all, yet is scanned on nearly every teacher request; <code>class_enrollments.student_id</code> can't use its composite index on every student page.</li>
+      <li><strong>45 of 48 pages are <code>'use client'</code></strong> with hand-rolled useEffect+fetch — no RSC data fetching, no SWR/React Query, ~40 duplicated loading/error scaffolds.</li>
+      <li><strong>XP awards aren't atomic and race</strong> — concurrent awards clobber each other (last-write-wins on absolute values).</li>
+      <li><strong>Whisper — your most cost-critical external call — has no timeout and no retry</strong>, while the image clients do.</li>
+      <li><strong>Migration journal is broken:</strong> 0050–0054 untracked; a fresh environment running <code>db:migrate</code> would be missing five migrations' worth of tables.</li>
+      <li><strong>Safety nets are all off:</strong> <code>ignoreBuildErrors</code>, ESLint mostly disabled, no tests — 79 real type errors ship silently, including one cluster that's a latent logic bug.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="critical"><span class="secno">2</span>The five things to fix first</h2>
+
+<div class="finding crit">
+  <div class="f-head"><span class="badge crit">Critical</span><span class="f-title">1. IDOR: any teacher can take over any student account</span></div>
+  <p>The regenerate-token route checks only <em>role</em>, never ownership. Any teacher (or admin) can regenerate the permanent login token of <strong>any student in the school</strong> — across classes and teachers — and the response hands back the new token. Since <code>/s/[token]</code> converts that token into a passwordless session, this is full impersonation of a minor's account. Ownership helpers (<code>userCanAccessStudentMedia</code>, enrollment checks) already exist and are used elsewhere; this route just skips them.</p>
+  <div class="loc">src/app/api/teacher/students/[studentId]/regenerate-token/route.ts:12–32 → src/app/s/[token]/route.ts</div>
+</div>
+
+<div class="finding crit">
+  <div class="f-head"><span class="badge crit">Critical</span><span class="f-title">2. Unauthenticated roster + visual-password-type leak</span></div>
+  <p>Two class-scoped routes return full student names and <code>visualPasswordType</code> with <strong>no <code>getCurrentUser()</code> at all</strong>. The sibling <code>/api/students</code> route was explicitly hardened against this exact leak (the fix comment describes the account-takeover chain), but these two were missed. With the ~12-option visual-password keyspace, leaking the type materially narrows brute force, and the only prerequisite is a classId — obtainable from a <code>/c/[shortCode]</code> link.</p>
+  <div class="loc">src/app/api/classes/[classId]/students/route.ts:31–50 · src/app/api/classes/[classId]/students/[studentId]/route.ts:41–66</div>
+</div>
+
+<div class="finding high">
+  <div class="f-head"><span class="badge high">High</span><span class="f-title">3. Missing indexes on the two hottest access paths</span></div>
+  <p>The <code>classes</code> table has <strong>zero indexes</strong> on <code>teacher_id</code>, <code>school_id</code>, or <code>term_id</code> — yet <code>accessibleClassIds()</code> filters on <code>teacher_id</code> on essentially every teacher/admin request (sequential scan). Likewise <code>class_enrollments</code> only has a composite unique index led by <code>classId</code>, so the very common <code>WHERE student_id = ?</code> lookups on every student page can't use it. Two <code>CREATE INDEX</code> statements fix the two most frequent queries in the app.</p>
+  <div class="loc">src/lib/db/schema.ts:218–251 (classes) · schema.ts:253–264 (class_enrollments) · src/lib/auth/class-access.ts:115–121</div>
+</div>
+
+<div class="finding high">
+  <div class="f-head"><span class="badge high">High</span><span class="f-title">4. Migration journal missing 0050–0054</span></div>
+  <p><code>migrations/meta/_journal.json</code> ends at 0049, but the folder contains 0050–0054 (multibook practice units, teacher capabilities, generated tests, longitudinal progress, gradebook). They were applied out-of-band, so any fresh environment — or anyone trusting <code>db:migrate</code> — silently misses five migrations' worth of tables. There's also a duplicate <code>0007_*</code> prefix collision (one journaled, one orphaned hand-written file). Worth reconciling the journal once and picking a single workflow.</p>
+  <div class="loc">migrations/meta/_journal.json · migrations/0050–0054*.sql · migrations/0007_add_story_tts_versions.sql vs 0007_graceful_nomad.sql</div>
+</div>
+
+<div class="finding high">
+  <div class="f-head"><span class="badge high">High</span><span class="f-title">5. XP awards: non-atomic and a lost-update race</span></div>
+  <p><code>awardXp()</code> runs 5–9 sequential queries (event insert, progression upsert, unlocks, then a loop of star writes) with <strong>no transaction</strong> — a mid-sequence failure leaves XP events without balance updates or diverged star ledgers. Worse, it reads progression into JS, computes new totals, and writes <em>absolute values</em> back: two concurrent awards for the same student clobber each other, losing XP and corrupting streak/level. Notably <code>awardStars</code> already does this correctly with SQL increments — the fix pattern is in the same folder.</p>
+  <div class="loc">src/lib/gamification/award.ts:62–222 (esp. 74–84 read, 136–145 absolute write) · contrast src/lib/gamification/stars.ts:64–65</div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="security"><span class="secno">3</span>Security &amp; API layer</h2>
+<p class="lede">180 routes, each self-enforcing auth (middleware is pass-through by design). Where the centralized helpers are used (~58 routes), authorization is solid — including co-teacher awareness and existence-oracle avoidance. The problems are the routes that skip them, and the sheer volume of duplicated boilerplate that makes skipping easy.</p>
+
+<table>
+  <tr><th>Sev</th><th>Finding</th><th>Location</th></tr>
+  <tr><td class="sev"><span class="badge crit">Critical</span></td><td>Teacher can regenerate any student's login token → full impersonation (see §2.1)</td><td><code>api/teacher/students/[studentId]/regenerate-token</code></td></tr>
+  <tr><td class="sev"><span class="badge crit">Critical</span></td><td>Two unauthenticated class-roster routes leak names + visual-password type (see §2.2)</td><td><code>api/classes/[classId]/students{,/[studentId]}</code></td></tr>
+  <tr><td class="sev"><span class="badge med">Medium</span></td><td>No rate limiting on teacher/admin password login or on <code>/s/[token]</code> / <code>/c/[shortCode]</code>; only student-login and practice-questions use the limiter. No lockout on password brute force (mitigated only by bcrypt cost 12).</td><td><code>api/auth/login</code> · <code>s/[token]</code> · <code>c/[shortCode]</code></td></tr>
+  <tr><td class="sev"><span class="badge med">Medium</span></td><td>Stack traces and raw <code>error.message</code> returned in responses from syllabus and several reading routes (<code>stack: error?.stack</code> in two places).</td><td><code>api/classes/[classId]/syllabus</code>:69,121 · <code>syllabus/bulk-import</code>:66 · 4 reading routes</td></tr>
+  <tr><td class="sev"><span class="badge med">Medium</span></td><td>Presigned uploads: filename interpolated into key unsanitized (unlike <code>generateMediaKey</code>); <code>type='tts'</code> writes into the shared classroom TTS namespace with no per-user scoping; no <code>content-length-range</code>, so no size cap.</td><td><code>api/upload/presigned-url</code>:45 · <code>r2-client.ts</code>:257–267</td></tr>
+  <tr><td class="sev"><span class="badge med">Medium</span></td><td>Images proxy serves <em>any</em> key to <em>any</em> logged-in user — security rests entirely on the "all images are non-PII" comment invariant, unlike the audio/media proxies which resolve ownership.</td><td><code>api/images/[...key]</code>:20–33</td></tr>
+  <tr><td class="sev"><span class="badge med">Medium</span></td><td>No shared auth/error abstraction: 239 <code>getCurrentUser()</code> sites, ~240 hand-rolled 401s, 131 files with inline role guards, 119 duplicated try/catch→logError blocks. Root cause of every inconsistency in this section.</td><td>API-wide</td></tr>
+  <tr><td class="sev"><span class="badge med">Medium</span></td><td>Zod used in <strong>0 of 180 routes</strong>; bodies destructured with presence checks only (e.g. <code>teacherFeedback, status</code> written to DB unchecked).</td><td>API-wide · e.g. <code>api/recordings/[id]</code>:20–21</td></tr>
+  <tr><td class="sev"><span class="badge low">Low</span></td><td>One <code>sql.raw</code> string-built ARRAY — currently fed only D

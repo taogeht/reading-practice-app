@@ -1,0 +1,107 @@
+{
+  "unit": 2,
+  "topic": "My weekend",
+  "vocabulary": [
+    { "word": "read comics",     "image": "/images/family-friends-3/unit-2/read-comics.png" },
+    { "word": "skateboard",      "image": "/images/family-friends-3/unit-2/skateboard.png" },
+    { "word": "do gymnastics",   "image": "/images/family-friends-3/unit-2/do-gymnastics.png" },
+    { "word": "play chess",      "image": "/images/family-friends-3/unit-2/play-chess.png" },
+    { "word": "fish",            "image": "/images/family-friends-3/unit-2/fish.png" },
+    { "word": "play basketball", "image": "/images/family-friends-3/unit-2/play-basketball.png" },
+    { "word": "take photos",     "image": "/images/family-friends-3/unit-2/take-photos.png" },
+    { "word": "play volleyball", "image": "/images/family-friends-3/unit-2/play-volleyball.png" },
+    { "word": "play the guitar", "image": "/images/family-friends-3/unit-2/play-the-guitar.png" },
+    { "word": "shop",            "image": "/images/family-friends-3/unit-2/shop.png" },
+    { "word": "cook",            "image": "/images/family-friends-3/unit-2/cook.png" },
+    { "word": "paint",           "image": "/images/family-friends-3/unit-2/paint.png" },
+    { "word": "play the piano",  "image": "/images/family-friends-3/unit-2/play-the-piano.png" },
+    { "word": "visit family",    "image": "/images/family-friends-3/unit-2/visit-family.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "I like [verb]-ing.",
+      "examples": [
+        "I like reading.",
+        "I like playing chess.",
+        "I like fishing now!"
+      ]
+    },
+    {
+      "pattern": "I don't like [verb]-ing.",
+      "examples": [
+        "I don't like fishing.",
+        "I don't like taking photos.",
+        "I don't like skateboarding."
+      ]
+    },
+    {
+      "pattern": "He/She likes [verb]-ing.",
+      "examples": [
+        "He likes playing chess.",
+        "She likes painting.",
+        "Dad likes taking photos."
+      ]
+    },
+    {
+      "pattern": "He/She doesn't like [verb]-ing.",
+      "examples": [
+        "He doesn't like skateboarding.",
+        "She doesn't like playing basketball.",
+        "Lee doesn't like fishing."
+      ]
+    },
+    {
+      "pattern": "Do you like [verb]-ing? Yes, I do. / No, I don't.",
+      "examples": [
+        "Do you like playing chess? Yes, I do.",
+        "Do you like fishing? No, I don't.",
+        "Do you like reading comics? Yes, I do."
+      ]
+    },
+    {
+      "pattern": "Does he/she like [verb]-ing? Yes, he does. / No, he doesn't.",
+      "examples": [
+        "Does he like fishing? Yes, he does.",
+        "Does he like skateboarding? No, he doesn't.",
+        "Does he like playing chess? Yes, he does."
+      ]
+    },
+    {
+      "pattern": "[Name] likes/doesn't like [verb]-ing.",
+      "examples": [
+        "Janet loves playing volleyball, but she doesn't like playing basketball.",
+        "Lisa likes taking photos.",
+        "Lee doesn't like fishing. He likes skateboarding."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "magic e",
+    "description": "Magic e makes the vowel say its long sound: a_e, i_e, o_e, u_e.",
+    "word_families": [
+      { "family": "a_e", "words": [{ "word": "face" }, { "word": "space" }] },
+      { "family": "i_e", "words": [{ "word": "kite" }, { "word": "bike" }] },
+      { "family": "o_e", "words": [{ "word": "rope" }, { "word": "stone" }] },
+      { "family": "u_e", "words": [{ "word": "June" }, { "word": "cube" }] }
+    ],
+    "chant": [
+      "Let's play together, me and you.",
+      "I have a kite,",
+      "And a jump rope, too.",
+      "I have a cube,",
+      "And a toy from space.",
+      "Look. It has a purple face."
+    ]
+  },
+  "key_sentences": [
+    "I don't like fishing. I like reading.",
+    "Do you like fishing? No, I don't.",
+    "Does he like skateboarding? Yes, he does.",
+    "My friends have lots of hobbies. They like playing computer games and watching DVDs.",
+    "I love reading comics, too.",
+    "I like playing the guitar and the piano.",
+    "Dad likes playing basketball. He also likes playing chess.",
+    "What do you like doing? I like taking photos.",
+    "I'm happy it's the weekend!"
+  ]
+}

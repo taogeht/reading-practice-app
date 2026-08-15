@@ -1,0 +1,106 @@
+{
+  "unit": 7,
+  "topic": "Places to go!",
+  "vocabulary": [
+    { "word": "cafe",          "image": "/images/family-friends-3/unit-7/cafe.png" },
+    { "word": "library",       "image": "/images/family-friends-3/unit-7/library.png" },
+    { "word": "museum",        "image": "/images/family-friends-3/unit-7/museum.png" },
+    { "word": "playground",    "image": "/images/family-friends-3/unit-7/playground.png" },
+    { "word": "shopping mall", "image": "/images/family-friends-3/unit-7/shopping-mall.png" },
+    { "word": "sports center", "image": "/images/family-friends-3/unit-7/sports-center.png" },
+    { "word": "swimming pool", "image": "/images/family-friends-3/unit-7/swimming-pool.png" },
+    { "word": "movie theater", "image": "/images/family-friends-3/unit-7/movie-theater.png" },
+    { "word": "play",          "image": "/images/family-friends-3/unit-7/play.png" },
+    { "word": "theater",       "image": "/images/family-friends-3/unit-7/theater.png" },
+    { "word": "concert",       "image": "/images/family-friends-3/unit-7/concert.png" },
+    { "word": "actor",         "image": "/images/family-friends-3/unit-7/actor.png" },
+    { "word": "movie",         "image": "/images/family-friends-3/unit-7/movie.png" },
+    { "word": "singer",        "image": "/images/family-friends-3/unit-7/singer.png" }
+  ],
+  "grammar_patterns": [
+    {
+      "pattern": "We always [verb]. / I sometimes [verb]. / She never [verb].",
+      "examples": [
+        "We always go to the sports center.",
+        "I sometimes go to the library.",
+        "She never goes to the shopping mall."
+      ]
+    },
+    {
+      "pattern": "[Name] always/sometimes/never [verb].",
+      "examples": [
+        "Billy always rides his bike to school.",
+        "They sometimes watch TV.",
+        "Mom never listens to music."
+      ]
+    },
+    {
+      "pattern": "My birthday is in [month].",
+      "examples": [
+        "My birthday is in May.",
+        "Emma's birthday is in March.",
+        "We sometimes go to the beach in August."
+      ]
+    },
+    {
+      "pattern": "He plays soccer on [day].",
+      "examples": [
+        "He plays soccer on Fridays.",
+        "Dad never works on Saturdays.",
+        "You never watch TV on Mondays."
+      ]
+    },
+    {
+      "pattern": "We get up at [time].",
+      "examples": [
+        "We get up at eight o'clock.",
+        "I always have lunch at one o'clock.",
+        "The children always go to bed at nine o'clock."
+      ]
+    },
+    {
+      "pattern": "Can we go to the [place]?",
+      "examples": [
+        "Can we go to the shopping mall?",
+        "Can we go to the playground?",
+        "Can we go to the museum?"
+      ]
+    },
+    {
+      "pattern": "Do you ever go to the [place]?",
+      "examples": [
+        "Do you like watching movies? Yes, I do.",
+        "Do you ever go to the movie theater? Yes, I sometimes go to the movie theater.",
+        "Do you ever go to the sports center?"
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "ow and ou",
+    "description": "The ow sound as in cow and the ou sound as in house.",
+    "word_families": [
+      { "family": "ow", "words": [{ "word": "cow" }, { "word": "clown" }, { "word": "flower" }] },
+      { "family": "ou", "words": [{ "word": "house" }, { "word": "round" }, { "word": "mouse" }] }
+    ],
+    "chant": [
+      "The clown has flowers,",
+      "Red and blue.",
+      "He has a round nose,",
+      "But only one shoe.",
+      "He has orange hair,",
+      "He's in his house.",
+      "He jumps on a chair,",
+      "He's scared of a mouse!"
+    ]
+  },
+  "key_sentences": [
+    "What do you want to do today?",
+    "Can we go to the shopping mall?",
+    "But we always go to the playground!",
+    "We never want to do the same thing!",
+    "We always go to the sports center.",
+    "I sometimes go to the library. She never goes to the shopping mall.",
+    "Do you ever go to the movie theater? Yes, I sometimes go to the movie theater.",
+    "I have tickets for the movie theater."
+  ]
+}

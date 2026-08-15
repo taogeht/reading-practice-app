@@ -1,0 +1,112 @@
+{
+  "unit": 0,
+  "topic": "My family",
+  "vocabulary": [
+    { "word": "grandma",   "image": "/images/family-friends-3/unit-0/grandma.png" },
+    { "word": "grandpa",   "image": "/images/family-friends-3/unit-0/grandpa.png" },
+    { "word": "mom",       "image": "/images/family-friends-3/unit-0/mom.png" },
+    { "word": "dad",       "image": "/images/family-friends-3/unit-0/dad.png" },
+    { "word": "aunt",      "image": "/images/family-friends-3/unit-0/aunt.png" },
+    { "word": "uncle",     "image": "/images/family-friends-3/unit-0/uncle.png" },
+    { "word": "brother",   "image": "/images/family-friends-3/unit-0/brother.png" },
+    { "word": "sister",    "image": "/images/family-friends-3/unit-0/sister.png" },
+    { "word": "cousin",    "image": "/images/family-friends-3/unit-0/cousin.png" },
+    { "word": "January",   "image": "/images/family-friends-3/unit-0/january.png" },
+    { "word": "February",  "image": "/images/family-friends-3/unit-0/february.png" },
+    { "word": "March",     "image": "/images/family-friends-3/unit-0/march.png" },
+    { "word": "April",     "image": "/images/family-friends-3/unit-0/april.png" },
+    { "word": "May",       "image": "/images/family-friends-3/unit-0/may.png" },
+    { "word": "June",      "image": "/images/family-friends-3/unit-0/june.png" },
+    { "word": "July",      "image": "/images/family-friends-3/unit-0/july.png" },
+    { "word": "August",    "image": "/images/family-friends-3/unit-0/august.png" },
+    { "word": "September", "image": "/images/family-friends-3/unit-0/september.png" },
+    { "word": "October",   "image": "/images/family-friends-3/unit-0/october.png" },
+    { "word": "November",  "image": "/images/family-friends-3/unit-0/november.png" },
+    { "word": "December",  "image": "/images/family-friends-3/unit-0/december.png" }
+  ],
+  "numbers": [
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+    "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "one hundred"
+  ],
+  "adjectives": ["big", "tall", "fast", "slow", "small"],
+  "grammar_patterns": [
+    {
+      "pattern": "This is my [family member].",
+      "examples": [
+        "This is my sister.",
+        "This is my brother.",
+        "This is my cousin."
+      ]
+    },
+    {
+      "pattern": "[Name] is my [family member].",
+      "examples": [
+        "Amy is my sister.",
+        "Max is my brother.",
+        "Leo is my cousin."
+      ]
+    },
+    {
+      "pattern": "I have [number] [family members].",
+      "examples": [
+        "I have two cousins.",
+        "I have an aunt and an uncle.",
+        "We have a big family."
+      ]
+    },
+    {
+      "pattern": "[Plural noun] are [comparative] than [plural noun].",
+      "examples": [
+        "Giraffes are taller than lions.",
+        "Cows are bigger than goats.",
+        "Horses are faster than sheep."
+      ]
+    },
+    {
+      "pattern": "The [noun] is [comparative] than the [noun].",
+      "examples": [
+        "The red car is bigger than the blue car.",
+        "The green car is faster than the red car.",
+        "The elephant is bigger than the monkey."
+      ]
+    },
+    {
+      "pattern": "When is your birthday? My birthday is in [month].",
+      "examples": [
+        "When is your birthday? My birthday is in June.",
+        "My birthday is in March.",
+        "My favorite month is December."
+      ]
+    },
+    {
+      "pattern": "How old are you? I'm [number].",
+      "examples": [
+        "How old are you? I'm nine.",
+        "I'm seven.",
+        "She's seven."
+      ]
+    },
+    {
+      "pattern": "[Subject] was/were [adjective].",
+      "examples": [
+        "It was sunny.",
+        "The children were happy.",
+        "Mom was hot and Dad was tired."
+      ]
+    }
+  ],
+  "key_sentences": [
+    "Hello. I'm Leo and I'm eleven.",
+    "Amy is my sister. We have a big family.",
+    "I have an aunt and an uncle and I have two cousins.",
+    "Her name is Holly. She's seven.",
+    "When is your birthday? My birthday is in June.",
+    "How old are you? I'm nine.",
+    "Giraffes are taller than lions.",
+    "The red car is bigger than the blue car.",
+    "Yesterday, James and Polly were at the beach.",
+    "It was sunny and the children were very happy."
+  ]
+}

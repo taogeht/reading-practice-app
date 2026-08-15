@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codebase Audit — Reading Homework App</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e6e9ef;
+    --muted: #9aa3b2;
+    --accent: #6ea8fe;
+    --crit: #ff5c7a;
+    --high: #ff9f43;
+    --med: #ffd33d;
+    --low: #4dd4ac;
+    --good: #4dd4ac;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 28px 120px; }
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 32px;
+    margin-bottom: 40px;
+  }
+  h1 { font-size: 30px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .subtitle { color: var(--muted); font-size: 15px; margin: 0; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+  .chip {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 13px; font-size: 12.5px; color: var(--muted);
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+  h2 {
+    font-size: 21px; margin: 48px 0 6px; letter-spacing: -0.01em;
+    padding-top: 12px;
+  }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  h3 { font-size: 16px; margin: 30px 0 10px; color: #cfd6e2; }
+  .section-lead { color: var(--muted); margin: 4px 0 20px; }
+  p { margin: 0 0 14px; }
+  code {
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 5px; padding: 1px 6px; color: #d7c9ff;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* severity badges */
+  .sev {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 5px; vertical-align: middle;
+    margin-right: 8px; white-space: nowrap;
+  }
+  .sev-crit { background: rgba(255,92,122,0.15); color: var(--crit); border: 1px solid rgba(255,92,122,0.4); }
+  .sev-high { background: rgba(255,159,67,0.13); color: var(--high); border: 1px solid rgba(255,159,67,0.35); }
+  .sev-med  { background: rgba(255,211,61,0.12); color: var(--med); border: 1px solid rgba(255,211,61,0.32); }
+  .sev-low  { background: rgba(77,212,172,0.12); color: var(--low); border: 1px solid rgba(77,212,172,0.3); }
+  .sev-good { background: rgba(77,212,172,0.12); color: var(--good); border: 1px solid rgba(77,212,172,0.3); }
+
+  /* finding cards */
+  .finding {
+    background: var(--panel); border: 1px solid var(--border);
+    border-left: 3px solid var(--border); border-radius: 8px;
+    padding: 16px 18px; margin: 14px 0;
+  }
+  .finding.crit { border-left-color: var(--crit); }
+  .finding.high { border-left-color: var(--high); }
+  .finding.med  { border-left-color: var(--med); }
+  .finding.low  { border-left-color: var(--low); }
+  .finding.good { border-left-color: var(--good); }
+  .finding .title { font-weight: 650; font-size: 15px; margin-bottom: 6px; display: block; }
+  .finding .body { color: #c7cdd8; font-size: 14px; }
+  .finding .path { font-family: var(--mono); font-size: 12px; color: var(--muted); display:block; margin-top: 8px; }
+  .corroborated {
+    display:inline-block; font-size: 10.5px; font-weight:600; letter-spacing:0.03em;
+    text-transform: uppercase; color: var(--accent);
+    background: rgba(110,168,254,0.1); border:1px solid rgba(110,168,254,0.3);
+    border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+  }
+
+  /* TOC */
+  nav.toc {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 24px; margin-bottom: 12px;
+  }
+  nav.toc h4 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav.toc li { margin-bottom: 7px; break-inside: avoid; }
+
+  /* tables */
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td code { font-size: 11.5px; }
+  tbody tr:hover { background: var(--panel); }
+
+  /* scoreboard */
+  .scoreboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin: 24px 0 8px; }
+  .score-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .score-card .n { font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .score-card .l { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .n.crit { color: var(--crit); } .n.high { color: var(--high); } .n.med { color: var(--med); } .n.low { color: var(--low); } .n.good { color: var(--good); }
+
+  .callout {
+    background: linear-gradient(180deg, rgba(110,168,254,0.06), rgba(110,168,254,0.02));
+    border: 1px solid rgba(110,168,254,0.25); border-radius: 10px; padding: 18px 22px; margin: 22px 0;
+  }
+  .callout h4 { margin: 0 0 10px; font-size: 14px; color: var(--accent); }
+  ul.tight { margin: 8px 0; padding-left: 22px; }
+  ul.tight li { margin-bottom: 7px; }
+  .divider { height:1px; background: var(--border); border:0; margin: 40px 0; }
+  footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60px; }
+  .verdict { font-size: 15.5px; color: #d7dde7; }
+  .pill-list { display:flex; flex-wrap:wrap; gap:8px; margin: 6px 0 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>Codebase Audit — Reading Homework App</h1>
+  <p class="subtitle">Read-only architectural &amp; correctness review. Next.js 16 · React 19 · Drizzle/Postgres · custom cookie auth · multi-provider AI pipeline (Whisper, Claude, TTS, image-gen).</p>
+  <div class="meta-row">
+    <span class="chip"><b>461</b> TS/TSX files</span>
+    <span class="chip"><b>~95k</b> lines</span>
+    <span class="chip"><b>180</b> API routes</span>
+    <span class="chip"><b>~40</b> DB tables</span>
+    <span class="chip"><b>54+</b> migrations</span>
+    <span class="chip">Audited across <b>5</b> dimensions</span>
+    <span class="chip">Date: <b>2026-07-02</b></span>
+  </div>
+</header>
+
+<div class="scoreboard">
+  <div class="score-card"><div class="n crit">1</div><div class="l">Critical</div></div>
+  <div class="score-card"><div class="n high">11</div><div class="l">High</div></div>
+  <div class="score-card"><div class="n med">18</div><div class="l">Medium</div></div>
+  <div class="score-card"><div class="n low">15+</div><div class="l">Low</div></div>
+  <div class="score-card"><div class="n good">14</div><div class="l">Done well</div></div>
+</div>
+
+<nav class="toc">
+  <h4>Contents</h4>
+  <ol>
+    <li><a href="#verdict">Executive verdict</a></li>
+    <li><a href="#topfix">The 6 things to fix first</a></li>
+    <li><a href="#security">Security &amp; authorization</a></li>
+    <li><a href="#data">Database &amp; data layer</a></li>
+    <li><a href="#ai">AI pipeline &amp; integrations</a></li>
+    <li><a href="#frontend">Frontend &amp; client performance</a></li>
+    <li><a href="#arch">Architecture &amp; hygiene</a></li>
+    <li><a href="#dead">What to remove (dead code)</a></li>
+    <li><a href="#well">What's done well</a></li>
+    <li><a href="#roadmap">Suggested sequencing</a></li>
+  </ol>
+</nav>
+
+<h2 id="verdict"><span class="num">01</span>Executive verdict</h2>
+<p class="verdict">This is a <b>capable, feature-rich app built fast by one developer</b> — and it shows in both directions. The domain modeling is genuinely thoughtful (reading-fluency pipeline, gamification economy, bilingual ESL support), the newer modules are well-factored, and there are several patterns worth being proud of. But the codebase carries the classic tax of solo velocity: <b>every one of the 180 API routes hand-rolls its own auth, validation, and error handling</b>, and that single missing abstraction is the root cause of most of the security and consistency findings below.</p>
+<p>The headline risks are narrow and fixable: <b>one critical account-takeover bug</b>, a cluster of <b>non-atomic / racy gamification writes</b>, a few <b>missing database indexes on hot paths</b>, and an <b>unhardened Whisper call</b> at the center of the grading pipeline. None of these require re-architecting — they're targeted fixes. The larger, slower-burn theme is that <b>type-checking and linting are switched off</b> (79 real type errors hidden), there are <b>no automated tests</b>, and the app is <b>almost entirely client-rendered</b>, forfeiting the framework's biggest performance lever.</p>
+
+<div class="callout">
+  <h4>The single highest-leverage change</h4>
+  <p style="margin:0">Introduce a <code>withAuth(handler, { role, ownership })</code> route wrapper. Three of the five audits independently flagged its absence. Today: <b>239</b> <code>getCurrentUser()</code> call-sites, <b>~240</b> hand-rolled 401s, <b>267</b> inline role comparisons, <b>170</b> duplicated try/catch epilogues, and <b>0</b> routes using schema validation. This one abstraction would collapse that duplication <em>and</em> structurally prevent the IDOR, stack-leak, and inconsistent-logging classes of bug — you fix the pattern once instead of auditing 180 files.</p>
+</div>
+
+<h2 id="topfix"><span class="num">02</span>The 6 things to fix first</h2>
+<table>
+  <thead><tr><th>#</th><th>Issue</th><th>Why it matters</th><th>Sev</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Any teacher can regenerate <em>any</em> student's login token school-wide</td><td>Full passwordless impersonation of a minor's account, crossing class/school boundaries</td><td><span class="sev sev-crit">Crit</span></td></tr>
+    <tr><td>2</td><td><code>awardXp</code> is non-atomic <em>and</em> has a lost-update race</td><td>Concurrent rewards corrupt XP / level / streak and can desync stars vs XP; no transaction wraps the multi-table write</td><td><span class="sev sev-high">High</span></td></tr>
+    <tr><td>3</td><td><code>classes</code> table has zero indexes on its FKs; <code>class_enrollments.student_id</code> unindexed</td><td>Sequential scans on nearly every teacher and student request</td><td><span class="sev sev-high">High</span></td></tr>
+    <tr><td>4</td><td>Whisper client has no timeout and no retry/backoff</td><td>A hung or rate-limited transcription fails the whole submission on the first blip — the most cost-critical call is the least resilient</td><td><span class="sev sev-high">High</span></td></tr>
+    <tr><td>5</td><td>Type-checking &amp; ESLint disabled at build; 79 hidden type errors; no tests</td><td>No safety net; one error cluster (<code>teacher/dashboard</code> role comparison) looks like a latent bug</td><td><span class="sev sev-high">High</span></td></tr>
+    <tr><td>6</td><td><code>/api/recordings</code> GET is unbounded, over-fetches full story bodies</td><td>Grows linearly with class history; teacher submissions page pulls everything, groups client-side</td><td><span class="sev sev-high">High</span></td></tr>
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<h2 id="security"><span class="num">03</span>Security &amp; authorization</h2>
+<p class="section-lead">180 routes, middleware is pass-through so each route self-checks. The ownership helpers that exist are good — the problem is inconsistent application.</p>
+
+<div class="finding crit">
+  <span class="title"><span class="sev sev-crit">Critical</span>Teacher can mint a login for any student in the school</span>
+  <div class="body">The token-regeneration route checks <code>role</code> only, never class ownership, and returns the new token in the response. Combined with <code>/s/[token]</code> (which turns a token into a passwordless session), any teacher or admin can take over any student account school-wide. An ownership helper (<code>userCanAccessStudentMedia</code>) exists and is used elsewhere — it's simply not applied here.
+  <span class="path">src/app/api/teacher/students/[studentId]/regenerate-token/route.ts:12–32</span></div>
+</div>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span>No shared auth/validation/error abstraction across 180 routes<span class="corroborated">flagged by 3 audits</span></span>
+  <div class="body">239 <code>getCurrentUser()</code> call-sites, ~240 hand-rolled 401s, 267 inline role comparisons, 170 duplicated try/catch blocks, and <b>zero</b> routes using zod for body validation. This is the structural root cause of the inconsistencies below (401 vs 403, <code>console.error</code> vs <code>logError</code>, stack leaks, missing ownership checks).
+  <span class="path">codebase-wide — canonical copy at src/app/api/fix-story-audio/route.ts:14–18</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Unauthenticated roster + visual-password-type leak</span>
+  <div class="body">Two class-scoped routes return student names and <code>visualPasswordType</code> with no <code>getCurrentUser()</code> at all — even though the sibling <code>/api/students</code> route was explicitly hardened against exactly this. With only a <code>classId</code> (obtainable from <code>/c/[shortCode]</code>), the ~12-option visual-password keyspace is narrowed for brute force.
+  <span class="path">src/app/api/classes/[classId]/students/route.ts:31–50 · .../[studentId]/route.ts:41–66</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>No rate limiting on password login or magic/short-link entry</span>
+  <div class="body">Teacher/admin email-password login, <code>/s/[token]</code>, and <code>/c/[shortCode]</code> have no throttle or lockout (only bcrypt cost 12 slows password guessing). The good per-student + per-IP rate limiter built for student-login isn't applied to these paths.
+  <span class="path">src/app/api/auth/login/route.ts · src/app/s/[token]/route.ts · src/app/c/[shortCode]/route.ts</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Stack traces / internal errors leaked in responses</span>
+  <div class="body">Several routes return <code>error.message</code> and even <code>error.stack</code> in the JSON body (syllabus, bulk-import, multiple reading routes). Authenticated-only, but leaks DB/internal structure.
+  <span class="path">src/app/api/classes/[classId]/syllabus/route.ts:69,121 · .../bulk-import/route.ts:66 · several teacher/reading routes</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Presigned upload: shared namespace, unsanitized key, no size cap</span>
+  <div class="body">Any authenticated user (incl. students) can request a presigned PUT. <code>filename</code> is interpolated into the key unsanitized; <code>type='tts'</code> keys have no per-user scoping (a student can write into the shared classroom-TTS namespace); and no <code>content-length-range</code> means no upload-size limit.
+  <span class="path">src/app/api/upload/presigned-url/route.ts:45 · src/lib/storage/r2-client.ts:257–267</span></div>
+</div>
+
+<div class="finding low">
+  <span class="title"><span class="sev sev-low">Low</span>Other hardening gaps</span>
+  <div class="body">Images proxy serves any key to any logged-in user (relies on a "no PII in images" invariant); expired sessions never swept (<code>cleanupExpiredSessions()</code> has no callers); no CSRF tokens (relies on SameSite=lax); 53 routes use raw <code>console.error</code> bypassing secret redaction; one <code>sql.raw</code> string-interpolation (currently safe — DB-derived UUIDs only).
+  <span class="path">src/app/api/images/[...key]/route.ts · src/lib/auth.ts:62 · teacher/reading/passages/route.ts:103</span></div>
+</div>
+
+<h2 id="data"><span class="num">04</span>Database &amp; data layer</h2>
+<p class="section-lead">Schema is thoughtful on newer tables (documented composite/partial indexes) but has hot-path gaps and a cluster of non-atomic gamification writes.</p>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span>Missing indexes on the hottest foreign keys</span>
+  <div class="body">The <code>classes</code> table has <b>no index block at all</b> — <code>teacher_id</code>, <code>school_id</code>, <code>term_id</code> are unindexed, yet <code>accessibleClassIds()</code> filters on <code>teacher_id</code> on essentially every teacher/admin request (seq scan). Separately, <code>class_enrollments.student_id</code> has no standalone index (the only index is composite with <code>classId</code> leading), so every student dashboard / classmates lookup seq-scans enrollments.
+  <span class="path">src/lib/db/schema.ts:218–251 (classes), 253–264 (enrollments) · src/lib/auth/class-access.ts:115–121</span></div>
+</div>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span><code>awardXp</code>: non-atomic writes + lost-update race</span>
+  <div class="body">Two distinct defects in one function. (a) It inserts the XP event, upserts progression, inserts unlocks, and loops N star-writes <b>outside any transaction</b> — a mid-sequence failure leaves XP events without a balance bump, or XP updated but stars diverged. (b) It reads progression into JS, computes new totals in memory, and writes <b>absolute values</b> back — so two concurrent awards clobber each other (last-write-wins), losing XP and corrupting level/streak. Notably <code>awardStars</code> uses <code>sql</code> increments and is race-safe; XP is not. No caller wraps the domain write + <code>awardXp</code> together either.
+  <span class="path">src/lib/gamification/award.ts:62–222 (reads :74–84, absolute writes :136–145)</span></div>
+</div>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span><code>/api/recordings</code> GET is unbounded and over-selects</span>
+  <div class="body">Returns every recording across every class a teacher manages — no LIMIT, no pagination — and joins <code>stories</code> to select the full <code>storyContent</code> body for each row, which the submissions client never uses. Grouping happens client-side. Grows linearly with history. Admin list endpoints (users, stories, students) are likewise unpaginated, while <code>/api/stories</code> paginates correctly — so the pattern exists, just isn't applied.
+  <span class="path">src/app/api/recordings/route.ts:145–191</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Migration journal out of sync + duplicate <code>0007</code></span>
+  <div class="body">The Drizzle journal ends at idx 49, but the folder contains <code>0050</code>–<code>0054</code> (multibook, teacher-capabilities, generated-tests, longitudinal-progress, gradebook). These were applied out-of-band with <code>IF NOT EXISTS</code> guards, so a fresh environment running <code>drizzle-kit migrate</code> would be <b>missing those tables</b>. Two files also collide on the <code>0007</code> prefix.
+  <span class="path">migrations/meta/_journal.json vs migrations/0050–0054 · 0007_add_story_tts_versions.sql</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>FK relationships modeled as unconstrained jsonb / magic strings</span>
+  <div class="body"><code>reading_passages.target_vocab_ids</code> is a jsonb array of <code>vocabulary.id</code> UUIDs — no FK, no cascade, no index; deleting a vocab row silently dangles references. Separately, <code>book_slug</code> is used across practice/test/curriculum tables but the <code>books</code> table has no <code>slug</code> column at all — the catalog is disconnected from everything keyed to it.
+  <span class="path">src/lib/db/schema.ts:1487–1490, 1746 · 947, 1012, 1040 vs books 638–657</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Other data-layer gaps</span>
+  <div class="body">N+1 in <code>/api/teacher/classes</code> GET (one COUNT per class — the dashboard already shows the right GROUP BY pattern); student dashboard leaks assignments from teacher-archived classes (no <code>classes.active</code> filter); no request-level memoization of hot lookups (<code>getCurrentUser</code>, <code>accessibleClassIds</code>, capabilities recomputed per call, not wrapped in React <code>cache()</code>); non-transactional lazy class/school provisioning can orphan a school.
+  <span class="path">teacher/classes/route.ts:55–67 · student/dashboard/route.ts:86–96 · auth.ts:119–137</span></div>
+</div>
+
+<h2 id="ai"><span class="num">05</span>AI pipeline &amp; integrations</h2>
+<p class="section-lead">The grading pipeline's durability model is genuinely good (recordings are always safe and re-gradable). The gaps are resilience, cost reuse, and a bug that crept in through copy-paste.</p>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span>Whisper client has no timeout and no retry/backoff</span>
+  <div class="body">The most cost- and latency-critical external call is a bare <code>fetch</code> with no <code>AbortController</code> and no retry loop — a hung request blocks indefinitely, a 429/5xx blip fails the whole submission on the first shot. Conspicuous because both image clients implement 3-attempt exponential backoff. ElevenLabs client has the same gap.
+  <span class="path">src/lib/grading/whisper-client.ts:47 · src/lib/tts/elevenlabs-client.ts:53</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Passage pipeline drops the Mandarin summary (copy-paste drift)</span>
+  <div class="body">The two recording pipelines (assignment vs passage-page) share the pure scoring core but duplicate ~25-column persist blocks. The copy diverged: the passage persist sets <code>teacherSummary</code> but omits <code>teacherSummaryZh</code> even though the value is computed and the column exists — so Taiwanese teachers reviewing passage-page recordings silently never get the Mandarin summary. A duration type mismatch (integer vs decimal-string) exists between the two too.
+  <span class="path">src/lib/grading/analyze-recording.ts:522 (missing) vs :319–320 (present)</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Cost waste: re-grade re-transcribes; passage TTS regenerates every page</span>
+  <div class="body">Every teacher "Re-analyze" click re-runs Whisper from scratch even though the transcript is already stored on the row — pure billed waste if the intent is a re-score. Passage-page TTS re-synthesizes and re-uploads all pages with no "already has audio for this voice" guard, and the R2 key omits <code>speakingRate</code> so a rate change silently overwrites. No per-student/day cap on any expensive call (Whisper, Claude, image-gen).
+  <span class="path">analyze-recording.ts:389,175 · teacher/reading/passages/[passageId]/audio/route.ts:105–140</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Recordings analysis has no job-status tracking; failures can vanish</span>
+  <div class="body">Unlike the reading-generation pipeline (which has proper queued→running→completed/failed job rows), the recordings pipeline has no analysis-state column. If the background task is killed before <code>persistFailure</code> runs, the row stays <code>status='submitted'</code> with null analysis — indistinguishable from "still processing," with no teacher-visible stuck/failed signal. Also: several fire-and-forget routes set no <code>maxDuration</code> despite dispatching multi-second work after the response, and the code contains contradictory assumptions about whether the deploy target is long-running Node or serverless.
+  <span class="path">src/lib/grading/analyze-recording.ts:435–437 · recordings/upload/route.ts (no maxDuration)</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Scattered model IDs; fragile background-strip; orphaned R2 objects</span>
+  <div class="body"><code>claude-sonnet-4-6</code> is hardcoded in 8+ files with no central constant (an upgrade touches all of them). <code>stripGeminiBackground</code> is a hard-coded-tolerance flood-fill with known failure modes that only <code>console.warn</code>s (a 0-pixels-stripped result still ships an opaque avatar). Deleting a story removes the row but never deletes its TTS/image objects from R2 — orphan-by-design in several entity types, with a "needs a sweep" comment and no janitor job. Some Claude callers set <code>thinking: disabled</code> and <code>effort: medium</code> together (contradictory).
+  <span class="path">8+ files · src/lib/generation/avatars.ts:47–117 · src/app/api/stories/[id]/route.ts:198–201</span></div>
+</div>
+
+<h2 id="frontend"><span class="num">06</span>Frontend &amp; client performance</h2>
+<p class="section-lead">45 of 48 pages are <code>'use client'</code> doing <code>useEffect</code>+<code>fetch</code>. There is no server-side data fetching, no data library, and no <code>next/dynamic</code> anywhere — this is the root cause of most findings here.</p>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span>Almost entirely client-rendered; ~40 hand-rolled fetch/loading blocks</span>
+  <div class="body">39 pages fetch inside effects with hand-rolled <code>useState</code>+loading flags; only 6 parallelize with <code>Promise.all</code>. No SWR/React Query, no RSC data fetching, no code-splitting. This forfeits the App Router's streaming/caching and produces client waterfalls on every screen.
+  <span class="path">src/app/**/page.tsx (grep: 0 hits for swr/react-query/@tanstack/next-dynamic)</span></div>
+</div>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span>Root <code>AuthProvider</code> gates the whole app in a client effect and re-renders on every navigation</span>
+  <div class="body">The entire tree is wrapped by a client component that fetches <code>/api/auth/me</code> after hydration and runs role-redirect logic in an effect keyed on <code>pathname</code>. Consequences: flash/redirect churn on load, RBAC enforced only client-side via <code>pathname.startsWith</code>, and the context value is not memoized while <code>usePathname()</code> re-renders the provider on every route change — so all consumers re-render each navigation.
+  <span class="path">src/components/providers/auth-provider.tsx (mounted src/app/layout.tsx:19)</span></div>
+</div>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span>Student landing page eagerly bundles all 5 spelling games + confetti</span>
+  <div class="body">The V2 dashboard imports all five game components (~3,100 lines, 4 importing <code>canvas-confetti</code> at module top) at the top level — all ship in the bundle before a child picks a game, on the hot path for young learners on tablets. Textbook <code>next/dynamic</code> case. Compounding this, the legacy 828-line dashboard still mounts and fires two wasted fetches before redirecting to V2.
+  <span class="path">src/app/student/dashboard-v2/page.tsx:31–35 · src/app/student/dashboard/page.tsx</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Large duplicated component families</span>
+  <div class="body">Five spelling games (~3,100 lines) each reimplement the same game loop (fetch next word, submit result, audio playback, confetti, streak state) — a <code>useSpellingGame</code> hook could remove ~1,000+ lines. Two MediaRecorder implementations exist where one <code>useMediaRecorder</code> hook would do. A well-built shared TTS hook (<code>use-play-tts</code>) exists but is used by exactly one component while 7+ others hand-roll <code>new Audio()</code>.
+  <span class="path">src/components/spelling/*.tsx · audio-recorder.tsx + teacher-reply-recorder.tsx · src/hooks/use-play-tts.ts</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Giant page components; providers not memoized; raw <code>&lt;img&gt;</code> everywhere</span>
+  <div class="body">Six pages exceed 800 lines doing state+fetch+UI inline (reading/generate has 34 <code>useState</code>). <code>StarsProvider</code>/<code>AvatarProvider</code> pass fresh context objects each render (re-render storms during avatar drags) and fetch on every student page load regardless of relevance. 47 raw <code>&lt;img&gt;</code> vs 7 <code>next/image</code> on an image-heavy young-learner UI (layout shift, no optimization).
+  <span class="path">teacher/reading/generate/page.tsx (1535) · providers/*.tsx · grep 47×&lt;img</span></div>
+</div>
+
+<div class="finding low">
+  <span class="title"><span class="sev sev-low">Low</span>i18n / a11y gaps</span>
+  <div class="body">Proper <code>lang="zh-Hant"</code> wrapping (so screen readers pronounce Mandarin correctly) exists only on newer V2 surfaces; older teacher/spelling components emit Chinese untagged. Generic alt text on comprehension images. Inconsistent loading-flag naming (<code>loading</code>/<code>isLoading</code>/<code>saving</code>/<code>submitting</code>…) since there's no shared data hook.
+  <span class="path">src/app/layout.tsx:17 (lang="en") · spelling components</span></div>
+</div>
+
+<h2 id="arch"><span class="num">07</span>Architecture &amp; hygiene</h2>
+
+<div class="finding high">
+  <span class="title"><span class="sev sev-high">High</span>Type-checking and linting are switched off; 79 hidden errors; no tests</span>
+  <div class="body"><code>typescript.ignoreBuildErrors: true</code> and a comprehensively-disabled ESLint config mean <code>npm run build</code> is not a correctness check. <code>tsc --noEmit</code> surfaces <b>79 errors</b> across ~25 files. ~35 are two mechanical causes (react-hook-form/zod version skew + one mis-typed role union), but the <b>10 <code>TS2367</code> errors in <code>teacher/dashboard/route.ts</code></b> — "comparison appears unintentional" on <code>user.role !== 'admin'</code> — look like a latent bug (dead admin branch or mis-typed union). No test runner is configured; the <code>scripts/test-*.ts</code> are manual harnesses hitting live AI APIs.
+  <span class="path">next.config.mjs:4 · eslint.config.mjs:24–44 · src/app/api/teacher/dashboard/route.ts (7 lines)</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Route- and surface-level duplication</span>
+  <div class="body">The three media proxies (<code>audio</code>/<code>images</code>/<code>media</code>) are near-identical stream-and-serve handlers. Entities exist as parallel teacher/admin/public route families (stories at 3 paths, students at 3, classes at 3) differing only in access scoping — which belongs in a shared data layer. Admin routing is split across a <code>(admin)</code> route group <em>and</em> a literal <code>admin/</code> folder, so the class list is at <code>/classes</code> but class detail at <code>/admin/classes/[id]</code>.
+  <span class="path">src/app/api/{audio,images,media}/[...key]/route.ts · src/app/(admin)/* vs src/app/admin/*</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Module-organization confusion</span>
+  <div class="body"><code>src/lib/auth.ts</code> (flat file) coexists with <code>src/lib/auth/</code> (directory) — importers use both. Three separate "generate" pipelines (<code>generation/</code>, <code>reading/generate/</code>, <code>practice/generate.ts</code>) all call Anthropic and produce questions. "Avatar" means three different things across the codebase (AI catalog art, student character composition, legacy emoji picker) — a documented naming collision.
+  <span class="path">src/lib/auth.ts vs src/lib/auth/ · src/lib/{generation,reading/generate,practice}</span></div>
+</div>
+
+<div class="finding med">
+  <span class="title"><span class="sev sev-med">Medium</span>Config &amp; logging hygiene</span>
+  <div class="body">200 MB global Server Actions body limit (memory/DoS surface applied to every action; likely only uploads need it). No env-var validation module — 37 scattered <code>process.env</code> reads, missing keys fail at first request not boot. Logger is well-built and adopted in ~130 files, but <b>342 raw <code>console.*</code> calls remain</b> (incomplete migration; bypasses secret redaction). A stray <code>.env.production.backup</code> sits in the repo root.
+  <span class="path">next.config.mjs:8 · src/lib/logger.ts (partial adoption)</span></div>
+</div>
+
+<div class="callout">
+  <h4>Highest-value first test suite</h4>
+  <p style="margin:0 0 8px">These are pure, deterministic, correctness-critical, and need no DB/network mocks — the cheapest place to buy confidence:</p>
+  <div class="pill-list">
+    <span class="chip"><code>grading/align.ts</code></span>
+    <span class="chip"><code>fluency/compute-metrics.ts</code></span>
+    <span class="chip"><code>fluency/score.ts</code></span>
+    <span class="chip"><code>fluency/benchmarks.ts</code></span>
+    <span class="chip"><code>reading/generate/tokenize.ts</code></span>
+    <span class="chip"><code>gamification/stars.ts</code> · <code>rules.ts</code></span>
+  </div>
+</div>
+
+<h2 id="dead"><span class="num">08</span>What to remove</h2>
+<p class="section-lead">Concrete, low-risk deletions. Grouped by confidence.</p>
+
+<h3>Safe to delete now</h3>
+<table>
+  <thead><tr><th>Item</th><th>Path</th><th>Evidence</th></tr></thead>
+  <tbody>
+    <tr><td>Empty route group (layout only, no pages)</td><td><code>src/app/(student)/layout.tsx</code></td><td>0 pages in group</td></tr>
+    <tr><td>Empty module dir</td><td><code>src/lib/dictionary/</code></td><td>0 files</td></tr>
+    <tr><td>Empty API dirs (no route.ts)</td><td><code>api/setup-students/</code>, <code>api/student/spelling-game/sentences/</code></td><td>empty, 0 callers</td></tr>
+    <tr><td>Debug maintenance endpoint</td><td><code>api/fix-story-audio/route.ts</code></td><td>0 callers</td></tr>
+    <tr><td>Unused components</td><td><code>theme-provider</code>, <code>theme-toggle</code>, <code>ui/calendar</code>, <code>progress/progress-section</code>, <code>activity/student-attention-alert</code></td><td>0 importers each</td></tr>
+    <tr><td>Stale AI-context doc</td><td><code>GEMINI.md</code></td><td>documents ElevenLabs as TTS; wrong stack</td></tr>
+    <tr><td>Boilerplate README</td><td><code>README.md</code></td><td>unmodified create-next-app</td></tr>
+    <tr><td>Stale status docs</td><td><code>IMPLEMENTATION_STATUS.md</code>, <code>PROJECT_OVERVIEW.md</code></td><td>predate current features</td></tr>
+    <tr><td>Root one-shot artifacts</td><td><code>*-curriculum.html</code>, <code>fork-plan.html</code>, <code>multi-tenant-plan.html</code>, root <code>.sql</code> dumps</td><td>generated artifacts in repo root</td></tr>
+  </tbody>
+</table>
+
+<h3>Removable after a small change</h3>
+<ul class="tight">
+  <li><b><code>next-themes</code></b> + <b><code>react-day-picker</code></b> — dead once the unused components above are deleted (they're the only importers).</li>
+  <li><b><code>task-master-ai</code></b> — 0 imports in <code>src/</code>; it's a devtool wired via <code>.taskmaster/</code>. Move to devDependencies or remove.</li>
+  <li><b>Legacy student dashboard body</b> (<code>student/dashboard/page.tsx</code>, 828 lines) + the legacy <code>/api/student/avatar</code> emoji surface — dead behind the V2 redirect but still executing wasted fetches.</li>
+  <li><b><code>cookies-next</code></b> — one server-side call; replaceable with <code>next/headers</code> to drop the dep.</li>
+</ul>
+
+<h3>Confirm before touching</h3>
+<ul class="tight">
+  <li><b>ElevenLabs TTS client</b> — <em>not</em> dead: it's the preferred provider for spelling/test word audio (Google is used for narration). Keep unless you're consolidating providers.</li>
+  <li><b>Student shop</b> (<code>STUDENT_SHOP_ENABLED=false</code>) — a large but intentional gated-off surface, not dead code.</li>
+  <li><b>Untracked working-tree files</b> — <code>family-friends-*.html</code> and <code>src/lib/curriculum/family-friends-3/*.json</code>: confirm whether the ff-3 units are loaded by code before deciding.</li>
+</ul>
+
+<h2 id="well"><span class="num">09</span>What's done well</h2>
+<div class="finding good">
+  <span class="title"><span class="sev sev-good">Strength</span>Recording durability &amp; graceful degradation</span>
+  <div class="body">Audio is written to R2 <em>before</em> any analysis and is fully re-gradable from R2; the pipeline is layered so a Claude/API-key failure returns <code>null</code> and still lands deterministic WCPM/bands/prosody. A hallucination guard skips the paid Claude call when the transcript is implausibly short. Recordings are never lost.</div>
+</div>
+<div class="finding good">
+  <span class="title"><span class="sev sev-good">Strength</span>The reading-generation pipeline is the model to copy</span>
+  <div class="body">Cleanly staged (plan → prose → validate → questions → images) behind one barrel, with real job tracking (queued→running→completed/failed, per-passage results, retry lineage). This is exactly the job-status pattern the recordings pipeline lacks.</div>
+</div>
+<div class="finding good">
+  <span class="title"><span class="sev sev-good">Strength</span>Thoughtful security where it's applied</span>
+  <div class="body">The sensitive R2 proxies (audio/media) enforce real ownership, return 404-not-403 to avoid a key-existence oracle, and set <code>Cache-Control: private</code> for minors' content. Centralized <code>class-access</code> helpers correctly handle co-teachers and are used by ~58 routes. Student-login has a genuine threat model (dual rate limiting, class-scoping). bcrypt cost 12, httpOnly+secure+SameSite cookies.</div>
+</div>
+<div class="finding good">
+  <span class="title"><span class="sev sev-good">Strength</span>Well-engineered small pieces</span>
+  <div class="body">The image-gen facade (clean provider abstraction, 5s settings cache, build-safe fallback). The <code>logger</code> with targeted secret redaction. The tiny, deliberate <code>feature-flags</code> module with a documented boundary. Spelling audio/image cost controls (skip-if-exists + cross-word reuse) — the reuse discipline the rest of the AI layer should adopt. Thoughtful reading-feature indexing (composite covering indexes, a partial unique index for one-session-per-student). Consistent kebab-case naming, real <code>strict: true</code> tsconfig, <code>@/</code> path aliases, prompt-caching hygiene.</div>
+</div>
+
+<h2 id="roadmap"><span class="num">10</span>Suggested sequencing</h2>
+<table>
+  <thead><tr><th>Phase</th><th>Focus</th><th>Items</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Now</b><br><span style="color:var(--muted);font-size:12px">days</span></td>
+      <td>Stop the bleeding</td>
+      <td>Fix the token-regen IDOR (crit). Wrap <code>awardXp</code> in a transaction + use SQL increments. Add indexes on <code>classes(teacher_id, school_id)</code> and <code>class_enrollments(student_id)</code>. Add timeout+retry to the Whisper client. Add the missing <code>teacherSummaryZh</code> on the passage pipeline. Reconcile the migration journal (0050–0054).</td>
+    </tr>
+    <tr>
+      <td><b>Next</b><br><span style="color:var(--muted);font-size:12px">1–2 weeks</span></td>
+      <td>Kill the root-cause duplication</td>
+      <td>Build <code>withAuth(handler, {role, ownership, schema})</code> and migrate routes to it — this alone closes the auth-consistency, stack-leak, and validation gaps. Paginate <code>/api/recordings</code> + admin lists and drop the unused <code>storyContent</code> over-fetch. Turn <code>ignoreBuildErrors</code> off in CI and fix the ~35 mechanical type errors + investigate the <code>teacher/dashboard</code> role cluster.</td>
+    </tr>
+    <tr>
+      <td><b>Then</b><br><span style="color:var(--muted);font-size:12px">ongoing</span></td>
+      <td>Pay down structural debt</td>
+      <td>First test suite on the pure grading/scoring functions. Add <code>next/dynamic</code> for spelling games + memoize providers. Extract <code>useSpellingGame</code> / <code>useMediaRecorder</code> hooks. Add a job-status column to recordings analysis. Central model-ID constant, env-validation module, finish the logger migration. Sweep the dead-code list.</td>
+    </tr>
+  </tbody>
+</table>
+
+<footer>
+  Generated from a five-dimension read-only audit (security · database · AI pipeline · frontend · architecture). No code was changed. Severity reflects impact × likelihood in this app's single-school, minor-user context. Line references are point-in-time against the working tree on branch <code>main</code>.
+</footer>
+
+</div>
+</body>
+</html>

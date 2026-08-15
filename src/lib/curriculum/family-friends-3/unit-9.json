@@ -1,0 +1,94 @@
+{
+  "unit": 9,
+  "topic": "The fastest animal in the world",
+  "vocabulary": [
+    { "word": "lake",      "image": "/images/family-friends-3/unit-9/lake.png" },
+    { "word": "mountain",  "image": "/images/family-friends-3/unit-9/mountain.png" },
+    { "word": "waterfall", "image": "/images/family-friends-3/unit-9/waterfall.png" },
+    { "word": "ocean",     "image": "/images/family-friends-3/unit-9/ocean.png" },
+    { "word": "building",  "image": "/images/family-friends-3/unit-9/building.png" },
+    { "word": "country",   "image": "/images/family-friends-3/unit-9/country.png" },
+    { "word": "bridge",    "image": "/images/family-friends-3/unit-9/bridge.png" },
+    { "word": "river",     "image": "/images/family-friends-3/unit-9/river.png" }
+  ],
+  "adjectives": ["wide", "big", "deep", "high", "old", "long"],
+  "grammar_patterns": [
+    {
+      "pattern": "[Noun] is [comparative] than [noun].",
+      "examples": [
+        "The Nile is longer than the Volga.",
+        "Mexico is bigger than the U.K.",
+        "Cars are faster than bikes."
+      ]
+    },
+    {
+      "pattern": "The [noun] is [comparative] than the [noun].",
+      "examples": [
+        "The Pacific Ocean is wider than the Atlantic Ocean.",
+        "The U.S.A. is bigger than Mexico.",
+        "Mice are slower than cheetahs."
+      ]
+    },
+    {
+      "pattern": "What's the [superlative] [noun] in the world?",
+      "examples": [
+        "What's the fastest animal in the world?",
+        "What's the highest mountain in the world?",
+        "What's the widest ocean in the world?"
+      ]
+    },
+    {
+      "pattern": "The [superlative] [noun] in the world is [noun].",
+      "examples": [
+        "The fastest animal in the world is the cheetah.",
+        "The highest mountain in the world is Mount Everest.",
+        "The longest river in the world is the Nile."
+      ]
+    },
+    {
+      "pattern": "[Noun] is the [superlative] [noun] in the world.",
+      "examples": [
+        "The Pacific Ocean is the widest ocean in the world.",
+        "Russia is the biggest country in the world.",
+        "Lake Baikal is the deepest lake in the world."
+      ]
+    },
+    {
+      "pattern": "What's the [superlative] [noun] in [place]?",
+      "examples": [
+        "What's the biggest lake in Spain? Lake Sanabria.",
+        "What's the longest river in Spain? The Tagus.",
+        "What's the highest mountain in Spain? Mount Teide."
+      ]
+    }
+  ],
+  "phonics": {
+    "sound": "nd, nt, and mp",
+    "description": "Words ending in nd, nt, and mp.",
+    "word_families": [
+      { "family": "nd", "words": [{ "word": "hand" }, { "word": "pond" }] },
+      { "family": "nt", "words": [{ "word": "plant" }, { "word": "tent" }] },
+      { "family": "mp", "words": [{ "word": "lamp" }, { "word": "camp" }] }
+    ],
+    "chant": [
+      "We put up the tent",
+      "At the big, big camp.",
+      "We hear the wind,",
+      "We light the lamp.",
+      "We sit by the pond,",
+      "We look at the plants,",
+      "We're happy together,",
+      "Just me and my aunt."
+    ]
+  },
+  "key_sentences": [
+    "My sandcastle is bigger than your sandcastle, Max!",
+    "My sandcastle is the biggest!",
+    "What's the highest mountain in the world? Mount Everest.",
+    "The fastest animal in the world is a cheetah.",
+    "Russia is the biggest country in the world.",
+    "The longest river in the world is the Nile.",
+    "These buildings are the oldest buildings in the world.",
+    "The Pacific Ocean is the widest ocean in the world."
+  ]
+}

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family and Friends 3 — Spelling Lists</title>
+<style>
+  :root{
+    --ink:#1f2933; --muted:#6b7280; --line:#e5e7eb;
+    --a:#2563eb; --a-bg:#eff6ff; --b:#7c3aed; --b-bg:#f5f3ff;
+    --card:#ffffff; --page:#f8fafc;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:32px 24px 64px;}
+  header h1{font-size:30px; margin:0 0 4px; letter-spacing:-0.01em;}
+  header .sub{color:var(--muted); font-size:15px; margin:0 0 20px;}
+  .legend{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; margin:0 0 28px; font-size:14px; color:#374151;
+  }
+  .legend b{color:var(--ink);}
+  .legend ul{margin:8px 0 0; padding-left:18px;}
+  .legend li{margin:2px 0;}
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px;}
+  @media (max-width:720px){ .grid{grid-template-columns:1fr;} }
+  .unit{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px; break-inside:avoid;
+  }
+  .unit h2{font-size:17px; margin:0 0 2px; display:flex; align-items:baseline; gap:8px;}
+  .unit h2 .n{
+    font-size:12px; font-weight:700; color:#fff; background:var(--ink);
+    border-radius:6px; padding:2px 7px; letter-spacing:.02em;
+  }
+  .unit .topic{color:var(--muted); font-size:13px; margin:0 0 12px;}
+  .test{border-radius:10px; padding:10px 12px; margin-top:10px;}
+  .test.a{background:var(--a-bg); border:1px solid #dbeafe;}
+  .test.b{background:var(--b-bg); border:1px solid #ede9fe;}
+  .test .hd{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:6px;}
+  .test .lbl{font-weight:700; font-size:13px;}
+  .test.a .lbl{color:var(--a);}
+  .test.b .lbl{color:var(--b);}
+  .test .focus{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+  .words{display:flex; flex-wrap:wrap; gap:6px;}
+  .words span{
+    background:#fff; border:1px solid var(--line); border-radius:7px;
+    padding:3px 9px; font-size:14px; font-weight:500;
+  }
+  .test.a .words span{border-color:#bfdbfe;}
+  .test.b .words span{border-color:#ddd6fe;}
+  footer{margin-top:32px; color:var(--muted); font-size:12.5px; text-align:center;}
+  @media print{
+    body{background:#fff;}
+    .wrap{max-width:none; padding:0;}
+    .unit{box-shadow:none;}
+    .grid{gap:10px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Family and Friends 3 — Spelling Lists</h1>
+    <p class="sub">16 units &middot; 2 tests per unit &middot; 5&ndash;8 words per test &middot; curated for 3rd-grade ESL spellers</p>
+  </header>
+
+  <div class="legend">
+    <b>How these were chosen.</b> Words are pulled from each unit's curriculum, then filtered for spelling value:
+    single words only (phrases reduced to their core word), high-frequency and decodable, matched to the grade level.
+    Generally <b>Test 1</b> drills the unit's <em>theme vocabulary</em> and <b>Test 2</b> drills the unit's
+    <em>phonics pattern</em> &mdash; Book 3 teaches real spelling families (magic-e, r-controlled, long vowels,
+    end blends), which make ideal, rule-based spelling words.
+    <ul>
+      <li>Where the vocabulary is especially useful (countries, food, verbs, adjectives), both tests can be vocabulary.</li>
+      <li>Dropped: multi-word compounds, abbreviations (TV, P.E.), and lower-value items for this level.</li>
+    </ul>
+  </div>
+
+  <div class="grid">
+
+    <!-- UNIT 0 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 0</span> My family</h2>
+      <p class="topic">Family &amp; months (review)</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Family</span></div>
+        <div class="words"><span>mom</span><span>dad</span><span>sister</span><span>brother</span><span>aunt</span><span>uncle</span><span>cousin</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Months</span></div>
+        <div class="words"><span>January</span><span>February</span><span>March</span><span>April</span><span>May</span><span>June</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 1 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 1</span> They're from Australia!</h2>
+      <p class="topic">Countries &amp; seasons</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Countries</span></div>
+        <div class="words"><span>Mexico</span><span>Spain</span><span>Brazil</span><span>Vietnam</span><span>Thailand</span><span>Australia</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Seasons</span></div>
+        <div class="words"><span>spring</span><span>summer</span><span>fall</span><span>winter</span><span>garden</span><span>season</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 2 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 2</span> My weekend</h2>
+      <p class="topic">Hobbies &middot; phonics: magic e</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Hobby words</span></div>
+        <div class="words"><span>paint</span><span>cook</span><span>shop</span><span>fish</span><span>guitar</span><span>piano</span><span>chess</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Magic e</span></div>
+        <div class="words"><span>face</span><span>space</span><span>kite</span><span>bike</span><span>rope</span><span>stone</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 3 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 3</span> My things</h2>
+      <p class="topic">Electronics &amp; collections &middot; phonics: ar</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Things &amp; collections</span></div>
+        <div class="words"><span>camera</span><span>computer</span><span>comics</span><span>posters</span><span>stickers</span><span>pins</span><span>shells</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">ar sound</span></div>
+        <div class="words"><span>car</span><span>park</span><span>shark</span><span>star</span><span>scarf</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 4 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 4</span> We're having fun at the beach!</h2>
+      <p class="topic">Water sports &amp; adjectives</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Water sports</span></div>
+        <div class="words"><span>swim</span><span>sail</span><span>dive</span><span>surf</span><span>kayak</span><span>snorkel</span><span>windsurf</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Describing places</span></div>
+        <div class="words"><span>clean</span><span>safe</span><span>ugly</span><span>dangerous</span><span>beautiful</span><span>polluted</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 5 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 5</span> A funny monkey!</h2>
+      <p class="topic">Zoo animals &middot; phonics: or, aw</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Animals</span></div>
+        <div class="words"><span>zebra</span><span>monkey</span><span>camel</span><span>lizard</span><span>penguin</span><span>crocodile</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">or / aw</span></div>
+        <div class="words"><span>fork</span><span>horse</span><span>corn</span><span>straw</span><span>paw</span><span>yawn</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 6 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 6</span> Jim's day</h2>
+      <p class="topic">Daily routine &middot; phonics: oy, oi</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Time &amp; routine</span></div>
+        <div class="words"><span>first</span><span>then</span><span>next</span><span>breakfast</span><span>shower</span><span>teeth</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">oy / oi</span></div>
+        <div class="words"><span>boy</span><span>toy</span><span>coin</span><span>oil</span><span>soil</span><span>oyster</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 7 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 7</span> Places to go!</h2>
+      <p class="topic">Places &amp; entertainment &middot; phonics: ow, ou</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Places &amp; entertainment</span></div>
+        <div class="words"><span>cafe</span><span>museum</span><span>library</span><span>theater</span><span>concert</span><span>movie</span><span>singer</span><span>actor</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">ow / ou</span></div>
+        <div class="words"><span>cow</span><span>clown</span><span>flower</span><span>house</span><span>round</span><span>mouse</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 8 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 8</span> I'd like a melon!</h2>
+      <p class="topic">Food &middot; phonics: ld, lt</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Food</span></div>
+        <div class="words"><span>bread</span><span>meat</span><span>melon</span><span>lemon</span><span>onion</span><span>cheese</span><span>peas</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">ld / lt</span></div>
+        <div class="words"><span>child</span><span>field</span><span>shield</span><span>belt</span><span>quilt</span><span>adult</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 9 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 9</span> The fastest animal in the world</h2>
+      <p class="topic">Geography &middot; phonics: nd, nt, mp</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Geography</span></div>
+        <div class="words"><span>lake</span><span>river</span><span>ocean</span><span>bridge</span><span>mountain</span><span>country</span><span>building</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">nd / nt / mp</span></div>
+        <div class="words"><span>hand</span><span>pond</span><span>plant</span><span>tent</span><span>lamp</span><span>camp</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 10 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 10</span> In the park!</h2>
+      <p class="topic">The park &amp; verbs &middot; phonics: long a</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">The park</span></div>
+        <div class="words"><span>path</span><span>grass</span><span>trees</span><span>flowers</span><span>litter</span><span>fountain</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Action verbs</span></div>
+        <div class="words"><span>shout</span><span>chase</span><span>catch</span><span>meet</span><span>cross</span><span>laugh</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 11 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 11</span> In the museum</h2>
+      <p class="topic">Transportation &middot; phonics: long e</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Transportation</span></div>
+        <div class="words"><span>bus</span><span>taxi</span><span>train</span><span>plane</span><span>ferry</span><span>trolley</span><span>helicopter</span><span>motorcycle</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Long e</span></div>
+        <div class="words"><span>tree</span><span>green</span><span>sheep</span><span>eat</span><span>dream</span><span>queen</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 12 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 12</span> A clever baby!</h2>
+      <p class="topic">Describing people &middot; phonics: long i</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Describing people</span></div>
+        <div class="words"><span>old</span><span>young</span><span>tall</span><span>short</span><span>shy</span><span>pretty</span><span>friendly</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Long i</span></div>
+        <div class="words"><span>night</span><span>light</span><span>sky</span><span>dry</span><span>smile</span><span>shine</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 13 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 13</span> The Ancient Mayans</h2>
+      <p class="topic">Verbs &middot; phonics: long o</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Verbs</span></div>
+        <div class="words"><span>start</span><span>finish</span><span>love</span><span>hate</span><span>want</span><span>use</span><span>live</span><span>laugh</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Long o</span></div>
+        <div class="words"><span>snow</span><span>coat</span><span>boat</span><span>goat</span><span>nose</span><span>home</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 14 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 14</span> Did you have a good day?</h2>
+      <p class="topic">School &amp; camping things &middot; phonics: long u</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">School &amp; camping</span></div>
+        <div class="words"><span>backpack</span><span>lunchbox</span><span>paint</span><span>apron</span><span>tent</span><span>rope</span><span>matches</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">Long u</span></div>
+        <div class="words"><span>moon</span><span>boot</span><span>blue</span><span>glue</span><span>tune</span><span>tube</span></div>
+      </div>
+    </div>
+
+    <!-- UNIT 15 -->
+    <div class="unit">
+      <h2><span class="n">UNIT 15</span> Our vacation!</h2>
+      <p class="topic">Vacation things &middot; phonics: oo</p>
+      <div class="test a">
+        <div class="hd"><span class="lbl">Test 1</span><span class="focus">Vacation things</span></div>
+        <div class="words"><span>soap</span><span>towel</span><span>shampoo</span><span>suitcase</span><span>sunscreen</span><span>hairbrush</span><span>toothbrush</span><span>toothpaste</span></div>
+      </div>
+      <div class="test b">
+        <div class="hd"><span class="lbl">Test 2</span><span class="focus">oo sound</span></div>
+        <div class="words"><span>book</span><span>wool</span><span>wood</span><span>hood</span><span>cook</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Family and Friends 3 &middot; 32 spelling tests (16 units &times; 2) &middot; generated from the curriculum word lists.
+  </footer>
+</div>
+</body>
+</html>
