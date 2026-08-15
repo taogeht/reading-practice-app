@@ -38,7 +38,8 @@
     "test:class-promotion": "node --import tsx --test src/lib/classes/follow-promotion.test.ts",
     "test:mobile-contracts": "node --import tsx --test packages/contracts/src/mobile-auth.test.ts",
     "test:mobile": "npm test --workspace @starling-rise/mobile",
-    "bulk:passage": "tsx scripts/bulk-passage-run.ts"
+    "bulk:passage": "tsx scripts/bulk-passage-run.ts",
+    "check:migrations": "tsx scripts/check-migrations.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
