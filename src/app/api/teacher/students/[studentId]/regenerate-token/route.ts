@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { userCanAccessStudentMedia } from '@/lib/auth/class-access';
+import { revokeMobileSessionsForUser } from '@/lib/auth/mobile-session';
 
 interface RouteParams {
     params: Promise<{ studentId: string }>;
@@ -29,6 +30,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         const newToken = generateLoginToken();
+
+        // Token regeneration is an explicit credential reset. Revoke native
+        // refresh sessions before minting the replacement QR credential.
+        await revokeMobileSessionsForUser(studentId);
 
         const [updated] = await db
             .update(users)

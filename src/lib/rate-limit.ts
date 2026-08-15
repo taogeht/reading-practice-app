@@ -1,61 +1,99 @@
-// Minimal dependency-free in-memory rate limiter.
-//
-// ASSUMES a single long-running Node process (the deploy target per CLAUDE.md).
-// Counters live in process memory: they reset on restart/deploy and are NOT
-// shared across instances. If the app is ever horizontally scaled or moved to
-// serverless, replace this with a DB/Redis-backed limiter.
+import { createHash } from 'node:crypto';
+import { eq } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { authRateLimits } from '@/lib/db/schema';
 
 export interface RateLimitPolicy {
-  maxFailures: number; // failures within the window before locking
-  windowMs: number; // sliding-ish window for counting failures
-  lockMs: number; // how long the key stays locked once tripped
+  maxFailures: number;
+  windowMs: number;
+  lockMs: number;
 }
 
-type Bucket = { count: number; windowStart: number; lockedUntil: number };
-
-const buckets = new Map<string, Bucket>();
-const PRUNE_AFTER_MS = 60 * 60 * 1000;
-
-// Keep the map bounded on a long-running process.
-function maybePrune(now: number) {
-  if (buckets.size < 5000) return;
-  for (const [key, b] of buckets) {
-    if (b.lockedUntil < now && now - b.windowStart > PRUNE_AFTER_MS) {
-      buckets.delete(key);
-    }
-  }
+export interface RateLimitStatus {
+  blocked: boolean;
+  retryAfterSec: number;
 }
 
-// Read-only: is this key currently locked out? Does not mutate state.
-export function checkRateLimit(
+function hashKey(key: string): string {
+  return createHash('sha256').update(key).digest('hex');
+}
+
+/** Read the shared authentication bucket without extending its lock. */
+export async function checkRateLimit(
   key: string,
   _policy: RateLimitPolicy,
-): { blocked: boolean; retryAfterSec: number } {
-  const now = Date.now();
-  const b = buckets.get(key);
-  if (b && b.lockedUntil > now) {
-    return { blocked: true, retryAfterSec: Math.ceil((b.lockedUntil - now) / 1000) };
+): Promise<RateLimitStatus> {
+  const now = new Date();
+  const [bucket] = await db
+    .select({ lockedUntil: authRateLimits.lockedUntil })
+    .from(authRateLimits)
+    .where(eq(authRateLimits.keyHash, hashKey(key)))
+    .limit(1);
+
+  if (bucket?.lockedUntil && bucket.lockedUntil > now) {
+    return {
+      blocked: true,
+      retryAfterSec: Math.max(
+        1,
+        Math.ceil((bucket.lockedUntil.getTime() - now.getTime()) / 1000),
+      ),
+    };
   }
+
   return { blocked: false, retryAfterSec: 0 };
 }
 
-// Record one failed attempt; locks the key once it reaches maxFailures within
-// the window. Call this only on genuine auth failures.
-export function recordFailure(key: string, policy: RateLimitPolicy): void {
-  const now = Date.now();
-  maybePrune(now);
-  let b = buckets.get(key);
-  if (!b || now - b.windowStart > policy.windowMs) {
-    b = { count: 0, windowStart: now, lockedUntil: 0 };
-  }
-  b.count += 1;
-  if (b.count >= policy.maxFailures) {
-    b.lockedUntil = now + policy.lockMs;
-  }
-  buckets.set(key, b);
+/** Atomically record a genuine authentication failure in PostgreSQL. */
+export async function recordFailure(
+  key: string,
+  policy: RateLimitPolicy,
+): Promise<void> {
+  const keyHash = hashKey(key);
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(authRateLimits)
+      .values({
+        keyHash,
+        failureCount: 0,
+        windowStartedAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
+
+    const [bucket] = await tx
+      .select()
+      .from(authRateLimits)
+      .where(eq(authRateLimits.keyHash, keyHash))
+      .limit(1)
+      .for('update');
+
+    if (!bucket) return;
+
+    const windowExpired =
+      now.getTime() - bucket.windowStartedAt.getTime() > policy.windowMs;
+    const failureCount = windowExpired ? 1 : bucket.failureCount + 1;
+    const lockedUntil =
+      failureCount >= policy.maxFailures
+        ? new Date(now.getTime() + policy.lockMs)
+        : null;
+
+    await tx
+      .update(authRateLimits)
+      .set({
+        failureCount,
+        windowStartedAt: windowExpired ? now : bucket.windowStartedAt,
+        lockedUntil,
+        updatedAt: now,
+      })
+      .where(eq(authRateLimits.keyHash, keyHash));
+  });
 }
 
-// Clear a key's failure state (call on successful auth).
-export function clearRateLimit(key: string): void {
-  buckets.delete(key);
+/** Clear a successful principal's failure history. */
+export async function clearRateLimit(key: string): Promise<void> {
+  await db
+    .delete(authRateLimits)
+    .where(eq(authRateLimits.keyHash, hashKey(key)));
 }

@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { classes } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
-import { resolveClassLoginDestination } from '@/lib/classes/login-destination';
+import { resolveClassLoginCode } from '@/lib/classes/login-code';
 
 export const runtime = 'nodejs';
 
@@ -34,39 +31,11 @@ export async function GET(
         return NextResponse.redirect(notFoundUrl);
     }
 
-    const code = shortCode.toLowerCase();
-
     try {
-        // Try slug first. Slugs are case-insensitive (we store lowercase),
-        // and guaranteed not all-hex, so they don't shadow UUID prefixes.
-        const slugMatch = await db
-            .select({ id: classes.id })
-            .from(classes)
-            .where(eq(classes.slug, code))
-            .limit(1);
-        if (slugMatch.length > 0) {
-            const destination = await resolveClassLoginDestination(slugMatch[0].id);
-            if (destination) {
-                const url = new URL(`/student-login/${destination.id}`, baseUrl).toString();
-                return NextResponse.redirect(url);
-            }
-        }
-
-        // Fall back to UUID-prefix match for backward compatibility with any
-        // shortcodes shared before slugs existed.
-        if (code.length >= 4) {
-            const prefixMatch = await db
-                .select({ id: classes.id })
-                .from(classes)
-                .where(sql`${classes.id}::text LIKE ${code + '%'}`)
-                .limit(1);
-            if (prefixMatch.length > 0) {
-                const destination = await resolveClassLoginDestination(prefixMatch[0].id);
-                if (destination) {
-                    const url = new URL(`/student-login/${destination.id}`, baseUrl).toString();
-                    return NextResponse.redirect(url);
-                }
-            }
+        const destination = await resolveClassLoginCode(shortCode);
+        if (destination) {
+            const url = new URL(`/student-login/${destination.id}`, baseUrl).toString();
+            return NextResponse.redirect(url);
         }
     } catch (err) {
         console.error("Error finding class by shortcode/slug", err);

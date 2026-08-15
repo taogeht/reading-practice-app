@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { db } from './db';
 import { users, session } from './db/schema';
 import { eq, lt } from 'drizzle-orm';
@@ -13,6 +13,18 @@ export interface User {
   role: 'student' | 'teacher' | 'admin';
   firstName: string;
   lastName: string;
+}
+
+export interface CurrentSession {
+  sessionId: string;
+  source: 'cookie' | 'bearer';
+  user: User;
+}
+
+export interface CreateSessionOptions {
+  durationMs?: number;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -41,15 +53,22 @@ export function generateSessionId(): string {
   return `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
 }
 
-export async function createSession(userId: string): Promise<string> {
+export async function createSession(
+  userId: string,
+  options: CreateSessionOptions = {},
+): Promise<string> {
   const sessionId = generateSessionId();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = new Date(
+    Date.now() + (options.durationMs ?? 7 * 24 * 60 * 60 * 1000),
+  );
 
   await db.insert(session).values({
     id: sessionId,
     token: sessionId,
     userId: userId,
     expiresAt: expiresAt,
+    ipAddress: options.ipAddress,
+    userAgent: options.userAgent,
   });
 
   return sessionId;
@@ -116,46 +135,58 @@ export async function authenticateUser(email: string, password: string): Promise
   };
 }
 
-export async function getCurrentUser(): Promise<User | null> {
-  try {
-    const cookieStore = await cookies();
-    if (!cookieStore) {
-      return null;
-    }
-    const sessionId = cookieStore.get(COOKIE_NAME)?.value;
+export function parseBearerToken(authorization: string | null): string | null {
+  if (!authorization) return null;
+  const match = authorization.match(/^Bearer\s+([^\s]{16,255})$/i);
+  return match?.[1] ?? null;
+}
 
-    if (!sessionId) {
-      return null;
-    }
+async function resolveSession(
+  sessionId: string,
+  source: CurrentSession['source'],
+): Promise<CurrentSession | null> {
+  const sessionData = await db.query.session.findFirst({
+    where: eq(session.id, sessionId),
+    with: {
+      user: true,
+    },
+  });
 
-    // Find valid session
-    const sessionData = await db.query.session.findFirst({
-      where: eq(session.id, sessionId),
-      with: {
-        user: true,
-      }
-    });
+  if (!sessionData || sessionData.expiresAt < new Date()) {
+    if (sessionData) await deleteSession(sessionId);
+    return null;
+  }
 
-    if (!sessionData || sessionData.expiresAt < new Date()) {
-      // Clean up expired session
-      if (sessionData) {
-        await deleteSession(sessionId);
-      }
-      return null;
-    }
+  const user = sessionData.user;
+  if (!user || !user.active) return null;
 
-    const user = sessionData.user;
-    if (!user || !user.active) {
-      return null;
-    }
-
-    return {
+  return {
+    sessionId,
+    source,
+    user: {
       id: user.id,
       email: user.email,
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
-    };
+    },
+  };
+}
+
+/** Resolve either the existing web cookie or a native Bearer access token. */
+export async function getCurrentSession(): Promise<CurrentSession | null> {
+  try {
+    const cookieStore = await cookies();
+    const cookieSessionId = cookieStore?.get(COOKIE_NAME)?.value;
+    if (cookieSessionId) {
+      const cookieSession = await resolveSession(cookieSessionId, 'cookie');
+      if (cookieSession) return cookieSession;
+    }
+
+    const headerStore = await headers();
+    const bearerSessionId = parseBearerToken(headerStore.get('authorization'));
+    if (!bearerSessionId || bearerSessionId === cookieSessionId) return null;
+    return resolveSession(bearerSessionId, 'bearer');
   } catch (error) {
     // During static generation (build time), cookies() throws an error
     // This is expected behavior - silently return null instead of logging
@@ -163,9 +194,13 @@ export async function getCurrentUser(): Promise<User | null> {
     if (errorMessage.includes('cookies') || errorMessage.includes('Dynamic server usage')) {
       return null;
     }
-    logError(error, 'getCurrentUser');
+    logError(error, 'getCurrentSession');
     return null;
   }
+}
+
+export async function getCurrentUser(): Promise<User | null> {
+  return (await getCurrentSession())?.user ?? null;
 }
 
 export const COOKIE_OPTIONS = {

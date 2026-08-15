@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { deleteSession, COOKIE_NAME } from '@/lib/auth';
-import { logError, createRequestContext } from '@/lib/logger';
+import { deleteSession, getCurrentSession, COOKIE_NAME } from '@/lib/auth';
+import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get(COOKIE_NAME)?.value;
+    const currentSession = await getCurrentSession();
 
     // Delete session from database if it exists
-    if (sessionId) {
-      await deleteSession(sessionId);
+    if (currentSession) {
+      await deleteSession(currentSession.sessionId);
     }
 
     const response = NextResponse.json(

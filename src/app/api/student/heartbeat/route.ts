@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { session } from '@/lib/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
+import { getCurrentSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
-
-const COOKIE_NAME = 'session-id';
 
 // POST /api/student/heartbeat - Update session lastActivityAt
 export async function POST() {
     try {
-        const cookieStore = await cookies();
-        const sessionId = cookieStore.get(COOKIE_NAME)?.value;
+        const currentSession = await getCurrentSession();
 
-        if (!sessionId) {
+        if (!currentSession || currentSession.user.role !== 'student') {
             return NextResponse.json({ error: 'No session' }, { status: 401 });
         }
 
@@ -26,7 +23,7 @@ export async function POST() {
             .set({ lastActivityAt: now, updatedAt: now })
             .where(
                 and(
-                    eq(session.id, sessionId),
+                    eq(session.id, currentSession.sessionId),
                     gt(session.expiresAt, now)
                 )
             );

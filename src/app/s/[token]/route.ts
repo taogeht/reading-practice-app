@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loginWithToken, createSession, COOKIE_NAME, COOKIE_OPTIONS } from '@/lib/auth';
+import { createSession, COOKIE_NAME, COOKIE_OPTIONS } from '@/lib/auth';
+import {
+    authenticateStudentLoginToken,
+    requestIp,
+} from '@/lib/auth/student-login';
 
 interface RouteParams {
     params: Promise<{ token: string }>;
@@ -16,13 +20,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { token } = await params;
     const baseUrl = getBaseUrl(request);
 
-    const user = await loginWithToken(token);
-    if (!user) {
+    const login = await authenticateStudentLoginToken({
+        loginToken: token,
+        ipAddress: requestIp(request),
+    });
+    if (!login.ok) {
         return NextResponse.redirect(`${baseUrl}/student-login`);
     }
 
     // Create a session and set the cookie
-    const sessionId = await createSession(user.id);
+    const sessionId = await createSession(login.user.id, {
+        ipAddress: requestIp(request),
+        userAgent: request.headers.get('user-agent') ?? undefined,
+    });
     const response = NextResponse.redirect(`${baseUrl}/student/dashboard`);
     response.cookies.set(COOKIE_NAME, sessionId, COOKIE_OPTIONS);
 

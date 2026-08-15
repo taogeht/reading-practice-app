@@ -1884,3 +1884,59 @@ export const session = pgTable('session', {
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(users, { fields: [session.userId], references: [users.id] }),
 }));
+
+// Long-lived native-app credentials. The device receives the opaque refresh
+// token; only its SHA-256 hash is stored. Access tokens continue to use the
+// existing short-lived session table so every protected route shares one
+// authorization path.
+export const mobileRefreshSessions = pgTable(
+  'mobile_refresh_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    accessSessionId: varchar('access_session_id', { length: 255 }).references(
+      () => session.id,
+      { onDelete: 'set null' },
+    ),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    platform: varchar('platform', { length: 20 }).notNull(),
+    deviceName: varchar('device_name', { length: 100 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => ({
+    tokenHashUnique: uniqueIndex('idx_mobile_refresh_sessions_token_hash').on(table.tokenHash),
+    userIdx: index('idx_mobile_refresh_sessions_user').on(table.userId),
+    expiresIdx: index('idx_mobile_refresh_sessions_expires').on(table.expiresAt),
+  }),
+);
+
+export const mobileRefreshSessionsRelations = relations(
+  mobileRefreshSessions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [mobileRefreshSessions.userId],
+      references: [users.id],
+    }),
+    accessSession: one(session, {
+      fields: [mobileRefreshSessions.accessSessionId],
+      references: [session.id],
+    }),
+  }),
+);
+
+// Shared, durable authentication throttling. Keys are hashed before storage so
+// student IDs, login tokens, and IP addresses do not become plaintext audit
+// data. Unlike the previous in-memory map, these buckets survive deploys and
+// coordinate multiple application processes.
+export const authRateLimits = pgTable('auth_rate_limits', {
+  keyHash: varchar('key_hash', { length: 64 }).primaryKey(),
+  failureCount: integer('failure_count').default(0).notNull(),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull(),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
