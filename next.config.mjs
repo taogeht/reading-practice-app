@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['@starling-rise/contracts'],
   typescript: {
     ignoreBuildErrors: true,
   },

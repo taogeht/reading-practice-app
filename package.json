@@ -2,6 +2,10 @@
   "name": "recording-homework-app",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
@@ -24,6 +28,7 @@
     "cleanup:drafts": "tsx scripts/cleanup-draft-passages.ts",
     "migrate:passages": "tsx scripts/migrate-passages-to-prod.ts",
     "migrate:class-promotion": "tsx scripts/apply-class-promotion-lineage.ts",
+    "migrate:mobile-auth": "tsx scripts/apply-mobile-auth-foundation.ts",
     "test:plan": "tsx scripts/test-plan-generation.ts",
     "test:prose": "tsx scripts/test-prose-generation.ts",
     "test:regen": "tsx scripts/test-regen.ts",
@@ -31,6 +36,8 @@
     "test:images": "tsx scripts/test-images.ts",
     "test:passage": "tsx scripts/test-passage.ts",
     "test:class-promotion": "node --import tsx --test src/lib/classes/follow-promotion.test.ts",
+    "test:mobile-contracts": "node --import tsx --test packages/contracts/src/mobile-auth.test.ts",
+    "test:mobile": "npm test --workspace @starling-rise/mobile",
     "bulk:passage": "tsx scripts/bulk-passage-run.ts"
   },
   "dependencies": {

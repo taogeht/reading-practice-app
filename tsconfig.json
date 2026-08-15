@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@starling-rise/contracts": [
+        "./packages/contracts/src/index.ts"
       ]
     }
   },
@@ -36,6 +39,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "apps/mobile"
   ]
 }

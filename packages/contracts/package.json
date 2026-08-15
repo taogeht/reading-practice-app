@@ -1,0 +1,12 @@
+{
+  "name": "@starling-rise/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "zod": "^4.3.5"
+  }
+}
