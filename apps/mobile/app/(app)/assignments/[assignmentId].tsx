@@ -6,6 +6,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { PrimaryButton } from '@/components/primary-button';
 import { Screen } from '@/components/screen';
 import { StoryAudioPlayer } from '@/components/story-audio-player';
+import { AssignmentRecorder } from '@/components/assignment-recorder';
 import { colors, radii, spacing, type } from '@/theme/tokens';
 
 const statusCopy = {
@@ -121,6 +122,14 @@ export default function AssignmentDetailScreen() {
           Read aloud with the narrator, then try once more by yourself. 跟著音訊大聲朗讀，再自己讀一次。
         </Text>
       </View>
+
+      <AssignmentRecorder
+        assignmentId={assignment.id}
+        attempts={assignment.attempts}
+        completed={assignment.status === 'completed'}
+        maxAttempts={assignment.maxAttempts}
+        maxRecordingSeconds={assignment.maxRecordingSeconds}
+      />
     </Screen>
   );
 }

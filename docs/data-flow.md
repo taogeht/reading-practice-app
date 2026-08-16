@@ -157,6 +157,28 @@ require an active-class enrollment. Storage keys are not part of the mobile
 contract. Logout or session expiry clears both cached audio and TanStack Query
 state so one learner's device data cannot appear in another learner's session.
 
+### Native assigned-story recording
+
+```text
+AssignmentRecorder / expo-audio M4A recording
+  -> app document storage + SecureStore metadata
+  -> learner listens, deletes, or sends
+  -> multipart POST /api/mobile/v1/assignments/[assignmentId]/recordings
+  -> bearer student session + active enrollment/publication checks
+  -> deterministic operation-based private R2 key
+  -> advisory-locked attempt allocation
+  -> recordings insert with client_operation_id and status=submitted
+  -> awardXp() once for the newly inserted row
+  -> optional existing AI grading path
+  -> acknowledgement clears the device copy and refreshes mobile projections
+```
+
+The device retains a completed recording until an acknowledged response. A retry
+uses the same operation ID and R2 key; the partial unique index on
+`(student_id, client_operation_id)` makes an already-created attempt a successful
+duplicate response rather than another attempt or XP award. Logout/session expiry
+removes pending voice files to prevent cross-learner leakage on a shared device.
+
 ### AI grading
 
 [`analyzeRecordingFromBuffer()`](../src/lib/grading/analyze-recording.ts) performs:

@@ -30,15 +30,19 @@ Completed in the first milestone:
 - Learner-safe assigned-story list/detail contracts and endpoints, a native Read
   list, story text and instructions, authenticated narration download, private
   device caching, multi-voice playback, and logout/session-expiry cache clearing.
+- Native M4A/AAC assigned-story recording with microphone consent, a timed
+  assignment limit, listen-before-send review, document-storage recovery across
+  restart, authenticated R2 submission, attempt/XP updates, and idempotent retry.
+- Migration `0058_mobile_recording_idempotency.sql`; it must be applied before
+  the native recording endpoint is deployed.
 
 See [`mobile-device-testing.md`](mobile-device-testing.md) for the current build
 and physical-device validation procedure.
 
 Still to implement:
 
-- Assigned-story recording, review, idempotent upload, and submission.
 - The complete generated-passage reading flow.
-- Native recording, authenticated audio/image caching, and idempotent uploads.
+- Authenticated image caching and generated-passage recording.
 - All five spelling games, progress/feedback, parental gate, privacy surfaces,
   app assets, associated-domain files, and store-release automation.
 
@@ -170,6 +174,12 @@ notifications, advertising, tracking, or offline coursework in v1.
 - Make recording uploads idempotent using a client-generated operation ID and a
   server-side uniqueness check so retries cannot create duplicate attempts or
   rewards.
+- The implemented assigned-story seam is `AssignmentRecorder` ->
+  `mobileApi.submitRecording()` ->
+  `POST /api/mobile/v1/assignments/[assignmentId]/recordings` ->
+  `submitMobileRecording()`. The service uses a stable operation-based R2 key,
+  serializes attempt allocation per learner/assignment, and inserts into the
+  existing `recordings` table used by teacher review.
 - Treat transient connectivity as a recoverable state: show a simple retry screen,
   preserve the learner's current work, and resume safe requests when connectivity
   returns.

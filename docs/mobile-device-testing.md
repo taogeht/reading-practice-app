@@ -19,13 +19,14 @@ The current native build should support:
 - a learner-safe Home dashboard projection with assignment, XP, streak, and
   spelling counts; and
 - assigned-story discovery, story details, and privately cached authenticated
-  narration playback; and
+  narration playback;
+- assigned-story microphone recording, local review, restart-safe pending audio,
+  idempotent submission to private R2, and teacher-review visibility; and
 - navigation between Home, Read, Spelling, and Progress.
 
 Spelling intentionally shows a foundation empty state. Progress shows its
 foundation empty state plus the confirmed device logout action. Assigned-story
-recording/upload, generated passages, games, and feedback are the next delivery
-milestone.
+Generated passages, spelling games, and feedback are the next delivery milestone.
 HTTPS links will not automatically open the installed app until the website
 association files are implemented and deployed.
 
@@ -62,7 +63,10 @@ application container:
 npm run check:migrations
 ```
 
-Migration `0057` must be `APPLIED`. Then verify the unauthenticated boundary:
+Migrations `0057` and `0058` must be `APPLIED`. Migration `0058` adds the nullable
+`recordings.client_operation_id` field and its partial unique index; apply
+[`migrations/0058_mobile_recording_idempotency.sql`](../migrations/0058_mobile_recording_idempotency.sql)
+before deploying the recording endpoint. Then verify the unauthenticated boundary:
 
 ```bash
 curl -i https://YOUR_APP_HOST/api/mobile/v1/auth/me
@@ -70,6 +74,11 @@ curl -i https://YOUR_APP_HOST/api/mobile/v1/auth/me
 
 The expected response is HTTP `401` with error code `NOT_AUTHENTICATED`. A `404`
 means the new route was not deployed; a `500` requires application-log review.
+
+Recording also adds the native iOS microphone usage description through the
+`expo-audio` config plugin. Create a new simulator/preview binary after deployment;
+an OTA JavaScript update cannot add that native permission string to an existing
+binary.
 
 For the complete deployed session lifecycle, configure these values only in an
 uncommitted `.env.local` or the invoking process:
@@ -156,12 +165,23 @@ Run on at least one physical iOS and Android device:
 6. Open the story, play its narration, pause and resume it, then force-close and
    reopen the app. The learner should remain signed in and cached audio should
    play again.
-7. Open Progress, choose `Sign out  登出`, cancel once, then confirm sign-out.
-   Reopen and confirm the session does not return.
-8. Sign in through class code, learner selection, and the correct visual password.
-9. Confirm a wrong visual password is rejected without revealing the correct one.
-10. Use an old promoted-class code and confirm it reaches the current class.
-11. Scan an unrelated or lookalike-host QR and confirm it is rejected.
+7. Tap Start recording and deny microphone access once. Confirm the app explains
+   the permission requirement without losing the story screen. Re-enable access,
+   record a short reading, and confirm the timer stops at the assignment limit.
+8. Listen to the finished recording. Force-close and reopen the app before
+   sending; confirm the same recording is still ready to review.
+9. Send it, confirm the success state and incremented attempt count, and confirm a
+   teacher can play the new submission in the existing web review workflow.
+10. For retry safety, interrupt the response after tapping Send, reopen, and tap
+    Send again. Confirm only one `recordings` row/attempt and one recording XP
+    award exist for that operation.
+11. Record another unsent reading, then open Progress and choose `Sign out  登出`.
+    Cancel once, then confirm sign-out. Sign back in and confirm the prior
+    learner's pending voice recording is gone.
+12. Sign in through class code, learner selection, and the correct visual password.
+13. Confirm a wrong visual password is rejected without revealing the correct one.
+14. Use an old promoted-class code and confirm it reaches the current class.
+15. Scan an unrelated or lookalike-host QR and confirm it is rejected.
 
 Watch Coolify application logs during the test. There should be no raw login,
 access, refresh, or visual-password credentials in logs.

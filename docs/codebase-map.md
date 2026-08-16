@@ -70,6 +70,12 @@ external services are active in production.
   — native assigned-story discovery and story reader.
 - [`apps/mobile/src/media/audio-cache.ts`](../apps/mobile/src/media/audio-cache.ts)
   — authenticated narration download and private device-cache lifecycle.
+- [`apps/mobile/src/components/assignment-recorder.tsx`](../apps/mobile/src/components/assignment-recorder.tsx)
+  and [`apps/mobile/src/recording/pending-recording.ts`](../apps/mobile/src/recording/pending-recording.ts)
+  — microphone recording/review UI and restart-safe pending voice-file lifecycle.
+- [`src/lib/mobile/recordings.ts`](../src/lib/mobile/recordings.ts) — learner
+  authorization, serialized attempt allocation, stable R2 upload, idempotent
+  database insertion, XP, and optional grading for native story submissions.
 
 ## Page trees
 

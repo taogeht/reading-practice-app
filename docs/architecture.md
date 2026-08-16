@@ -55,7 +55,10 @@ mobile dashboard contract deliberately excludes browser-only student credentials
 present in the older web dashboard response. Mobile assignment list/detail routes
 reuse `src/lib/mobile/assignments.ts` so dashboard and Read statuses stay aligned.
 Narration is downloaded with bearer refresh support into the app cache and played
-from a local URI; logout and session expiry clear both cached files and query data.
+from a local URI. Completed learner recordings are copied into app document
+storage until acknowledged, then submitted to the existing private R2 +
+`recordings` workflow through a mobile-specific idempotent service. Logout and
+session expiry clear cached narration, pending voice files, and query data.
 
 [`packages/contracts`](../packages/contracts) is the cross-runtime seam. It must
 remain pure TypeScript/Zod and must not import Next.js, React Native, database, or

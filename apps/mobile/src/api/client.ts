@@ -7,6 +7,7 @@ import {
   mobileDashboardResponseSchema,
   mobileErrorResponseSchema,
   mobileMeResponseSchema,
+  mobileRecordingSubmissionResponseSchema,
   studentRosterResponseSchema,
   visualPasswordStudentResponseSchema,
   type MobileAssignmentDetailResponse,
@@ -15,6 +16,7 @@ import {
   type MobileClassResolveResponse,
   type MobileDashboardResponse,
   type MobilePlatform,
+  type MobileRecordingSubmissionResponse,
   type MobileUser,
   type StudentRosterResponse,
   type VisualPasswordStudent,
@@ -164,6 +166,30 @@ class MobileApiClient {
       `/api/mobile/v1/assignments/${encodeURIComponent(assignmentId)}`,
       {},
       mobileAssignmentDetailResponseSchema,
+    );
+  }
+
+  submitRecording(input: {
+    assignmentId: string;
+    operationId: string;
+    uri: string;
+    durationSeconds: number;
+  }): Promise<MobileRecordingSubmissionResponse> {
+    const formData = new FormData();
+    formData.append('operationId', input.operationId);
+    formData.append('durationSeconds', String(input.durationSeconds));
+    formData.append(
+      'audio',
+      {
+        uri: input.uri,
+        name: `${input.operationId}.m4a`,
+        type: 'audio/mp4',
+      } as unknown as Blob,
+    );
+    return this.request(
+      `/api/mobile/v1/assignments/${encodeURIComponent(input.assignmentId)}/recordings`,
+      { method: 'POST', body: formData },
+      mobileRecordingSubmissionResponseSchema,
     );
   }
 

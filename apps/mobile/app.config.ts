@@ -52,6 +52,14 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       'expo-router',
       'expo-secure-store',
       [
+        'expo-audio',
+        {
+          microphonePermission:
+            'Let Starling Rise use the microphone when you choose to record your reading.',
+          enableBackgroundPlayback: false,
+        },
+      ],
+      [
         'expo-camera',
         {
           cameraPermission:

@@ -11,6 +11,7 @@ import type { MobileUser } from '@starling-rise/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { mobileApi } from '@/api/client';
 import { clearMediaCache } from '@/media/audio-cache';
+import { clearPendingRecordings } from '@/recording/pending-recording';
 
 type AuthState =
   | { status: 'loading'; user: null }
@@ -39,6 +40,9 @@ function clearPrivateMedia(): void {
   } catch {
     // Secure session cleanup must still complete if the OS cache is unavailable.
   }
+  void clearPendingRecordings().catch(() => {
+    // Logout must still complete if the device cannot remove a local file.
+  });
 }
 
 function reducer(_state: AuthState, action: AuthAction): AuthState {
