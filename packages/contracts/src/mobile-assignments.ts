@@ -45,6 +45,23 @@ export const mobileAssignmentDetailResponseSchema = z.object({
   assignment: mobileAssignmentDetailSchema,
 }).strict();
 
+export const mobileRecordingSubmissionResponseSchema = z.object({
+  success: z.literal(true),
+  duplicate: z.boolean(),
+  recording: z.object({
+    id: z.uuid(),
+    attemptNumber: z.number().int().positive(),
+    status: z.enum(['submitted', 'reviewed', 'flagged']),
+    submittedAt: z.iso.datetime(),
+  }).strict(),
+  award: z.object({
+    pointsAwarded: z.number().int().nonnegative(),
+    newTotalXp: z.number().int().nonnegative(),
+    leveledUp: z.boolean(),
+    newLevel: z.number().int().positive(),
+  }).strict(),
+}).strict();
+
 export type MobileAssignmentListResponse = z.infer<
   typeof mobileAssignmentListResponseSchema
 >;
@@ -52,4 +69,7 @@ export type MobileStoryAudio = z.infer<typeof mobileStoryAudioSchema>;
 export type MobileAssignmentDetail = z.infer<typeof mobileAssignmentDetailSchema>;
 export type MobileAssignmentDetailResponse = z.infer<
   typeof mobileAssignmentDetailResponseSchema
+>;
+export type MobileRecordingSubmissionResponse = z.infer<
+  typeof mobileRecordingSubmissionResponseSchema
 >;

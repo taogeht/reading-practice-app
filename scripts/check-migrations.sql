@@ -31,7 +31,9 @@ WITH expected(migration, kind, obj) AS (VALUES
   ('0056 class promotion lineage',   'rel',    'idx_classes_promoted_to'),
   ('0057 mobile auth foundation',    'rel',    'mobile_refresh_sessions'),
   ('0057 mobile auth foundation',    'rel',    'auth_rate_limits'),
-  ('0057 mobile auth foundation',    'rel',    'idx_mobile_refresh_sessions_token_hash')
+  ('0057 mobile auth foundation',    'rel',    'idx_mobile_refresh_sessions_token_hash'),
+  ('0058 mobile recording idempotency', 'column', 'recordings.client_operation_id'),
+  ('0058 mobile recording idempotency', 'rel',    'idx_recordings_unique_client_operation')
 ),
 resolved AS (
   SELECT

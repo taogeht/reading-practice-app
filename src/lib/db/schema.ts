@@ -396,6 +396,7 @@ export const recordings = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     assignmentId: uuid('assignment_id').notNull().references(() => assignments.id, { onDelete: 'cascade' }),
     studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    clientOperationId: varchar('client_operation_id', { length: 64 }),
     audioUrl: varchar('audio_url', { length: 500 }).notNull(),
     audioDurationSeconds: integer('audio_duration_seconds'),
     fileSizeBytes: bigint('file_size_bytes', { mode: 'number' }),
@@ -453,6 +454,9 @@ export const recordings = pgTable(
       table.studentId,
       table.attemptNumber
     ),
+    uniqueClientOperation: uniqueIndex('idx_recordings_unique_client_operation')
+      .on(table.studentId, table.clientOperationId)
+      .where(sql`${table.clientOperationId} IS NOT NULL`),
     studentIdIdx: index('idx_recordings_student_id').on(table.studentId),
     assignmentIdIdx: index('idx_recordings_assignment_id').on(table.assignmentId),
     statusIdx: index('idx_recordings_status').on(table.status),

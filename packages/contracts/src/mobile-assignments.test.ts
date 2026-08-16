@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   mobileAssignmentDetailResponseSchema,
   mobileAssignmentListResponseSchema,
+  mobileRecordingSubmissionResponseSchema,
 } from './mobile-assignments';
 
 const assignmentSummary = {
@@ -80,4 +81,25 @@ test('mobile assignment detail rejects storage implementation fields', () => {
   });
 
   assert.equal(result.success, false);
+});
+
+test('mobile recording response acknowledges one submitted attempt without exposing storage', () => {
+  const result = mobileRecordingSubmissionResponseSchema.safeParse({
+    success: true,
+    duplicate: false,
+    recording: {
+      id: '11967744-7157-4c48-944b-9d5f680d11b5',
+      attemptNumber: 1,
+      status: 'submitted',
+      submittedAt: '2026-08-16T12:00:00.000Z',
+    },
+    award: {
+      pointsAwarded: 20,
+      newTotalXp: 120,
+      leveledUp: false,
+      newLevel: 2,
+    },
+  });
+
+  assert.equal(result.success, true);
 });

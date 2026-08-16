@@ -95,6 +95,14 @@ const MIGRATIONS: { id: string; label: string; checks: Check[] }[] = [
       { kind: 'index', name: 'idx_mobile_refresh_sessions_token_hash' },
     ],
   },
+  {
+    id: '0058',
+    label: 'mobile recording idempotency',
+    checks: [
+      { kind: 'column', table: 'recordings', name: 'client_operation_id' },
+      { kind: 'index', name: 'idx_recordings_unique_client_operation' },
+    ],
+  },
 ];
 
 async function main() {

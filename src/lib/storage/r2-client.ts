@@ -466,6 +466,23 @@ export function generateRecordingKey(
   return `audio/recordings/${studentId}/${assignmentId}/attempt-${attemptNumber}-${timestamp}.${extension}`;
 }
 
+/**
+ * Stable key for a native recording. Retrying the same device operation
+ * overwrites the same R2 object instead of leaving duplicate uploads behind.
+ */
+export function generateMobileRecordingKey(
+  studentId: string,
+  assignmentId: string,
+  clientOperationId: string,
+  extension: string = 'm4a'
+): string {
+  assertSafePathSegment(studentId, 'studentId');
+  assertSafePathSegment(assignmentId, 'assignmentId');
+  assertSafePathSegment(clientOperationId, 'clientOperationId');
+  assertSafePathSegment(extension, 'extension');
+  return `audio/recordings/${studentId}/${assignmentId}/mobile-${clientOperationId}.${extension}`;
+}
+
 // Per-page recordings on a reading passage. Lives in a separate bucket prefix
 // from per-assignment recordings so it's easy to inspect / clean up
 // independently. {pageNumber} segment is human-readable; the canonical
