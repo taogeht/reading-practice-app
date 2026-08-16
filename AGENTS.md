@@ -64,6 +64,8 @@ npm run lint
 npm run build
 npm run typecheck --workspace @starling-rise/mobile
 npm run test:mobile-contracts
+npm run test:mobile
+npm run test:mobile-auth-live # opt-in; writes/revokes a test mobile session
 npm run db:generate
 npm run db:studio
 ```
@@ -71,4 +73,5 @@ npm run db:studio
 The `test:*` package scripts are live AI/integration harnesses and may require
 credentials, spend money, or write database/storage state. Inspect a script
 before running it. `test:mobile-contracts` and `test:class-promotion` are local,
-side-effect-free exceptions.
+side-effect-free exceptions. `test:mobile-auth-live` requires a dedicated test
+learner and writes then revokes native refresh sessions in the selected database.

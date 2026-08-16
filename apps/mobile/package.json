@@ -19,6 +19,7 @@
     "expo": "~57.0.1",
     "expo-camera": "~57.0.0",
     "expo-constants": "~57.0.0",
+    "expo-dev-client": "~57.0.12",
     "expo-linking": "~57.0.0",
     "expo-router": "~57.0.7",
     "expo-secure-store": "~57.0.0",
@@ -30,8 +31,9 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@types/node": "^25.0.0",
     "@types/react": "^19.2.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.2"
+    "typescript": "~6.0.3"
   }
 }

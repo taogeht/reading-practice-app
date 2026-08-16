@@ -10,6 +10,9 @@
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
+  "overrides": {
+    "react-native-screens": "4.26.2"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "cross-env NEXT_DISABLE_TURBOPACK=1 next build",
@@ -38,8 +41,10 @@
     "test:class-promotion": "node --import tsx --test src/lib/classes/follow-promotion.test.ts",
     "test:mobile-contracts": "node --import tsx --test packages/contracts/src/mobile-auth.test.ts",
     "test:mobile": "npm test --workspace @starling-rise/mobile",
+    "test:mobile-auth-live": "tsx scripts/smoke-mobile-auth.ts",
     "bulk:passage": "tsx scripts/bulk-passage-run.ts",
-    "check:migrations": "tsx scripts/check-migrations.ts"
+    "check:migrations": "tsx scripts/check-migrations.ts",
+    "test:story-generation": "node --import tsx --test src/lib/reading/story-generation.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

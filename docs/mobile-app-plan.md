@@ -18,6 +18,13 @@ Completed in the first milestone:
   throttling, and promotion-aware class-code resolution.
 - Migration `0057_mobile_auth_foundation.sql`; it must be applied before the new
   authentication code is deployed.
+- Expo development-client dependency, explicit EAS environment selection, and
+  build-time rejection of an unconfigured EAS API origin.
+- An opt-in deployed authentication smoke test covering QR login, bearer access,
+  refresh rotation, replay rejection, logout, and post-logout rejection.
+
+See [`mobile-device-testing.md`](mobile-device-testing.md) for the current build
+and physical-device validation procedure.
 
 Still to implement:
 

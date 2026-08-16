@@ -7,14 +7,31 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "environment": "development",
+      "node": "22.13.0",
       "channel": "development"
     },
     "preview": {
       "distribution": "internal",
+      "environment": "preview",
+      "node": "22.13.0",
       "channel": "preview"
+    },
+    "preview-simulator": {
+      "distribution": "internal",
+      "environment": "preview",
+      "node": "22.13.0",
+      "env": {
+        "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+      },
+      "ios": {
+        "simulator": true
+      }
     },
     "production": {
       "autoIncrement": true,
+      "environment": "production",
+      "node": "22.13.0",
       "channel": "production"
     }
   },
