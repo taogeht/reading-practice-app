@@ -61,7 +61,15 @@ external services are active in production.
 - [`apps/mobile/app/welcome.tsx`](../apps/mobile/app/welcome.tsx) — native learner
   QR/class-code entry point.
 - [`apps/mobile/src/api/client.ts`](../apps/mobile/src/api/client.ts) — typed native
-  HTTP client, secure refresh, and API error handling.
+  HTTP client, secure refresh, learner dashboard loading, and API error handling.
+- [`apps/mobile/app/(app)/(tabs)/index.tsx`](../apps/mobile/app/%28app%29/%28tabs%29/index.tsx)
+  — learner Home projection with assignment, XP, streak, and spelling summary
+  states.
+- [`apps/mobile/app/(app)/(tabs)/read.tsx`](../apps/mobile/app/%28app%29/%28tabs%29/read.tsx)
+  and [`apps/mobile/app/(app)/assignments/`](../apps/mobile/app/%28app%29/assignments)
+  — native assigned-story discovery and story reader.
+- [`apps/mobile/src/media/audio-cache.ts`](../apps/mobile/src/media/audio-cache.ts)
+  — authenticated narration download and private device-cache lifecycle.
 
 ## Page trees
 
@@ -119,7 +127,8 @@ no current page children.
 All paths below are under `src/app/api`.
 
 - `auth/` — login, student login, logout, and current session
-- `mobile/v1/` — native authentication and promotion-aware class resolution
+- `mobile/v1/` — native authentication, promotion-aware class resolution,
+  learner-safe dashboard projection, and assigned-story list/detail projections
 - `admin/` — schools, users, classes, terms, settings, stories, audit logs, R2,
   reset tools, and avatar catalog administration
 - `teacher/` — teacher dashboard, class/student views, capability-gated reading
@@ -180,6 +189,9 @@ extend the closest established boundary rather than creating a third variant.
   access/refresh issuance, rotation, and revocation
 - [`src/lib/auth/student-login.ts`](../src/lib/auth/student-login.ts) — shared QR
   and visual-password validation with durable throttling
+- [`src/lib/mobile/assignments.ts`](../src/lib/mobile/assignments.ts) — shared
+  active-class assignment projection and learner-facing status derivation for the
+  native dashboard, list, and story detail
 
 ### Database
 

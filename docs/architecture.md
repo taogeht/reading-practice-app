@@ -48,9 +48,14 @@ remain the backend boundary, and many of them query Drizzle directly.
 ## Native application
 
 [`apps/mobile`](../apps/mobile) is an Expo SDK 57 / React Native 0.86 application
-using Expo Router. `AuthProvider` owns only device-session state, TanStack Query is
-reserved for server state, and React Native `StyleSheet` plus
-`src/theme/tokens.ts` define the visual system.
+using Expo Router. `AuthProvider` owns only device-session state, TanStack Query
+loads the learner-safe dashboard projection and future server state, and React
+Native `StyleSheet` plus `src/theme/tokens.ts` define the visual system. The
+mobile dashboard contract deliberately excludes browser-only student credentials
+present in the older web dashboard response. Mobile assignment list/detail routes
+reuse `src/lib/mobile/assignments.ts` so dashboard and Read statuses stay aligned.
+Narration is downloaded with bearer refresh support into the app cache and played
+from a local URI; logout and session expiry clear both cached files and query data.
 
 [`packages/contracts`](../packages/contracts) is the cross-runtime seam. It must
 remain pure TypeScript/Zod and must not import Next.js, React Native, database, or

@@ -137,6 +137,26 @@ There is a second legacy `POST /api/recordings` path that accepts a supplied aud
 URL and inserts a different initial status. Before changing recording creation,
 trace both callers and decide whether the change applies to both paths.
 
+### Native assigned-story reading
+
+```text
+Read tab
+  -> GET /api/mobile/v1/assignments with bearer session
+  -> active enrolled classes + published assignments
+  -> shared mobile status derivation from the learner's recordings
+  -> /assignments/[assignmentId]
+  -> GET /api/mobile/v1/assignments/[assignmentId]
+  -> learner-safe story text, instructions, and narration proxy URLs
+  -> authenticated audio download with one refresh retry
+  -> private Expo cache
+  -> expo-audio local playback
+```
+
+The native list and detail routes derive the learner identity from the session and
+require an active-class enrollment. Storage keys are not part of the mobile
+contract. Logout or session expiry clears both cached audio and TanStack Query
+state so one learner's device data cannot appear in another learner's session.
+
 ### AI grading
 
 [`analyzeRecordingFromBuffer()`](../src/lib/grading/analyze-recording.ts) performs:

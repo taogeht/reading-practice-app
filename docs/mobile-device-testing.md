@@ -1,6 +1,6 @@
 # Starling Rise Device Validation
 
-Last verified: 2026-08-15
+Last verified: 2026-08-16
 
 This checklist validates the native foundation before core learning features are
 added. Use a dedicated test learner. Never paste a real learner's QR token into
@@ -16,10 +16,16 @@ The current native build should support:
 - current or historical class-code resolution;
 - roster selection and visual-password login;
 - persisted SecureStore sessions, access-token refresh, and logout; and
+- a learner-safe Home dashboard projection with assignment, XP, streak, and
+  spelling counts; and
+- assigned-story discovery, story details, and privately cached authenticated
+  narration playback; and
 - navigation between Home, Read, Spelling, and Progress.
 
-Read, Spelling, and Progress intentionally show foundation empty states. Story
-content, recording, uploads, games, and feedback are the next delivery milestone.
+Spelling intentionally shows a foundation empty state. Progress shows its
+foundation empty state plus the confirmed device logout action. Assigned-story
+recording/upload, generated passages, games, and feedback are the next delivery
+milestone.
 HTTPS links will not automatically open the installed app until the website
 association files are implemented and deployed.
 
@@ -142,13 +148,20 @@ Run on at least one physical iOS and Android device:
 1. Launch signed out and confirm both sign-in choices render.
 2. Deny camera access and confirm the app remains usable through class-code login.
 3. Re-enable camera access and scan a dedicated learner QR.
-4. Confirm the learner's first name appears and all four tabs open.
-5. Force-close and reopen the app; the learner should remain signed in.
-6. Sign out, reopen, and confirm the session does not return.
-7. Sign in through class code, learner selection, and the correct visual password.
-8. Confirm a wrong visual password is rejected without revealing the correct one.
-9. Use an old promoted-class code and confirm it reaches the current class.
-10. Scan an unrelated or lookalike-host QR and confirm it is rejected.
+4. Confirm the learner's first name, assignment summary, XP, streak, and spelling
+   counts appear and all four tabs open. Zero values are valid for a new test
+   learner.
+5. For a learner with a published assignment in an active class, open Read and
+   confirm the assignment status and attempt count match the web application.
+6. Open the story, play its narration, pause and resume it, then force-close and
+   reopen the app. The learner should remain signed in and cached audio should
+   play again.
+7. Open Progress, choose `Sign out  登出`, cancel once, then confirm sign-out.
+   Reopen and confirm the session does not return.
+8. Sign in through class code, learner selection, and the correct visual password.
+9. Confirm a wrong visual password is rejected without revealing the correct one.
+10. Use an old promoted-class code and confirm it reaches the current class.
+11. Scan an unrelated or lookalike-host QR and confirm it is rejected.
 
 Watch Coolify application logs during the test. There should be no raw login,
 access, refresh, or visual-password credentials in logs.

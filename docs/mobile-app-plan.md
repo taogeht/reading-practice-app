@@ -22,13 +22,22 @@ Completed in the first milestone:
   build-time rejection of an unconfigured EAS API origin.
 - An opt-in deployed authentication smoke test covering QR login, bearer access,
   refresh rotation, replay rejection, logout, and post-logout rejection.
+- A strict learner-safe dashboard contract and `/api/mobile/v1/dashboard`
+  projection, with native loading, retry, empty, assignment, XP, streak, and
+  spelling-summary states.
+- A confirmed bilingual logout action on Progress that clears the device session
+  even when server-side revocation is temporarily unavailable.
+- Learner-safe assigned-story list/detail contracts and endpoints, a native Read
+  list, story text and instructions, authenticated narration download, private
+  device caching, multi-voice playback, and logout/session-expiry cache clearing.
 
 See [`mobile-device-testing.md`](mobile-device-testing.md) for the current build
 and physical-device validation procedure.
 
 Still to implement:
 
-- Mobile dashboard projections and the two complete reading flows.
+- Assigned-story recording, review, idempotent upload, and submission.
+- The complete generated-passage reading flow.
 - Native recording, authenticated audio/image caching, and idempotent uploads.
 - All five spelling games, progress/feedback, parental gate, privacy surfaces,
   app assets, associated-domain files, and store-release automation.
