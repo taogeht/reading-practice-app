@@ -8,7 +8,9 @@ import {
   type PropsWithChildren,
 } from 'react';
 import type { MobileUser } from '@starling-rise/contracts';
+import { useQueryClient } from '@tanstack/react-query';
 import { mobileApi } from '@/api/client';
+import { clearMediaCache } from '@/media/audio-cache';
 
 type AuthState =
   | { status: 'loading'; user: null }
@@ -31,6 +33,14 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function clearPrivateMedia(): void {
+  try {
+    clearMediaCache();
+  } catch {
+    // Secure session cleanup must still complete if the OS cache is unavailable.
+  }
+}
+
 function reducer(_state: AuthState, action: AuthAction): AuthState {
   return action.type === 'signedIn'
     ? { status: 'signedIn', user: action.user }
@@ -38,21 +48,32 @@ function reducer(_state: AuthState, action: AuthAction): AuthState {
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(reducer, { status: 'loading', user: null });
 
+  const markSignedOut = useCallback(() => {
+    clearPrivateMedia();
+    queryClient.clear();
+    dispatch({ type: 'signedOut' });
+  }, [queryClient]);
+
   useEffect(() => {
-    mobileApi.setSessionExpiredListener(() => dispatch({ type: 'signedOut' }));
+    mobileApi.setSessionExpiredListener(markSignedOut);
     void (async () => {
       try {
         await mobileApi.restore();
         const user = await mobileApi.me();
-        dispatch(user ? { type: 'signedIn', user } : { type: 'signedOut' });
+        if (user) {
+          dispatch({ type: 'signedIn', user });
+        } else {
+          markSignedOut();
+        }
       } catch {
-        dispatch({ type: 'signedOut' });
+        markSignedOut();
       }
     })();
     return () => mobileApi.setSessionExpiredListener(null);
-  }, []);
+  }, [markSignedOut]);
 
   const loginWithQr = useCallback(async (loginToken: string) => {
     const user = await mobileApi.loginWithQr(loginToken);
@@ -72,9 +93,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   const logout = useCallback(async () => {
-    await mobileApi.logout();
-    dispatch({ type: 'signedOut' });
-  }, []);
+    try {
+      await mobileApi.logout();
+    } finally {
+      // The API client clears SecureStore in its own finally block. Always update
+      // the in-memory state too, even when server-side revocation is unavailable.
+      markSignedOut();
+    }
+  }, [markSignedOut]);
 
   const value = useMemo<AuthContextValue>(
     () => ({ ...state, loginWithQr, loginWithVisual, logout }),

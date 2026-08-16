@@ -1,4 +1,4 @@
-import { Redirect, Slot } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-context';
 import { colors } from '@/theme/tokens';
@@ -9,7 +9,23 @@ export default function SignedInLayout() {
     return <View style={styles.loading}><ActivityIndicator color={colors.leaf} size="large" /></View>;
   }
   if (auth.status !== 'signedIn') return <Redirect href="/welcome" />;
-  return <Slot />;
+  return (
+    <Stack
+      screenOptions={{
+        contentStyle: { backgroundColor: colors.cloud },
+        headerBackTitle: 'Read',
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: colors.cloud },
+        headerTintColor: colors.ink,
+      }}
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="assignments/[assignmentId]"
+        options={{ title: 'Story  故事' }}
+      />
+    </Stack>
+  );
 }
 
 const styles = StyleSheet.create({

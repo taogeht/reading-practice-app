@@ -15,7 +15,7 @@ export function BilingualLabel({
   return (
     <View accessibilityLabel={`${en}. ${zh}`}>
       <Text style={[styles.en, { textAlign: align }, style]}>{en}</Text>
-      <Text lang="zh-Hant" style={[styles.zh, { textAlign: align }]}>
+      <Text accessibilityLanguage="zh-Hant" style={[styles.zh, { textAlign: align }]}>
         {zh}
       </Text>
     </View>

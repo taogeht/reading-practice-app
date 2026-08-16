@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { BrandMark } from '@/components/brand-mark';
 import { Screen } from '@/components/screen';
@@ -8,11 +9,13 @@ export function FeatureEmptyState({
   title,
   zh,
   body,
+  children,
 }: {
   symbol: string;
   title: string;
   zh: string;
   body: string;
+  children?: ReactNode;
 }) {
   return (
     <Screen contentStyle={styles.screen}>
@@ -23,6 +26,7 @@ export function FeatureEmptyState({
         <Text style={styles.zh}>{zh}</Text>
         <Text style={styles.body}>{body}</Text>
       </View>
+      {children}
     </Screen>
   );
 }

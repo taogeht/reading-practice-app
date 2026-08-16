@@ -1,13 +1,19 @@
 import Constants from 'expo-constants';
 import {
+  mobileAssignmentDetailResponseSchema,
+  mobileAssignmentListResponseSchema,
   mobileAuthResponseSchema,
   mobileClassResolveResponseSchema,
+  mobileDashboardResponseSchema,
   mobileErrorResponseSchema,
   mobileMeResponseSchema,
   studentRosterResponseSchema,
   visualPasswordStudentResponseSchema,
+  type MobileAssignmentDetailResponse,
+  type MobileAssignmentListResponse,
   type MobileAuthResponse,
   type MobileClassResolveResponse,
+  type MobileDashboardResponse,
   type MobilePlatform,
   type MobileUser,
   type StudentRosterResponse,
@@ -33,6 +39,8 @@ export class MobileApiError extends Error {
 }
 
 type Schema<T> = z.ZodType<T>;
+
+const MAX_CACHED_AUDIO_BYTES = 25 * 1024 * 1024;
 
 class MobileApiClient {
   private accessToken: string | null = null;
@@ -135,6 +143,63 @@ class MobileApiClient {
     return response.student;
   }
 
+  dashboard(): Promise<MobileDashboardResponse> {
+    return this.request(
+      '/api/mobile/v1/dashboard',
+      {},
+      mobileDashboardResponseSchema,
+    );
+  }
+
+  assignments(): Promise<MobileAssignmentListResponse> {
+    return this.request(
+      '/api/mobile/v1/assignments',
+      {},
+      mobileAssignmentListResponseSchema,
+    );
+  }
+
+  assignment(assignmentId: string): Promise<MobileAssignmentDetailResponse> {
+    return this.request(
+      `/api/mobile/v1/assignments/${encodeURIComponent(assignmentId)}`,
+      {},
+      mobileAssignmentDetailResponseSchema,
+    );
+  }
+
+  async downloadAudio(source: string): Promise<{
+    bytes: Uint8Array;
+    contentType: string;
+  }> {
+    const response = source.startsWith('/api/audio/')
+      ? await this.authenticatedFetch(source, {})
+      : await this.publicMediaFetch(source);
+
+    if (!response.ok) {
+      await this.throwResponseError(response);
+    }
+
+    const contentLength = Number(response.headers.get('content-length') ?? 0);
+    if (contentLength > MAX_CACHED_AUDIO_BYTES) {
+      throw new MobileApiError('This audio file is too large to play.', 413);
+    }
+
+    const contentType = response.headers.get('content-type')?.split(';')[0] ?? '';
+    if (contentType && !contentType.startsWith('audio/')) {
+      throw new MobileApiError('The server returned an invalid audio file.', 502);
+    }
+
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength > MAX_CACHED_AUDIO_BYTES) {
+      throw new MobileApiError('This audio file is too large to play.', 413);
+    }
+
+    return {
+      bytes: new Uint8Array(buffer),
+      contentType: contentType || 'audio/mpeg',
+    };
+  }
+
   async logout(): Promise<void> {
     const refreshToken = this.refreshToken;
     try {
@@ -203,15 +268,24 @@ class MobileApiClient {
     schema?: Schema<T>,
     retry = true,
   ): Promise<T> {
+    const response = await this.authenticatedFetch(path, init, retry);
+    return this.parseResponse(response, schema);
+  }
+
+  private async authenticatedFetch(
+    path: string,
+    init: RequestInit,
+    retry = true,
+  ): Promise<Response> {
     const headers = new Headers(init.headers);
     if (this.accessToken) headers.set('Authorization', `Bearer ${this.accessToken}`);
     headers.set('X-App-Version', Constants.expoConfig?.version ?? 'development');
     const response = await fetch(`${API_URL}${path}`, { ...init, headers });
 
     if (response.status === 401 && retry && (await this.refresh())) {
-      return this.request(path, init, schema, false);
+      return this.authenticatedFetch(path, init, false);
     }
-    return this.parseResponse(response, schema);
+    return response;
   }
 
   private async publicRequest<T>(
@@ -228,13 +302,7 @@ class MobileApiClient {
   private async parseResponse<T>(response: Response, schema?: Schema<T>): Promise<T> {
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      const error = mobileErrorResponseSchema.safeParse(body);
-      throw new MobileApiError(
-        error.success ? error.data.error.message : 'The server could not complete this request.',
-        response.status,
-        error.success ? error.data.error.code : undefined,
-        error.success ? error.data.error.retryAfterSeconds : undefined,
-      );
+      this.throwParsedResponseError(response.status, body);
     }
 
     if (!schema) return body as T;
@@ -243,6 +311,36 @@ class MobileApiClient {
       throw new MobileApiError('The server returned an unexpected response.', 502);
     }
     return parsed.data;
+  }
+
+  private async publicMediaFetch(source: string): Promise<Response> {
+    let url: URL;
+    try {
+      url = new URL(source);
+    } catch {
+      throw new MobileApiError('This audio link is invalid.', 400);
+    }
+    if (url.protocol !== 'https:') {
+      throw new MobileApiError('This audio link is not secure.', 400);
+    }
+    return fetch(url.toString(), {
+      headers: { 'X-App-Version': Constants.expoConfig?.version ?? 'development' },
+    });
+  }
+
+  private async throwResponseError(response: Response): Promise<never> {
+    const body: unknown = await response.json().catch(() => null);
+    return this.throwParsedResponseError(response.status, body);
+  }
+
+  private throwParsedResponseError(status: number, body: unknown): never {
+    const error = mobileErrorResponseSchema.safeParse(body);
+    throw new MobileApiError(
+      error.success ? error.data.error.message : 'The server could not complete this request.',
+      status,
+      error.success ? error.data.error.code : undefined,
+      error.success ? error.data.error.retryAfterSeconds : undefined,
+    );
   }
 }
 
