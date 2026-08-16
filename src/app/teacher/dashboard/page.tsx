@@ -94,12 +94,12 @@ type DashboardData = {
 
 export default function TeacherDashboardPage() {
   // Redesigned Home lives in its own component so the original stays intact and
-  // the flag can roll back instantly. TEACHER_NAV_V2 is a compile-time const, so
-  // this branch is stable across renders (no hook-order concern).
-  if (TEACHER_NAV_V2) {
-    return <TeacherHomeV2 />;
-  }
+  // the flag can roll back instantly. Keep the legacy hooks in a separate
+  // component so both implementations obey React's hook-order contract.
+  return TEACHER_NAV_V2 ? <TeacherHomeV2 /> : <LegacyTeacherDashboard />;
+}
 
+function LegacyTeacherDashboard() {
   const router = useRouter();
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [showCreateClass, setShowCreateClass] = useState(false);

@@ -1,25 +1,18 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTypeScript from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
-  },
+export default defineConfig([
+  ...nextVitals,
+  ...nextTypeScript,
+  globalIgnores([
+    "node_modules/**",
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "apps/mobile/.expo/**",
+  ]),
   {
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
@@ -31,17 +24,14 @@ const eslintConfig = [
       "@typescript-eslint/ban-ts-comment": "off",
       "prefer-const": "off",
       "@next/next/no-html-link-for-pages": "off",
+      // React 19's compiler-oriented lint pack introduced these rules after
+      // this application was built. Keep the long-standing correctness gate
+      // (`rules-of-hooks`) enabled, and adopt compiler rules incrementally
+      // instead of turning the existing cleanup backlog into a release block.
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/static-components": "off",
     },
   },
-  {
-    files: ["**/*.ts", "**/*.tsx"],
-    rules: {
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/no-require-imports": "off",
-    },
-  },
-];
-
-export default eslintConfig;
+]);
