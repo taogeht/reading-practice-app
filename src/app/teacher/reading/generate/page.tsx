@@ -32,8 +32,38 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { READING_LEVELS } from '@/lib/reading/levels';
+import {
+  CHARACTER_CASTS,
+  DEFAULT_CAST_ID,
+  type CastId,
+  type CharacterCast,
+} from '@/lib/reading/names';
+import type { ThemeSource } from '@/lib/reading/generate/types';
 
 type SelectionMode = 'random_level' | 'random_unit' | 'specific';
+
+const THEME_SOURCE_OPTIONS: {
+  value: ThemeSource;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'unit_topic',
+    label: 'From the textbook unit',
+    description:
+      "Builds the story around the unit's own topic, e.g. \u201cIn the museum\u201d. Falls back to letting the model choose if the vocabulary isn't mapped to a unit.",
+  },
+  {
+    value: 'custom',
+    label: 'My setting / theme below',
+    description: 'Use only what you type in the two boxes below.',
+  },
+  {
+    value: 'model_choice',
+    label: 'Let the model choose',
+    description: 'No premise given. Most varied, least tied to the lesson.',
+  },
+];
 type VocabStrictness = 'strict' | 'permissive';
 
 interface VocabPick {
@@ -108,6 +138,8 @@ export default function TeacherGeneratePage() {
   const [sequenceCount, setSequenceCount] = useState<number>(defaults.sequenceCount);
   const [setting, setSetting] = useState('');
   const [seedTheme, setSeedTheme] = useState('');
+  const [castId, setCastId] = useState<CastId>(DEFAULT_CAST_ID);
+  const [themeSource, setThemeSource] = useState<ThemeSource>('unit_topic');
   const [vocabStrictness, setVocabStrictness] = useState<VocabStrictness>('strict');
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('random_level');
   const [unit, setUnit] = useState<number>(1);
@@ -157,6 +189,8 @@ export default function TeacherGeneratePage() {
     setSeedTheme('');
     setVocabStrictness('strict');
     setSelectionMode('random_level');
+    setCastId(DEFAULT_CAST_ID);
+    setThemeSource('unit_topic');
     setUnit(1);
     setPickedVocab([]);
   }, [levelId]);
@@ -214,6 +248,8 @@ export default function TeacherGeneratePage() {
       }
       if (setting.trim()) overrides.setting = setting.trim();
       if (seedTheme.trim()) overrides.seedTheme = seedTheme.trim();
+      overrides.castId = castId;
+      overrides.themeSource = themeSource;
       if (vocabStrictness !== 'strict') overrides.vocabStrictness = vocabStrictness;
       if (questionCount !== defaults.questionCount) overrides.questionCount = questionCount;
       if (
@@ -421,7 +457,11 @@ export default function TeacherGeneratePage() {
                 defaults={defaults}
               />
 
-              <SectionSettingAndTheme
+              <SectionCharactersAndTheme
+                castId={castId}
+                setCastId={setCastId}
+                themeSource={themeSource}
+                setThemeSource={setThemeSource}
                 setting={setting}
                 setSetting={setSetting}
                 seedTheme={seedTheme}
@@ -673,12 +713,20 @@ function GrammarToggle({
   );
 }
 
-function SectionSettingAndTheme({
+function SectionCharactersAndTheme({
+  castId,
+  setCastId,
+  themeSource,
+  setThemeSource,
   setting,
   setSetting,
   seedTheme,
   setSeedTheme,
 }: {
+  castId: CastId;
+  setCastId: (c: CastId) => void;
+  themeSource: ThemeSource;
+  setThemeSource: (t: ThemeSource) => void;
   setting: string;
   setSetting: (s: string) => void;
   seedTheme: string;
@@ -687,15 +735,54 @@ function SectionSettingAndTheme({
   return (
     <section>
       <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
-        Setting &amp; theme
+        Characters &amp; theme
       </h3>
+
+      <div className="space-y-2 mb-4">
+        <label className="block text-xs text-gray-600">Character names</label>
+        {(Object.values(CHARACTER_CASTS) as CharacterCast[]).map((cast) => (
+          <label key={cast.id} className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="castId"
+              className="mt-1"
+              checked={castId === cast.id}
+              onChange={() => setCastId(cast.id)}
+            />
+            <span className="text-sm">
+              <span className="font-medium text-gray-900">{cast.label}</span>
+              <span className="block text-xs text-gray-500">{cast.description}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
+      <div className="space-y-2 mb-4">
+        <label className="block text-xs text-gray-600">Story premise</label>
+        {THEME_SOURCE_OPTIONS.map((opt) => (
+          <label key={opt.value} className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="themeSource"
+              className="mt-1"
+              checked={themeSource === opt.value}
+              onChange={() => setThemeSource(opt.value)}
+            />
+            <span className="text-sm">
+              <span className="font-medium text-gray-900">{opt.label}</span>
+              <span className="block text-xs text-gray-500">{opt.description}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
       <div className="space-y-3">
         <div>
           <label className="block text-xs text-gray-600 mb-1">Setting (optional)</label>
           <Input
             value={setting}
             onChange={(e) => setSetting(e.target.value)}
-            placeholder="e.g. night market, beach, classroom, library"
+            placeholder="e.g. museum, beach, farm, space station"
           />
         </div>
         <div>
@@ -707,7 +794,8 @@ function SectionSettingAndTheme({
           />
         </div>
         <p className="text-xs text-gray-500">
-          Leave blank to let the model pick.
+          Setting and theme hint layer on top of the premise above — leave them blank
+          to let the unit topic drive the story on its own.
         </p>
       </div>
     </section>

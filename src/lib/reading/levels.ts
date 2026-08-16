@@ -246,7 +246,8 @@ export function getLevelByAfFLevel(afFLevel: string): ReadingLevel | undefined {
 //   - id / name / targetAfFLevel / avgSentenceWords — identity +
 //     soft targets the model treats as hints.
 
-import type { GenerateOverrides } from './generate/types';
+import type { GenerateOverrides, ThemeSource } from './generate/types';
+import { CHARACTER_CASTS, isCastId } from './names';
 
 /** Level-shaped object with overridden fields applied. The literal
  *  types from `as const READING_LEVELS` are widened here so callers
@@ -346,6 +347,8 @@ interface OverrideValidationResult {
   errors: string[];
 }
 
+const THEME_SOURCES: ThemeSource[] = ['unit_topic', 'custom', 'model_choice'];
+
 const PAGE_COUNT_MIN = 3;
 const PAGE_COUNT_MAX = 20;
 const MAX_SENTENCE_WORDS_MIN = 4;
@@ -393,6 +396,16 @@ export function validateOverrides(
         `Sentence length cap must be between ${MAX_SENTENCE_WORDS_MIN} and ${MAX_SENTENCE_WORDS_MAX} words.`,
       );
     }
+  }
+  if (overrides.castId !== undefined && !isCastId(overrides.castId)) {
+    errors.push(
+      `Character cast "${overrides.castId}" is not valid. Choose one of: ${Object.keys(CHARACTER_CASTS).join(', ')}.`,
+    );
+  }
+  if (overrides.themeSource !== undefined && !THEME_SOURCES.includes(overrides.themeSource)) {
+    errors.push(
+      `Theme source "${overrides.themeSource}" is not valid. Choose one of: ${THEME_SOURCES.join(', ')}.`,
+    );
   }
   if (overrides.targetVocabCount !== undefined) {
     if (

@@ -4,6 +4,10 @@
 // TTS) will live alongside this file and import these types.
 
 import { z } from 'zod';
+import type { CastId } from '@/lib/reading/names';
+
+/** Where a generated story's premise comes from. See GenerateOverrides.themeSource. */
+export type ThemeSource = 'unit_topic' | 'custom' | 'model_choice';
 
 /** A single named character. Description is image-direction-friendly so the
  *  per-page image generator can render the same character consistently. */
@@ -87,6 +91,19 @@ export interface GenerateOverrides {
   // Setting & tone — both surface to plan.ts as soft hints.
   seedTheme?: string;
   setting?: string;
+
+  /** Which pool of character names the planner may use. Defaults to
+   *  DEFAULT_CAST_ID in src/lib/reading/names.ts. */
+  castId?: CastId;
+
+  /** Where the story's premise comes from.
+   *  - 'unit_topic'  (default): the curriculum unit's own topic, e.g.
+   *      "In the museum" — curriculum-aligned and naturally varied.
+   *  - 'custom': use the teacher's seedTheme/setting text verbatim.
+   *  - 'model_choice': let the planner invent one.
+   *  When 'unit_topic' is chosen but no unit theme resolves (starter-level or
+   *  un-mapped vocabulary), plan.ts falls back to 'model_choice'. */
+  themeSource?: ThemeSource;
 
   /** strict (default): every word must be in cumulative vocab. permissive:
    *  the unknown-word warning tier bumps so 1-4 unknowns are warnings

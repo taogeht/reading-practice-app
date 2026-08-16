@@ -4,6 +4,45 @@
 
 const FILLER_WORDS = new Set(['um', 'uh', 'er', 'erm', 'uhh', 'umm', 'hmm']);
 
+/**
+ * Spellings Whisper produces for names that are pronounced identically to the
+ * spelling our stories use. Without this, a student who reads "Rosy" perfectly
+ * gets a substitution error on every occurrence, because Whisper writes
+ * "Rosie" — in a story where Rosy is the protagonist that is a double-digit
+ * accuracy penalty for a flawless read.
+ *
+ * THE RULE FOR ADDING ENTRIES: only true homophones — the two spellings must
+ * be pronounced the same. That guarantees an alias can never mask a genuine
+ * misread. "mum"/"mom" does NOT qualify (/mʌm/ vs /mɑm/): a student who says
+ * "mum" really did say a different word, and we want the grader to see it.
+ *
+ * Keys and values are lowercase; tokenize() applies this after lowercasing,
+ * to BOTH the expected text and the transcript, so alignment compares
+ * canonical forms on each side. Keep in sync with the `aliases` declared on
+ * cast members in src/lib/reading/names.ts.
+ */
+const NAME_ALIASES = new Map<string, string>([
+  ['rosie', 'rosy'],
+  ['katy', 'katie'],
+]);
+
+/** Canonicalize one token, preserving a possessive/contraction suffix so
+ *  "rosie's" maps to "rosy's" rather than falling through unchanged. Story
+ *  titles like "Billy's teddy bear!" make possessive name forms common. */
+function canonicalizeToken(word: string): string {
+  const direct = NAME_ALIASES.get(word);
+  if (direct) return direct;
+
+  const apostrophe = word.indexOf("'");
+  if (apostrophe > 0) {
+    const base = word.slice(0, apostrophe);
+    const mapped = NAME_ALIASES.get(base);
+    if (mapped) return mapped + word.slice(apostrophe);
+  }
+
+  return word;
+}
+
 export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
@@ -13,7 +52,8 @@ export function tokenize(text: string): string[] {
     .replace(/[^a-z0-9'\-\s]/g, ' ')
     .split(/\s+/)
     .map((w) => w.replace(/^[-']+|[-']+$/g, ''))
-    .filter((w) => w.length > 0 && !FILLER_WORDS.has(w));
+    .filter((w) => w.length > 0 && !FILLER_WORDS.has(w))
+    .map(canonicalizeToken);
 }
 
 export type Op = 'match' | 'sub' | 'del' | 'ins';

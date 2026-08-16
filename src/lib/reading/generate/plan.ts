@@ -29,8 +29,16 @@ import {
   type GeneratePassagePlanInput,
   type GeneratePassagePlanResult,
   type PassagePlan,
+  type ThemeSource,
 } from './types';
-import { APPROVED_CHARACTER_NAMES, isApprovedCharacterName } from '@/lib/reading/names';
+import {
+  DEFAULT_CAST_ID,
+  FAMILY_ROLE_NAMES,
+  getCast,
+  isApprovedCharacterName,
+  type CastId,
+} from '@/lib/reading/names';
+import { getUnitTheme, pickDominantUnit, type UnitTheme } from '@/lib/reading/unit-theme';
 import {
   fetchTargetVocab,
   resolveCumulativeVocab,
@@ -61,9 +69,10 @@ YOU DO NOT WRITE THE PROSE IN THIS STEP. Your job is the structure, characters, 
 GLOBAL RULES (apply to every plan):
 
 CULTURAL CALIBRATION
-- Settings should be familiar to a child living in Kaohsiung, Taiwan: school, home, park, night market, scooter ride, beach, family meals, temples, tea shops.
-- Universally fantastical settings also work: forest, space, magical island, under the sea, dragon's cave, floating cloud kingdom.
-- Avoid US-specific cultural references (Halloween costumes, baseball games, Thanksgiving, school lockers) UNLESS the target vocabulary explicitly includes them.
+- The readers are ESL students in Taiwan, but stories are NOT required to be set in Taiwan and should NOT default to it. What matters is that a setting is understandable without cultural background knowledge the student lacks.
+- Range is encouraged: home, school, park, beach, farm, market, museum, zoo, campsite, and fully fantastical ones too — forest, space, under the sea, dragon's cave, cloud kingdom.
+- Avoid culture-bound references that would need explaining (Halloween costumes, Thanksgiving, baseball innings, school lockers, the tooth fairy) UNLESS the target vocabulary or the story premise explicitly includes them.
+- When the user message contains a STORY PREMISE block, follow it — it comes from the class's own textbook unit, so it is what the students are studying right now.
 
 TONE
 - Warm, age-appropriate, encouraging.
@@ -75,9 +84,10 @@ STRUCTURE
 - 1 to 3 named characters. Each character description must be concrete enough that an image generator can render the same character consistently across pages — name, approximate age, hair, signature outfit details.
 
 CHARACTER NAMES
-- Character names MUST come from this exact list: ${APPROVED_CHARACTER_NAMES.join(', ')}.
-- Do NOT invent other names, do NOT use names from other languages, do NOT use nicknames. If you need two characters, pick two different names from the list.
-- The names use the exact casing shown above (e.g. "Sally", not "sally" or "SALLY").
+- Character names MUST come from the CHARACTER NAMES list supplied in the user message, using the exact casing shown there.
+- Do NOT invent other names, do NOT use names from other languages, and do NOT use nicknames or shortened forms (if the list says "Billy", never write "Bill").
+- These family words may ALWAYS be used in addition to the list, and do not count toward the character limit: ${FAMILY_ROLE_NAMES.join(', ')}.
+- If you need two characters, pick two different names from the list.
 - This is a non-negotiable hard rule. Off-list names will cause the generation to be rejected and retried.
 
 FIELD SEMANTICS
@@ -206,11 +216,72 @@ function buildCumulativeBlock(cumulative: CumulativeRow[]): string {
   return lines.join('\n');
 }
 
-function buildTargetBlock(
-  targets: TargetRow[],
+/** The permitted name list for this generation. Semi-static (one block per
+ *  cast), so it carries cache_control alongside the level block. */
+function buildCastBlock(castId: CastId | undefined): string {
+  const cast = getCast(castId);
+  const lines = [
+    'CHARACTER NAMES you may use (exact casing):',
+    '',
+  ];
+  for (const m of cast.members) {
+    lines.push(`- ${m.name} (${m.role})`);
+  }
+  lines.push('');
+  lines.push(
+    `Always also available, not counting toward the character limit: ${FAMILY_ROLE_NAMES.join(', ')}.`,
+  );
+  return lines.join('\n');
+}
+
+/**
+ * Story premise. Precedence is deliberate:
+ *   custom       — the teacher typed something; it wins outright.
+ *   unit_topic   — the class's own textbook unit supplies the premise.
+ *   model_choice — no direction; the planner invents one.
+ *
+ * Under 'unit_topic' the teacher's setting/seedTheme still pass through as
+ * secondary hints, so "the museum unit, but make it about a lost shoe" works.
+ */
+function buildThemeBlock(
+  themeSource: ThemeSource,
+  unitTheme: UnitTheme | null,
   seedTheme: string | undefined,
   setting: string | undefined,
 ): string {
+  const lines: string[] = ['STORY PREMISE', ''];
+
+  if (themeSource === 'unit_topic' && unitTheme) {
+    lines.push(
+      `This story is for ${unitTheme.bookTitle}, Unit ${unitTheme.unit}: "${unitTheme.topic}".`,
+      'Build the premise around that topic. It is what the class is studying right now, so the story should feel like it belongs to the same lesson.',
+      'Interpret the topic imaginatively rather than literally — a unit called "In the museum" can be a mystery, a lost-and-found, or a class trip that goes sideways. Do not simply restate the topic as the plot.',
+    );
+    if (unitTheme.grammarPatterns.length > 0) {
+      lines.push(
+        '',
+        'The unit drills these sentence frames. Plan beats that naturally invite them; do NOT force every one in:',
+        ...unitTheme.grammarPatterns.slice(0, 6).map((g) => `- ${g}`),
+      );
+    }
+  } else if (themeSource === 'model_choice' || (themeSource === 'unit_topic' && !unitTheme)) {
+    lines.push(
+      'No premise is prescribed. Invent one that suits the target vocabulary.',
+      'Vary your choice — do not default to a classroom or a family meal.',
+    );
+  }
+
+  if (setting) {
+    lines.push('', `SETTING (use this specific setting unless impossible): ${setting}`);
+  }
+  if (seedTheme) {
+    lines.push('', `THEME HINT: ${seedTheme}`);
+  }
+
+  return lines.join('\n');
+}
+
+function buildTargetBlock(targets: TargetRow[]): string {
   const lines: string[] = [
     'TARGET VOCABULARY (introduce ALL of these in the story; multiple words may land on the same page if natural):',
     '',
@@ -218,14 +289,6 @@ function buildTargetBlock(
   for (const t of targets) {
     const example = t.exampleSentence ? `  e.g. "${t.exampleSentence}"` : '';
     lines.push(`- "${t.word}" (${t.partOfSpeech})${example}`);
-  }
-  if (setting) {
-    lines.push('');
-    lines.push(`SETTING (use this specific setting unless impossible): ${setting}`);
-  }
-  if (seedTheme) {
-    lines.push('');
-    lines.push(`SEED THEME: ${seedTheme}`);
   }
   lines.push('');
   lines.push('Plan one passage. Output the JSON now.');
@@ -254,17 +317,37 @@ export async function generatePassagePlan(
 
   // 4. Build prompt blocks. cache_control on the level + cumulative blocks
   //    so repeated calls at the same (level, vocab cap) reuse the cache.
+  // 3b. Resolve the curriculum unit these targets belong to, so the story can
+  //     take its premise from the class's actual textbook unit. Null for
+  //     starter-level or un-mapped vocabulary — buildThemeBlock degrades to
+  //     letting the model choose.
+  const castId = input.overrides?.castId ?? DEFAULT_CAST_ID;
+  const themeSource: ThemeSource = input.overrides?.themeSource ?? 'unit_topic';
+  let unitTheme: UnitTheme | null = null;
+  if (themeSource === 'unit_topic') {
+    const dominant = pickDominantUnit(targetRows);
+    if (dominant) {
+      unitTheme = await getUnitTheme(dominant.afFLevel, dominant.afFUnit);
+    }
+  }
+
   const levelBlock = buildLevelConstraintsBlock(level);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
-  const targetBlock = buildTargetBlock(
-    targetRows,
-    input.seedTheme,
+  const castBlock = buildCastBlock(castId);
+  const themeBlock = buildThemeBlock(
+    themeSource,
+    unitTheme,
+    input.seedTheme ?? input.overrides?.seedTheme,
     input.overrides?.setting,
   );
+  const targetBlock = buildTargetBlock(targetRows);
 
   const userContent: Anthropic.ContentBlockParam[] = [
     { type: 'text', text: levelBlock, cache_control: { type: 'ephemeral' } },
     { type: 'text', text: cumulativeBlock, cache_control: { type: 'ephemeral' } },
+    // Cast changes rarely; cached separately from the per-story premise.
+    { type: 'text', text: castBlock, cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: themeBlock },
     { type: 'text', text: targetBlock },
   ];
 
@@ -321,10 +404,10 @@ export async function generatePassagePlan(
   // still round-trip through it during backfill / read paths.
   const offList = result.data.characters
     .map((c) => c.name)
-    .filter((n) => !isApprovedCharacterName(n));
+    .filter((n) => !isApprovedCharacterName(n, castId));
   if (offList.length > 0) {
     throw new Error(
-      `PassagePlan validation failed: character names not in approved list: ${offList.join(', ')}. Allowed: ${APPROVED_CHARACTER_NAMES.join(', ')}.`,
+      `PassagePlan validation failed: character names not in the "${castId}" cast: ${offList.join(', ')}. Allowed: ${getCast(castId).members.map((m) => m.name).join(', ')} (plus ${FAMILY_ROLE_NAMES.join(', ')}).`,
     );
   }
 
@@ -357,8 +440,11 @@ export async function generatePassagePlan(
     durationMs,
   };
 
+  const themeLabel = unitTheme
+    ? `${unitTheme.bookSlug} u${unitTheme.unit} "${unitTheme.topic}"`
+    : themeSource;
   logInfo(
-    `passage plan generated (${plan.pages.length} pages, level ${level.id} ${level.name})`,
+    `passage plan generated (${plan.pages.length} pages, level ${level.id} ${level.name}, cast ${castId}, theme ${themeLabel})`,
     `lib/reading/generate/plan model=${MODEL} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
   );
 
