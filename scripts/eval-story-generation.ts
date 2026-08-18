@@ -71,7 +71,9 @@ async function main(): Promise<void> {
   if (report.issueFrequency.length > 0) {
     console.log('  issue frequency:');
     for (const issue of report.issueFrequency.slice(0, 10)) {
-      console.log(`    ${issue.count}x ${issue.severity} ${issue.key}`);
+      const words =
+        issue.sampleWords.length > 0 ? `  [${issue.sampleWords.join(', ')}]` : '';
+      console.log(`    ${issue.count}x ${issue.severity} ${issue.key}${words}`);
     }
   }
 

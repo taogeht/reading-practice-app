@@ -5,11 +5,20 @@
 // Putting the logic here once keeps the two stages in lockstep when we
 // refine the cumulative-derivation rule.
 
-import { eq, inArray, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lte, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { afFLevelEnum, vocabulary } from '@/lib/db/schema';
+import { vocabulary } from '@/lib/db/schema';
+import {
+  type AfFLevel,
+  MIN_CUMULATIVE_LEXICON,
+  type VocabScope,
+  resolveVocabScope,
+} from './vocab-scope';
 
-export type AfFLevel = (typeof afFLevelEnum.enumValues)[number];
+// Re-exported so existing importers keep their current import path; the rule
+// itself lives in vocab-scope.ts, which stays free of the DB pool.
+export type { AfFLevel, VocabScope } from './vocab-scope';
+export { resolveVocabScope } from './vocab-scope';
 
 export interface TargetRow {
   id: string;
@@ -93,60 +102,36 @@ export async function fetchVocabByIds(ids: string[]): Promise<CumulativeRow[]> {
     .where(inArray(vocabulary.id, ids));
 }
 
-/** Derive cumulative vocab from target rows. Returns the union of:
- *    - all curriculum rows at any AF&F level represented by the target
- *      set (no within-level unit cap — see "scope" note below)
- *    - function words (the/is/she/etc.) — closed-class scaffolding
- *    - scaffold words (see/want/happy/behind/etc.) — open-class words
- *      not in the curriculum but assumed by it
- *    - core-vocabulary words (look/run/go/give/etc.) — promoted curriculum
- *      verbs that are universally available regardless of level
- *
- *  Scope note: an earlier version capped curriculum rows at
- *  max(afFUnit) per represented level, modeling "the kid hasn't learned
- *  units 14-15 yet if today's targets are from unit 4." That assumption
- *  was wrong — a Grade 1 ESL student is studying through the FULL AF&F1
- *  curriculum over the year. Today's story practices specific words but
- *  the kid's available vocabulary is the entire level. The cap was
- *  starving low-target-unit stories of basic nouns/verbs they should
- *  have access to and inflating the validator's unknown-word issue
- *  count. The cap is now removed. */
-export async function deriveCumulativeVocab(
-  targetRows: TargetRow[],
+/** Run the scope query. `capUnits` false widens the current level to all of
+ *  its units — the size-floor fallback. */
+function selectScopedVocab(
+  scope: VocabScope,
+  capUnits: boolean,
 ): Promise<CumulativeRow[]> {
-  // Collect the set of AF&F levels any target word belongs to. Multiple
-  // targets at the same level collapse to one entry — the within-level
-  // unit cap is no longer relevant.
-  const levels = new Set<AfFLevel>();
-  for (const r of targetRows) {
-    if (r.afFLevel) levels.add(r.afFLevel);
+  // Always-available buckets, independent of level and unit.
+  const clauses = [
+    eq(vocabulary.isFunctionWord, true),
+    eq(vocabulary.isScaffold, true),
+    eq(vocabulary.isCoreVocabulary, true),
+  ];
+
+  if (scope.belowLevels.length > 0) {
+    clauses.push(inArray(vocabulary.afFLevel, [...scope.belowLevels]));
   }
 
-  if (levels.size === 0) {
-    // None of the targets had curriculum metadata. Fall back to the
-    // always-available buckets (function + scaffold + core) — the caller
-    // can pass cumulativeVocabIds explicitly to opt in to a richer set.
-    return db
-      .select({
-        id: vocabulary.id,
-        word: vocabulary.word,
-        partOfSpeech: vocabulary.partOfSpeech,
-        isFunctionWord: vocabulary.isFunctionWord,
-        isPicturable: vocabulary.isPicturable,
-      })
-      .from(vocabulary)
-      .where(
-        or(
-          eq(vocabulary.isFunctionWord, true),
-          eq(vocabulary.isScaffold, true),
-          eq(vocabulary.isCoreVocabulary, true),
-        ),
-      );
+  if (scope.currentLevel) {
+    const atCurrentLevel = eq(vocabulary.afFLevel, scope.currentLevel);
+    clauses.push(
+      capUnits && scope.unitCap !== null
+        ? // A curriculum row carrying no unit cannot be shown to be future
+          // material, so it stays in rather than being silently dropped.
+          and(
+            atCurrentLevel,
+            or(lte(vocabulary.afFUnit, scope.unitCap), isNull(vocabulary.afFUnit)),
+          )!
+        : atCurrentLevel,
+    );
   }
-
-  // Single IN clause covers all represented levels — Drizzle accepts
-  // the enum-typed array directly.
-  const levelArray = Array.from(levels);
 
   return db
     .select({
@@ -157,14 +142,43 @@ export async function deriveCumulativeVocab(
       isPicturable: vocabulary.isPicturable,
     })
     .from(vocabulary)
-    .where(
-      or(
-        inArray(vocabulary.afFLevel, levelArray),
-        eq(vocabulary.isFunctionWord, true),
-        eq(vocabulary.isScaffold, true),
-        eq(vocabulary.isCoreVocabulary, true),
-      ),
-    );
+    .where(or(...clauses));
+}
+
+/** Derive the vocabulary a story may use freely. Union of:
+ *    - every level BELOW the story's level, all units — the class already
+ *      finished those books
+ *    - the story's own level, up to and including the newest unit its
+ *      targets come from — nothing from lessons not yet taught
+ *    - function words (the/is/she) — closed-class scaffolding
+ *    - scaffold words (see/want/happy/behind) — open-class words the
+ *      curriculum assumes but never lists
+ *    - core vocabulary (look/run/go/give) — promoted curriculum verbs,
+ *      available regardless of level
+ *
+ *  Scope history: an earlier version capped by unit but did NOT carry lower
+ *  levels forward, so a grade2 unit-4 story saw only grade2 units 0-4. That
+ *  starved stories and inflated the validator's unknown-word count, so the
+ *  cap was removed outright — which then let a grade2 story use grade2
+ *  unit-15 words the class had not reached. Both scopes were wrong, in
+ *  opposite directions. Carrying every lower level forward pays for the
+ *  unit cap everywhere except the bottom of the ladder, where nothing sits
+ *  below to draw on; MIN_CUMULATIVE_LEXICON catches that case and widens
+ *  back to the full level rather than shipping an unwritable lexicon. */
+export async function deriveCumulativeVocab(
+  targetRows: TargetRow[],
+): Promise<CumulativeRow[]> {
+  const scope = resolveVocabScope(targetRows);
+
+  // No curriculum metadata on any target — fall back to the always-available
+  // buckets. Callers wanting more can pass cumulativeVocabIds explicitly.
+  if (scope.currentLevel === null) return selectScopedVocab(scope, false);
+
+  const capped = await selectScopedVocab(scope, true);
+  if (scope.unitCap === null || capped.length >= MIN_CUMULATIVE_LEXICON) {
+    return capped;
+  }
+  return selectScopedVocab(scope, false);
 }
 
 /** Helper used by both prose stage and validate stage: load the cumulative

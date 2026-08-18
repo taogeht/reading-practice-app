@@ -38,9 +38,19 @@ export interface StoryGenerationEvaluation {
     key: string;
     severity: 'error' | 'warning';
     count: number;
+    /** Distinct offending words behind this issue, capped at
+     *  MAX_SAMPLE_WORDS. Without these an unknown_word count says a story
+     *  broke the lexicon but not whether the lexicon or the model is at
+     *  fault, which is the first thing you need to know. Empty for issue
+     *  types that carry no word. */
+    sampleWords: string[];
   }>;
   gates: StoryEvaluationGate[];
 }
+
+/** Cap on distinct offending words reported per issue type — enough to see
+ *  the shape of a failure without turning the report into a word list. */
+const MAX_SAMPLE_WORDS = 12;
 
 export const DEFAULT_STORY_EVALUATION_THRESHOLDS: StoryEvaluationThresholds = {
   minimumContentReadyRate: 0.8,
@@ -74,7 +84,7 @@ export function evaluateStoryGeneration(
   const durations: number[] = [];
   const issueCounts = new Map<
     string,
-    { severity: 'error' | 'warning'; count: number }
+    { severity: 'error' | 'warning'; count: number; words: Set<string> }
   >();
 
   for (const sample of samples) {
@@ -99,11 +109,18 @@ export function evaluateStoryGeneration(
 
     for (const issue of result.issues) {
       const key = `${issue.stage}.${issue.type}`;
+      const word =
+        'word' in issue && typeof issue.word === 'string' ? issue.word : null;
       const existing = issueCounts.get(key);
       if (existing) {
         existing.count++;
+        if (word) existing.words.add(word);
       } else {
-        issueCounts.set(key, { severity: issue.severity, count: 1 });
+        issueCounts.set(key, {
+          severity: issue.severity,
+          count: 1,
+          words: new Set(word ? [word] : []),
+        });
       }
     }
   }
@@ -147,7 +164,12 @@ export function evaluateStoryGeneration(
     totalOutputTokens,
     totalImageCalls,
     issueFrequency: Array.from(issueCounts.entries())
-      .map(([key, value]) => ({ key, ...value }))
+      .map(([key, value]) => ({
+        key,
+        severity: value.severity,
+        count: value.count,
+        sampleWords: Array.from(value.words).sort().slice(0, MAX_SAMPLE_WORDS),
+      }))
       .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key)),
     gates,
   };

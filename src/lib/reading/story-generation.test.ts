@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tokenize, align, summarize } from '../grading/align';
 import { afFLevelToBookSlug, getUnitTheme, pickDominantUnit } from './unit-theme';
+import { MIN_CUMULATIVE_LEXICON, resolveVocabScope } from './generate/vocab-scope';
 import {
   CHARACTER_CASTS,
   DEFAULT_CAST_ID,
@@ -363,7 +364,29 @@ test('story evaluation gates a failed generation', () => {
     key: 'pipeline.pipeline_error',
     severity: 'error',
     count: 1,
+    // Pipeline errors carry a message, not a word — nothing to sample.
+    sampleWords: [],
   });
+});
+
+test('story evaluation names the words behind an unknown_word count', () => {
+  // A bare count cannot tell you whether the lexicon is too small or the model
+  // wrote off-curriculum. The words can, so they have to survive aggregation.
+  const noisy = evaluationResult({
+    issues: [
+      { stage: 'prose', type: 'unknown_word', severity: 'error', pageNumber: 1, word: 'castle', sentence: 'The castle is big.' },
+      { stage: 'prose', type: 'unknown_word', severity: 'error', pageNumber: 2, word: 'castle', sentence: 'A castle again.' },
+      { stage: 'prose', type: 'unknown_word', severity: 'error', pageNumber: 3, word: 'dragon', sentence: 'The dragon ran.' },
+    ],
+  });
+  const report = evaluateStoryGeneration([
+    { caseId: 'noisy', readingLevelId: 2, result: noisy },
+  ]);
+  const entry = report.issueFrequency.find((i) => i.key === 'prose.unknown_word');
+  assert.ok(entry);
+  assert.equal(entry.count, 3);
+  // Deduplicated: three occurrences, two distinct offenders.
+  assert.deepEqual(entry.sampleWords, ['castle', 'dragon']);
 });
 
 test('story evaluation reports nearest-rank latency percentiles', () => {
@@ -443,4 +466,68 @@ test('only queued or lease-expired resumable jobs request a launch', () => {
     false,
     'legacy jobs without a durable plan must not be claimed',
   );
+});
+
+
+// ---------- curriculum vocabulary scope ----------
+
+test('every level below the story level is carried forward in full', () => {
+  // The bug this replaces: a grade2 story saw only grade2 words, so a Grade 2
+  // class could not use the Grade 1 vocabulary it spent last year learning.
+  const scope = resolveVocabScope([
+    { afFLevel: 'grade2', afFUnit: 4 },
+    { afFLevel: 'grade2', afFUnit: 4 },
+  ]);
+  assert.equal(scope.currentLevel, 'grade2');
+  assert.deepEqual(scope.belowLevels, ['starter', 'grade1']);
+  assert.equal(scope.unitCap, 4);
+});
+
+test('unit cap never excludes a target word', () => {
+  // Cap is the MAX target unit, not the dominant one — otherwise the unit-7
+  // word would sit outside the very story it is a target of.
+  const scope = resolveVocabScope([
+    { afFLevel: 'grade3', afFUnit: 2 },
+    { afFLevel: 'grade3', afFUnit: 2 },
+    { afFLevel: 'grade3', afFUnit: 7 },
+  ]);
+  assert.equal(scope.unitCap, 7);
+});
+
+test('targets spanning levels scope to the highest one', () => {
+  const scope = resolveVocabScope([
+    { afFLevel: 'grade1', afFUnit: 12 },
+    { afFLevel: 'grade2', afFUnit: 3 },
+  ]);
+  assert.equal(scope.currentLevel, 'grade2');
+  // grade1 is below now, so its unit 12 is fair game regardless of the cap.
+  assert.deepEqual(scope.belowLevels, ['starter', 'grade1']);
+  assert.equal(scope.unitCap, 3);
+});
+
+test('the lowest level has nothing below it', () => {
+  const scope = resolveVocabScope([{ afFLevel: 'starter', afFUnit: 1 }]);
+  assert.deepEqual(scope.belowLevels, []);
+  assert.equal(scope.unitCap, 1);
+});
+
+test('targets with no curriculum metadata yield an unscoped result', () => {
+  const scope = resolveVocabScope([{ afFLevel: null, afFUnit: null }]);
+  assert.equal(scope.currentLevel, null);
+  assert.equal(scope.unitCap, null);
+  assert.deepEqual(scope.belowLevels, []);
+});
+
+test('a level with targets but no unit numbers is left uncapped', () => {
+  // Null units cannot be placed in the sequence, so capping on them would
+  // silently drop the level's whole vocabulary.
+  const scope = resolveVocabScope([{ afFLevel: 'grade2', afFUnit: null }]);
+  assert.equal(scope.currentLevel, 'grade2');
+  assert.equal(scope.unitCap, null);
+});
+
+test('the lexicon floor stays above a single levels worth of words', () => {
+  // Guards the widen-on-starvation path: if this drops to near zero the
+  // fallback silently stops firing and early-unit stories starve again.
+  assert.ok(MIN_CUMULATIVE_LEXICON >= 200);
 });
