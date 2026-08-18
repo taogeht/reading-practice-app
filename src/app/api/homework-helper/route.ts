@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { textClient, type TextMessage, type TextSegment } from '@/lib/llm';
 import { and, desc, eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { canUseSunnyPreview } from '@/lib/auth/teacher-capabilities';
@@ -54,10 +54,16 @@ async function resolveStudentContext(studentId: string): Promise<{
   return { currentUnit, spellingWords: words.map((w) => w.word) };
 }
 
-function getClient(): Anthropic | null {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-  return new Anthropic({ apiKey });
+/** Rate limiting looks different per provider (Anthropic throws a typed
+ *  error, Hetzner surfaces an HTTP 429), so match on the status rather than
+ *  on any one vendor's error class. */
+function isRateLimited(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as { status?: number }).status === 429
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -66,8 +72,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const client = getClient();
-  if (!client) {
+  if (!(await textClient.isConfigured())) {
     return NextResponse.json(
       { error: 'Homework helper is not configured on the server.' },
       { status: 503 }
@@ -117,52 +122,39 @@ export async function POST(request: NextRequest) {
     spellingWords = [];
   }
 
-  const systemBlocks: Anthropic.TextBlockParam[] = [
-    {
-      type: 'text',
-      text: buildSystemPrompt(currentUnit),
-      cache_control: { type: 'ephemeral' },
-    },
+  const systemBlocks: TextSegment[] = [
+    { text: buildSystemPrompt(currentUnit), cacheable: true },
   ];
 
   if (spellingWords.length > 0) {
     systemBlocks.push({
-      type: 'text',
       text: `THIS WEEK'S SPELLING WORDS: ${spellingWords.join(', ')}`,
     });
   }
 
-  const messages: Anthropic.MessageParam[] = [
+  const messages: TextMessage[] = [
     ...history.map((t) => ({ role: t.role, content: t.content })),
     { role: 'user', content: rawMessage },
   ];
 
   try {
-    const response = await client.messages.create({
-      model: 'claude-sonnet-5',
-      // Sonnet 5 runs adaptive thinking when `thinking` is omitted (4.6 ran
-      // thinking-off). Thinking tokens count against max_tokens, so leaving
-      // this implicit would let reasoning eat the whole budget and return a
-      // truncated reply to a student. Keep it off explicitly.
-      thinking: { type: 'disabled' },
-      // Raised from 200: Sonnet 5's tokenizer produces ~30% more tokens for
-      // the same text, so the old ceiling would clip replies that used to fit.
-      max_tokens: 280,
+    const response = await textClient.complete({
       system: systemBlocks,
       messages,
+      // 280 rather than the original 200: Sonnet 5's tokenizer produces ~30%
+      // more tokens for the same text, so the old ceiling clipped replies
+      // that used to fit. Thinking is disabled inside the Claude client, so
+      // reasoning can't eat this budget.
+      maxTokens: 280,
     });
 
-    const reply = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('')
-      .trim();
+    const reply = response.text;
 
     return NextResponse.json({
       reply: reply || "Let's try that again! Can you ask me another way?",
     });
   } catch (error) {
-    if (error instanceof Anthropic.RateLimitError) {
+    if (isRateLimited(error)) {
       return NextResponse.json(
         { error: "I'm a little busy right now — try again in a moment!" },
         { status: 429 }

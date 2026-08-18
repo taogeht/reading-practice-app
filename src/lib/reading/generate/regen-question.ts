@@ -5,7 +5,6 @@
 // Uses the same Claude config + JSON-schema permissive shape as
 // questions.ts, just with a singular output and a narrowing prompt.
 
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import {
   applyOverridesToLevel,
@@ -26,8 +25,8 @@ import {
   type PassagePlan,
 } from './types';
 import { shuffleMcqOptions } from './questions';
+import { textClient, type TextSegment } from '@/lib/llm';
 
-const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 1500;
 
 export type SingleQuestionType = GeneratedQuestion['type'];
@@ -148,8 +147,11 @@ function zodSchemaFor(type: SingleQuestionType) {
 export async function generateSingleQuestion(
   input: GenerateSingleQuestionInput,
 ): Promise<GenerateSingleQuestionResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  // Provider-aware: the configured backend may be Claude or Hetzner, so ask
+  // the facade rather than reaching for one vendor's key.
+  if (!(await textClient.isConfigured())) {
+    throw new Error('No text-generation provider is configured');
+  }
 
   const level = applyOverridesToLevel(
     getReadingLevel(input.readingLevelId),
@@ -166,33 +168,22 @@ export async function generateSingleQuestion(
     input.targetVocabRows,
   );
 
-  const userContent: Anthropic.ContentBlockParam[] = [
-    { type: 'text', text: cumulativeBlock, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: taskBlock },
+  const userContent: TextSegment[] = [
+    { text: cumulativeBlock, cacheable: true },
+    { text: taskBlock },
   ];
 
   const startedAt = Date.now();
-  const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    thinking: { type: 'disabled' },
-    output_config: {
-      effort: 'medium',
-      format: { type: 'json_schema', schema: jsonSchemaFor(input.questionType) },
-    },
-    system: [
-      { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
-    ],
+  const response = await textClient.complete({
+    system: [{ text: systemPrompt, cacheable: true }],
     messages: [{ role: 'user', content: userContent }],
+    maxTokens: MAX_TOKENS,
+    effort: 'medium',
+    jsonSchema: jsonSchemaFor(input.questionType),
   });
   const durationMs = Date.now() - startedAt;
 
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  const text = response.text;
 
   let parsed: unknown;
   try {
@@ -306,15 +297,15 @@ export async function generateSingleQuestion(
   }
 
   const meta: GenerationCallMeta = {
-    model: MODEL,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
     durationMs,
   };
 
   logInfo(
     `single question regenerated (${input.questionType}, level ${level.id})`,
-    `lib/reading/generate/regen-question model=${MODEL} type=${input.questionType} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${durationMs}`,
+    `lib/reading/generate/regen-question model=${meta.model} type=${input.questionType} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${durationMs}`,
   );
 
   return { question, meta };

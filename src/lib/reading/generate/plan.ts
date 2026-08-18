@@ -8,7 +8,7 @@
 // constraints surfaced to the planner.
 //
 // Architecture mirrors src/lib/practice/generate.ts:
-//   - Anthropic Sonnet 5 with output_config.format json_schema for a
+//   - the configured text model (see src/lib/llm) with a json_schema for a
 //     constrained, parse-clean response.
 //   - cache_control: ephemeral on the system prompt and the level/cumulative
 //     blocks of the user message, so repeated calls at the same level + unit
@@ -16,7 +16,6 @@
 //   - Strict zod validation on top of the schema-constrained output, with
 //     the raw text logged on parse failure.
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   applyOverridesToLevel,
   getReadingLevel,
@@ -46,11 +45,10 @@ import {
   type TargetRow,
 } from './vocab';
 import { assertPassagePlanMatchesRequest } from './validate-plan';
+import { textClient, type TextSegment } from '@/lib/llm';
 // `CumulativeRow` and `TargetRow` are imported even though only used as
 // parameter types in the prompt builders below; explicit imports keep the
 // reference traceable from this file.
-
-const MODEL = 'claude-sonnet-5';
 
 // Story variety used to come from temperature 0.7 here. Sonnet 5 rejects
 // sampling parameters, so variation now has to come from the prompt — the
@@ -100,7 +98,7 @@ OUTPUT
 - JSON only, matching the provided schema.
 - No markdown, no commentary outside the JSON.`;
 
-/** JSON Schema given to Anthropic's output_config so the response is shape-
+/** JSON Schema handed to the text provider so the response is shape-
  *  constrained at decode time. Mirrors PassagePlanSchema (zod) — both are
  *  kept because output_config constrains the model and zod gives us a
  *  defense-in-depth parse on the way back. */
@@ -301,8 +299,11 @@ function buildTargetBlock(targets: TargetRow[]): string {
 export async function generatePassagePlan(
   input: GeneratePassagePlanInput,
 ): Promise<GeneratePassagePlanResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  // Provider-aware: the configured backend may be Claude or Hetzner, so ask
+  // the facade rather than reaching for one vendor's key.
+  if (!(await textClient.isConfigured())) {
+    throw new Error('No text-generation provider is configured');
+  }
 
   // 1. Validate reading level (throws for unknown id). Then merge in
   //    any teacher overrides so the prompt + downstream stages all
@@ -343,39 +344,28 @@ export async function generatePassagePlan(
   );
   const targetBlock = buildTargetBlock(targetRows);
 
-  const userContent: Anthropic.ContentBlockParam[] = [
-    { type: 'text', text: levelBlock, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: cumulativeBlock, cache_control: { type: 'ephemeral' } },
+  const userContent: TextSegment[] = [
+    { text: levelBlock, cacheable: true },
+    { text: cumulativeBlock, cacheable: true },
     // Cast changes rarely; cached separately from the per-story premise.
-    { type: 'text', text: castBlock, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: themeBlock },
-    { type: 'text', text: targetBlock },
+    { text: castBlock, cacheable: true },
+    { text: themeBlock },
+    { text: targetBlock },
   ];
 
-  // 5. Call Claude.
+  // 5. Call the configured text model.
   const startedAt = Date.now();
-  const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    thinking: { type: 'disabled' },
-    output_config: {
-      effort: 'medium',
-      format: { type: 'json_schema', schema: PASSAGE_PLAN_JSON_SCHEMA },
-    },
-    system: [
-      { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-    ],
+  const response = await textClient.complete({
+    system: [{ text: SYSTEM_PROMPT, cacheable: true }],
     messages: [{ role: 'user', content: userContent }],
+    maxTokens: MAX_TOKENS,
+    effort: 'medium',
+    jsonSchema: PASSAGE_PLAN_JSON_SCHEMA,
   });
   const durationMs = Date.now() - startedAt;
 
   // 6. Parse + validate.
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  const text = response.text;
 
   let parsed: unknown;
   try {
@@ -439,9 +429,9 @@ export async function generatePassagePlan(
   });
 
   const meta: GenerationCallMeta = {
-    model: MODEL,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
     durationMs,
   };
 
@@ -450,7 +440,7 @@ export async function generatePassagePlan(
     : themeSource;
   logInfo(
     `passage plan generated (${plan.pages.length} pages, level ${level.id} ${level.name}, cast ${castId}, theme ${themeLabel})`,
-    `lib/reading/generate/plan model=${MODEL} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
+    `lib/reading/generate/plan model=${meta.model} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
   );
 
   return { plan, meta };

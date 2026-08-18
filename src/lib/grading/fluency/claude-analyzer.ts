@@ -10,12 +10,11 @@
 // degrades gracefully — any failure returns null and the row keeps its
 // deterministic fields.
 
-import Anthropic from '@anthropic-ai/sdk';
+import { textClient } from '@/lib/llm';
 import { z } from 'zod';
 import type { WhisperWord } from '../whisper-client';
 import type { FluencyMetrics } from './compute-metrics';
 
-const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 2000;
 
 const ErrorTypeSchema = z.enum(['substitution', 'omission', 'insertion', 'self_correction']);
@@ -225,37 +224,23 @@ export interface AnalyzeWithClaudeArgs {
 }
 
 export async function analyzeWithClaude(args: AnalyzeWithClaudeArgs): Promise<ClaudeAnalysis | null> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-        console.warn('[fluency/claude-analyzer] ANTHROPIC_API_KEY not set — skipping Claude pass');
+    // Provider-aware: the backend may be Claude or Hetzner. Unconfigured is a
+    // normal condition here — the row keeps its deterministic metrics.
+    if (!(await textClient.isConfigured())) {
+        console.warn('[fluency/analyzer] no text provider configured — skipping LLM pass');
         return null;
     }
 
     try {
-        const client = new Anthropic({ apiKey });
-        const response = await client.messages.create({
-            model: MODEL,
-            max_tokens: MAX_TOKENS,
-            thinking: { type: 'disabled' },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            output_config: {
-                effort: 'medium',
-                format: { type: 'json_schema', schema: ANALYSIS_JSON_SCHEMA },
-            } as any,
-            system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-            messages: [
-                {
-                    role: 'user',
-                    content: [{ type: 'text', text: buildUserPrompt(args) }],
-                },
-            ],
+        const response = await textClient.complete({
+            system: [{ text: SYSTEM_PROMPT, cacheable: true }],
+            messages: [{ role: 'user', content: buildUserPrompt(args) }],
+            maxTokens: MAX_TOKENS,
+            effort: 'medium',
+            jsonSchema: ANALYSIS_JSON_SCHEMA,
         });
 
-        const text = response.content
-            .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-            .map((b) => b.text)
-            .join('')
-            .trim();
+        const text = response.text;
 
         const parsed = JSON.parse(text);
         const result = ClaudeAnalysisSchema.safeParse(parsed);

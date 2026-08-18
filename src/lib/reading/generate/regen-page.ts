@@ -7,7 +7,6 @@
 // existing text is included in the prompt so the new page maintains
 // narrative continuity.
 
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import {
   applyOverridesToLevel,
@@ -28,8 +27,8 @@ import {
   type CumulativeRow,
   type TargetRow,
 } from './vocab';
+import { textClient, type TextSegment } from '@/lib/llm';
 
-const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 1500;
 
 const SinglePageOutputSchema = z.object({
@@ -70,8 +69,11 @@ export interface GenerateSinglePageResult {
 export async function generateSinglePage(
   input: GenerateSinglePageInput,
 ): Promise<GenerateSinglePageResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  // Provider-aware: the configured backend may be Claude or Hetzner, so ask
+  // the facade rather than reaching for one vendor's key.
+  if (!(await textClient.isConfigured())) {
+    throw new Error('No text-generation provider is configured');
+  }
 
   const level = applyOverridesToLevel(
     getReadingLevel(input.readingLevelId),
@@ -97,33 +99,22 @@ export async function generateSinglePage(
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
   const taskBlock = buildTaskBlock(planPage, input.plan, input.otherPagesText, targetRows);
 
-  const userContent: Anthropic.ContentBlockParam[] = [
-    { type: 'text', text: cumulativeBlock, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: taskBlock },
+  const userContent: TextSegment[] = [
+    { text: cumulativeBlock, cacheable: true },
+    { text: taskBlock },
   ];
 
   const startedAt = Date.now();
-  const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    thinking: { type: 'disabled' },
-    output_config: {
-      effort: 'medium',
-      format: { type: 'json_schema', schema: SINGLE_PAGE_JSON_SCHEMA },
-    },
-    system: [
-      { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
-    ],
+  const response = await textClient.complete({
+    system: [{ text: systemPrompt, cacheable: true }],
     messages: [{ role: 'user', content: userContent }],
+    maxTokens: MAX_TOKENS,
+    effort: 'medium',
+    jsonSchema: SINGLE_PAGE_JSON_SCHEMA,
   });
   const durationMs = Date.now() - startedAt;
 
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  const text = response.text;
 
   let parsed: unknown;
   try {
@@ -150,15 +141,15 @@ export async function generateSinglePage(
   };
 
   const meta: GenerationCallMeta = {
-    model: MODEL,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
     durationMs,
   };
 
   logInfo(
     `single page regenerated (page ${input.pageNumber}, level ${level.id})`,
-    `lib/reading/generate/regen-page model=${MODEL} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${durationMs}`,
+    `lib/reading/generate/regen-page model=${meta.model} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${durationMs}`,
   );
 
   return { page, meta };

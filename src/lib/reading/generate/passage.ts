@@ -123,7 +123,16 @@ const PROSE_QUALITY_FLOOR = 0.7;
  *  narrative content, so a lower threshold is appropriate. */
 const QUESTIONS_QUALITY_FLOOR = 0.5;
 
-const COMBINED_MODEL_LABEL = 'claude-sonnet-5 + gemini-2.5-flash-image';
+/** The text model is now selectable (see src/lib/llm), so this label is built
+ *  from whichever model actually served the run rather than hardcoded — a
+ *  passage row has to record what produced it, or comparing providers later is
+ *  guesswork. */
+const IMAGE_MODEL_LABEL = 'gemini-2.5-flash-image';
+
+function combinedModelLabel(textModel: string | undefined, skipImages: boolean): string {
+  const text = textModel ?? 'unknown';
+  return skipImages ? text : `${text} + ${IMAGE_MODEL_LABEL}`;
+}
 
 // ---------- Public types ----------
 
@@ -256,6 +265,8 @@ export async function generatePassage(
   // ---------- Stage 1: plan ----------
   let plan: Awaited<ReturnType<typeof generatePassagePlan>>['plan'];
   let planTokens = { input: 0, output: 0 };
+  // Which text model served this run — recorded in generationMeta below.
+  let textModel: string | undefined;
   try {
     const t0 = Date.now();
     const r = await generatePassagePlan({
@@ -266,6 +277,7 @@ export async function generatePassage(
     });
     timing.planMs = Date.now() - t0;
     plan = r.plan;
+    textModel = r.meta.model;
     planTokens = { input: r.meta.inputTokens, output: r.meta.outputTokens };
     cost.totalInputTokens += planTokens.input;
     cost.totalOutputTokens += planTokens.output;
@@ -558,7 +570,7 @@ export async function generatePassage(
     const t0 = Date.now();
     await db.transaction(async (tx) => {
       const generationMeta: PassageGenerationMeta = {
-        model: COMBINED_MODEL_LABEL,
+        model: combinedModelLabel(textModel, input.skipImages === true),
         promptVersion: 'reading-passage-v1',
         overridesUsed: (input.overrides ?? {}) as Record<string, unknown>,
         generationJobId: input.provenance?.generationJobId,

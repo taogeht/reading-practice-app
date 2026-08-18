@@ -13,7 +13,6 @@
 //   user block 1  (cached) — cumulative vocabulary
 //   user block 2  (NOT cached) — the plan + per-call instruction
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   applyOverridesToLevel,
   getReadingLevel,
@@ -35,8 +34,8 @@ import {
   type CumulativeRow,
   type TargetRow,
 } from './vocab';
+import { textClient, type TextSegment } from '@/lib/llm';
 
-const MODEL = 'claude-sonnet-5';
 
 /** Generous ceiling for a 16-page level-5 story (each page ~45 words ×
  *  ~1.4 tokens/word + JSON overhead = ~1500 tokens; headroom prevents
@@ -214,8 +213,11 @@ const PAGES_PROSE_JSON_SCHEMA = {
 export async function generatePagesProse(
   input: GeneratePagesProseInput,
 ): Promise<GeneratePagesProseResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  // Provider-aware: the configured backend may be Claude or Hetzner, so ask
+  // the facade rather than reaching for one vendor's key.
+  if (!(await textClient.isConfigured())) {
+    throw new Error('No text-generation provider is configured');
+  }
 
   // 1. Reading level config (throws on bad id).
   const level = applyOverridesToLevel(
@@ -241,34 +243,23 @@ export async function generatePagesProse(
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
   const planBlock = buildPlanBlock(input.plan, targetRows);
 
-  const userContent: Anthropic.ContentBlockParam[] = [
-    { type: 'text', text: cumulativeBlock, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: planBlock },
+  const userContent: TextSegment[] = [
+    { text: cumulativeBlock, cacheable: true },
+    { text: planBlock },
   ];
 
   const startedAt = Date.now();
-  const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    thinking: { type: 'disabled' },
-    output_config: {
-      effort: 'medium',
-      format: { type: 'json_schema', schema: PAGES_PROSE_JSON_SCHEMA },
-    },
-    system: [
-      { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
-    ],
+  const response = await textClient.complete({
+    system: [{ text: systemPrompt, cacheable: true }],
     messages: [{ role: 'user', content: userContent }],
+    maxTokens: MAX_TOKENS,
+    effort: 'medium',
+    jsonSchema: PAGES_PROSE_JSON_SCHEMA,
   });
   const durationMs = Date.now() - startedAt;
 
   // 5. Parse + validate shape.
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  const text = response.text;
 
   let parsed: unknown;
   try {
@@ -311,15 +302,15 @@ export async function generatePagesProse(
   );
 
   const meta: GenerationCallMeta = {
-    model: MODEL,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
     durationMs,
   };
 
   logInfo(
     `passage prose generated (${pages.length} pages, level ${level.id} ${level.name})`,
-    `lib/reading/generate/prose model=${MODEL} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
+    `lib/reading/generate/prose model=${meta.model} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
   );
 
   return { pages, meta };
@@ -348,8 +339,11 @@ export async function generatePagesProseWithFeedback(
   input: GeneratePagesProseInput,
   feedback: ProseFeedback,
 ): Promise<GeneratePagesProseResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  // Provider-aware: the configured backend may be Claude or Hetzner, so ask
+  // the facade rather than reaching for one vendor's key.
+  if (!(await textClient.isConfigured())) {
+    throw new Error('No text-generation provider is configured');
+  }
 
   const level = applyOverridesToLevel(
     getReadingLevel(input.readingLevelId),
@@ -371,34 +365,23 @@ export async function generatePagesProseWithFeedback(
   // Same cache layout as the first-pass call, with the feedback block
   // appended uncached at the end. The cumulative + plan prefix matches
   // a prior attempt's prefix, so caching keeps cost flat across regens.
-  const userContent: Anthropic.ContentBlockParam[] = [
-    { type: 'text', text: cumulativeBlock, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: planBlock },
-    { type: 'text', text: feedbackBlock },
+  const userContent: TextSegment[] = [
+    { text: cumulativeBlock, cacheable: true },
+    { text: planBlock },
+    { text: feedbackBlock },
   ];
 
   const startedAt = Date.now();
-  const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    thinking: { type: 'disabled' },
-    output_config: {
-      effort: 'medium',
-      format: { type: 'json_schema', schema: PAGES_PROSE_JSON_SCHEMA },
-    },
-    system: [
-      { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
-    ],
+  const response = await textClient.complete({
+    system: [{ text: systemPrompt, cacheable: true }],
     messages: [{ role: 'user', content: userContent }],
+    maxTokens: MAX_TOKENS,
+    effort: 'medium',
+    jsonSchema: PAGES_PROSE_JSON_SCHEMA,
   });
   const durationMs = Date.now() - startedAt;
 
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  const text = response.text;
 
   let parsed: unknown;
   try {
@@ -436,15 +419,15 @@ export async function generatePagesProseWithFeedback(
   );
 
   const meta: GenerationCallMeta = {
-    model: MODEL,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
     durationMs,
   };
 
   logInfo(
     `passage prose regenerated with feedback (${pages.length} pages, level ${level.id} ${level.name})`,
-    `lib/reading/generate/prose model=${MODEL} kind=feedback input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
+    `lib/reading/generate/prose model=${meta.model} kind=feedback input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
   );
 
   return { pages, meta };

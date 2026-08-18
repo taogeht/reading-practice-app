@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import Anthropic from '@anthropic-ai/sdk';
+import { textClient, type TextSegment } from '@/lib/llm';
 
 export type QuestionType = 'fill_blank_mcq' | 'true_false' | 'sentence_builder' | 'phonics';
 
@@ -427,51 +427,29 @@ function bundleForType(questionType: QuestionType): TypeBundle {
 }
 
 async function runGenerationCall(
-  client: Anthropic,
   bundle: TypeBundle,
   curriculum: UnitCurriculum,
   mode: 'unit-only' | 'cumulative',
   count: number,
 ): Promise<GeneratedQuestion[]> {
-  const userContent: Anthropic.ContentBlockParam[] = [
-    {
-      type: 'text',
-      text: formatCurriculumText(curriculum, mode),
-      cache_control: { type: 'ephemeral' },
-    },
-    {
-      type: 'text',
-      text: bundle.buildInstruction(curriculum.unit, count),
-    },
+  const userContent: TextSegment[] = [
+    { text: formatCurriculumText(curriculum, mode), cacheable: true },
+    { text: bundle.buildInstruction(curriculum.unit, count) },
   ];
 
   // ~250 tokens per question covers sentence_builder's biggest payloads;
   // floor of 1500 keeps small batches from being constrained.
   const maxTokens = Math.max(1500, count * 250);
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-5',
-    max_tokens: maxTokens,
-    thinking: { type: 'disabled' },
-    output_config: {
-      effort: 'medium',
-      format: { type: 'json_schema', schema: bundle.schema },
-    },
-    system: [
-      {
-        type: 'text',
-        text: bundle.systemPrompt,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
+  const response = await textClient.complete({
+    system: [{ text: bundle.systemPrompt, cacheable: true }],
     messages: [{ role: 'user', content: userContent }],
+    maxTokens,
+    effort: 'medium',
+    jsonSchema: bundle.schema,
   });
 
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  const text = response.text;
 
   let parsed: unknown;
   try {
@@ -493,8 +471,10 @@ export async function generateQuestions(params: {
   // Range [0, 1]. Default 0.6 (60% unit-focused, 40% review).
   currentUnitVocabRatio?: number;
 }): Promise<GeneratedQuestion[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  // Provider-aware: the configured backend may be Claude or Hetzner.
+  if (!(await textClient.isConfigured())) {
+    throw new Error('No text-generation provider is configured');
+  }
 
   const questionType: QuestionType = params.questionType ?? 'fill_blank_mcq';
   const bundle = bundleForType(questionType);
@@ -520,11 +500,10 @@ export async function generateQuestions(params: {
   const unitOnlyCount = Math.round(params.count * ratio);
   const cumulativeCount = params.count - unitOnlyCount;
 
-  const client = new Anthropic({ apiKey });
   const calls: Promise<GeneratedQuestion[]>[] = [];
 
   if (unitOnlyCount > 0) {
-    calls.push(runGenerationCall(client, bundle, unitOnlyCurriculum, 'unit-only', unitOnlyCount));
+    calls.push(runGenerationCall(bundle, unitOnlyCurriculum, 'unit-only', unitOnlyCount));
   }
   if (cumulativeCount > 0) {
     const cumulativeCurriculum = await loadCumulativeCurriculum(params.bookSlug, params.unit);
@@ -538,17 +517,17 @@ export async function generateQuestions(params: {
     const cumulativeVocabSize = cumulativeCurriculum.vocabulary.length;
     if (cumulativeVocabSize <= unitVocabSize) {
       if (calls.length === 0) {
-        calls.push(runGenerationCall(client, bundle, unitOnlyCurriculum, 'unit-only', cumulativeCount));
+        calls.push(runGenerationCall(bundle, unitOnlyCurriculum, 'unit-only', cumulativeCount));
       } else {
         // Re-issue the unit-only call with the full count instead of two calls.
         calls.length = 0;
         calls.push(
-          runGenerationCall(client, bundle, unitOnlyCurriculum, 'unit-only', unitOnlyCount + cumulativeCount),
+          runGenerationCall(bundle, unitOnlyCurriculum, 'unit-only', unitOnlyCount + cumulativeCount),
         );
       }
     } else {
       calls.push(
-        runGenerationCall(client, bundle, cumulativeCurriculum, 'cumulative', cumulativeCount),
+        runGenerationCall(bundle, cumulativeCurriculum, 'cumulative', cumulativeCount),
       );
     }
   }
@@ -619,13 +598,14 @@ export async function generateForCurriculum(params: {
   questionType: QuestionType;
   count: number;
 }): Promise<GeneratedQuestion[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  // Provider-aware: the configured backend may be Claude or Hetzner.
+  if (!(await textClient.isConfigured())) {
+    throw new Error('No text-generation provider is configured');
+  }
   if (params.count < 1) return [];
   if (!params.curriculum.grammar_patterns?.length) {
     throw new Error('Curriculum has no grammar_patterns — cannot generate.');
   }
   const bundle = bundleForType(params.questionType);
-  const client = new Anthropic({ apiKey });
-  return runGenerationCall(client, bundle, params.curriculum, 'unit-only', params.count);
+  return runGenerationCall(bundle, params.curriculum, 'unit-only', params.count);
 }

@@ -90,6 +90,22 @@ export const SYSTEM_SETTING_DEFINITIONS: SystemSettingDefinition[] = [
     ],
     helpText: 'GPT Image 1 mini (low) is the cheapest option — useful for testing image quality and cost. Requires OPENAI_API_KEY. Takes effect within a few seconds; no redeploy needed.',
   },
+  {
+    key: 'text.generationModel',
+    label: 'Text Generation Model',
+    description: 'Which LLM writes reading passages, practice questions, and bilingual fluency feedback.',
+    type: 'select',
+    group: 'Text Generation',
+    defaultValue: 'claude',
+    options: [
+      { value: 'claude', label: 'Claude Sonnet 5 (default)' },
+      { value: 'hetzner-qwen', label: 'Hetzner Qwen — free, experimental' },
+    ],
+    helpText: 'Hetzner is free while in its experimental phase but rate-limited to '
+      + '10 requests/minute, so batch passage generation will be slow — one passage '
+      + 'costs about five calls. Requires HETZNER_INFERENCE_TOKEN. Takes effect '
+      + 'within a few seconds; no redeploy needed.',
+  },
 ];
 
 export const SYSTEM_SETTING_DEFINITION_MAP = SYSTEM_SETTING_DEFINITIONS.reduce<Record<string, SystemSettingDefinition>>(
