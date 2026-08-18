@@ -13,11 +13,18 @@ export type AfFLevel = (typeof afFLevelEnum.enumValues)[number];
  *  comparison is a valid "is this level below that one" test. */
 export const LEVEL_ORDER: readonly AfFLevel[] = afFLevelEnum.enumValues;
 
-/** Below this many known words we stop capping by unit and widen to the full
- *  level. Roughly one whole AF&F level plus the function/scaffold/core
- *  buckets — the smallest lexicon we have seen actually produce a writable
- *  story. See deriveCumulativeVocab in vocab.ts. */
-export const MIN_CUMULATIVE_LEXICON = 300;
+/** Below this many CURRICULUM words we stop capping by unit and widen to the
+ *  full level. Counts only level-scoped words (levels below + the capped
+ *  current level) — deliberately NOT the function/scaffold/core buckets.
+ *
+ *  Those buckets are constant and say nothing about whether a story has
+ *  enough material: an early-unit story is starved of nouns and verbs even
+ *  though the always-on words are all still there. Measuring the total
+ *  instead made the floor grow with the scaffold list, and a scaffold pass
+ *  that pushed the total over the line silently switched the widening off
+ *  and SHRANK the usable lexicon. Curriculum-only keeps the floor stable
+ *  no matter how the always-on buckets grow. */
+export const MIN_CURRICULUM_LEXICON = 150;
 
 export interface VocabScope {
   /** Every level strictly below the story's own. All of their units are fair

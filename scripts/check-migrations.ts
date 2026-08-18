@@ -115,6 +115,11 @@ const MIGRATIONS: { id: string; label: string; checks: Check[] }[] = [
       { kind: 'index', name: 'idx_reading_passages_unique_generation_work_item' },
     ],
   },
+  {
+    id: '0060',
+    label: 'reading levels renumbered onto FF1-FF5',
+    checks: [{ kind: 'table', name: 'data_migrations' }],
+  },
 ];
 
 async function main() {

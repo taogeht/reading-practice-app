@@ -9,7 +9,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tokenize, align, summarize } from '../grading/align';
 import { afFLevelToBookSlug, getUnitTheme, pickDominantUnit } from './unit-theme';
-import { MIN_CUMULATIVE_LEXICON, resolveVocabScope } from './generate/vocab-scope';
+import { MIN_CURRICULUM_LEXICON, resolveVocabScope } from './generate/vocab-scope';
+import { READING_LEVELS } from './levels';
+import { mapStudentReadingLevel } from './student-level';
 import {
   CHARACTER_CASTS,
   DEFAULT_CAST_ID,
@@ -526,8 +528,54 @@ test('a level with targets but no unit numbers is left uncapped', () => {
   assert.equal(scope.unitCap, null);
 });
 
-test('the lexicon floor stays above a single levels worth of words', () => {
-  // Guards the widen-on-starvation path: if this drops to near zero the
-  // fallback silently stops firing and early-unit stories starve again.
-  assert.ok(MIN_CUMULATIVE_LEXICON >= 200);
+test('the curriculum floor stays meaningful but under one full level', () => {
+  // Guards the widen-on-starvation path from both sides. Too low and the
+  // fallback stops firing, so early-unit stories starve. At or above a full
+  // level (grade1 is 195) it would fire always, making the unit cap dead
+  // code. It must also never count the always-on buckets — doing so let a
+  // scaffold pass shrink the usable lexicon by satisfying the floor.
+  assert.ok(MIN_CURRICULUM_LEXICON >= 100);
+  assert.ok(MIN_CURRICULUM_LEXICON < 195);
+});
+
+
+// ---------- level ladder (1:1 with Family and Friends 1-5) ----------
+
+test('every level targets the Family and Friends book of the same number', () => {
+  // The ladder used to open on a Starter rung, which put every level one
+  // ahead of its book. If this drifts again, stories get written from the
+  // wrong grade's vocabulary and benched against the wrong fluency norms.
+  assert.deepEqual(
+    READING_LEVELS.map((l) => [l.id, l.targetAfFLevel]),
+    [[1, 'grade1'], [2, 'grade2'], [3, 'grade3'], [4, 'grade4'], [5, 'grade5']],
+  );
+});
+
+test('no level targets the starter band', () => {
+  // The const assertion already makes this unreachable at the type level —
+  // the cast is what lets the runtime guard compile. Kept because the type
+  // guarantee disappears the moment someone widens the array's type.
+  const targets: string[] = READING_LEVELS.map((l) => l.targetAfFLevel);
+  assert.equal(targets.includes('starter'), false);
+});
+
+test('free-text student levels map onto the matching grade number', () => {
+  assert.equal(mapStudentReadingLevel('Grade 1'), 1);
+  assert.equal(mapStudentReadingLevel('G2 readers'), 2);
+  assert.equal(mapStudentReadingLevel('grade 5'), 5);
+  // Name aliases track the grade they belong to.
+  assert.equal(mapStudentReadingLevel('Developing'), 2);
+  assert.equal(mapStudentReadingLevel('Fluent'), 3);
+});
+
+test('a named grade wins over a pre-grade-1 marker in the same label', () => {
+  // "Starter" is checked last precisely so this resolves on the grade.
+  assert.equal(mapStudentReadingLevel('Starter - moving to Grade 2'), 2);
+});
+
+test('pre-grade-1 and unknown labels fall back to grade 1', () => {
+  assert.equal(mapStudentReadingLevel('Starter / KG'), 1);
+  assert.equal(mapStudentReadingLevel('kindergarten'), 1);
+  assert.equal(mapStudentReadingLevel(null), 1);
+  assert.equal(mapStudentReadingLevel('something unrecognised'), 1);
 });

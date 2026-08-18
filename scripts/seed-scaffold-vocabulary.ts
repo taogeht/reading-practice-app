@@ -226,6 +226,134 @@ const SCAFFOLD_WORDS: SeedEntry[] = [
 
   // Adverb.
   { word: 'together', partOfSpeech: 'adverb' },
+
+  // Pass 5 — gaps surfaced by the level-2/3 evaluation harness run
+  // (npm run eval:story-generation, 4 passages, Sonnet 5). The report
+  // named the offending words directly: of 23 sampled unknowns, 19 were
+  // absent from the table entirely — not stretch vocabulary, but the
+  // ordinary connective tissue of a kid's story ("home", "each",
+  // "everyone", "love", "end", "color"). The remaining 4 existed but sat
+  // in later units of the current grade, correctly excluded by the unit
+  // cap. Lemmas only; tokenize.ts recovers -s/-es/-ed/-ing/-ies and the
+  // irregular participles (broken→break verified after that pass).
+
+  // Adjectives. "light" is tagged adjective (opposite of heavy); the noun
+  // sense ("turn on the light") resolves against the same row directly.
+  { word: 'bright',  partOfSpeech: 'adjective' },
+  { word: 'glad',    partOfSpeech: 'adjective' },
+  { word: 'heavy',   partOfSpeech: 'adjective' },
+  { word: 'light',   partOfSpeech: 'adjective' },
+  { word: 'dark',    partOfSpeech: 'adjective' },
+  { word: 'soft',    partOfSpeech: 'adjective' },
+  { word: 'hard',    partOfSpeech: 'adjective' },
+  { word: 'clean',   partOfSpeech: 'adjective' },
+  { word: 'old',     partOfSpeech: 'adjective' },
+  { word: 'young',   partOfSpeech: 'adjective' },
+  { word: 'strong',  partOfSpeech: 'adjective' },
+  { word: 'full',    partOfSpeech: 'adjective' },
+  { word: 'empty',   partOfSpeech: 'adjective' },
+  { word: 'ready',   partOfSpeech: 'adjective' },
+  { word: 'safe',    partOfSpeech: 'adjective' },
+  { word: 'sorry',   partOfSpeech: 'adjective' },
+  { word: 'excited', partOfSpeech: 'adjective' },
+  { word: 'funny',   partOfSpeech: 'adjective' },
+  { word: 'busy',    partOfSpeech: 'adjective' },
+  { word: 'easy',    partOfSpeech: 'adjective' },
+  { word: 'free',    partOfSpeech: 'adjective' },
+  { word: 'sure',    partOfSpeech: 'adjective' },
+  { word: 'deep',    partOfSpeech: 'adjective' },
+  { word: 'wide',    partOfSpeech: 'adjective' },
+  { word: 'sharp',   partOfSpeech: 'adjective' },
+  { word: 'round',   partOfSpeech: 'adjective' },
+  { word: 'flat',    partOfSpeech: 'adjective' },
+  { word: 'thin',    partOfSpeech: 'adjective' },
+  { word: 'thick',   partOfSpeech: 'adjective' },
+
+  // Verbs. "lie" is the recline sense (the dog lies down), which is what
+  // narrative prose at this level reaches for — not the untruth sense.
+  { word: 'love',   partOfSpeech: 'verb' },
+  { word: 'break',  partOfSpeech: 'verb' },
+  { word: 'lie',    partOfSpeech: 'verb' },
+  { word: 'wash',   partOfSpeech: 'verb' },
+  { word: 'carry',  partOfSpeech: 'verb' },
+  { word: 'push',   partOfSpeech: 'verb' },
+  { word: 'pull',   partOfSpeech: 'verb' },
+  { word: 'catch',  partOfSpeech: 'verb' },
+  { word: 'build',  partOfSpeech: 'verb' },
+  { word: 'wake',   partOfSpeech: 'verb' },
+  { word: 'laugh',  partOfSpeech: 'verb' },
+  { word: 'cry',    partOfSpeech: 'verb' },
+  { word: 'shout',  partOfSpeech: 'verb' },
+  { word: 'wait',   partOfSpeech: 'verb' },
+  { word: 'share',  partOfSpeech: 'verb' },
+  { word: 'keep',   partOfSpeech: 'verb' },
+  { word: 'try',    partOfSpeech: 'verb' },
+  { word: 'turn',   partOfSpeech: 'verb' },
+  { word: 'move',   partOfSpeech: 'verb' },
+  { word: 'follow', partOfSpeech: 'verb' },
+  { word: 'leave',  partOfSpeech: 'verb' },
+  { word: 'bring',  partOfSpeech: 'verb' },
+  { word: 'send',   partOfSpeech: 'verb' },
+  { word: 'buy',    partOfSpeech: 'verb' },
+  { word: 'pay',    partOfSpeech: 'verb' },
+  { word: 'fix',    partOfSpeech: 'verb' },
+  { word: 'cut',    partOfSpeech: 'verb' },
+  { word: 'drop',   partOfSpeech: 'verb' },
+  { word: 'lift',   partOfSpeech: 'verb' },
+
+  // Concrete nouns — places, surfaces, nature, and the spatial reference
+  // words a picture-book narrator needs to say where anything is.
+  { word: 'color',   partOfSpeech: 'noun' },
+  { word: 'home',    partOfSpeech: 'noun' },
+  { word: 'hook',    partOfSpeech: 'noun' },
+  { word: 'end',     partOfSpeech: 'noun' },
+  { word: 'shape',   partOfSpeech: 'noun' },
+  { word: 'wall',    partOfSpeech: 'noun' },
+  { word: 'box',     partOfSpeech: 'noun' },
+  { word: 'corner',  partOfSpeech: 'noun' },
+  { word: 'side',    partOfSpeech: 'noun' },
+  { word: 'top',     partOfSpeech: 'noun' },
+  { word: 'bottom',  partOfSpeech: 'noun' },
+  { word: 'back',    partOfSpeech: 'noun' },
+  { word: 'front',   partOfSpeech: 'noun' },
+  { word: 'middle',  partOfSpeech: 'noun' },
+  { word: 'edge',    partOfSpeech: 'noun' },
+  { word: 'ground',  partOfSpeech: 'noun' },
+  { word: 'road',    partOfSpeech: 'noun' },
+  { word: 'street',  partOfSpeech: 'noun' },
+  { word: 'shop',    partOfSpeech: 'noun' },
+  { word: 'garden',  partOfSpeech: 'noun' },
+  { word: 'leaf',    partOfSpeech: 'noun' },
+  { word: 'rock',    partOfSpeech: 'noun' },
+  { word: 'stone',   partOfSpeech: 'noun' },
+  { word: 'sand',    partOfSpeech: 'noun' },
+  { word: 'rain',    partOfSpeech: 'noun' },
+  { word: 'snow',    partOfSpeech: 'noun' },
+  { word: 'sun',     partOfSpeech: 'noun' },
+  { word: 'moon',    partOfSpeech: 'noun' },
+  { word: 'star',    partOfSpeech: 'noun' },
+  { word: 'cloud',   partOfSpeech: 'noun' },
+  { word: 'fire',    partOfSpeech: 'noun' },
+  { word: 'food',    partOfSpeech: 'noun' },
+  { word: 'toy',     partOfSpeech: 'noun' },
+  { word: 'foot',    partOfSpeech: 'noun' },
+  { word: 'head',    partOfSpeech: 'noun' },
+  { word: 'friend',  partOfSpeech: 'noun' },
+  { word: 'family',  partOfSpeech: 'noun' },
+  { word: 'morning', partOfSpeech: 'noun' },
+  { word: 'night',   partOfSpeech: 'noun' },
+  { word: 'day',     partOfSpeech: 'noun' },
+  { word: 'week',    partOfSpeech: 'noun' },
+  { word: 'name',    partOfSpeech: 'noun' },
+  { word: 'way',     partOfSpeech: 'noun' },
+  { word: 'place',   partOfSpeech: 'noun' },
+  { word: 'thing',   partOfSpeech: 'noun' },
+
+  // Conceptually function words, like "which" in Pass 3 — the
+  // function-word seed missed them, and the always-available effect is
+  // the same whichever flag carries it.
+  { word: 'each',     partOfSpeech: 'determiner' },
+  { word: 'everyone', partOfSpeech: 'pronoun' },
 ];
 
 const CEFR_LEVEL_ALL: CefrLevel = 'A1';

@@ -1,5 +1,5 @@
 // Hasbrouck & Tindal 2017 50th-percentile WCPM norms, mapped to the
-// app's readingLevel smallint (1=Emerging through 5=Confident). ESL bands
+// app's readingLevel smallint (1=Early/FF1 through 5=Advanced/FF5). ESL bands
 // subtract a fixed offset — research consensus for Chinese L1 learners.
 // To tune per-class later, factor `eslOffset` into a per-class settings row;
 // the function already takes a boolean toggle and is the only consumer of
@@ -17,28 +17,38 @@ export const ESL_WCPM_OFFSET = 25;
 // level-independent, and pace is the smallest term (15%). Pace is computed
 // against this mid-level assumption so the score never silently nulls out; the
 // persisted WCPM bands stay null because we genuinely don't know the level.
-export const DEFAULT_READING_LEVEL = 3;
+// Level 2 (Grade 2) is the middle of the seeded range and preserves the norm
+// this default resolved to before levels were renumbered onto FF1-FF5 — the
+// old level 3 was Grade 2, so keeping the number would have silently raised
+// the assumed grade for every recording whose level can't be determined.
+export const DEFAULT_READING_LEVEL = 2;
 
 // 50th-percentile WCPM, spring administration, per H&T 2017. Key is the app's
-// readingLevel column (1..5). Level 1 (Emerging / Starter) uses the Grade 1
-// spring number; we don't bench kindergarten in this product.
+// readingLevel column (1..5), which now maps one-to-one onto Grades 1-5 —
+// so each entry is simply that grade's spring norm. Shifted down one when the
+// Starter level was removed; leaving it unshifted would have benched every
+// reader against the grade above their own.
 export const NATIVE_WCPM_50TH: Record<number, number> = {
-    1: 53,
-    2: 53,
-    3: 89,
-    4: 107,
-    5: 123,
+    1: 53,  // Grade 1
+    2: 89,  // Grade 2
+    3: 107, // Grade 3
+    4: 123, // Grade 4
+    // Grade 5. Verify against the H&T 2017 table before relying on it for
+    // reporting — no grade5 content exists yet, so this has never been used.
+    5: 139,
 };
 
 // Threshold below which a reader is flagged as "concern" (~10th percentile in
-// H&T). Same key as NATIVE_WCPM_50TH. Lowered slightly for L1 grade 1 to
-// avoid false alarms on early readers.
+// H&T). Same key as NATIVE_WCPM_50TH, shifted down one alongside it. Level 1
+// stays deliberately low to avoid false alarms on early readers.
 export const NATIVE_WCPM_CONCERN: Record<number, number> = {
-    1: 15,
-    2: 15,
-    3: 40,
-    4: 55,
-    5: 65,
+    1: 15, // Grade 1
+    2: 40, // Grade 2
+    3: 55, // Grade 3
+    4: 65, // Grade 4
+    // Grade 5 — extrapolated from the shrinking step between grades, not read
+    // off H&T. Confirm before it carries any reporting weight.
+    5: 75,
 };
 
 export type WcpmBand = 'concern' | 'developing' | 'on_target' | 'above_target';

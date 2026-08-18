@@ -5,49 +5,15 @@
 // cap, page count, allowed grammar) are read by the generator + validator and
 // don't need cross-team mutation. Single source of truth: this file.
 //
-// Levels target K–Grade 4 ESL learners, mapped to the school's American
-// Family & Friends progression (Starter → Grade 4). All numbers are starting
-// values to be tuned after the first generated stories — comments call out
-// the rationale so a reviewer knows why a knob was set the way it was.
+// Level N maps one-to-one onto Family and Friends N: level 1 is FF1, level 5
+// is FF5. There is deliberately no Starter level — the school's ladder begins
+// at Grade 1. All numbers are starting values to be tuned against generated
+// stories; comments call out the rationale so a reviewer knows why a knob was
+// set the way it was.
 
 export const READING_LEVELS = [
   {
     id: 1,
-    name: 'Emerging',
-    targetAfFLevel: 'starter',
-    // K-level / pre-Grade 1. Single-clause sight-word sentences, no tense
-    // variation. Pages are short so kids can finish in a sitting.
-    maxSentenceWords: 5,
-    avgSentenceWords: 4,
-    pageCount: { min: 6, max: 8 },
-    wordsPerPage: { min: 8, max: 15 },
-    vocabConstraints: {
-      cumulativeCefrCap: 'A1',
-      allowedPartsOfSpeech: [
-        'noun',
-        'verb',
-        'adjective',
-        'pronoun',
-        'determiner',
-        'preposition',
-        'interjection',
-      ],
-    },
-    grammarConstraints: {
-      allowContractions: false,
-      allowPastTense: false,
-      allowFutureTense: false,
-      allowConditionals: false,
-      allowPhrasalVerbs: false,
-      maxClausesPerSentence: 1,
-    },
-    targetVocabPerStory: 4,
-    // Sequence ordering is too cognitively demanding at this level —
-    // dropped here, reintroduced from Level 3. Total stays at 5.
-    questionTypeMix: { mcq_comprehension: 4, vocab_matching: 1, sequence_order: 0 },
-  },
-  {
-    id: 2,
     name: 'Early',
     targetAfFLevel: 'grade1',
     // Grade 1. Past tense introduced, basic conjunctions ("and", "but"),
@@ -83,7 +49,7 @@ export const READING_LEVELS = [
     questionTypeMix: { mcq_comprehension: 4, vocab_matching: 1, sequence_order: 0 },
   },
   {
-    id: 3,
+    id: 2,
     name: 'Developing',
     targetAfFLevel: 'grade2',
     // Grade 2. Future tense + simple phrasal verbs, two-clause sentences.
@@ -120,7 +86,7 @@ export const READING_LEVELS = [
     questionTypeMix: { mcq_comprehension: 3, vocab_matching: 1, sequence_order: 1 },
   },
   {
-    id: 4,
+    id: 3,
     name: 'Fluent',
     targetAfFLevel: 'grade3',
     // Grade 3. Zero/first conditionals introduced, all POS unlocked.
@@ -156,7 +122,7 @@ export const READING_LEVELS = [
     questionTypeMix: { mcq_comprehension: 3, vocab_matching: 1, sequence_order: 1 },
   },
   {
-    id: 5,
+    id: 4,
     name: 'Confident',
     targetAfFLevel: 'grade4',
     // Grade 4. CEFR up to B1, three-clause sentences, full grammar set.
@@ -191,15 +157,54 @@ export const READING_LEVELS = [
     targetVocabPerStory: 7,
     questionTypeMix: { mcq_comprehension: 3, vocab_matching: 1, sequence_order: 1 },
   },
+  {
+    id: 5,
+    name: 'Advanced',
+    targetAfFLevel: 'grade5',
+    // Grade 5 / Family and Friends 5. The top of the ladder. Defined so
+    // getReadingLevel(5) resolves and the UI can offer the level, but no
+    // grade5 vocabulary is seeded yet — generation at this level will
+    // throw on target selection until FF5 goes through the curriculum
+    // extraction workflow. Numbers extrapolate the Grade 4 step.
+    maxSentenceWords: 20,
+    avgSentenceWords: 13,
+    pageCount: { min: 16, max: 18 },
+    wordsPerPage: { min: 35, max: 55 },
+    vocabConstraints: {
+      cumulativeCefrCap: 'B1',
+      allowedPartsOfSpeech: [
+        'noun',
+        'verb',
+        'adjective',
+        'adverb',
+        'pronoun',
+        'determiner',
+        'preposition',
+        'conjunction',
+        'interjection',
+        'other',
+      ],
+    },
+    grammarConstraints: {
+      allowContractions: true,
+      allowPastTense: true,
+      allowFutureTense: true,
+      allowConditionals: true,
+      allowPhrasalVerbs: true,
+      maxClausesPerSentence: 3,
+    },
+    targetVocabPerStory: 8,
+    questionTypeMix: { mcq_comprehension: 3, vocab_matching: 1, sequence_order: 1 },
+  },
 ] as const;
 
 export type ReadingLevel = (typeof READING_LEVELS)[number];
 export type ReadingLevelId = ReadingLevel['id'];
 
 /** Per-level question-type mix. The three counts must sum to 5 (total
- *  questions per passage). Sequence ordering is dropped at Levels 1-2
+ *  questions per passage). Sequence ordering is dropped at Level 1
  *  because reordering 4-5 narrative events demands more working memory
- *  than a Grade 1 ESL student reliably has; it returns at Level 3 once
+ *  than a Grade 1 ESL student reliably has; it returns at Level 2 once
  *  short-text-comprehension fluency is established. */
 export interface QuestionTypeMix {
   mcq_comprehension: number;

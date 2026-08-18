@@ -5,12 +5,12 @@
 // Putting the logic here once keeps the two stages in lockstep when we
 // refine the cumulative-derivation rule.
 
-import { and, eq, inArray, isNull, lte, or } from 'drizzle-orm';
+import { and, count as sqlCount, eq, inArray, isNull, lte, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { vocabulary } from '@/lib/db/schema';
 import {
   type AfFLevel,
-  MIN_CUMULATIVE_LEXICON,
+  MIN_CURRICULUM_LEXICON,
   type VocabScope,
   resolveVocabScope,
 } from './vocab-scope';
@@ -174,11 +174,41 @@ export async function deriveCumulativeVocab(
   // buckets. Callers wanting more can pass cumulativeVocabIds explicitly.
   if (scope.currentLevel === null) return selectScopedVocab(scope, false);
 
-  const capped = await selectScopedVocab(scope, true);
-  if (scope.unitCap === null || capped.length >= MIN_CUMULATIVE_LEXICON) {
-    return capped;
+  if (scope.unitCap === null) return selectScopedVocab(scope, true);
+
+  const curriculumCount = await countCurriculumVocab(scope, true);
+  const capUnits = curriculumCount >= MIN_CURRICULUM_LEXICON;
+  return selectScopedVocab(scope, capUnits);
+}
+
+/** How many level-scoped curriculum words the scope admits, ignoring the
+ *  always-on buckets. Drives the widen decision in deriveCumulativeVocab. */
+async function countCurriculumVocab(
+  scope: VocabScope,
+  capUnits: boolean,
+): Promise<number> {
+  const clauses = [];
+  if (scope.belowLevels.length > 0) {
+    clauses.push(inArray(vocabulary.afFLevel, [...scope.belowLevels]));
   }
-  return selectScopedVocab(scope, false);
+  if (scope.currentLevel) {
+    const atCurrentLevel = eq(vocabulary.afFLevel, scope.currentLevel);
+    clauses.push(
+      capUnits && scope.unitCap !== null
+        ? and(
+            atCurrentLevel,
+            or(lte(vocabulary.afFUnit, scope.unitCap), isNull(vocabulary.afFUnit)),
+          )!
+        : atCurrentLevel,
+    );
+  }
+  if (clauses.length === 0) return 0;
+
+  const rows = await db
+    .select({ n: sqlCount() })
+    .from(vocabulary)
+    .where(or(...clauses));
+  return Number(rows[0]?.n ?? 0);
 }
 
 /** Helper used by both prose stage and validate stage: load the cumulative

@@ -33,6 +33,7 @@
     "migrate:class-promotion": "tsx scripts/apply-class-promotion-lineage.ts",
     "migrate:mobile-auth": "tsx scripts/apply-mobile-auth-foundation.ts",
     "migrate:reading-jobs": "tsx scripts/apply-durable-reading-generation-jobs.ts",
+    "migrate:reading-levels": "tsx scripts/apply-reading-levels-ff-alignment.ts",
     "test:plan": "tsx scripts/test-plan-generation.ts",
     "test:prose": "tsx scripts/test-prose-generation.ts",
     "test:regen": "tsx scripts/test-regen.ts",

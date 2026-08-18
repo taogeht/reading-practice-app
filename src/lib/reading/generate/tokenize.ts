@@ -97,6 +97,36 @@ const IRREGULAR_VERBS: Record<string, string> = {
   slept: 'sleep',
   swam: 'swim', swum: 'swim',
   wrote: 'write', written: 'write',
+  // Added after the level-2/3 eval surfaced "broken" as an unknown while
+  // "break" was in the lexicon — participles were the gap, not the lemmas.
+  broke: 'break', broken: 'break',
+  spoke: 'speak', spoken: 'speak',
+  chose: 'choose', chosen: 'choose',
+  froze: 'freeze', frozen: 'freeze',
+  stole: 'steal', stolen: 'steal',
+  wore: 'wear', worn: 'wear',
+  tore: 'tear', torn: 'tear',
+  threw: 'throw', thrown: 'throw',
+  grew: 'grow', grown: 'grow',
+  drew: 'draw', drawn: 'draw',
+  flew: 'fly', flown: 'fly',
+  blew: 'blow', blown: 'blow',
+  drove: 'drive', driven: 'drive',
+  rode: 'ride', ridden: 'ride',
+  hid: 'hide', hidden: 'hide',
+  rang: 'ring', rung: 'ring',
+  sang: 'sing', sung: 'sing',
+  began: 'begin', begun: 'begin',
+  won: 'win',
+  lost: 'lose',
+  left: 'leave',
+  kept: 'keep',
+  sent: 'send',
+  spent: 'spend',
+  built: 'build',
+  held: 'hold',
+  heard: 'hear',
+  paid: 'pay',
   // read / put / hit / cut / let / set are zero-marked in past tense;
   // a direct lookup against the lemma already succeeds, but we list
   // them so the rule still tags them when the surface form is identical.
@@ -171,6 +201,14 @@ export function tryMorphologicalMatch(
       const r = hit(stem, 'sibilant-es');
       if (r) return r;
     }
+  }
+
+  // Rule 3b: -ves → -f / -fe (leaves→leaf, shelves→shelf, knives→knife).
+  // Runs before the generic -es rule below would strip to a non-word stem.
+  if (token.endsWith('ves') && token.length > 3) {
+    const stem = token.slice(0, -3);
+    const r = hit(stem + 'f', 'ves-to-f') ?? hit(stem + 'fe', 'ves-to-fe');
+    if (r) return r;
   }
 
   // Rule 4: -ies → -y (cherries→cherry, babies→baby).
@@ -371,6 +409,9 @@ export function runMorphologyTests(): void {
     { id: 'v-child', word: 'child' },
     { id: 'v-tomato', word: 'tomato' },
     { id: 'v-sally', word: 'Sally' },
+    // The "mei's" case below needs its owner in the map — the possessive
+    // rule only succeeds when the stripped lemma is actually known.
+    { id: 'v-mei', word: 'Mei' },
     { id: 'v-cat', word: 'cat' },
   ];
 

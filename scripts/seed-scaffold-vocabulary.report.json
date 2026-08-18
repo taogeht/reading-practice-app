@@ -1,61 +1,433 @@
 {
-  "generatedAt": "2026-05-10T03:16:25.580Z",
+  "generatedAt": "2026-08-18T22:19:04.227Z",
   "mode": "write",
   "totals": {
-    "candidates": 100,
-    "toInsert": 12,
+    "candidates": 205,
+    "toInsert": 105,
     "toUpdate": 88,
-    "skippedCurriculum": 0,
+    "skippedCurriculum": 12,
     "skippedFunction": 0
   },
   "toInsert": [
     {
-      "word": "throw",
+      "word": "bright",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "glad",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "heavy",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "light",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "dark",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "soft",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "hard",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "clean",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "old",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "young",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "strong",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "full",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "empty",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "ready",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "safe",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "sorry",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "excited",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "funny",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "busy",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "easy",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "free",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "sure",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "deep",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "wide",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "sharp",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "round",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "flat",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "thin",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "thick",
+      "detail": "new adjective (scaffold)"
+    },
+    {
+      "word": "love",
       "detail": "new verb (scaffold)"
     },
     {
-      "word": "hit",
+      "word": "break",
       "detail": "new verb (scaffold)"
     },
     {
-      "word": "clap",
+      "word": "lie",
       "detail": "new verb (scaffold)"
     },
     {
-      "word": "pop",
+      "word": "wash",
       "detail": "new verb (scaffold)"
     },
     {
-      "word": "park",
+      "word": "carry",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "push",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "pull",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "catch",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "build",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "wake",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "laugh",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "cry",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "shout",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "wait",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "share",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "keep",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "try",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "turn",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "move",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "follow",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "leave",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "bring",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "send",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "buy",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "pay",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "fix",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "cut",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "drop",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "lift",
+      "detail": "new verb (scaffold)"
+    },
+    {
+      "word": "color",
       "detail": "new noun (scaffold)"
     },
     {
-      "word": "paper",
+      "word": "home",
       "detail": "new noun (scaffold)"
     },
     {
-      "word": "time",
+      "word": "hook",
       "detail": "new noun (scaffold)"
     },
     {
-      "word": "song",
+      "word": "end",
       "detail": "new noun (scaffold)"
     },
     {
-      "word": "wind",
+      "word": "shape",
       "detail": "new noun (scaffold)"
     },
     {
-      "word": "line",
+      "word": "wall",
       "detail": "new noun (scaffold)"
     },
     {
-      "word": "ice",
+      "word": "box",
       "detail": "new noun (scaffold)"
     },
     {
-      "word": "together",
-      "detail": "new adverb (scaffold)"
+      "word": "corner",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "side",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "top",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "bottom",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "back",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "front",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "middle",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "edge",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "ground",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "road",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "street",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "shop",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "garden",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "leaf",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "rock",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "stone",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "sand",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "rain",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "snow",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "sun",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "moon",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "star",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "cloud",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "fire",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "food",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "toy",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "foot",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "head",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "friend",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "family",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "morning",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "night",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "day",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "week",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "name",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "way",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "place",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "thing",
+      "detail": "new noun (scaffold)"
+    },
+    {
+      "word": "each",
+      "detail": "new determiner (scaffold)"
+    },
+    {
+      "word": "everyone",
+      "detail": "new pronoun (scaffold)"
     }
   ],
   "toUpdate": [
@@ -104,10 +476,6 @@
       "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
-      "word": "eat",
-      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
       "word": "sit",
       "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
     },
@@ -132,10 +500,6 @@
       "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
-      "word": "help",
-      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
       "word": "show",
       "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
     },
@@ -152,28 +516,8 @@
       "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
-      "word": "happy",
-      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
-      "word": "sad",
-      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
-      "word": "nice",
-      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
       "word": "pretty",
       "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
-      "word": "bad",
-      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
-      "word": "behind",
-      "detail": "existing untagged row (partOfSpeech=preposition, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
       "word": "in front of",
@@ -212,18 +556,6 @@
       "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
-      "word": "table",
-      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
-      "word": "hair",
-      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
-      "word": "picture",
-      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
       "word": "grass",
       "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
     },
@@ -242,10 +574,6 @@
     {
       "word": "wave",
       "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
-    },
-    {
-      "word": "fast",
-      "detail": "existing untagged row (partOfSpeech=adjective, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
       "word": "warm",
@@ -404,14 +732,107 @@
       "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
-      "word": "first",
+      "word": "last",
       "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
     },
     {
-      "word": "last",
+      "word": "throw",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "hit",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "clap",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "pop",
+      "detail": "existing untagged row (partOfSpeech=verb, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "park",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "paper",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "time",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "song",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "wind",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "line",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "ice",
+      "detail": "existing untagged row (partOfSpeech=noun, isScaffold=true) → POS preserved, isScaffold → true"
+    },
+    {
+      "word": "together",
       "detail": "existing untagged row (partOfSpeech=adverb, isScaffold=true) → POS preserved, isScaffold → true"
     }
   ],
-  "skippedCurriculum": [],
+  "skippedCurriculum": [
+    {
+      "word": "eat",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=12, partOfSpeech=verb) — not promoting to scaffold"
+    },
+    {
+      "word": "help",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=6, partOfSpeech=verb) — not promoting to scaffold"
+    },
+    {
+      "word": "happy",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=0, partOfSpeech=adjective) — not promoting to scaffold"
+    },
+    {
+      "word": "sad",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=2, partOfSpeech=adjective) — not promoting to scaffold"
+    },
+    {
+      "word": "nice",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=1, partOfSpeech=adjective) — not promoting to scaffold"
+    },
+    {
+      "word": "bad",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=2, partOfSpeech=adjective) — not promoting to scaffold"
+    },
+    {
+      "word": "behind",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=3, partOfSpeech=preposition) — not promoting to scaffold"
+    },
+    {
+      "word": "table",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=1, partOfSpeech=noun) — not promoting to scaffold"
+    },
+    {
+      "word": "hair",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=0, partOfSpeech=noun) — not promoting to scaffold"
+    },
+    {
+      "word": "picture",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=1, partOfSpeech=noun) — not promoting to scaffold"
+    },
+    {
+      "word": "fast",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=13, partOfSpeech=adjective) — not promoting to scaffold"
+    },
+    {
+      "word": "first",
+      "detail": "existing curriculum row (af_f_level=grade2, af_f_unit=15, partOfSpeech=adverb) — not promoting to scaffold"
+    }
+  ],
   "skippedFunction": []
 }
