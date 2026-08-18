@@ -139,8 +139,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 200,
+      model: 'claude-sonnet-5',
+      // Sonnet 5 runs adaptive thinking when `thinking` is omitted (4.6 ran
+      // thinking-off). Thinking tokens count against max_tokens, so leaving
+      // this implicit would let reasoning eat the whole budget and return a
+      // truncated reply to a student. Keep it off explicitly.
+      thinking: { type: 'disabled' },
+      // Raised from 200: Sonnet 5's tokenizer produces ~30% more tokens for
+      // the same text, so the old ceiling would clip replies that used to fit.
+      max_tokens: 280,
       system: systemBlocks,
       messages,
     });

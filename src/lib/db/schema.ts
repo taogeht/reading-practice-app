@@ -1459,7 +1459,7 @@ export type ReadingQuestionPayload =
  *  populates; future work can extend without a migration. */
 export interface PassageGenerationMeta {
   /** Concise label of the underlying models, e.g.
-   *  "claude-sonnet-4-6 + gemini-2.5-flash-image". */
+   *  "claude-sonnet-5 + gemini-2.5-flash-image". */
   model?: string;
   promptVersion?: string;
   /** Exact teacher-controlled settings used for this passage. Editorial

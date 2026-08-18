@@ -8,7 +8,7 @@
 // constraints surfaced to the planner.
 //
 // Architecture mirrors src/lib/practice/generate.ts:
-//   - Anthropic Sonnet 4.6 with output_config.format json_schema for a
+//   - Anthropic Sonnet 5 with output_config.format json_schema for a
 //     constrained, parse-clean response.
 //   - cache_control: ephemeral on the system prompt and the level/cumulative
 //     blocks of the user message, so repeated calls at the same level + unit
@@ -50,11 +50,11 @@ import { assertPassagePlanMatchesRequest } from './validate-plan';
 // parameter types in the prompt builders below; explicit imports keep the
 // reference traceable from this file.
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5';
 
-/** Creative variation knob. Higher = more invention, lower = more derivative.
- *  0.7 has been a sweet spot for kid-story generation in similar tools. */
-const TEMPERATURE = 0.7;
+// Story variety used to come from temperature 0.7 here. Sonnet 5 rejects
+// sampling parameters, so variation now has to come from the prompt — the
+// cast rotation and unit themes carry that job.
 
 /** Max tokens for the plan response. A 16-page plan with full beat +
  *  scene descriptions empirically lands well under this; headroom prevents
@@ -358,7 +358,6 @@ export async function generatePassagePlan(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    temperature: TEMPERATURE,
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',

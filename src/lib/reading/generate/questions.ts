@@ -5,7 +5,7 @@
 // targeting the same evidence quote, etc.).
 //
 // Architecture mirrors prose.ts:
-//   - Anthropic Sonnet 4.6 with output_config json_schema for shape
+//   - Anthropic Sonnet 5 with output_config json_schema for shape
 //     constraint at decode time (constraints kept minimal per the
 //     Anthropic memory note; strictness comes from zod post-parse).
 //   - cache_control on the system message + cumulative vocab block.
@@ -38,8 +38,7 @@ import {
 } from './types';
 import { questionCountForMix } from './question-mix';
 
-const MODEL = 'claude-sonnet-4-6';
-const TEMPERATURE = 0.5;
+const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 4000;
 
 // ---------- Prompt builders ----------
@@ -292,7 +291,6 @@ export async function generateQuestions(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    temperature: TEMPERATURE,
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',

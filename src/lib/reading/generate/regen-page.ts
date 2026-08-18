@@ -29,8 +29,7 @@ import {
   type TargetRow,
 } from './vocab';
 
-const MODEL = 'claude-sonnet-4-6';
-const TEMPERATURE = 0.5;
+const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 1500;
 
 const SinglePageOutputSchema = z.object({
@@ -108,7 +107,6 @@ export async function generateSinglePage(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    temperature: TEMPERATURE,
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',

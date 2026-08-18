@@ -36,11 +36,7 @@ import {
   type TargetRow,
 } from './vocab';
 
-const MODEL = 'claude-sonnet-4-6';
-
-/** Lower than the planner because prose benefits from less variance —
- *  we're filling in a fixed structure, not inventing one. Tunable. */
-const TEMPERATURE = 0.5;
+const MODEL = 'claude-sonnet-5';
 
 /** Generous ceiling for a 16-page level-5 story (each page ~45 words ×
  *  ~1.4 tokens/word + JSON overhead = ~1500 tokens; headroom prevents
@@ -255,7 +251,6 @@ export async function generatePagesProse(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    temperature: TEMPERATURE,
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',
@@ -387,7 +382,6 @@ export async function generatePagesProseWithFeedback(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    temperature: TEMPERATURE,
     thinking: { type: 'disabled' },
     output_config: {
       effort: 'medium',

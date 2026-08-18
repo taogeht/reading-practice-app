@@ -123,7 +123,7 @@ const PROSE_QUALITY_FLOOR = 0.7;
  *  narrative content, so a lower threshold is appropriate. */
 const QUESTIONS_QUALITY_FLOOR = 0.5;
 
-const COMBINED_MODEL_LABEL = 'claude-sonnet-4-6 + gemini-2.5-flash-image';
+const COMBINED_MODEL_LABEL = 'claude-sonnet-5 + gemini-2.5-flash-image';
 
 // ---------- Public types ----------
 

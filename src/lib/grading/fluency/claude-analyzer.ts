@@ -15,7 +15,7 @@ import { z } from 'zod';
 import type { WhisperWord } from '../whisper-client';
 import type { FluencyMetrics } from './compute-metrics';
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 2000;
 
 const ErrorTypeSchema = z.enum(['substitution', 'omission', 'insertion', 'self_correction']);
@@ -236,7 +236,6 @@ export async function analyzeWithClaude(args: AnalyzeWithClaudeArgs): Promise<Cl
         const response = await client.messages.create({
             model: MODEL,
             max_tokens: MAX_TOKENS,
-            temperature: 0.2,
             thinking: { type: 'disabled' },
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             output_config: {

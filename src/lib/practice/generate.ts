@@ -450,7 +450,7 @@ async function runGenerationCall(
   const maxTokens = Math.max(1500, count * 250);
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
     max_tokens: maxTokens,
     thinking: { type: 'disabled' },
     output_config: {
