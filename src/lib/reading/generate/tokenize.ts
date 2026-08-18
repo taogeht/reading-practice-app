@@ -154,6 +154,16 @@ const IRREGULAR_PLURALS: Record<string, string> = {
   sheep: 'sheep',
 };
 
+/** Comparatives and superlatives whose lemma can't be recovered by
+ *  stripping -er/-est. Surfaced by the level-1/2 eval: "best" was flagged
+ *  unknown while "good" sat in the lexicon the whole time. */
+const IRREGULAR_DEGREES: Record<string, string> = {
+  better: 'good', best: 'good',
+  worse: 'bad', worst: 'bad',
+  further: 'far', furthest: 'far',
+  farther: 'far', farthest: 'far',
+};
+
 const CONSONANT_RE = /^[bcdfghjklmnpqrstvwxz]$/i;
 
 interface MorphMatch {
@@ -201,6 +211,12 @@ export function tryMorphologicalMatch(
       const r = hit(stem, 'sibilant-es');
       if (r) return r;
     }
+  }
+
+  // Rule 2b: irregular comparatives / superlatives.
+  if (Object.prototype.hasOwnProperty.call(IRREGULAR_DEGREES, token)) {
+    const r = hit(IRREGULAR_DEGREES[token]!, 'irregular-degree');
+    if (r) return r;
   }
 
   // Rule 3b: -ves → -f / -fe (leaves→leaf, shelves→shelf, knives→knife).

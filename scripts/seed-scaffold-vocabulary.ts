@@ -354,6 +354,36 @@ const SCAFFOLD_WORDS: SeedEntry[] = [
   // the same whichever flag carries it.
   { word: 'each',     partOfSpeech: 'determiner' },
   { word: 'everyone', partOfSpeech: 'pronoun' },
+
+  // Pass 6 — the residual tail from the level-1/2 eval that first cleared
+  // the prose gate (3 of 4 passages content-ready). Only 8 distinct words
+  // across 4 passages, so this is genuinely the long tail rather than a
+  // structural gap. "best" is handled in tokenize.ts instead — "good" was
+  // already present, the irregular-degree rule was what was missing.
+
+  // Verbs whose lemma was simply absent, so the -s/-ed forms the model
+  // wrote ("hangs", "started", "printed") had nothing to recover to.
+  { word: 'hang',   partOfSpeech: 'verb' },
+  { word: 'start',  partOfSpeech: 'verb' },
+  { word: 'print',  partOfSpeech: 'verb' },
+  { word: 'finish', partOfSpeech: 'verb' },
+  { word: 'begin',  partOfSpeech: 'verb' },
+  { word: 'touch',  partOfSpeech: 'verb' },
+  { word: 'reach',  partOfSpeech: 'verb' },
+  { word: 'stick',  partOfSpeech: 'verb' },
+  { word: 'fold',   partOfSpeech: 'verb' },
+  { word: 'tie',    partOfSpeech: 'verb' },
+  { word: 'pour',   partOfSpeech: 'verb' },
+
+  // Adjectives.
+  { word: 'whole', partOfSpeech: 'adjective' },
+  { word: 'loose', partOfSpeech: 'adjective' },
+
+  // Spatial preposition and the two discourse words the narrator reached
+  // for. "other" is closed-class in spirit, like "which" and "each" above.
+  { word: 'around', partOfSpeech: 'preposition' },
+  { word: 'yet',    partOfSpeech: 'adverb' },
+  { word: 'other',  partOfSpeech: 'determiner' },
 ];
 
 const CEFR_LEVEL_ALL: CefrLevel = 'A1';
