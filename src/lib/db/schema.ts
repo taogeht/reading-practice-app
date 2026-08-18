@@ -1462,6 +1462,14 @@ export interface PassageGenerationMeta {
    *  "claude-sonnet-4-6 + gemini-2.5-flash-image". */
   model?: string;
   promptVersion?: string;
+  /** Exact teacher-controlled settings used for this passage. Editorial
+   *  validation and regeneration must reuse these instead of silently
+   *  falling back to the base reading level. */
+  overridesUsed?: Record<string, unknown>;
+  /** Durable generation-job provenance. A recovering runner uses this marker
+   *  to adopt a passage committed just before its progress write was lost. */
+  generationJobId?: string;
+  generationWorkItemIndex?: number;
   generatedAt?: string;
   generationDurationMs?: number;
   costUsd?: number;
@@ -1518,6 +1526,8 @@ export const readingPassages = pgTable(
       .$type<PassageGenerationMeta>()
       .notNull()
       .default(sql`'{}'::jsonb`),
+    generationJobId: uuid('generation_job_id'),
+    generationWorkItemIndex: smallint('generation_work_item_index'),
     reviewedBy: uuid('reviewed_by').references(() => users.id),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
     summary: text('summary'),
@@ -1535,6 +1545,11 @@ export const readingPassages = pgTable(
       table.status,
       table.isActive,
     ),
+    uniqueGenerationWorkItem: uniqueIndex(
+      'idx_reading_passages_unique_generation_work_item',
+    )
+      .on(table.generationJobId, table.generationWorkItemIndex)
+      .where(sql`${table.generationJobId} IS NOT NULL`),
   }),
 );
 
@@ -1730,12 +1745,16 @@ export const studentVocabularyMastery = pgTable(
 export type StudentVocabularyMastery = typeof studentVocabularyMastery.$inferSelect;
 export type NewStudentVocabularyMastery = typeof studentVocabularyMastery.$inferInsert;
 
+export interface ReadingGenerationJobWorkItem {
+  index: number;
+  targetVocabIds: string[];
+}
+
 // Record of every teacher-initiated batch generation run. Powers the
 // "Recent jobs" panel + the per-job detail/retry flow on
 // /teacher/reading/generate. The row lives the whole lifecycle of the
-// queueMicrotask background loop — inserted up front so the response
-// can return an id that survives a serverless instance dying, and
-// updated as each passage in the batch finishes.
+// leased background runner — inserted up front so the response can return an
+// id that survives a process restart, and updated as each passage finishes.
 //
 // `passages_results` is an append-only jsonb array of per-passage
 // outcomes (passageId + status + qualityReport + optional failure
@@ -1766,7 +1785,20 @@ export const readingGenerationJobs = pgTable(
      *  random-mode jobs, it's whatever the picker chose — preserved
      *  for visibility, not retry. */
     targetVocabIds: jsonb('target_vocab_ids').notNull().default([]),
+    /** Exact per-passage inputs. Unlike targetVocabIds (the display/debug
+     * union), this is sufficient for a runner to resume unfinished work. */
+    workItems: jsonb('work_items')
+      .$type<ReadingGenerationJobWorkItem[]>()
+      .notNull()
+      .default([]),
+    skipImages: boolean('skip_images').notNull().default(false),
     status: readingGenerationJobStatusEnum('status').notNull().default('queued'),
+    /** Renewable ownership lease. A new process may claim a running job only
+     * after this expires, which prevents duplicate concurrent generation. */
+    leaseToken: uuid('lease_token'),
+    leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true }),
+    runnerAttempts: smallint('runner_attempts').notNull().default(0),
+    lastError: text('last_error'),
     passagesSucceeded: smallint('passages_succeeded').notNull().default(0),
     passagesFailed: smallint('passages_failed').notNull().default(0),
     /** Append-only array of per-passage results; shape lives in
@@ -1780,6 +1812,10 @@ export const readingGenerationJobs = pgTable(
     teacherRecentIdx: index('idx_reading_generation_jobs_teacher_recent').on(
       table.teacherId,
       table.createdAt,
+    ),
+    claimIdx: index('idx_reading_generation_jobs_claim').on(
+      table.status,
+      table.leaseExpiresAt,
     ),
   }),
 );

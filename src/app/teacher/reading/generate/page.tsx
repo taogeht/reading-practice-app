@@ -1353,6 +1353,8 @@ function JobStatusCard({
     let cancelled = false;
     const startedAt = Date.now();
 
+    let interval: ReturnType<typeof setInterval> | undefined;
+
     async function pollOnce() {
       try {
         const res = await fetch(`/api/teacher/reading/jobs/${jobId}`);
@@ -1360,6 +1362,9 @@ function JobStatusCard({
         const body = (await res.json()) as { job: JobStatusDetail };
         if (cancelled) return;
         setJob(body.job);
+        if (body.job.status === 'completed' || body.job.status === 'failed') {
+          if (interval) clearInterval(interval);
+        }
       } catch {
         // Best-effort poll; failures retry next tick.
       }
@@ -1369,11 +1374,11 @@ function JobStatusCard({
     // soon as the row is queryable.
     void pollOnce();
 
-    const interval = setInterval(() => {
+    interval = setInterval(() => {
       if (cancelled) return;
       if (Date.now() - startedAt > POLL_MAX_DURATION_MS) {
         setPollTimedOut(true);
-        clearInterval(interval);
+        if (interval) clearInterval(interval);
         return;
       }
       void pollOnce();
@@ -1381,21 +1386,9 @@ function JobStatusCard({
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
   }, [jobId]);
-
-  // Stop the interval as soon as we observe a terminal status. The
-  // last poll lands the final state; subsequent polls would just
-  // burn requests.
-  useEffect(() => {
-    if (job?.status === 'completed' || job?.status === 'failed') {
-      // No-op — we deliberately don't clear via state; the interval
-      // closure above re-checks via pollOnce on each tick but
-      // setJob keeps rendering the latest. Polling stops naturally
-      // when the component unmounts (e.g. "Generate more" clicked).
-    }
-  }, [job?.status]);
 
   const isTerminal = job?.status === 'completed' || job?.status === 'failed';
   const allSucceeded =

@@ -145,6 +145,11 @@ export interface GeneratePassageInput {
    *  scripts when iterating on prose / questions / vocab logic without
    *  burning Gemini budget. Production paths leave this undefined. */
   skipImages?: boolean;
+  /** Idempotency provenance for durable batch generation. */
+  provenance?: {
+    generationJobId: string;
+    workItemIndex: number;
+  };
 }
 
 /** A passage-level issue is a per-stage validation issue from prose,
@@ -554,6 +559,10 @@ export async function generatePassage(
     await db.transaction(async (tx) => {
       const generationMeta: PassageGenerationMeta = {
         model: COMBINED_MODEL_LABEL,
+        promptVersion: 'reading-passage-v1',
+        overridesUsed: (input.overrides ?? {}) as Record<string, unknown>,
+        generationJobId: input.provenance?.generationJobId,
+        generationWorkItemIndex: input.provenance?.workItemIndex,
         generatedAt: new Date().toISOString(),
         generationDurationMs: totalMsBeforeDb,
         proseAttemptCount,
@@ -578,6 +587,8 @@ export async function generatePassage(
         pageCount: plan.pages.length,
         status: input.skipImages ? 'draft' : 'review',
         generationMeta,
+        generationJobId: input.provenance?.generationJobId,
+        generationWorkItemIndex: input.provenance?.workItemIndex,
         summary: plan.summary,
         coverImageKey: input.skipImages
           ? null
@@ -610,8 +621,8 @@ export async function generatePassage(
         });
       await tx.insert(storyPages).values(pageRows);
 
-      // 3. reading_questions — five rows, ordered by orderIndex
-      //    (which generateQuestions assigned 0..4 in emit order).
+      // 3. reading_questions — configured count, ordered by orderIndex
+      //    (which generateQuestions assigns in emit order).
       const questionRows = questions.map((q) => {
         const base = {
           passageId,

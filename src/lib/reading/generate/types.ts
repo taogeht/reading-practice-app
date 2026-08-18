@@ -366,7 +366,7 @@ export const GeneratedQuestionRawSchema = z.discriminatedUnion('type', [
 ]);
 
 export const QuestionsOutputSchema = z.object({
-  questions: z.array(GeneratedQuestionRawSchema).length(5),
+  questions: z.array(GeneratedQuestionRawSchema).min(3).max(8),
 });
 
 export type GeneratedQuestionRaw = z.infer<typeof GeneratedQuestionRawSchema>;

@@ -33,16 +33,15 @@ import type {
   QuestionValidationIssue,
   QuestionValidationResult,
 } from './types';
+import { questionCountForMix } from './question-mix';
 
 interface VocabIdentity {
   id: string;
   word: string;
 }
 
-// Question quotas are now per-level — sourced from getQuestionTypeMix
-// at validation time instead of hardcoded. Total stays at 5 across
-// every level, so the count check itself is level-agnostic.
-const TOTAL_QUESTIONS = 5;
+// Question quotas and their total come from the effective level so teacher
+// overrides stay consistent across generation and validation.
 const SEQUENCE_EVENT_MATCH_THRESHOLD = 0.6;
 
 // Compact closed-class set used to filter content words for the
@@ -92,11 +91,14 @@ export function validateQuestions(
   };
   for (const q of questions) typeCounts[q.type] = (typeCounts[q.type] ?? 0) + 1;
 
-  if (questions.length !== TOTAL_QUESTIONS) {
+  const expectedMix = level.questionTypeMix;
+  const expectedQuestionCount = questionCountForMix(expectedMix);
+
+  if (questions.length !== expectedQuestionCount) {
     issues.push({
       type: 'wrong_question_count',
       severity: 'error',
-      expected: TOTAL_QUESTIONS,
+      expected: expectedQuestionCount,
       actual: questions.length,
     });
   }
@@ -104,7 +106,6 @@ export function validateQuestions(
   // Per-level expected mix. Reads from the effective level so teacher
   // overrides to questionTypeMix flow through; falls back to the base
   // level via getReadingLevel above when no effective level is passed.
-  const expectedMix = level.questionTypeMix;
   if (
     typeCounts.mcq_comprehension !== expectedMix.mcq_comprehension ||
     typeCounts.vocab_matching !== expectedMix.vocab_matching ||

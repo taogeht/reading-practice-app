@@ -12,6 +12,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { readingGenerationJobs } from '@/lib/db/schema';
 import { logError } from '@/lib/logger';
+import { launchGenerationJob } from '@/lib/reading/generation-job-runner';
+import { generationJobNeedsLaunch } from '@/lib/reading/generation-job-plan';
 
 export const runtime = 'nodejs';
 
@@ -40,6 +42,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
+    // Polling doubles as a recovery signal after a process restart. The
+    // database lease makes repeated polls and multiple browser tabs harmless.
+    if (generationJobNeedsLaunch(row)) {
+      launchGenerationJob(row.id);
+    }
+
     return NextResponse.json({
       job: {
         id: row.id,
@@ -55,6 +63,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         passagesSucceeded: row.passagesSucceeded,
         passagesFailed: row.passagesFailed,
         passagesResults: row.passagesResults,
+        runnerAttempts: row.runnerAttempts,
+        lastError: row.lastError,
         hasRetry:
           (row.status === 'completed' || row.status === 'failed') &&
           row.passagesFailed > 0,

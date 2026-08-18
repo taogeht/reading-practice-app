@@ -208,8 +208,10 @@ teacher reading generator
   -> POST /api/teacher/reading/generate
   -> getCurrentUser() + teacherCan(canGenerateReadingContent)
   -> validate level, overrides, vocabulary, count
-  -> readingGenerationJobs insert
-  -> runJob() via queueMicrotask
+  -> readingGenerationJobs insert with exact work_items
+  -> launchGenerationJob() via queueMicrotask
+      -> atomically claim renewable database lease
+      -> skip completed work-item indexes on resume
       -> generatePassagePlan()
       -> generateValidatedProse()
       -> generateQuestions() + validateQuestions()
@@ -226,9 +228,14 @@ teacher reading generator
 Content without required images remains draft; completed content moves to review.
 Teacher review routes can edit, regenerate, approve/publish, or reject passages.
 
-The generation job is not durable. If the process exits after the API response,
-the job can remain incomplete. R2 uploads that precede a failed DB transaction can
-remain orphaned.
+Generation work inputs and renewable leases are durable in PostgreSQL. Polling
+the recent-jobs or job-detail endpoint relaunches queued work and lease-expired
+running work after a process restart. Each committed passage records its job/work
+item provenance, allowing a resumed runner to adopt a passage whose progress write
+was interrupted. This still assumes a teacher or external monitor eventually polls
+the job; there is no continuously running standalone worker process.
+
+R2 uploads that precede a failed DB transaction can remain orphaned.
 
 ### Student session
 

@@ -1,7 +1,7 @@
-// Stage 4 of the reading-passage generation pipeline: produce 5
-// comprehension questions (3 MCQ + 1 vocab_matching + 1 sequence_order)
+// Stage 4 of the reading-passage generation pipeline: produce the
+// configured comprehension-question mix
 // for an already-validated prose passage. ONE Claude call generates
-// all 5 questions so cross-question consistency holds (no two MCQs
+// all questions so cross-question consistency holds (no two MCQs
 // targeting the same evidence quote, etc.).
 //
 // Architecture mirrors prose.ts:
@@ -36,6 +36,7 @@ import {
   type GenerationCallMeta,
   type PassagePlan,
 } from './types';
+import { questionCountForMix } from './question-mix';
 
 const MODEL = 'claude-sonnet-4-6';
 const TEMPERATURE = 0.5;
@@ -45,8 +46,8 @@ const MAX_TOKENS = 4000;
 
 const SYSTEM_PROMPT_PREFIX = `You generate comprehension questions for ESL stories at Macmillan Language School in Kaohsiung, Taiwan, ages 6-10.
 
-For each story, produce EXACTLY 5 questions. The exact type mix per
-reading level is given below; produce questions in that order
+For each story, produce exactly the requested number of questions. The exact
+type mix per reading level is given below; produce questions in that order
 (MCQs first, then vocab_matching, then sequence_order).
 
 QUESTION TYPE RULES
@@ -81,6 +82,7 @@ OUTPUT
 
 function buildSystemPrompt(level: EffectiveReadingLevel): string {
   const mix = level.questionTypeMix;
+  const totalQuestionCount = questionCountForMix(mix);
   // Build a human-readable breakdown listing only the non-zero counts
   // so the model isn't confused by "0 sequence_order" being a thing.
   const lines: string[] = [];
@@ -99,6 +101,7 @@ function buildSystemPrompt(level: EffectiveReadingLevel): string {
     SYSTEM_PROMPT_PREFIX,
     `READING LEVEL: ${level.id} (${level.name})`,
     `Maximum question / sentence length: ${level.maxSentenceWords} words.`,
+    `Produce EXACTLY ${totalQuestionCount} questions.`,
     '',
     'EXACT QUESTION MIX FOR THIS LEVEL:',
     ...lines,
@@ -112,8 +115,9 @@ function buildSystemPrompt(level: EffectiveReadingLevel): string {
  *  generateQuestions never returns a bad-shape result. The Stage 5
  *  validator re-checks for defense-in-depth. */
 function buildOutputSchema(mix: QuestionTypeMix) {
+  const totalQuestionCount = questionCountForMix(mix);
   return z.object({
-    questions: z.array(GeneratedQuestionRawSchema).length(5).refine(
+    questions: z.array(GeneratedQuestionRawSchema).length(totalQuestionCount).refine(
       (qs) => {
         const counts = {
           mcq_comprehension: 0,
@@ -154,6 +158,7 @@ function buildContextBlock(
   plan: PassagePlan,
   pages: GeneratedPageProse[],
   targets: GenerateQuestionsInput['targetVocabRows'],
+  totalQuestionCount: number,
 ): string {
   const lines: string[] = [];
   lines.push(`STORY: "${plan.title}"`);
@@ -177,7 +182,7 @@ function buildContextBlock(
   }
   lines.push('');
   lines.push(
-    'Now produce the 5 questions. Output JSON only: ' +
+    `Now produce exactly ${totalQuestionCount} questions. Output JSON only: ` +
       '{ "questions": [{ "type", "questionText", "payload", ...mcq-only fields }, ...] }',
   );
   return lines.join('\n');
@@ -270,7 +275,12 @@ export async function generateQuestions(
 
   const systemPrompt = buildSystemPrompt(level);
   const cumulativeBlock = buildCumulativeBlock(input.cumulativeVocabRows);
-  const contextBlock = buildContextBlock(input.plan, input.pages, input.targetVocabRows);
+  const contextBlock = buildContextBlock(
+    input.plan,
+    input.pages,
+    input.targetVocabRows,
+    questionCountForMix(level.questionTypeMix),
+  );
 
   const userContent: Anthropic.ContentBlockParam[] = [
     { type: 'text', text: cumulativeBlock, cache_control: { type: 'ephemeral' } },

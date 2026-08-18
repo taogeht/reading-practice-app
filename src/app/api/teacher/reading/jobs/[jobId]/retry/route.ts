@@ -126,6 +126,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         readingLevelId: row.readingLevelId,
         countToGenerate: row.countRequested,
         overrides,
+        skipImages: row.skipImages,
         parentJobId: row.id,
       }),
     });

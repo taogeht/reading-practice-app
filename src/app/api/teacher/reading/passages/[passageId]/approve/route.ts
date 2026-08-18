@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { canGenerateReadingContent } from '@/lib/auth/reading-content';
 import { db } from '@/lib/db';
 import { readingPassages } from '@/lib/db/schema';
-import { logError } from '@/lib/logger';
+import { logError, logInfo } from '@/lib/logger';
+import { assessPassageForPublication } from '@/lib/reading/publication';
 
 export const runtime = 'nodejs';
 
@@ -24,33 +25,66 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { passageId } = await params;
 
-    const [existing] = await db
-      .select({ id: readingPassages.id, status: readingPassages.status })
-      .from(readingPassages)
-      .where(eq(readingPassages.id, passageId))
-      .limit(1);
-    if (!existing) {
+    const assessment = await assessPassageForPublication(passageId);
+    if (!assessment.found) {
       return NextResponse.json({ error: 'Passage not found' }, { status: 404 });
     }
-    if (existing.status !== 'review' && existing.status !== 'draft') {
+    if (assessment.currentStatus !== 'review') {
       return NextResponse.json(
         {
-          error: `Cannot approve a passage in status '${existing.status}'. Only review and draft passages can be approved.`,
+          error: `Cannot approve a passage in status '${assessment.currentStatus}'. Only review passages can be approved.`,
         },
         { status: 400 },
       );
     }
+    if (!assessment.publishable) {
+      return NextResponse.json(
+        {
+          error: 'This passage is not ready to publish.',
+          issues: assessment.issues,
+          qualityReport: assessment.qualityReport,
+        },
+        { status: 409 },
+      );
+    }
+
+    const generationMeta = {
+      ...assessment.generationMeta,
+      qualityReport: assessment.qualityReport,
+    };
 
     const [updated] = await db
       .update(readingPassages)
       .set({
         status: 'published',
+        generationMeta,
         reviewedBy: user.id,
         reviewedAt: new Date(),
         updatedAt: sql`now()`,
       })
-      .where(eq(readingPassages.id, passageId))
+      .where(
+        and(
+          eq(readingPassages.id, passageId),
+          eq(readingPassages.status, 'review'),
+          eq(readingPassages.updatedAt, assessment.snapshotUpdatedAt),
+        ),
+      )
       .returning();
+
+    if (!updated) {
+      return NextResponse.json(
+        {
+          error:
+            'The passage changed while it was being validated. Review the latest version and approve again.',
+        },
+        { status: 409 },
+      );
+    }
+
+    logInfo(
+      'reading passage published',
+      `api/teacher/reading/passages/approve passage_id=${passageId} reviewed_by=${user.id}`,
+    );
 
     return NextResponse.json({ passage: updated }, { status: 200 });
   } catch (error) {

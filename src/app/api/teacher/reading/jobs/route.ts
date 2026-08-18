@@ -15,6 +15,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { readingGenerationJobs } from '@/lib/db/schema';
 import { logError } from '@/lib/logger';
+import { launchGenerationJob } from '@/lib/reading/generation-job-runner';
+import { generationJobNeedsLaunch } from '@/lib/reading/generation-job-plan';
 
 export const runtime = 'nodejs';
 
@@ -37,11 +39,17 @@ export async function GET(_request: NextRequest) {
         passagesSucceeded: readingGenerationJobs.passagesSucceeded,
         passagesFailed: readingGenerationJobs.passagesFailed,
         parentJobId: readingGenerationJobs.parentJobId,
+        leaseExpiresAt: readingGenerationJobs.leaseExpiresAt,
+        workItems: readingGenerationJobs.workItems,
       })
       .from(readingGenerationJobs)
       .where(eq(readingGenerationJobs.teacherId, user.id))
       .orderBy(desc(readingGenerationJobs.createdAt))
       .limit(RECENT_LIMIT);
+
+    for (const row of rows) {
+      if (generationJobNeedsLaunch(row)) launchGenerationJob(row.id);
+    }
 
     return NextResponse.json({
       jobs: rows.map((r) => ({

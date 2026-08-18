@@ -73,9 +73,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
   const [retryError, setRetryError] = useState<string | null>(null);
   const [showTech, setShowTech] = useState<Record<string, boolean>>({});
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (showSpinner = true) => {
+    if (showSpinner) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await fetch(`/api/teacher/reading/jobs/${jobId}`);
       if (!res.ok) {
@@ -85,15 +87,23 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
       const body = (await res.json()) as { job: JobDetail };
       setJob(body.job);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load job');
+      if (showSpinner) {
+        setError(err instanceof Error ? err.message : 'Failed to load job');
+      }
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   }, [jobId]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!job || job.status === 'completed' || job.status === 'failed') return;
+    const interval = setInterval(() => void load(false), 5_000);
+    return () => clearInterval(interval);
+  }, [job?.status, load]);
 
   const onRetry = async () => {
     if (!job) return;

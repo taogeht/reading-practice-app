@@ -7,7 +7,11 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import { getReadingLevel, type ReadingLevel } from '@/lib/reading/levels';
+import {
+  applyOverridesToLevel,
+  getReadingLevel,
+  type EffectiveReadingLevel,
+} from '@/lib/reading/levels';
 import { imageClient } from '@/lib/image';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logInfo } from '@/lib/logger';
@@ -17,6 +21,7 @@ import {
   VocabMatchingGeneratedSchema,
   type GeneratedPageProse,
   type GeneratedQuestion,
+  type GenerateOverrides,
   type GenerationCallMeta,
   type PassagePlan,
 } from './types';
@@ -46,6 +51,8 @@ export interface GenerateSingleQuestionInput {
   }[];
   cumulativeVocabRows: { id: string; word: string; isPicturable: boolean }[];
   readingLevelId: number;
+  /** Original teacher settings, persisted in passage generation metadata. */
+  overrides?: GenerateOverrides;
   /** Owning passage. Required for vocab_matching regen because the
    *  V2 pair imageKey embeds the passageId. */
   passageId: string;
@@ -145,7 +152,10 @@ export async function generateSingleQuestion(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
-  const level = getReadingLevel(input.readingLevelId);
+  const level = applyOverridesToLevel(
+    getReadingLevel(input.readingLevelId),
+    input.overrides,
+  );
 
   const systemPrompt = buildSystemPrompt(level, input.questionType);
   const cumulativeBlock = buildCumulativeBlock(input.cumulativeVocabRows);
@@ -314,7 +324,7 @@ export async function generateSingleQuestion(
 
 // ---------- Prompt builders ----------
 
-function buildSystemPrompt(level: ReadingLevel, type: SingleQuestionType): string {
+function buildSystemPrompt(level: EffectiveReadingLevel, type: SingleQuestionType): string {
   const lines: string[] = [];
   lines.push(
     `You are regenerating ONE comprehension question for an ESL reading passage at Macmillan Language School in Kaohsiung, ages 6-10.`,

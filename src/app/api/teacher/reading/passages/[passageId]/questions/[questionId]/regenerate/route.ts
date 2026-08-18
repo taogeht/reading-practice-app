@@ -11,6 +11,7 @@ import {
 import { logError, logInfo } from '@/lib/logger';
 import {
   generateSingleQuestion,
+  type GenerateOverrides,
   type GeneratedQuestion,
   type PassagePlan,
 } from '@/lib/reading/generate';
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const planFromMeta = (passage.generationMeta as { plan?: unknown } | null)?.plan as
       | PassagePlan
       | undefined;
+    const overrides = (
+      passage.generationMeta as { overridesUsed?: unknown } | null
+    )?.overridesUsed as GenerateOverrides | undefined;
     if (!planFromMeta) {
       return NextResponse.json(
         {
@@ -116,6 +120,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       cumulativeVocabRows,
       readingLevelId: passage.readingLevel,
       passageId,
+      overrides,
     });
 
     const q = result.question;

@@ -10,6 +10,7 @@ import { logError, logInfo } from '@/lib/logger';
 import {
   buildImagePrompt,
   generateSinglePage,
+  type GenerateOverrides,
   type PassagePlan,
 } from '@/lib/reading/generate';
 
@@ -55,6 +56,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const planFromMeta = (passage.generationMeta as { plan?: unknown } | null)?.plan as
       | PassagePlan
       | undefined;
+    const overrides = (
+      passage.generationMeta as { overridesUsed?: unknown } | null
+    )?.overridesUsed as GenerateOverrides | undefined;
     if (!planFromMeta) {
       return NextResponse.json(
         {
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       pageNumber,
       otherPagesText,
       readingLevelId: passage.readingLevel,
+      overrides,
     });
 
     // 3. Regenerate image. The character-consistency anchor is the
@@ -171,6 +176,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         text: proseResult.page.text,
         imageKey: newKey,
         imagePromptUsed: imagePrompt,
+        // Regenerated prose invalidates any narration made from the old text.
+        ttsAudioKey: null,
+        ttsVoice: null,
         updatedAt: sql`now()`,
       })
       .where(

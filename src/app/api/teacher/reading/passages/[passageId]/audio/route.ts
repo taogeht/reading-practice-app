@@ -17,7 +17,7 @@
 // Auth: teacher or admin.
 
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { canGenerateReadingContent } from '@/lib/auth/reading-content';
 import { db } from '@/lib/db';
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
       await db
         .update(storyPages)
-        .set({ ttsAudioKey: key, ttsVoice: voiceId })
+        .set({ ttsAudioKey: key, ttsVoice: voiceId, updatedAt: sql`now()` })
         .where(eq(storyPages.id, page.id));
       results.push({
         pageNumber: page.pageNumber,

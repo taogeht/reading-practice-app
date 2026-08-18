@@ -11,6 +11,7 @@ import {
 import { logError, logInfo } from '@/lib/logger';
 import {
   validatePagesProse,
+  type GenerateOverrides,
   type PassagePlan,
   type ValidationIssue,
 } from '@/lib/reading/generate';
@@ -83,6 +84,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const generationMeta = (passage.generationMeta as PassageGenerationMeta | null) ?? {};
     const planFromMeta = generationMeta.plan as PassagePlan | undefined;
+    const overrides = generationMeta.overridesUsed as GenerateOverrides | undefined;
     if (!planFromMeta) {
       return NextResponse.json(
         {
@@ -114,6 +116,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .update(storyPages)
       .set({
         text,
+        // Narration is derived from page text. Clearing it prevents a
+        // successfully edited page from serving audio for the old prose.
+        ttsAudioKey: null,
+        ttsVoice: null,
         editedAt: new Date(),
         editedBy: user.id,
         updatedAt: sql`now()`,
@@ -143,6 +149,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       passage.readingLevel,
       cumulativeFull.map((r) => ({ id: r.id, word: r.word })),
       targetRowsFull.map((r) => ({ id: r.id, word: r.word })),
+      overrides,
     );
 
     // 5. Refresh proseScore on the passage's generationMeta. Other

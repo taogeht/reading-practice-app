@@ -227,6 +227,10 @@ authentication-rate-limit buckets. Apply it with `npm run migrate:mobile-auth`
 only after confirming `DATABASE_URL`; it must run before deploying code that uses
 the new login modules.
 
+`0059_durable_reading_generation_jobs.sql` adds exact work items and lease state
+for resumable passage generation. Apply it with `npm run migrate:reading-jobs`
+before deploying code that inserts or claims generation jobs.
+
 ## Storage and media
 
 Cloudflare R2 is private and accessed with the S3 SDK through
@@ -286,9 +290,12 @@ Recording analysis, some image/audio work, passage jobs, and avatar snapshots ma
 continue after a route has returned. Passage generation uses `queueMicrotask`, and
 several other paths deliberately fire and forget promises.
 
-This depends on a long-running Node host such as Railway/Coolify. A serverless host
-that terminates execution after the response can lose this work. There is no
-durable job queue or retry worker in this repository.
+Most fire-and-forget paths still depend on a long-running Node host such as
+Railway/Coolify. Generated-passage jobs are the exception: their exact work items,
+progress, and renewable ownership lease are persisted in PostgreSQL. A queued or
+lease-expired passage job resumes when the teacher's job list/detail endpoint is
+polled. The repository still has no continuously running standalone worker, so
+recovery is durable but demand-triggered rather than immediate.
 
 Generated assets may be uploaded before the database transaction commits. Failed
 generation can therefore leave orphaned R2 objects; no general object janitor is

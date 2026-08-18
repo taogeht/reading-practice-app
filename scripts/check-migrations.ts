@@ -103,6 +103,18 @@ const MIGRATIONS: { id: string; label: string; checks: Check[] }[] = [
       { kind: 'index', name: 'idx_recordings_unique_client_operation' },
     ],
   },
+  {
+    id: '0059',
+    label: 'durable reading generation jobs',
+    checks: [
+      { kind: 'column', table: 'reading_generation_jobs', name: 'work_items' },
+      { kind: 'column', table: 'reading_generation_jobs', name: 'lease_token' },
+      { kind: 'column', table: 'reading_generation_jobs', name: 'lease_expires_at' },
+      { kind: 'column', table: 'reading_passages', name: 'generation_job_id' },
+      { kind: 'index', name: 'idx_reading_generation_jobs_claim' },
+      { kind: 'index', name: 'idx_reading_passages_unique_generation_work_item' },
+    ],
+  },
 ];
 
 async function main() {

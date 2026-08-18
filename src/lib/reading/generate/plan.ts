@@ -45,6 +45,7 @@ import {
   type CumulativeRow,
   type TargetRow,
 } from './vocab';
+import { assertPassagePlanMatchesRequest } from './validate-plan';
 // `CumulativeRow` and `TargetRow` are imported even though only used as
 // parameter types in the prompt builders below; explicit imports keep the
 // reference traceable from this file.
@@ -432,6 +433,11 @@ export async function generatePassagePlan(
       }),
     })),
   };
+
+  assertPassagePlanMatchesRequest(plan, {
+    pageCount: level.pageCount,
+    requiredTargetVocabIds: input.targetVocabIds,
+  });
 
   const meta: GenerationCallMeta = {
     model: MODEL,

@@ -32,6 +32,7 @@
     "migrate:passages": "tsx scripts/migrate-passages-to-prod.ts",
     "migrate:class-promotion": "tsx scripts/apply-class-promotion-lineage.ts",
     "migrate:mobile-auth": "tsx scripts/apply-mobile-auth-foundation.ts",
+    "migrate:reading-jobs": "tsx scripts/apply-durable-reading-generation-jobs.ts",
     "test:plan": "tsx scripts/test-plan-generation.ts",
     "test:prose": "tsx scripts/test-prose-generation.ts",
     "test:regen": "tsx scripts/test-regen.ts",
@@ -43,6 +44,7 @@
     "test:mobile": "npm test --workspace @starling-rise/mobile",
     "test:mobile-auth-live": "tsx scripts/smoke-mobile-auth.ts",
     "bulk:passage": "tsx scripts/bulk-passage-run.ts",
+    "eval:story-generation": "tsx scripts/eval-story-generation.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "test:story-generation": "node --import tsx --test src/lib/reading/story-generation.test.ts"
   },

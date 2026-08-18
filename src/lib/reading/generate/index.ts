@@ -2,10 +2,13 @@
 // prompts, TTS) will export from here too as they land.
 
 export { generatePassagePlan } from './plan';
+export { assertPassagePlanMatchesRequest } from './validate-plan';
+export type { PassagePlanRequirements } from './validate-plan';
 export { generatePagesProse, generatePagesProseWithFeedback } from './prose';
 export { generateValidatedProse } from './generate-validated-prose';
 export { validatePagesProse } from './validate';
 export { generateQuestions } from './questions';
+export { questionCountForMix } from './question-mix';
 export { validateQuestions } from './validate-questions';
 export {
   generatePassageImages,

@@ -365,11 +365,12 @@ export function validateOverrides(
   overrides: GenerateOverrides,
 ): OverrideValidationResult {
   const errors: string[] = [];
+  let baseLevel: ReadingLevel;
 
   // Reject unknown level early; otherwise the rest of validation has
   // nothing to reference.
   try {
-    getReadingLevel(levelId);
+    baseLevel = getReadingLevel(levelId);
   } catch {
     errors.push(`Reading level ${levelId} is not valid.`);
     return { valid: false, errors };
@@ -449,9 +450,21 @@ export function validateOverrides(
   }
   if (overrides.questionTypeMix) {
     const mix = overrides.questionTypeMix;
+    const counts = [
+      mix.mcq_comprehension,
+      mix.vocab_matching,
+      mix.sequence_order,
+    ];
+    if (counts.some((count) => !Number.isInteger(count))) {
+      errors.push('Question type counts must be whole numbers.');
+    }
     const sum =
       mix.mcq_comprehension + mix.vocab_matching + mix.sequence_order;
-    const expected = overrides.questionCount ?? 5;
+    const expected =
+      overrides.questionCount ??
+      baseLevel.questionTypeMix.mcq_comprehension +
+        baseLevel.questionTypeMix.vocab_matching +
+        baseLevel.questionTypeMix.sequence_order;
     if (sum !== expected) {
       errors.push(
         `Question type counts must add up to ${expected} (got ${sum}: ${mix.mcq_comprehension} MCQ + ${mix.vocab_matching} vocab matching + ${mix.sequence_order} sequence order).`,
@@ -464,6 +477,16 @@ export function validateOverrides(
     ) {
       errors.push('Question type counts cannot be negative.');
     }
+  } else if (
+    overrides.questionCount !== undefined &&
+    overrides.questionCount !==
+      baseLevel.questionTypeMix.mcq_comprehension +
+        baseLevel.questionTypeMix.vocab_matching +
+        baseLevel.questionTypeMix.sequence_order
+  ) {
+    errors.push(
+      'Changing the question count also requires a matching question type mix.',
+    );
   }
   if (
     overrides.targetVocabSelectionMode === 'specific' &&

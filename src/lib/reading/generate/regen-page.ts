@@ -9,10 +9,15 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import { getReadingLevel, type ReadingLevel } from '@/lib/reading/levels';
+import {
+  applyOverridesToLevel,
+  getReadingLevel,
+  type EffectiveReadingLevel,
+} from '@/lib/reading/levels';
 import { logInfo } from '@/lib/logger';
 import type {
   GeneratedPageProse,
+  GenerateOverrides,
   GenerationCallMeta,
   PassagePagePlan,
   PassagePlan,
@@ -54,6 +59,8 @@ export interface GenerateSinglePageInput {
   readingLevelId: number;
   /** Same explicit-override semantics as the multi-page generator. */
   cumulativeVocabIds?: string[];
+  /** Original teacher settings, persisted in passage generation metadata. */
+  overrides?: GenerateOverrides;
 }
 
 export interface GenerateSinglePageResult {
@@ -67,7 +74,10 @@ export async function generateSinglePage(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
-  const level = getReadingLevel(input.readingLevelId);
+  const level = applyOverridesToLevel(
+    getReadingLevel(input.readingLevelId),
+    input.overrides,
+  );
   const planPage = input.plan.pages.find((p) => p.pageNumber === input.pageNumber);
   if (!planPage) {
     throw new Error(
@@ -158,7 +168,7 @@ export async function generateSinglePage(
 
 // ---------- Prompt builders ----------
 
-function buildSystemPrompt(level: ReadingLevel): string {
+function buildSystemPrompt(level: EffectiveReadingLevel): string {
   const grammar = level.grammarConstraints;
   const grammarLines: string[] = [
     `- Maximum sentence length: ${level.maxSentenceWords} words (HARD CAP).`,
