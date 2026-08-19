@@ -9,6 +9,76 @@ import { buildScenePrompt, buildSpellingPrompt } from './prompts';
 // references (if any) keep working; the canonical home is now ./types.
 export type { ImageGenerationResult } from './types';
 
+// ---------- Model profiles ----------
+//
+// gemini-2.5-flash-image is retired on 2026-10-02, so every call here moved to
+// the Gemini 3.1 image family. The two request paths get different models
+// because they ask for different things:
+//
+//   panels   pass page 1 back as a reference image so the character stays the
+//            same across a story. That is reference-conditioned generation,
+//            which the Flash tier is built for and the Lite tier explicitly is
+//            not ("single-image optimized").
+//   catalog  spelling words and practice scenes — one object, no reference,
+//            highest volume. Lite is both cheaper and newer than what this
+//            file used to call.
+//
+// Stories are read on phones and tablets, so panels render at 512px rather
+// than the 1K default: a quarter of the pixels nobody was going to see, and
+// the cheapest tier the Flash model offers. Lite has no such choice — 1K is
+// the only size it supports.
+
+interface ModelProfile {
+  model: string;
+  /** "512" | "1K" | "2K" | "4K". Omitted from the request when null (Lite,
+   *  which only supports its 1K default). */
+  imageSize: string | null;
+  /** Pinned, not optional. gemini-2.5-flash-image always returned 1:1; the 3.1
+   *  models pick a ratio themselves when this is unset, and were observed
+   *  returning 16:9. Leaving it to the model would silently reshape every
+   *  story panel and spelling card the app already renders. */
+  aspectRatio: string;
+}
+
+/** Reference-conditioned story panels. */
+const PANEL_PROFILE: ModelProfile = {
+  model: 'gemini-3.1-flash-image',
+  imageSize: '512',
+  aspectRatio: '1:1',
+};
+
+/** Exported so callers that record which model produced a passage read the
+ *  real value instead of keeping their own copy that silently goes stale. */
+export const PANEL_IMAGE_MODEL = PANEL_PROFILE.model;
+
+/** Single-subject spelling and scene art, no reference image. */
+const CATALOG_PROFILE: ModelProfile = {
+  model: 'gemini-3.1-flash-lite-image',
+  imageSize: null,
+  aspectRatio: '1:1',
+};
+
+function endpointFor(profile: ModelProfile, apiKey: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${profile.model}:generateContent?key=${apiKey}`;
+}
+
+function generationConfigFor(profile: ModelProfile): Record<string, unknown> {
+  return {
+    responseModalities: ['TEXT', 'IMAGE'],
+    // Resolution goes in `imageConfig`, NOT `responseFormat.image`. Both exist
+    // on GenerationConfig and both have an imageSize, which is a good way to
+    // lose an afternoon: responseFormat.image takes SCREAMING_SNAKE enums
+    // (ASPECT_RATIO_ONE_BY_ONE and friends) and rejects "512" and even "1K",
+    // while imageConfig takes the plain "512" | "1K" | "2K" | "4K" the docs
+    // describe. Confirmed against the v1beta discovery document after the
+    // documented shape 400'd.
+    imageConfig: {
+      aspectRatio: profile.aspectRatio,
+      ...(profile.imageSize ? { imageSize: profile.imageSize } : {}),
+    },
+  };
+}
+
 class GeminiImageClient implements ImageClient {
   private apiKey: string | null = null;
 
@@ -149,7 +219,7 @@ class GeminiImageClient implements ImageClient {
     try {
       console.log(`[gemini-client] Sending request for ${label}...`);
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${this.apiKey}`;
+      const url = endpointFor(PANEL_PROFILE, this.apiKey);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
 
@@ -158,7 +228,7 @@ class GeminiImageClient implements ImageClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+          generationConfig: generationConfigFor(PANEL_PROFILE),
         }),
         signal: controller.signal,
       });
@@ -214,7 +284,7 @@ class GeminiImageClient implements ImageClient {
     try {
       console.log(`[gemini-client] Sending request for ${label}...`);
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${this.apiKey}`;
+      const url = endpointFor(CATALOG_PROFILE, this.apiKey!);
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
@@ -224,9 +294,7 @@ class GeminiImageClient implements ImageClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseModalities: ['TEXT', 'IMAGE'],
-          },
+          generationConfig: generationConfigFor(CATALOG_PROFILE),
         }),
         signal: controller.signal,
       });

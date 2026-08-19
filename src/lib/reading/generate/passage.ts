@@ -24,6 +24,7 @@ import {
   type PassageGenerationMeta,
 } from '@/lib/db/schema';
 import { r2Client } from '@/lib/storage/r2-client';
+import { PANEL_IMAGE_MODEL } from '@/lib/image';
 import { applyOverridesToLevel, getReadingLevel } from '@/lib/reading/levels';
 import {
   generatePassagePlan,
@@ -127,7 +128,7 @@ const QUESTIONS_QUALITY_FLOOR = 0.5;
  *  from whichever model actually served the run rather than hardcoded — a
  *  passage row has to record what produced it, or comparing providers later is
  *  guesswork. */
-const IMAGE_MODEL_LABEL = 'gemini-2.5-flash-image';
+const IMAGE_MODEL_LABEL = PANEL_IMAGE_MODEL;
 
 function combinedModelLabel(textModel: string | undefined, skipImages: boolean): string {
   const text = textModel ?? 'unknown';

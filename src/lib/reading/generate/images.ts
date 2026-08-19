@@ -1,5 +1,5 @@
 // Stage 5 of the reading-passage generation pipeline: produce one
-// illustration per page using gemini-2.5-flash-image (Nano-Banana).
+// illustration per page using the panel image model (see src/lib/image).
 //
 // The hard problem is character consistency — the same girl in
 // pigtails on every page, not a different girl every panel. We solve
@@ -13,7 +13,7 @@
 // matches the scene — that requires a vision model and is overkill
 // for v1; the teacher review queue catches semantic mistakes.
 
-import { imageClient } from '@/lib/image';
+import { imageClient, PANEL_IMAGE_MODEL } from '@/lib/image';
 import { logInfo } from '@/lib/logger';
 import type {
   GeneratedPageImage,
@@ -27,7 +27,9 @@ import type {
   PassagePlan,
 } from './types';
 
-const MODEL = 'gemini-2.5-flash-image';
+// Reported in logs and generationMeta; sourced from the image module so a
+// model change cannot leave this pointing at a retired id.
+const MODEL = PANEL_IMAGE_MODEL;
 
 /** Default house style applied when the caller doesn't override.
  *  The "no text / no words / no letters" repetition is intentional —
@@ -135,7 +137,7 @@ export async function generatePassageImages(
 
     if (!result.success || !result.imageBuffer) {
       const msg =
-        result.error ?? 'unknown error from gemini-2.5-flash-image';
+        result.error ?? `unknown error from ${MODEL}`;
       if (isFirstPage) {
         // Without a page-1 reference, every subsequent page would drift
         // visually. Bail loudly.

@@ -28,6 +28,7 @@
     "seed:scaffold": "tsx scripts/seed-scaffold-vocabulary.ts",
     "convert:spelling": "tsx scripts/convert-spelling-html.ts",
     "icons:generate": "tsx scripts/generate-app-icons.ts",
+    "smoke:images": "tsx scripts/smoke-image-models.ts",
     "import:spelling": "tsx scripts/import-spelling-curriculum.ts",
     "translate:spelling": "tsx scripts/translate-spelling-curriculum.ts",
     "promote:core": "tsx scripts/promote-core-vocabulary.ts",

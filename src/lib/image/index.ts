@@ -25,7 +25,7 @@ export type {
   ImageGenerationResult,
   ImageProvider,
 } from './types';
-export { geminiImageClient } from './gemini-client';
+export { geminiImageClient, PANEL_IMAGE_MODEL } from './gemini-client';
 export { gptImageClient } from './gpt-image-client';
 
 export const IMAGE_GENERATION_MODEL_SETTING_KEY = 'image.generationModel';
