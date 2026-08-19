@@ -58,10 +58,21 @@ async function main(): Promise<void> {
 
   // `cover` rather than `contain`: the source is 1073x1079, so squaring it
   // crops ~3px rather than letterboxing a near-square image.
+  // ensureAlpha + palette:false forces true RGBA output. The source is an
+  // 8-bit colormap PNG, and sharp preserves that by default — which produces a
+  // structurally valid .ico that Next.js then refuses to build with
+  // "Format error decoding Ico: The PNG is not in RGBA format!". file(1) and
+  // the ICO spec both accept the palette form, so this only shows up at build.
   const square = (size: number) =>
-    sharp(sourcePath).resize(size, size, { fit: 'cover', position: 'centre' }).png({ quality: 90 });
+    sharp(sourcePath)
+      .resize(size, size, { fit: 'cover', position: 'centre' })
+      .ensureAlpha()
+      .png({ quality: 90, palette: false, compressionLevel: 9 });
 
-  const outputs: [string, number][] = [['icon.png', 512], ['apple-icon.png', 180]];
+  // 256 rather than 512 for icon.png: forcing RGBA (above) costs roughly 5x the
+  // bytes of the palette form, and without a PWA manifest nothing consumes the
+  // larger size. 180 is the iOS home-screen standard and stays.
+  const outputs: [string, number][] = [['icon.png', 256], ['apple-icon.png', 180]];
   for (const [name, size] of outputs) {
     const buf = await square(size).toBuffer();
     fs.writeFileSync(path.join(APP_DIR, name), buf);
