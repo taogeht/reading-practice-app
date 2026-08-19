@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import confetti from "canvas-confetti";
 import { pickNextWordViaSrs } from "./srs-picker";
+import { practiceList } from "./current-list";
 import {
     Shuffle,
     RotateCcw,
@@ -30,6 +31,8 @@ interface SpellingList {
     id: string;
     title: string;
     weekNumber: number | null;
+    /** Teacher-designated test for this week; see ./current-list. */
+    isCurrent: boolean;
     active: boolean;
     createdAt: string;
     words: SpellingWord[];
@@ -213,10 +216,11 @@ export function UnscrambleGame({ initialLists, skipTracking }: UnscrambleGamePro
     const getWordObjectsForPool = useCallback(
         (pool: "current" | "all") => {
             const words: { word: SpellingWord; classId: string }[] = [];
-            if (pool === "current" && lists.length > 0) {
-                for (const word of lists[0].words) {
+            const current = practiceList(lists);
+            if (pool === "current" && current) {
+                for (const word of current.words) {
                     if (word.word.length >= MIN_WORD_LENGTH) {
-                        words.push({ word, classId: lists[0].class.id });
+                        words.push({ word, classId: current.class.id });
                     }
                 }
             } else {

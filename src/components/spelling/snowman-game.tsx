@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { pickNextWordViaSrs } from "./srs-picker";
+import { practiceList } from "./current-list";
 import { SnowmanSVG } from "./snowman-svg";
 import { HangmanSVG } from "./hangman-svg";
 import { BombSVG } from "./bomb-svg";
@@ -86,6 +87,8 @@ interface SpellingList {
     id: string;
     title: string;
     weekNumber: number | null;
+    /** Teacher-designated test for this week; see ./current-list. */
+    isCurrent: boolean;
     active: boolean;
     createdAt: string;
     words: SpellingWord[];
@@ -167,8 +170,9 @@ export function SnowmanGame({ initialLists, skipTracking, initialVariant = "snow
 
     const getWordObjectsForPool = useCallback((pool: "current" | "all") => {
         const words: SpellingWord[] = [];
-        if (pool === "current" && lists.length > 0) {
-            for (const word of lists[0].words) {
+        const current = practiceList(lists);
+        if (pool === "current" && current) {
+            for (const word of current.words) {
                 words.push(word);
             }
         } else {

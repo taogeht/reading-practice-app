@@ -31,6 +31,8 @@ interface SpellingList {
     id: string;
     title: string;
     weekNumber: number | null;
+    /** Set by the teacher to mark this week's test. At most one per class. */
+    isCurrent: boolean;
     active: boolean;
     createdAt: string;
     words: SpellingWord[];
@@ -96,6 +98,16 @@ function SyllableWord({ word, syllables: storedSyllables, isPlaying, large }: {
 
 export function StudentSpellingSection() {
     const [lists, setLists] = useState<SpellingList[]>([]);
+
+    // The list the teacher marked as this week's test. Previously this section
+    // simply featured lists[0] and labelled it "This Week", which was wrong
+    // once a class had a full year imported: those lists are written in one
+    // pass, so ordering by createdAt put an arbitrary unit under that badge.
+    // Falling back to the first list keeps something on screen when no test
+    // has been set, but it is not claimed to be the current one.
+    const currentList = lists.find((list) => list.isCurrent) ?? null;
+    const featuredList = currentList ?? lists[0] ?? null;
+    const otherLists = lists.filter((list) => list.id !== featuredList?.id);
     const [loading, setLoading] = useState(true);
     const [playingWordId, setPlayingWordId] = useState<string | null>(null);
     const [showPreviousLists, setShowPreviousLists] = useState(false);
@@ -190,21 +202,34 @@ export function StudentSpellingSection() {
                 </p>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-                {/* Current List (first/most recent) */}
-                {lists.length > 0 && (
+                {/* The teacher's designated test for this week. */}
+                {featuredList && (
                     <div className="space-y-5">
                         <div className="flex items-center gap-3 flex-wrap">
-                            <Badge className="bg-green-500 hover:bg-green-600 text-base px-3 py-1">This Week</Badge>
-                            <h3 className="font-bold text-2xl text-gray-800">{lists[0].title}</h3>
-                            {lists[0].weekNumber && (
+                            {currentList ? (
+                                <Badge className="bg-green-500 hover:bg-green-600 text-base px-3 py-1">
+                                    ⭐ This Week&apos;s Test
+                                </Badge>
+                            ) : (
+                                <Badge variant="outline" className="border-gray-300 text-gray-600 text-base px-3 py-1">
+                                    Practice
+                                </Badge>
+                            )}
+                            <h3 className="font-bold text-2xl text-gray-800">{featuredList.title}</h3>
+                            {featuredList.weekNumber && (
                                 <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 text-sm px-3 py-1">
-                                    Week {lists[0].weekNumber}
+                                    Week {featuredList.weekNumber}
                                 </Badge>
                             )}
                         </div>
+                        {currentList && (
+                            <p className="text-base text-green-700 font-medium">
+                                These are the words for this week&apos;s test — practice these first!
+                            </p>
+                        )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {lists[0].words.map((word) => (
+                            {featuredList.words.map((word) => (
                                 <div
                                     key={word.id}
                                     className={`
@@ -215,7 +240,7 @@ export function StudentSpellingSection() {
                                             : "border-gray-200"
                                         }
                                     `}
-                                    onClick={() => openExpandedWord(word, lists[0].words)}
+                                    onClick={() => openExpandedWord(word, featuredList.words)}
                                 >
                                     {/* Play Button */}
                                     <button
@@ -271,8 +296,10 @@ export function StudentSpellingSection() {
                     </div>
                 )}
 
-                {/* Previous Lists (collapsible) */}
-                {lists.length > 1 && (
+                {/* Every other list the class has. With a full year imported
+                    these are mostly units the class has not reached yet, so
+                    "Previous" would be misleading. */}
+                {otherLists.length > 0 && (
                     <div className="border-t pt-4">
                         <button
                             onClick={() => setShowPreviousLists(!showPreviousLists)}
@@ -281,7 +308,7 @@ export function StudentSpellingSection() {
                             <div className="flex items-center gap-2">
                                 <History className="w-4 h-4" />
                                 <span className="text-sm font-medium">
-                                    Previous Lists ({lists.length - 1})
+                                    All Word Lists ({otherLists.length})
                                 </span>
                             </div>
                             {showPreviousLists ? (
@@ -293,7 +320,7 @@ export function StudentSpellingSection() {
 
                         {showPreviousLists && (
                             <div className="mt-4 space-y-6">
-                                {lists.slice(1).map((list) => (
+                                {otherLists.map((list) => (
                                     <div key={list.id} className="space-y-4 p-4 bg-gray-50 rounded-xl">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <h4 className="font-semibold text-lg text-gray-700">{list.title}</h4>

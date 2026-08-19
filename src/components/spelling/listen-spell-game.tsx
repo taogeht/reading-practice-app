@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Play, Volume2, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 import confetti from "canvas-confetti";
 import { pickNextWordViaSrs } from "./srs-picker";
+import { practiceList } from "./current-list";
 
 type SpellingWord = {
     id: string;
@@ -18,6 +19,8 @@ type SpellingWord = {
 type SpellingList = {
     id: string;
     title: string;
+    /** Teacher-designated test for this week; see ./current-list. */
+    isCurrent: boolean;
     class: {
         id: string;
         name: string;
@@ -83,9 +86,10 @@ export function ListenAndSpellGame({ initialLists, skipTracking }: ListenAndSpel
 
     const getWordObjectsForPool = useCallback((listData: SpellingList[], pool: "current" | "all") => {
         const words: { word: SpellingWord, classId: string }[] = [];
-        if (pool === "current" && listData.length > 0) {
-            for (const word of listData[0].words) {
-                words.push({ word, classId: listData[0].class.id });
+        const current = practiceList(listData);
+        if (pool === "current" && current) {
+            for (const word of current.words) {
+                words.push({ word, classId: current.class.id });
             }
         } else {
             for (const list of listData) {

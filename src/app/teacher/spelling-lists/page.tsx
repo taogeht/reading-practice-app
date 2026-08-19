@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -12,6 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowLeft,
   Plus,
@@ -76,6 +83,10 @@ type SpellingList = {
 export default function ManageSpellingListsPage() {
   const router = useRouter();
   const [lists, setLists] = useState<SpellingList[]>([]);
+  // Curriculum order, oldest first, is the teaching order — and the only
+  // meaningful one for an imported year, where every list shares a createdAt
+  // within milliseconds of its siblings.
+  const [sortOrder, setSortOrder] = useState<"oldest" | "newest">("oldest");
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -331,6 +342,30 @@ export default function ManageSpellingListsPage() {
     setShowManageDialog(true);
   };
 
+  // The list the teacher has marked as this week's test, if any.
+  const currentList = useMemo(() => lists.find((l) => l.isCurrent) ?? null, [lists]);
+
+  // Sorted for display. weekNumber is the primary key rather than createdAt:
+  // a year-long curriculum import writes all 32 lists in one pass, so their
+  // timestamps are milliseconds apart and ordering by date is effectively
+  // arbitrary. Lists with no week (hand-made one-offs) fall to the end, where
+  // createdAt still separates them sensibly.
+  const sortedLists = useMemo(() => {
+    const direction = sortOrder === "oldest" ? 1 : -1;
+    return [...lists].sort((a, b) => {
+      if (a.weekNumber != null && b.weekNumber != null) {
+        if (a.weekNumber !== b.weekNumber) return (a.weekNumber - b.weekNumber) * direction;
+      } else if (a.weekNumber != null) {
+        return -1;
+      } else if (b.weekNumber != null) {
+        return 1;
+      }
+      const at = new Date(a.createdAt).getTime();
+      const bt = new Date(b.createdAt).getTime();
+      return (at - bt) * direction;
+    });
+  }, [lists, sortOrder]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -399,8 +434,37 @@ export default function ManageSpellingListsPage() {
             </CardContent>
           </Card>
         ) : (
+          <>
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <p className="text-sm text-gray-600">
+              {sortedLists.length} list{sortedLists.length === 1 ? "" : "s"}
+              {currentList && (
+                <>
+                  {" · this week: "}
+                  <span className="font-medium text-amber-700">{currentList.title}</span>
+                </>
+              )}
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <label htmlFor="spelling-sort" className="text-sm text-gray-600">
+                Sort
+              </label>
+              <Select
+                value={sortOrder}
+                onValueChange={(value) => setSortOrder(value as "oldest" | "newest")}
+              >
+                <SelectTrigger id="spelling-sort" className="w-[190px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="oldest">Oldest first (Unit 0 →)</SelectItem>
+                  <SelectItem value="newest">Newest first (→ Unit 0)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lists.map((list) => (
+            {sortedLists.map((list) => (
               <Card
                 key={list.id}
                 className={`hover:shadow-md transition-shadow flex flex-col ${
@@ -638,6 +702,7 @@ export default function ManageSpellingListsPage() {
               </Card>
             ))}
           </div>
+          </>
         )}
       </div>
 

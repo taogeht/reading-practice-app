@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { findCurrentList, practiceList } from "./current-list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,8 @@ interface SpellingList {
     id: string;
     title: string;
     weekNumber: number | null;
+    /** Teacher-designated test for this week; see ./current-list. */
+    isCurrent: boolean;
     active: boolean;
     createdAt: string;
     words: SpellingWord[];
@@ -597,8 +600,11 @@ export function FlashcardGame() {
     }
 
     // List selection screen
-    const currentList = lists[0];
-    const previousLists = lists.slice(1);
+    const currentList = practiceList(lists);
+    const designated = findCurrentList(lists);
+    // Everything except the one on offer above — with a year imported these are
+    // mostly units the class has not reached yet, not past work.
+    const otherLists = lists.filter((list) => list.id !== currentList?.id);
 
     return (
         <Card className="border-2 border-amber-200 overflow-hidden">
@@ -612,13 +618,20 @@ export function FlashcardGame() {
                 </p>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-                {/* Current week */}
+                {/* The teacher's designated test, when one is set. */}
+                {currentList && (
                 <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                        <Badge className="bg-green-500 hover:bg-green-600 text-sm px-3 py-1">
-                            <Calendar className="w-3.5 h-3.5 mr-1" />
-                            This Week
-                        </Badge>
+                        {designated ? (
+                            <Badge className="bg-green-500 hover:bg-green-600 text-sm px-3 py-1">
+                                <Calendar className="w-3.5 h-3.5 mr-1" />
+                                This Week&apos;s Test
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="border-gray-300 text-gray-600 text-sm px-3 py-1">
+                                Practice
+                            </Badge>
+                        )}
                         <span className="font-bold text-lg text-gray-800">{currentList.title}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -652,15 +665,16 @@ export function FlashcardGame() {
                     </div>
                     <p className="text-xs text-gray-500">{currentList.words.length} words</p>
                 </div>
+                )}
 
-                {/* Previous lists */}
-                {previousLists.length > 0 && (
+                {/* Every other list */}
+                {otherLists.length > 0 && (
                     <div className="border-t pt-4 space-y-4">
                         <h3 className="text-sm font-medium text-gray-600 flex items-center gap-2">
                             <CalendarRange className="w-4 h-4" />
-                            Previous Lists
+                            All Word Lists
                         </h3>
-                        {previousLists.map((list) => (
+                        {otherLists.map((list) => (
                             <div key={list.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 border">
                                 <div>
                                     <span className="font-medium text-sm text-gray-800">{list.title}</span>
