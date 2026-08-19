@@ -15,8 +15,11 @@
 //      and, if the endpoint rejects it, fall back to instructing the schema in
 //      the prompt — remembered process-wide so we only pay the probe once.
 //      Safe either way: every caller re-validates with zod.
-//   3. Qwen3 models can emit <think> reasoning blocks, which would break
-//      JSON.parse on every structured call. We strip them before returning.
+//   3. Qwen3 thinking mode is ON by default, and this deployment returns the
+//      reasoning in its own `reasoning` field rather than as inline <think>
+//      tags. Left alone it consumes the whole token budget and comes back with
+//      content: null and finish_reason: "length" — verified against the live
+//      API. We disable it per-request via chat_template_kwargs.
 
 import {
   type TextClient,
@@ -70,7 +73,9 @@ function throttle<T>(run: () => Promise<T>): Promise<T> {
 /** null = not yet probed. Set on first schema-bearing request. */
 let supportsResponseFormat: boolean | null = null;
 
-/** Qwen3 reasoning blocks would otherwise land in the JSON we parse. */
+/** Defence in depth. This deployment returns reasoning in its own field, so
+ *  with enable_thinking off there is normally nothing to strip — but a model
+ *  that inlines the tags would otherwise break every structured call. */
 function stripThinking(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 }
@@ -85,7 +90,11 @@ function schemaInstruction(schema: Record<string, unknown>): string {
 
 interface ChatCompletionResponse {
   model?: string;
-  choices?: { message?: { content?: string } }[];
+  choices?: {
+    finish_reason?: string;
+    /** `content` is null when the model produced only reasoning. */
+    message?: { content?: string | null; reasoning?: string | null };
+  }[];
   usage?: { prompt_tokens?: number; completion_tokens?: number };
 }
 
@@ -134,6 +143,9 @@ class HetznerTextClient implements TextClient {
         model,
         max_tokens: request.maxTokens,
         messages: buildMessages(!useResponseFormat),
+        // Mandatory. Qwen3 reasons by default and would spend the entire
+        // budget doing it, returning no content at all.
+        chat_template_kwargs: { enable_thinking: false },
       };
       if (useResponseFormat && request.jsonSchema) {
         body.response_format = {
@@ -217,9 +229,32 @@ class HetznerTextClient implements TextClient {
     if (!res) throw lastError ?? new HetznerInferenceError('Hetzner request failed');
 
     const payload = (await res.json()) as ChatCompletionResponse;
-    const raw = payload.choices?.[0]?.message?.content;
-    if (typeof raw !== 'string') {
+    const choice = payload.choices?.[0];
+    const raw = choice?.message?.content;
+
+    if (typeof raw !== 'string' || raw.length === 0) {
+      // Distinguish the two ways this happens, because the fixes differ: a
+      // truncated reply needs more max_tokens, whereas reasoning-only output
+      // means the thinking flag above didn't take effect.
+      if (choice?.finish_reason === 'length') {
+        throw new HetznerInferenceError(
+          `Hetzner reply hit max_tokens (${request.maxTokens}) before producing content`,
+        );
+      }
+      if (choice?.message?.reasoning) {
+        throw new HetznerInferenceError(
+          'Hetzner returned reasoning but no content — enable_thinking was not honoured',
+        );
+      }
       throw new HetznerInferenceError('Hetzner response contained no message content');
+    }
+
+    // A complete reply that stopped on length is truncated JSON; failing here
+    // beats a confusing JSON.parse error at the callsite.
+    if (choice?.finish_reason === 'length') {
+      throw new HetznerInferenceError(
+        `Hetzner reply truncated at max_tokens (${request.maxTokens})`,
+      );
     }
 
     return {
