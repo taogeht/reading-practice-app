@@ -175,7 +175,7 @@ export default function ClassStudentLoginPage() {
       <div className="flex items-center justify-center min-h-full">
         <div className="max-w-4xl w-full space-y-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">📚 Reading Practice</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">📚 Starling Rise</h1>
             <div className="bg-white rounded-lg p-4 mb-6 border border-blue-200">
               <h2 className="text-xl font-semibold text-blue-800 mb-1">{classInfo.name}</h2>
               <p className="text-blue-600">Teacher: {classInfo.teacherName}</p>

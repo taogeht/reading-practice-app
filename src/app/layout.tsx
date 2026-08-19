@@ -4,8 +4,8 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Reading Practice Platform",
-  description: "Enhanced reading practice platform for students and teachers",
+  title: "Starling Rise",
+  description: "Reading practice platform for students and teachers",
 };
 
 export default function RootLayout({

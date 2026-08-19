@@ -72,7 +72,7 @@ export function StudentLayoutShell({ user, children }: StudentLayoutShellProps) 
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center">
                 <BookOpen className="w-8 h-8 text-blue-600 mr-3" />
-                <h1 className="text-xl font-bold text-gray-900">Reading Practice</h1>
+                <h1 className="text-xl font-bold text-gray-900">Starling Rise</h1>
               </div>
 
               <div className="hidden md:flex items-center space-x-8">

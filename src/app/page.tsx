@@ -104,7 +104,7 @@ export default function Home() {
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
                 <Play className="w-4 h-4" />
-                Reading Practice Platform for Schools
+                Starling Rise — Reading Practice for Schools
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight">
