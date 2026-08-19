@@ -120,6 +120,14 @@ const MIGRATIONS: { id: string; label: string; checks: Check[] }[] = [
     label: 'reading levels renumbered onto FF1-FF5',
     checks: [{ kind: 'table', name: 'data_migrations' }],
   },
+  {
+    id: '0061',
+    label: 'spelling list scheduled release',
+    checks: [
+      { kind: 'column', table: 'spelling_lists', name: 'available_from' },
+      { kind: 'index', name: 'idx_spelling_lists_available_from' },
+    ],
+  },
 ];
 
 async function main() {

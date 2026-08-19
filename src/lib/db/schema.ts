@@ -525,6 +525,11 @@ export const spellingLists = pgTable(
     gradeLevel: integer('grade_level'),
     isPublic: boolean('is_public').default(false),
     isCurrent: boolean('is_current').default(false).notNull(),
+    /** When this list becomes visible to students. NULL = visible immediately,
+     *  which is how every list behaved before year-long curriculum imports
+     *  existed. The importer schedules a year one week apart so 32 lists can
+     *  land at once without dumping the whole year on students on day one. */
+    availableFrom: timestamp('available_from', { withTimezone: true }),
     active: boolean('active').default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),

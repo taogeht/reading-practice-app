@@ -1,0 +1,1113 @@
+{
+  "bookSlug": "family-friends-2",
+  "generatedFrom": "family-friends-2-spelling-list.html",
+  "unitCount": 16,
+  "testCount": 32,
+  "uniqueWordCount": 181,
+  "units": [
+    {
+      "unit": 0,
+      "title": "Welcome back!",
+      "topic": "Family, body & toys (review)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Family",
+          "words": [
+            {
+              "word": "mom",
+              "zh": null
+            },
+            {
+              "word": "dad",
+              "zh": null
+            },
+            {
+              "word": "sister",
+              "zh": null
+            },
+            {
+              "word": "brother",
+              "zh": null
+            },
+            {
+              "word": "aunt",
+              "zh": null
+            },
+            {
+              "word": "uncle",
+              "zh": null
+            },
+            {
+              "word": "cousin",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Toys & things",
+          "words": [
+            {
+              "word": "ball",
+              "zh": null
+            },
+            {
+              "word": "car",
+              "zh": null
+            },
+            {
+              "word": "train",
+              "zh": null
+            },
+            {
+              "word": "doll",
+              "zh": null
+            },
+            {
+              "word": "bike",
+              "zh": null
+            },
+            {
+              "word": "kite",
+              "zh": null
+            },
+            {
+              "word": "puzzle",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 1,
+      "title": "Our new things",
+      "topic": "Classroom objects",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Short words",
+          "words": [
+            {
+              "word": "book",
+              "zh": null
+            },
+            {
+              "word": "door",
+              "zh": null
+            },
+            {
+              "word": "table",
+              "zh": null
+            },
+            {
+              "word": "chair",
+              "zh": null
+            },
+            {
+              "word": "board",
+              "zh": null
+            },
+            {
+              "word": "window",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Longer words",
+          "words": [
+            {
+              "word": "poster",
+              "zh": null
+            },
+            {
+              "word": "picture",
+              "zh": null
+            },
+            {
+              "word": "computer",
+              "zh": null
+            },
+            {
+              "word": "classroom",
+              "zh": null
+            },
+            {
+              "word": "cabinet",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 2,
+      "title": "They're happy now!",
+      "topic": "Feelings · phonics: ch, sh, th",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Feelings",
+          "words": [
+            {
+              "word": "hot",
+              "zh": null
+            },
+            {
+              "word": "cold",
+              "zh": null
+            },
+            {
+              "word": "sad",
+              "zh": null
+            },
+            {
+              "word": "happy",
+              "zh": null
+            },
+            {
+              "word": "tired",
+              "zh": null
+            },
+            {
+              "word": "angry",
+              "zh": null
+            },
+            {
+              "word": "hungry",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "ch / sh / th",
+          "words": [
+            {
+              "word": "chair",
+              "zh": null
+            },
+            {
+              "word": "fish",
+              "zh": null
+            },
+            {
+              "word": "shoes",
+              "zh": null
+            },
+            {
+              "word": "bath",
+              "zh": null
+            },
+            {
+              "word": "thumb",
+              "zh": null
+            },
+            {
+              "word": "teacher",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 3,
+      "title": "I can ride a bike!",
+      "topic": "Action verbs · phonics: short vowels (CVC)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Verbs",
+          "words": [
+            {
+              "word": "swim",
+              "zh": null
+            },
+            {
+              "word": "run",
+              "zh": null
+            },
+            {
+              "word": "play",
+              "zh": null
+            },
+            {
+              "word": "cook",
+              "zh": null
+            },
+            {
+              "word": "dance",
+              "zh": null
+            },
+            {
+              "word": "sing",
+              "zh": null
+            },
+            {
+              "word": "draw",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Short vowels",
+          "words": [
+            {
+              "word": "cat",
+              "zh": null
+            },
+            {
+              "word": "dog",
+              "zh": null
+            },
+            {
+              "word": "pig",
+              "zh": null
+            },
+            {
+              "word": "bus",
+              "zh": null
+            },
+            {
+              "word": "bed",
+              "zh": null
+            },
+            {
+              "word": "fox",
+              "zh": null
+            },
+            {
+              "word": "pen",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 4,
+      "title": "Do you have a milkshake?",
+      "topic": "Food · phonics: gr, br, fr",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Food",
+          "words": [
+            {
+              "word": "pizza",
+              "zh": null
+            },
+            {
+              "word": "salad",
+              "zh": null
+            },
+            {
+              "word": "apple",
+              "zh": null
+            },
+            {
+              "word": "banana",
+              "zh": null
+            },
+            {
+              "word": "orange",
+              "zh": null
+            },
+            {
+              "word": "cookie",
+              "zh": null
+            },
+            {
+              "word": "juice",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "gr / br / fr",
+          "words": [
+            {
+              "word": "grapes",
+              "zh": null
+            },
+            {
+              "word": "grass",
+              "zh": null
+            },
+            {
+              "word": "bread",
+              "zh": null
+            },
+            {
+              "word": "brush",
+              "zh": null
+            },
+            {
+              "word": "frog",
+              "zh": null
+            },
+            {
+              "word": "friends",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 5,
+      "title": "We have English!",
+      "topic": "School subjects · phonics: dr, tr, cr",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Subjects",
+          "words": [
+            {
+              "word": "art",
+              "zh": null
+            },
+            {
+              "word": "math",
+              "zh": null
+            },
+            {
+              "word": "music",
+              "zh": null
+            },
+            {
+              "word": "science",
+              "zh": null
+            },
+            {
+              "word": "english",
+              "zh": null
+            },
+            {
+              "word": "gym",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "dr / tr / cr",
+          "words": [
+            {
+              "word": "drum",
+              "zh": null
+            },
+            {
+              "word": "dress",
+              "zh": null
+            },
+            {
+              "word": "truck",
+              "zh": null
+            },
+            {
+              "word": "tree",
+              "zh": null
+            },
+            {
+              "word": "train",
+              "zh": null
+            },
+            {
+              "word": "crab",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 6,
+      "title": "Let's play after school!",
+      "topic": "Free-time verbs · phonics: fl, pl, bl",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Verbs",
+          "words": [
+            {
+              "word": "help",
+              "zh": null
+            },
+            {
+              "word": "read",
+              "zh": null
+            },
+            {
+              "word": "write",
+              "zh": null
+            },
+            {
+              "word": "watch",
+              "zh": null
+            },
+            {
+              "word": "paint",
+              "zh": null
+            },
+            {
+              "word": "sing",
+              "zh": null
+            },
+            {
+              "word": "cook",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "fl / pl / bl",
+          "words": [
+            {
+              "word": "flower",
+              "zh": null
+            },
+            {
+              "word": "flag",
+              "zh": null
+            },
+            {
+              "word": "plum",
+              "zh": null
+            },
+            {
+              "word": "plate",
+              "zh": null
+            },
+            {
+              "word": "blue",
+              "zh": null
+            },
+            {
+              "word": "blanket",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 7,
+      "title": "Let's buy presents!",
+      "topic": "Party & gifts · phonics: cl, gl, sl",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Party items",
+          "words": [
+            {
+              "word": "cake",
+              "zh": null
+            },
+            {
+              "word": "card",
+              "zh": null
+            },
+            {
+              "word": "candy",
+              "zh": null
+            },
+            {
+              "word": "present",
+              "zh": null
+            },
+            {
+              "word": "balloon",
+              "zh": null
+            },
+            {
+              "word": "chocolate",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "cl / gl / sl",
+          "words": [
+            {
+              "word": "clock",
+              "zh": null
+            },
+            {
+              "word": "cloud",
+              "zh": null
+            },
+            {
+              "word": "glue",
+              "zh": null
+            },
+            {
+              "word": "gloves",
+              "zh": null
+            },
+            {
+              "word": "slide",
+              "zh": null
+            },
+            {
+              "word": "slippers",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 8,
+      "title": "What time is it?",
+      "topic": "Daily routine · phonics: sm, sn, st, sk",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "s-blends",
+          "words": [
+            {
+              "word": "smile",
+              "zh": null
+            },
+            {
+              "word": "small",
+              "zh": null
+            },
+            {
+              "word": "snow",
+              "zh": null
+            },
+            {
+              "word": "snake",
+              "zh": null
+            },
+            {
+              "word": "star",
+              "zh": null
+            },
+            {
+              "word": "stairs",
+              "zh": null
+            },
+            {
+              "word": "sky",
+              "zh": null
+            },
+            {
+              "word": "skates",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Numbers (telling time)",
+          "words": [
+            {
+              "word": "six",
+              "zh": null
+            },
+            {
+              "word": "seven",
+              "zh": null
+            },
+            {
+              "word": "eight",
+              "zh": null
+            },
+            {
+              "word": "nine",
+              "zh": null
+            },
+            {
+              "word": "ten",
+              "zh": null
+            },
+            {
+              "word": "twelve",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 9,
+      "title": "Where does she work?",
+      "topic": "Places in town · phonics: long a (a_e)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Places",
+          "words": [
+            {
+              "word": "school",
+              "zh": null
+            },
+            {
+              "word": "store",
+              "zh": null
+            },
+            {
+              "word": "bank",
+              "zh": null
+            },
+            {
+              "word": "zoo",
+              "zh": null
+            },
+            {
+              "word": "airport",
+              "zh": null
+            },
+            {
+              "word": "hospital",
+              "zh": null
+            },
+            {
+              "word": "office",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long a (a_e)",
+          "words": [
+            {
+              "word": "cake",
+              "zh": null
+            },
+            {
+              "word": "lake",
+              "zh": null
+            },
+            {
+              "word": "gate",
+              "zh": null
+            },
+            {
+              "word": "face",
+              "zh": null
+            },
+            {
+              "word": "plane",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 10,
+      "title": "It's hot today!",
+      "topic": "Weather · phonics: long i (i_e)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Weather",
+          "words": [
+            {
+              "word": "hot",
+              "zh": null
+            },
+            {
+              "word": "cold",
+              "zh": null
+            },
+            {
+              "word": "windy",
+              "zh": null
+            },
+            {
+              "word": "sunny",
+              "zh": null
+            },
+            {
+              "word": "raining",
+              "zh": null
+            },
+            {
+              "word": "snowing",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long i (i_e)",
+          "words": [
+            {
+              "word": "bike",
+              "zh": null
+            },
+            {
+              "word": "kite",
+              "zh": null
+            },
+            {
+              "word": "nine",
+              "zh": null
+            },
+            {
+              "word": "white",
+              "zh": null
+            },
+            {
+              "word": "line",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 11,
+      "title": "What are you wearing?",
+      "topic": "Clothes (high-value vocabulary)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Clothes",
+          "words": [
+            {
+              "word": "hat",
+              "zh": null
+            },
+            {
+              "word": "socks",
+              "zh": null
+            },
+            {
+              "word": "shoes",
+              "zh": null
+            },
+            {
+              "word": "shirt",
+              "zh": null
+            },
+            {
+              "word": "dress",
+              "zh": null
+            },
+            {
+              "word": "boots",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Clothes",
+          "words": [
+            {
+              "word": "skirt",
+              "zh": null
+            },
+            {
+              "word": "scarf",
+              "zh": null
+            },
+            {
+              "word": "jeans",
+              "zh": null
+            },
+            {
+              "word": "gloves",
+              "zh": null
+            },
+            {
+              "word": "shorts",
+              "zh": null
+            },
+            {
+              "word": "pants",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 12,
+      "title": "You're sleeping!",
+      "topic": "Verbs · phonics: long u (u_e)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Verbs",
+          "words": [
+            {
+              "word": "eat",
+              "zh": null
+            },
+            {
+              "word": "sing",
+              "zh": null
+            },
+            {
+              "word": "talk",
+              "zh": null
+            },
+            {
+              "word": "sleep",
+              "zh": null
+            },
+            {
+              "word": "drink",
+              "zh": null
+            },
+            {
+              "word": "swim",
+              "zh": null
+            },
+            {
+              "word": "wear",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long u (u_e)",
+          "words": [
+            {
+              "word": "cube",
+              "zh": null
+            },
+            {
+              "word": "flute",
+              "zh": null
+            },
+            {
+              "word": "tube",
+              "zh": null
+            },
+            {
+              "word": "mule",
+              "zh": null
+            },
+            {
+              "word": "june",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 13,
+      "title": "Look at all the animals!",
+      "topic": "Farm animals · phonics: long e (ee)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Animals",
+          "words": [
+            {
+              "word": "cow",
+              "zh": null
+            },
+            {
+              "word": "goat",
+              "zh": null
+            },
+            {
+              "word": "horse",
+              "zh": null
+            },
+            {
+              "word": "sheep",
+              "zh": null
+            },
+            {
+              "word": "hen",
+              "zh": null
+            },
+            {
+              "word": "chick",
+              "zh": null
+            },
+            {
+              "word": "donkey",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long e (ee)",
+          "words": [
+            {
+              "word": "tree",
+              "zh": null
+            },
+            {
+              "word": "green",
+              "zh": null
+            },
+            {
+              "word": "three",
+              "zh": null
+            },
+            {
+              "word": "feet",
+              "zh": null
+            },
+            {
+              "word": "cheese",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 14,
+      "title": "Look at the photos!",
+      "topic": "Describing words · phonics: short vs. magic-e",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Adjectives",
+          "words": [
+            {
+              "word": "kind",
+              "zh": null
+            },
+            {
+              "word": "wet",
+              "zh": null
+            },
+            {
+              "word": "dry",
+              "zh": null
+            },
+            {
+              "word": "neat",
+              "zh": null
+            },
+            {
+              "word": "messy",
+              "zh": null
+            },
+            {
+              "word": "dirty",
+              "zh": null
+            },
+            {
+              "word": "good",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Short vs. magic-e",
+          "words": [
+            {
+              "word": "cap",
+              "zh": null
+            },
+            {
+              "word": "cape",
+              "zh": null
+            },
+            {
+              "word": "cub",
+              "zh": null
+            },
+            {
+              "word": "cube",
+              "zh": null
+            },
+            {
+              "word": "pin",
+              "zh": null
+            },
+            {
+              "word": "pine",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 15,
+      "title": "Good job!",
+      "topic": "People & ordinals · phonics: ng, nk",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "ng / nk",
+          "words": [
+            {
+              "word": "ring",
+              "zh": null
+            },
+            {
+              "word": "king",
+              "zh": null
+            },
+            {
+              "word": "swing",
+              "zh": null
+            },
+            {
+              "word": "bank",
+              "zh": null
+            },
+            {
+              "word": "drink",
+              "zh": null
+            },
+            {
+              "word": "pink",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "People & ordinals",
+          "words": [
+            {
+              "word": "man",
+              "zh": null
+            },
+            {
+              "word": "woman",
+              "zh": null
+            },
+            {
+              "word": "child",
+              "zh": null
+            },
+            {
+              "word": "first",
+              "zh": null
+            },
+            {
+              "word": "second",
+              "zh": null
+            },
+            {
+              "word": "third",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

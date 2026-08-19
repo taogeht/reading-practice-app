@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { spellingLists, spellingWords, classEnrollments, classes } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq, and, desc } from 'drizzle-orm';
+import { and, desc, eq, isNull, lte, or } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -35,7 +35,15 @@ export async function GET(request: NextRequest) {
             const lists = await db.query.spellingLists.findMany({
                 where: and(
                     eq(spellingLists.classId, classId),
-                    eq(spellingLists.active, true)
+                    eq(spellingLists.active, true),
+                    // Scheduled release: a year-long curriculum import lands all
+                    // 32 weeks at once, so only surface a list once its release
+                    // date has passed. NULL means "no schedule" — every list
+                    // created before this existed stays visible as before.
+                    or(
+                        isNull(spellingLists.availableFrom),
+                        lte(spellingLists.availableFrom, new Date())
+                    )
                 ),
                 with: {
                     words: {
