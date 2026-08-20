@@ -1,0 +1,1137 @@
+{
+  "bookSlug": "family-friends-3",
+  "generatedFrom": "family-friends-3-spelling-list.html",
+  "unitCount": 16,
+  "testCount": 32,
+  "uniqueWordCount": 201,
+  "units": [
+    {
+      "unit": 0,
+      "title": "My family",
+      "topic": "Family & months (review)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Family",
+          "words": [
+            {
+              "word": "mom",
+              "zh": null
+            },
+            {
+              "word": "dad",
+              "zh": null
+            },
+            {
+              "word": "sister",
+              "zh": null
+            },
+            {
+              "word": "brother",
+              "zh": null
+            },
+            {
+              "word": "aunt",
+              "zh": null
+            },
+            {
+              "word": "uncle",
+              "zh": null
+            },
+            {
+              "word": "cousin",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Months",
+          "words": [
+            {
+              "word": "january",
+              "zh": null
+            },
+            {
+              "word": "february",
+              "zh": null
+            },
+            {
+              "word": "march",
+              "zh": null
+            },
+            {
+              "word": "april",
+              "zh": null
+            },
+            {
+              "word": "may",
+              "zh": null
+            },
+            {
+              "word": "june",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 1,
+      "title": "They're from Australia!",
+      "topic": "Countries & seasons",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Countries",
+          "words": [
+            {
+              "word": "mexico",
+              "zh": null
+            },
+            {
+              "word": "spain",
+              "zh": null
+            },
+            {
+              "word": "brazil",
+              "zh": null
+            },
+            {
+              "word": "vietnam",
+              "zh": null
+            },
+            {
+              "word": "thailand",
+              "zh": null
+            },
+            {
+              "word": "australia",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Seasons",
+          "words": [
+            {
+              "word": "spring",
+              "zh": null
+            },
+            {
+              "word": "summer",
+              "zh": null
+            },
+            {
+              "word": "fall",
+              "zh": null
+            },
+            {
+              "word": "winter",
+              "zh": null
+            },
+            {
+              "word": "garden",
+              "zh": null
+            },
+            {
+              "word": "season",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 2,
+      "title": "My weekend",
+      "topic": "Hobbies · phonics: magic e",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Hobby words",
+          "words": [
+            {
+              "word": "paint",
+              "zh": null
+            },
+            {
+              "word": "cook",
+              "zh": null
+            },
+            {
+              "word": "shop",
+              "zh": null
+            },
+            {
+              "word": "fish",
+              "zh": null
+            },
+            {
+              "word": "guitar",
+              "zh": null
+            },
+            {
+              "word": "piano",
+              "zh": null
+            },
+            {
+              "word": "chess",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Magic e",
+          "words": [
+            {
+              "word": "face",
+              "zh": null
+            },
+            {
+              "word": "space",
+              "zh": null
+            },
+            {
+              "word": "kite",
+              "zh": null
+            },
+            {
+              "word": "bike",
+              "zh": null
+            },
+            {
+              "word": "rope",
+              "zh": null
+            },
+            {
+              "word": "stone",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 3,
+      "title": "My things",
+      "topic": "Electronics & collections · phonics: ar",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Things & collections",
+          "words": [
+            {
+              "word": "camera",
+              "zh": null
+            },
+            {
+              "word": "computer",
+              "zh": null
+            },
+            {
+              "word": "comics",
+              "zh": null
+            },
+            {
+              "word": "posters",
+              "zh": null
+            },
+            {
+              "word": "stickers",
+              "zh": null
+            },
+            {
+              "word": "pins",
+              "zh": null
+            },
+            {
+              "word": "shells",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "ar sound",
+          "words": [
+            {
+              "word": "car",
+              "zh": null
+            },
+            {
+              "word": "park",
+              "zh": null
+            },
+            {
+              "word": "shark",
+              "zh": null
+            },
+            {
+              "word": "star",
+              "zh": null
+            },
+            {
+              "word": "scarf",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 4,
+      "title": "We're having fun at the beach!",
+      "topic": "Water sports & adjectives",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Water sports",
+          "words": [
+            {
+              "word": "swim",
+              "zh": null
+            },
+            {
+              "word": "sail",
+              "zh": null
+            },
+            {
+              "word": "dive",
+              "zh": null
+            },
+            {
+              "word": "surf",
+              "zh": null
+            },
+            {
+              "word": "kayak",
+              "zh": null
+            },
+            {
+              "word": "snorkel",
+              "zh": null
+            },
+            {
+              "word": "windsurf",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Describing places",
+          "words": [
+            {
+              "word": "clean",
+              "zh": null
+            },
+            {
+              "word": "safe",
+              "zh": null
+            },
+            {
+              "word": "ugly",
+              "zh": null
+            },
+            {
+              "word": "dangerous",
+              "zh": null
+            },
+            {
+              "word": "beautiful",
+              "zh": null
+            },
+            {
+              "word": "polluted",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 5,
+      "title": "A funny monkey!",
+      "topic": "Zoo animals · phonics: or, aw",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Animals",
+          "words": [
+            {
+              "word": "zebra",
+              "zh": null
+            },
+            {
+              "word": "monkey",
+              "zh": null
+            },
+            {
+              "word": "camel",
+              "zh": null
+            },
+            {
+              "word": "lizard",
+              "zh": null
+            },
+            {
+              "word": "penguin",
+              "zh": null
+            },
+            {
+              "word": "crocodile",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "or / aw",
+          "words": [
+            {
+              "word": "fork",
+              "zh": null
+            },
+            {
+              "word": "horse",
+              "zh": null
+            },
+            {
+              "word": "corn",
+              "zh": null
+            },
+            {
+              "word": "straw",
+              "zh": null
+            },
+            {
+              "word": "paw",
+              "zh": null
+            },
+            {
+              "word": "yawn",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 6,
+      "title": "Jim's day",
+      "topic": "Daily routine · phonics: oy, oi",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Time & routine",
+          "words": [
+            {
+              "word": "first",
+              "zh": null
+            },
+            {
+              "word": "then",
+              "zh": null
+            },
+            {
+              "word": "next",
+              "zh": null
+            },
+            {
+              "word": "breakfast",
+              "zh": null
+            },
+            {
+              "word": "shower",
+              "zh": null
+            },
+            {
+              "word": "teeth",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "oy / oi",
+          "words": [
+            {
+              "word": "boy",
+              "zh": null
+            },
+            {
+              "word": "toy",
+              "zh": null
+            },
+            {
+              "word": "coin",
+              "zh": null
+            },
+            {
+              "word": "oil",
+              "zh": null
+            },
+            {
+              "word": "soil",
+              "zh": null
+            },
+            {
+              "word": "oyster",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 7,
+      "title": "Places to go!",
+      "topic": "Places & entertainment · phonics: ow, ou",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Places & entertainment",
+          "words": [
+            {
+              "word": "cafe",
+              "zh": null
+            },
+            {
+              "word": "museum",
+              "zh": null
+            },
+            {
+              "word": "library",
+              "zh": null
+            },
+            {
+              "word": "theater",
+              "zh": null
+            },
+            {
+              "word": "concert",
+              "zh": null
+            },
+            {
+              "word": "movie",
+              "zh": null
+            },
+            {
+              "word": "singer",
+              "zh": null
+            },
+            {
+              "word": "actor",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "ow / ou",
+          "words": [
+            {
+              "word": "cow",
+              "zh": null
+            },
+            {
+              "word": "clown",
+              "zh": null
+            },
+            {
+              "word": "flower",
+              "zh": null
+            },
+            {
+              "word": "house",
+              "zh": null
+            },
+            {
+              "word": "round",
+              "zh": null
+            },
+            {
+              "word": "mouse",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 8,
+      "title": "I'd like a melon!",
+      "topic": "Food · phonics: ld, lt",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Food",
+          "words": [
+            {
+              "word": "bread",
+              "zh": null
+            },
+            {
+              "word": "meat",
+              "zh": null
+            },
+            {
+              "word": "melon",
+              "zh": null
+            },
+            {
+              "word": "lemon",
+              "zh": null
+            },
+            {
+              "word": "onion",
+              "zh": null
+            },
+            {
+              "word": "cheese",
+              "zh": null
+            },
+            {
+              "word": "peas",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "ld / lt",
+          "words": [
+            {
+              "word": "child",
+              "zh": null
+            },
+            {
+              "word": "field",
+              "zh": null
+            },
+            {
+              "word": "shield",
+              "zh": null
+            },
+            {
+              "word": "belt",
+              "zh": null
+            },
+            {
+              "word": "quilt",
+              "zh": null
+            },
+            {
+              "word": "adult",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 9,
+      "title": "The fastest animal in the world",
+      "topic": "Geography · phonics: nd, nt, mp",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Geography",
+          "words": [
+            {
+              "word": "lake",
+              "zh": null
+            },
+            {
+              "word": "river",
+              "zh": null
+            },
+            {
+              "word": "ocean",
+              "zh": null
+            },
+            {
+              "word": "bridge",
+              "zh": null
+            },
+            {
+              "word": "mountain",
+              "zh": null
+            },
+            {
+              "word": "country",
+              "zh": null
+            },
+            {
+              "word": "building",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "nd / nt / mp",
+          "words": [
+            {
+              "word": "hand",
+              "zh": null
+            },
+            {
+              "word": "pond",
+              "zh": null
+            },
+            {
+              "word": "plant",
+              "zh": null
+            },
+            {
+              "word": "tent",
+              "zh": null
+            },
+            {
+              "word": "lamp",
+              "zh": null
+            },
+            {
+              "word": "camp",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 10,
+      "title": "In the park!",
+      "topic": "The park & verbs · phonics: long a",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "The park",
+          "words": [
+            {
+              "word": "path",
+              "zh": null
+            },
+            {
+              "word": "grass",
+              "zh": null
+            },
+            {
+              "word": "trees",
+              "zh": null
+            },
+            {
+              "word": "flowers",
+              "zh": null
+            },
+            {
+              "word": "litter",
+              "zh": null
+            },
+            {
+              "word": "fountain",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Action verbs",
+          "words": [
+            {
+              "word": "shout",
+              "zh": null
+            },
+            {
+              "word": "chase",
+              "zh": null
+            },
+            {
+              "word": "catch",
+              "zh": null
+            },
+            {
+              "word": "meet",
+              "zh": null
+            },
+            {
+              "word": "cross",
+              "zh": null
+            },
+            {
+              "word": "laugh",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 11,
+      "title": "In the museum",
+      "topic": "Transportation · phonics: long e",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Transportation",
+          "words": [
+            {
+              "word": "bus",
+              "zh": null
+            },
+            {
+              "word": "taxi",
+              "zh": null
+            },
+            {
+              "word": "train",
+              "zh": null
+            },
+            {
+              "word": "plane",
+              "zh": null
+            },
+            {
+              "word": "ferry",
+              "zh": null
+            },
+            {
+              "word": "trolley",
+              "zh": null
+            },
+            {
+              "word": "helicopter",
+              "zh": null
+            },
+            {
+              "word": "motorcycle",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long e",
+          "words": [
+            {
+              "word": "tree",
+              "zh": null
+            },
+            {
+              "word": "green",
+              "zh": null
+            },
+            {
+              "word": "sheep",
+              "zh": null
+            },
+            {
+              "word": "eat",
+              "zh": null
+            },
+            {
+              "word": "dream",
+              "zh": null
+            },
+            {
+              "word": "queen",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 12,
+      "title": "A clever baby!",
+      "topic": "Describing people · phonics: long i",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Describing people",
+          "words": [
+            {
+              "word": "old",
+              "zh": null
+            },
+            {
+              "word": "young",
+              "zh": null
+            },
+            {
+              "word": "tall",
+              "zh": null
+            },
+            {
+              "word": "short",
+              "zh": null
+            },
+            {
+              "word": "shy",
+              "zh": null
+            },
+            {
+              "word": "pretty",
+              "zh": null
+            },
+            {
+              "word": "friendly",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long i",
+          "words": [
+            {
+              "word": "night",
+              "zh": null
+            },
+            {
+              "word": "light",
+              "zh": null
+            },
+            {
+              "word": "sky",
+              "zh": null
+            },
+            {
+              "word": "dry",
+              "zh": null
+            },
+            {
+              "word": "smile",
+              "zh": null
+            },
+            {
+              "word": "shine",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 13,
+      "title": "The Ancient Mayans",
+      "topic": "Verbs · phonics: long o",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Verbs",
+          "words": [
+            {
+              "word": "start",
+              "zh": null
+            },
+            {
+              "word": "finish",
+              "zh": null
+            },
+            {
+              "word": "love",
+              "zh": null
+            },
+            {
+              "word": "hate",
+              "zh": null
+            },
+            {
+              "word": "want",
+              "zh": null
+            },
+            {
+              "word": "use",
+              "zh": null
+            },
+            {
+              "word": "live",
+              "zh": null
+            },
+            {
+              "word": "laugh",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long o",
+          "words": [
+            {
+              "word": "snow",
+              "zh": null
+            },
+            {
+              "word": "coat",
+              "zh": null
+            },
+            {
+              "word": "boat",
+              "zh": null
+            },
+            {
+              "word": "goat",
+              "zh": null
+            },
+            {
+              "word": "nose",
+              "zh": null
+            },
+            {
+              "word": "home",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 14,
+      "title": "Did you have a good day?",
+      "topic": "School & camping things · phonics: long u",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "School & camping",
+          "words": [
+            {
+              "word": "backpack",
+              "zh": null
+            },
+            {
+              "word": "lunchbox",
+              "zh": null
+            },
+            {
+              "word": "paint",
+              "zh": null
+            },
+            {
+              "word": "apron",
+              "zh": null
+            },
+            {
+              "word": "tent",
+              "zh": null
+            },
+            {
+              "word": "rope",
+              "zh": null
+            },
+            {
+              "word": "matches",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Long u",
+          "words": [
+            {
+              "word": "moon",
+              "zh": null
+            },
+            {
+              "word": "boot",
+              "zh": null
+            },
+            {
+              "word": "blue",
+              "zh": null
+            },
+            {
+              "word": "glue",
+              "zh": null
+            },
+            {
+              "word": "tune",
+              "zh": null
+            },
+            {
+              "word": "tube",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 15,
+      "title": "Our vacation!",
+      "topic": "Vacation things · phonics: oo",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Vacation things",
+          "words": [
+            {
+              "word": "soap",
+              "zh": null
+            },
+            {
+              "word": "towel",
+              "zh": null
+            },
+            {
+              "word": "shampoo",
+              "zh": null
+            },
+            {
+              "word": "suitcase",
+              "zh": null
+            },
+            {
+              "word": "sunscreen",
+              "zh": null
+            },
+            {
+              "word": "hairbrush",
+              "zh": null
+            },
+            {
+              "word": "toothbrush",
+              "zh": null
+            },
+            {
+              "word": "toothpaste",
+              "zh": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "oo sound",
+          "words": [
+            {
+              "word": "book",
+              "zh": null
+            },
+            {
+              "word": "wool",
+              "zh": null
+            },
+            {
+              "word": "wood",
+              "zh": null
+            },
+            {
+              "word": "hood",
+              "zh": null
+            },
+            {
+              "word": "cook",
+              "zh": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
