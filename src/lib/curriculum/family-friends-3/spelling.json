@@ -16,31 +16,31 @@
           "words": [
             {
               "word": "mom",
-              "zh": null
+              "zh": "媽媽"
             },
             {
               "word": "dad",
-              "zh": null
+              "zh": "爸爸"
             },
             {
               "word": "sister",
-              "zh": null
+              "zh": "姊妹"
             },
             {
               "word": "brother",
-              "zh": null
+              "zh": "兄弟"
             },
             {
               "word": "aunt",
-              "zh": null
+              "zh": "阿姨"
             },
             {
               "word": "uncle",
-              "zh": null
+              "zh": "叔叔"
             },
             {
               "word": "cousin",
-              "zh": null
+              "zh": "表兄妹"
             }
           ]
         },
@@ -50,27 +50,27 @@
           "words": [
             {
               "word": "january",
-              "zh": null
+              "zh": "一月"
             },
             {
               "word": "february",
-              "zh": null
+              "zh": "二月"
             },
             {
               "word": "march",
-              "zh": null
+              "zh": "三月"
             },
             {
               "word": "april",
-              "zh": null
+              "zh": "四月"
             },
             {
               "word": "may",
-              "zh": null
+              "zh": "五月"
             },
             {
               "word": "june",
-              "zh": null
+              "zh": "六月"
             }
           ]
         }
@@ -87,27 +87,27 @@
           "words": [
             {
               "word": "mexico",
-              "zh": null
+              "zh": "墨西哥"
             },
             {
               "word": "spain",
-              "zh": null
+              "zh": "西班牙"
             },
             {
               "word": "brazil",
-              "zh": null
+              "zh": "巴西"
             },
             {
               "word": "vietnam",
-              "zh": null
+              "zh": "越南"
             },
             {
               "word": "thailand",
-              "zh": null
+              "zh": "泰國"
             },
             {
               "word": "australia",
-              "zh": null
+              "zh": "澳洲"
             }
           ]
         },
@@ -117,27 +117,27 @@
           "words": [
             {
               "word": "spring",
-              "zh": null
+              "zh": "春天"
             },
             {
               "word": "summer",
-              "zh": null
+              "zh": "夏天"
             },
             {
               "word": "fall",
-              "zh": null
+              "zh": "秋天"
             },
             {
               "word": "winter",
-              "zh": null
+              "zh": "冬天"
             },
             {
               "word": "garden",
-              "zh": null
+              "zh": "花園"
             },
             {
               "word": "season",
-              "zh": null
+              "zh": "季節"
             }
           ]
         }
@@ -154,31 +154,31 @@
           "words": [
             {
               "word": "paint",
-              "zh": null
+              "zh": "油漆"
             },
             {
               "word": "cook",
-              "zh": null
+              "zh": "煮飯"
             },
             {
               "word": "shop",
-              "zh": null
+              "zh": "商店"
             },
             {
               "word": "fish",
-              "zh": null
+              "zh": "魚"
             },
             {
               "word": "guitar",
-              "zh": null
+              "zh": "吉他"
             },
             {
               "word": "piano",
-              "zh": null
+              "zh": "鋼琴"
             },
             {
               "word": "chess",
-              "zh": null
+              "zh": "西洋棋"
             }
           ]
         },
@@ -188,27 +188,27 @@
           "words": [
             {
               "word": "face",
-              "zh": null
+              "zh": "臉"
             },
             {
               "word": "space",
-              "zh": null
+              "zh": "太空"
             },
             {
               "word": "kite",
-              "zh": null
+              "zh": "風箏"
             },
             {
               "word": "bike",
-              "zh": null
+              "zh": "自行車"
             },
             {
               "word": "rope",
-              "zh": null
+              "zh": "繩子"
             },
             {
               "word": "stone",
-              "zh": null
+              "zh": "石頭"
             }
           ]
         }
@@ -225,31 +225,31 @@
           "words": [
             {
               "word": "camera",
-              "zh": null
+              "zh": "相機"
             },
             {
               "word": "computer",
-              "zh": null
+              "zh": "電腦"
             },
             {
               "word": "comics",
-              "zh": null
+              "zh": "漫畫"
             },
             {
               "word": "posters",
-              "zh": null
+              "zh": "海報"
             },
             {
               "word": "stickers",
-              "zh": null
+              "zh": "貼紙"
             },
             {
               "word": "pins",
-              "zh": null
+              "zh": "圖釘"
             },
             {
               "word": "shells",
-              "zh": null
+              "zh": "貝殼"
             }
           ]
         },
@@ -259,23 +259,23 @@
           "words": [
             {
               "word": "car",
-              "zh": null
+              "zh": "汽車"
             },
             {
               "word": "park",
-              "zh": null
+              "zh": "公園"
             },
             {
               "word": "shark",
-              "zh": null
+              "zh": "鯊魚"
             },
             {
               "word": "star",
-              "zh": null
+              "zh": "星星"
             },
             {
               "word": "scarf",
-              "zh": null
+              "zh": "圍巾"
             }
           ]
         }
@@ -292,31 +292,31 @@
           "words": [
             {
               "word": "swim",
-              "zh": null
+              "zh": "游泳"
             },
             {
               "word": "sail",
-              "zh": null
+              "zh": "帆"
             },
             {
               "word": "dive",
-              "zh": null
+              "zh": "跳水"
             },
             {
               "word": "surf",
-              "zh": null
+              "zh": "衝浪"
             },
             {
               "word": "kayak",
-              "zh": null
+              "zh": "獨木舟"
             },
             {
               "word": "snorkel",
-              "zh": null
+              "zh": "潛水鏡"
             },
             {
               "word": "windsurf",
-              "zh": null
+              "zh": "風浪衝浪"
             }
           ]
         },
@@ -326,27 +326,27 @@
           "words": [
             {
               "word": "clean",
-              "zh": null
+              "zh": "打掃"
             },
             {
               "word": "safe",
-              "zh": null
+              "zh": "安全的"
             },
             {
               "word": "ugly",
-              "zh": null
+              "zh": "醜"
             },
             {
               "word": "dangerous",
-              "zh": null
+              "zh": "危險的"
             },
             {
               "word": "beautiful",
-              "zh": null
+              "zh": "美麗的"
             },
             {
               "word": "polluted",
-              "zh": null
+              "zh": "污染的"
             }
           ]
         }
@@ -363,27 +363,27 @@
           "words": [
             {
               "word": "zebra",
-              "zh": null
+              "zh": "斑馬"
             },
             {
               "word": "monkey",
-              "zh": null
+              "zh": "猴子"
             },
             {
               "word": "camel",
-              "zh": null
+              "zh": "駱駝"
             },
             {
               "word": "lizard",
-              "zh": null
+              "zh": "蜥蜴"
             },
             {
               "word": "penguin",
-              "zh": null
+              "zh": "企鵝"
             },
             {
               "word": "crocodile",
-              "zh": null
+              "zh": "鱷魚"
             }
           ]
         },
@@ -393,27 +393,27 @@
           "words": [
             {
               "word": "fork",
-              "zh": null
+              "zh": "叉子"
             },
             {
               "word": "horse",
-              "zh": null
+              "zh": "馬"
             },
             {
               "word": "corn",
-              "zh": null
+              "zh": "玉米"
             },
             {
               "word": "straw",
-              "zh": null
+              "zh": "吸管"
             },
             {
               "word": "paw",
-              "zh": null
+              "zh": "爪子"
             },
             {
               "word": "yawn",
-              "zh": null
+              "zh": "打呵欠"
             }
           ]
         }
@@ -430,27 +430,27 @@
           "words": [
             {
               "word": "first",
-              "zh": null
+              "zh": "第一"
             },
             {
               "word": "then",
-              "zh": null
+              "zh": "然後"
             },
             {
               "word": "next",
-              "zh": null
+              "zh": "下一個"
             },
             {
               "word": "breakfast",
-              "zh": null
+              "zh": "早餐"
             },
             {
               "word": "shower",
-              "zh": null
+              "zh": "淋浴"
             },
             {
               "word": "teeth",
-              "zh": null
+              "zh": "牙齒"
             }
           ]
         },
@@ -460,27 +460,27 @@
           "words": [
             {
               "word": "boy",
-              "zh": null
+              "zh": "男孩"
             },
             {
               "word": "toy",
-              "zh": null
+              "zh": "玩具"
             },
             {
               "word": "coin",
-              "zh": null
+              "zh": "硬幣"
             },
             {
               "word": "oil",
-              "zh": null
+              "zh": "油"
             },
             {
               "word": "soil",
-              "zh": null
+              "zh": "土壤"
             },
             {
               "word": "oyster",
-              "zh": null
+              "zh": "牡蠣"
             }
           ]
         }
@@ -497,35 +497,35 @@
           "words": [
             {
               "word": "cafe",
-              "zh": null
+              "zh": "咖啡店"
             },
             {
               "word": "museum",
-              "zh": null
+              "zh": "博物館"
             },
             {
               "word": "library",
-              "zh": null
+              "zh": "圖書館"
             },
             {
               "word": "theater",
-              "zh": null
+              "zh": "戲院"
             },
             {
               "word": "concert",
-              "zh": null
+              "zh": "音樂會"
             },
             {
               "word": "movie",
-              "zh": null
+              "zh": "電影"
             },
             {
               "word": "singer",
-              "zh": null
+              "zh": "歌手"
             },
             {
               "word": "actor",
-              "zh": null
+              "zh": "演員"
             }
           ]
         },
@@ -535,27 +535,27 @@
           "words": [
             {
               "word": "cow",
-              "zh": null
+              "zh": "母牛"
             },
             {
               "word": "clown",
-              "zh": null
+              "zh": "小丑"
             },
             {
               "word": "flower",
-              "zh": null
+              "zh": "花"
             },
             {
               "word": "house",
-              "zh": null
+              "zh": "房子"
             },
             {
               "word": "round",
-              "zh": null
+              "zh": "圓形的"
             },
             {
               "word": "mouse",
-              "zh": null
+              "zh": "老鼠"
             }
           ]
         }
@@ -572,31 +572,31 @@
           "words": [
             {
               "word": "bread",
-              "zh": null
+              "zh": "麵包"
             },
             {
               "word": "meat",
-              "zh": null
+              "zh": "肉"
             },
             {
               "word": "melon",
-              "zh": null
+              "zh": "瓜"
             },
             {
               "word": "lemon",
-              "zh": null
+              "zh": "檸檬"
             },
             {
               "word": "onion",
-              "zh": null
+              "zh": "洋蔥"
             },
             {
               "word": "cheese",
-              "zh": null
+              "zh": "起司"
             },
             {
               "word": "peas",
-              "zh": null
+              "zh": "豌豆"
             }
           ]
         },
@@ -606,27 +606,27 @@
           "words": [
             {
               "word": "child",
-              "zh": null
+              "zh": "小孩"
             },
             {
               "word": "field",
-              "zh": null
+              "zh": "田野"
             },
             {
               "word": "shield",
-              "zh": null
+              "zh": "盾牌"
             },
             {
               "word": "belt",
-              "zh": null
+              "zh": "腰帶"
             },
             {
               "word": "quilt",
-              "zh": null
+              "zh": "棉被"
             },
             {
               "word": "adult",
-              "zh": null
+              "zh": "成人"
             }
           ]
         }
@@ -643,31 +643,31 @@
           "words": [
             {
               "word": "lake",
-              "zh": null
+              "zh": "湖"
             },
             {
               "word": "river",
-              "zh": null
+              "zh": "河"
             },
             {
               "word": "ocean",
-              "zh": null
+              "zh": "大海"
             },
             {
               "word": "bridge",
-              "zh": null
+              "zh": "橋"
             },
             {
               "word": "mountain",
-              "zh": null
+              "zh": "山"
             },
             {
               "word": "country",
-              "zh": null
+              "zh": "國家"
             },
             {
               "word": "building",
-              "zh": null
+              "zh": "建築物"
             }
           ]
         },
@@ -677,27 +677,27 @@
           "words": [
             {
               "word": "hand",
-              "zh": null
+              "zh": "手"
             },
             {
               "word": "pond",
-              "zh": null
+              "zh": "池塘"
             },
             {
               "word": "plant",
-              "zh": null
+              "zh": "植物"
             },
             {
               "word": "tent",
-              "zh": null
+              "zh": "帳篷"
             },
             {
               "word": "lamp",
-              "zh": null
+              "zh": "燈"
             },
             {
               "word": "camp",
-              "zh": null
+              "zh": "營地"
             }
           ]
         }
@@ -714,27 +714,27 @@
           "words": [
             {
               "word": "path",
-              "zh": null
+              "zh": "小路"
             },
             {
               "word": "grass",
-              "zh": null
+              "zh": "草"
             },
             {
               "word": "trees",
-              "zh": null
+              "zh": "樹木"
             },
             {
               "word": "flowers",
-              "zh": null
+              "zh": "花"
             },
             {
               "word": "litter",
-              "zh": null
+              "zh": "垃圾"
             },
             {
               "word": "fountain",
-              "zh": null
+              "zh": "噴泉"
             }
           ]
         },
@@ -744,27 +744,27 @@
           "words": [
             {
               "word": "shout",
-              "zh": null
+              "zh": "喊叫"
             },
             {
               "word": "chase",
-              "zh": null
+              "zh": "追逐"
             },
             {
               "word": "catch",
-              "zh": null
+              "zh": "抓"
             },
             {
               "word": "meet",
-              "zh": null
+              "zh": "遇到"
             },
             {
               "word": "cross",
-              "zh": null
+              "zh": "馬路"
             },
             {
               "word": "laugh",
-              "zh": null
+              "zh": "笑"
             }
           ]
         }
@@ -781,35 +781,35 @@
           "words": [
             {
               "word": "bus",
-              "zh": null
+              "zh": "巴士"
             },
             {
               "word": "taxi",
-              "zh": null
+              "zh": "計程車"
             },
             {
               "word": "train",
-              "zh": null
+              "zh": "火車"
             },
             {
               "word": "plane",
-              "zh": null
+              "zh": "飛機"
             },
             {
               "word": "ferry",
-              "zh": null
+              "zh": "渡輪"
             },
             {
               "word": "trolley",
-              "zh": null
+              "zh": "手推車"
             },
             {
               "word": "helicopter",
-              "zh": null
+              "zh": "直升機"
             },
             {
               "word": "motorcycle",
-              "zh": null
+              "zh": "機車"
             }
           ]
         },
@@ -819,27 +819,27 @@
           "words": [
             {
               "word": "tree",
-              "zh": null
+              "zh": "樹"
             },
             {
               "word": "green",
-              "zh": null
+              "zh": "綠色"
             },
             {
               "word": "sheep",
-              "zh": null
+              "zh": "綿羊"
             },
             {
               "word": "eat",
-              "zh": null
+              "zh": "吃"
             },
             {
               "word": "dream",
-              "zh": null
+              "zh": "夢想"
             },
             {
               "word": "queen",
-              "zh": null
+              "zh": "女王"
             }
           ]
         }
@@ -856,31 +856,31 @@
           "words": [
             {
               "word": "old",
-              "zh": null
+              "zh": "老的"
             },
             {
               "word": "young",
-              "zh": null
+              "zh": "年輕"
             },
             {
               "word": "tall",
-              "zh": null
+              "zh": "高"
             },
             {
               "word": "short",
-              "zh": null
+              "zh": "短的"
             },
             {
               "word": "shy",
-              "zh": null
+              "zh": "害羞的"
             },
             {
               "word": "pretty",
-              "zh": null
+              "zh": "漂亮的"
             },
             {
               "word": "friendly",
-              "zh": null
+              "zh": "友好的"
             }
           ]
         },
@@ -890,27 +890,27 @@
           "words": [
             {
               "word": "night",
-              "zh": null
+              "zh": "夜晚"
             },
             {
               "word": "light",
-              "zh": null
+              "zh": "光"
             },
             {
               "word": "sky",
-              "zh": null
+              "zh": "天空"
             },
             {
               "word": "dry",
-              "zh": null
+              "zh": "乾的"
             },
             {
               "word": "smile",
-              "zh": null
+              "zh": "微笑"
             },
             {
               "word": "shine",
-              "zh": null
+              "zh": "發光"
             }
           ]
         }
@@ -927,35 +927,35 @@
           "words": [
             {
               "word": "start",
-              "zh": null
+              "zh": "開始"
             },
             {
               "word": "finish",
-              "zh": null
+              "zh": "完成"
             },
             {
               "word": "love",
-              "zh": null
+              "zh": "愛"
             },
             {
               "word": "hate",
-              "zh": null
+              "zh": "討厭"
             },
             {
               "word": "want",
-              "zh": null
+              "zh": "想要"
             },
             {
               "word": "use",
-              "zh": null
+              "zh": "使用"
             },
             {
               "word": "live",
-              "zh": null
+              "zh": "生活"
             },
             {
               "word": "laugh",
-              "zh": null
+              "zh": "笑"
             }
           ]
         },
@@ -965,27 +965,27 @@
           "words": [
             {
               "word": "snow",
-              "zh": null
+              "zh": "雪"
             },
             {
               "word": "coat",
-              "zh": null
+              "zh": "大衣"
             },
             {
               "word": "boat",
-              "zh": null
+              "zh": "船"
             },
             {
               "word": "goat",
-              "zh": null
+              "zh": "山羊"
             },
             {
               "word": "nose",
-              "zh": null
+              "zh": "鼻子"
             },
             {
               "word": "home",
-              "zh": null
+              "zh": "家"
             }
           ]
         }
@@ -1002,31 +1002,31 @@
           "words": [
             {
               "word": "backpack",
-              "zh": null
+              "zh": "後背包"
             },
             {
               "word": "lunchbox",
-              "zh": null
+              "zh": "便當盒"
             },
             {
               "word": "paint",
-              "zh": null
+              "zh": "油漆"
             },
             {
               "word": "apron",
-              "zh": null
+              "zh": "圍裙"
             },
             {
               "word": "tent",
-              "zh": null
+              "zh": "帳篷"
             },
             {
               "word": "rope",
-              "zh": null
+              "zh": "繩子"
             },
             {
               "word": "matches",
-              "zh": null
+              "zh": "火柴"
             }
           ]
         },
@@ -1036,27 +1036,27 @@
           "words": [
             {
               "word": "moon",
-              "zh": null
+              "zh": "月亮"
             },
             {
               "word": "boot",
-              "zh": null
+              "zh": "靴子"
             },
             {
               "word": "blue",
-              "zh": null
+              "zh": "藍色"
             },
             {
               "word": "glue",
-              "zh": null
+              "zh": "膠水"
             },
             {
               "word": "tune",
-              "zh": null
+              "zh": "曲調"
             },
             {
               "word": "tube",
-              "zh": null
+              "zh": "圓筒"
             }
           ]
         }
@@ -1073,35 +1073,35 @@
           "words": [
             {
               "word": "soap",
-              "zh": null
+              "zh": "肥皂"
             },
             {
               "word": "towel",
-              "zh": null
+              "zh": "毛巾"
             },
             {
               "word": "shampoo",
-              "zh": null
+              "zh": "洗髮精"
             },
             {
               "word": "suitcase",
-              "zh": null
+              "zh": "行李箱"
             },
             {
               "word": "sunscreen",
-              "zh": null
+              "zh": "防曬霜"
             },
             {
               "word": "hairbrush",
-              "zh": null
+              "zh": "梳子"
             },
             {
               "word": "toothbrush",
-              "zh": null
+              "zh": "牙刷"
             },
             {
               "word": "toothpaste",
-              "zh": null
+              "zh": "牙膏"
             }
           ]
         },
@@ -1111,23 +1111,23 @@
           "words": [
             {
               "word": "book",
-              "zh": null
+              "zh": "書"
             },
             {
               "word": "wool",
-              "zh": null
+              "zh": "羊毛"
             },
             {
               "word": "wood",
-              "zh": null
+              "zh": "木材"
             },
             {
               "word": "hood",
-              "zh": null
+              "zh": "帽子"
             },
             {
               "word": "cook",
-              "zh": null
+              "zh": "煮飯"
             }
           ]
         }

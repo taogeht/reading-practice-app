@@ -1,0 +1,953 @@
+{
+  "bookSlug": "family-friends-1",
+  "generatedFrom": "family-friends-1-spelling-list.html",
+  "unitCount": 16,
+  "testCount": 32,
+  "uniqueWordCount": 160,
+  "units": [
+    {
+      "unit": 0,
+      "title": "Numbers and colors",
+      "topic": "Numbers & colors (review)",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Numbers",
+          "words": [
+            {
+              "word": "one",
+              "zh": "一"
+            },
+            {
+              "word": "two",
+              "zh": "二"
+            },
+            {
+              "word": "three",
+              "zh": "三"
+            },
+            {
+              "word": "four",
+              "zh": "四"
+            },
+            {
+              "word": "five",
+              "zh": "五"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Colors",
+          "words": [
+            {
+              "word": "blue",
+              "zh": "藍色"
+            },
+            {
+              "word": "green",
+              "zh": "綠色"
+            },
+            {
+              "word": "pink",
+              "zh": "粉紅色"
+            },
+            {
+              "word": "yellow",
+              "zh": "黃色"
+            },
+            {
+              "word": "orange",
+              "zh": "橘色"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 1,
+      "title": "What's this?",
+      "topic": "Classroom objects",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Classroom",
+          "words": [
+            {
+              "word": "bag",
+              "zh": "書包"
+            },
+            {
+              "word": "book",
+              "zh": "書"
+            },
+            {
+              "word": "door",
+              "zh": "門"
+            },
+            {
+              "word": "ruler",
+              "zh": "尺"
+            },
+            {
+              "word": "window",
+              "zh": "窗戶"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Classroom & verbs",
+          "words": [
+            {
+              "word": "pencil",
+              "zh": "鉛筆"
+            },
+            {
+              "word": "folder",
+              "zh": "夾子"
+            },
+            {
+              "word": "eraser",
+              "zh": "橡皮擦"
+            },
+            {
+              "word": "open",
+              "zh": "打開"
+            },
+            {
+              "word": "close",
+              "zh": "關閉"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 2,
+      "title": "Playtime!",
+      "topic": "Toys",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Toys",
+          "words": [
+            {
+              "word": "ball",
+              "zh": "球"
+            },
+            {
+              "word": "car",
+              "zh": "玩具車"
+            },
+            {
+              "word": "doll",
+              "zh": "洋娃娃"
+            },
+            {
+              "word": "kite",
+              "zh": "風箏"
+            },
+            {
+              "word": "bike",
+              "zh": "腳踏車"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Toys & a color",
+          "words": [
+            {
+              "word": "game",
+              "zh": "遊戲"
+            },
+            {
+              "word": "train",
+              "zh": "火車"
+            },
+            {
+              "word": "puzzle",
+              "zh": "拼圖"
+            },
+            {
+              "word": "scooter",
+              "zh": "滑板車"
+            },
+            {
+              "word": "white",
+              "zh": "白色"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 3,
+      "title": "This is my nose!",
+      "topic": "Body parts",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Body (short)",
+          "words": [
+            {
+              "word": "ear",
+              "zh": "耳朵"
+            },
+            {
+              "word": "eye",
+              "zh": "眼睛"
+            },
+            {
+              "word": "arm",
+              "zh": "手臂"
+            },
+            {
+              "word": "leg",
+              "zh": "腿"
+            },
+            {
+              "word": "nose",
+              "zh": "鼻子"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Body",
+          "words": [
+            {
+              "word": "face",
+              "zh": "臉"
+            },
+            {
+              "word": "hand",
+              "zh": "手"
+            },
+            {
+              "word": "finger",
+              "zh": "手指"
+            },
+            {
+              "word": "shoulder",
+              "zh": "肩膀"
+            },
+            {
+              "word": "eyebrow",
+              "zh": "眉毛"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 4,
+      "title": "He's a hero!",
+      "topic": "Jobs",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Jobs",
+          "words": [
+            {
+              "word": "cook",
+              "zh": "廚師"
+            },
+            {
+              "word": "pilot",
+              "zh": "機師"
+            },
+            {
+              "word": "doctor",
+              "zh": "醫生"
+            },
+            {
+              "word": "farmer",
+              "zh": "農民"
+            },
+            {
+              "word": "hero",
+              "zh": "英雄"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Jobs",
+          "words": [
+            {
+              "word": "student",
+              "zh": "學生"
+            },
+            {
+              "word": "mailman",
+              "zh": "郵差"
+            },
+            {
+              "word": "police",
+              "zh": "警察"
+            },
+            {
+              "word": "firefighter",
+              "zh": "消防員"
+            },
+            {
+              "word": "zookeeper",
+              "zh": "動物園管理員"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 5,
+      "title": "Where's the ball?",
+      "topic": "Playground & prepositions",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Playground",
+          "words": [
+            {
+              "word": "slide",
+              "zh": "溜滑梯"
+            },
+            {
+              "word": "swing",
+              "zh": "盪鞦韆"
+            },
+            {
+              "word": "pool",
+              "zh": "游泳池"
+            },
+            {
+              "word": "tree",
+              "zh": "樹"
+            },
+            {
+              "word": "goal",
+              "zh": "球門"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Things & where",
+          "words": [
+            {
+              "word": "frisbee",
+              "zh": "飛盤"
+            },
+            {
+              "word": "seesaw",
+              "zh": "鞦韆"
+            },
+            {
+              "word": "armbands",
+              "zh": "手臂浮圈"
+            },
+            {
+              "word": "on",
+              "zh": "上面"
+            },
+            {
+              "word": "under",
+              "zh": "下面"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 6,
+      "title": "Billy's teddy bear!",
+      "topic": "Family",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Family",
+          "words": [
+            {
+              "word": "mom",
+              "zh": "媽媽"
+            },
+            {
+              "word": "dad",
+              "zh": "爸爸"
+            },
+            {
+              "word": "sister",
+              "zh": "姊妹"
+            },
+            {
+              "word": "aunt",
+              "zh": "阿姨"
+            },
+            {
+              "word": "uncle",
+              "zh": "叔叔"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Family",
+          "words": [
+            {
+              "word": "brother",
+              "zh": "哥哥"
+            },
+            {
+              "word": "cousin",
+              "zh": "堂兄弟"
+            },
+            {
+              "word": "grandma",
+              "zh": "奶奶"
+            },
+            {
+              "word": "grandpa",
+              "zh": "爺爺"
+            },
+            {
+              "word": "bear",
+              "zh": "熊"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 7,
+      "title": "Are these his pants?",
+      "topic": "Clothes",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Clothes",
+          "words": [
+            {
+              "word": "hat",
+              "zh": "帽子"
+            },
+            {
+              "word": "coat",
+              "zh": "大衣"
+            },
+            {
+              "word": "dress",
+              "zh": "洋裝"
+            },
+            {
+              "word": "socks",
+              "zh": "襪子"
+            },
+            {
+              "word": "shoes",
+              "zh": "鞋子"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Clothes",
+          "words": [
+            {
+              "word": "shorts",
+              "zh": "短褲"
+            },
+            {
+              "word": "pants",
+              "zh": "長褲"
+            },
+            {
+              "word": "sweater",
+              "zh": "毛衣"
+            },
+            {
+              "word": "t-shirt",
+              "zh": "T恤"
+            },
+            {
+              "word": "tracksuit",
+              "zh": "運動服"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 8,
+      "title": "Where's Grandma?",
+      "topic": "Rooms & home · phonics: sh",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Rooms",
+          "words": [
+            {
+              "word": "house",
+              "zh": "房子"
+            },
+            {
+              "word": "kitchen",
+              "zh": "廚房"
+            },
+            {
+              "word": "bedroom",
+              "zh": "臥室"
+            },
+            {
+              "word": "bathroom",
+              "zh": "浴室"
+            },
+            {
+              "word": "yard",
+              "zh": "院子"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "sh sound & home",
+          "words": [
+            {
+              "word": "fish",
+              "zh": "魚"
+            },
+            {
+              "word": "shirt",
+              "zh": "襯衫"
+            },
+            {
+              "word": "sheep",
+              "zh": "綿羊"
+            },
+            {
+              "word": "upstairs",
+              "zh": "樓上"
+            },
+            {
+              "word": "downstairs",
+              "zh": "樓下"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 9,
+      "title": "Lunchtime!",
+      "topic": "Food · phonics: ch",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Food",
+          "words": [
+            {
+              "word": "apple",
+              "zh": "蘋果"
+            },
+            {
+              "word": "pear",
+              "zh": "梨"
+            },
+            {
+              "word": "grapes",
+              "zh": "葡萄"
+            },
+            {
+              "word": "cookie",
+              "zh": "餅乾"
+            },
+            {
+              "word": "banana",
+              "zh": "香蕉"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "ch sound",
+          "words": [
+            {
+              "word": "chick",
+              "zh": "小雞"
+            },
+            {
+              "word": "chair",
+              "zh": "椅子"
+            },
+            {
+              "word": "cherries",
+              "zh": "櫻桃"
+            },
+            {
+              "word": "lunchbox",
+              "zh": "便當盒"
+            },
+            {
+              "word": "teacher",
+              "zh": "老師"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 10,
+      "title": "A new friend!",
+      "topic": "Shapes & describing words",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Shapes",
+          "words": [
+            {
+              "word": "circle",
+              "zh": "圓形"
+            },
+            {
+              "word": "square",
+              "zh": "正方形"
+            },
+            {
+              "word": "triangle",
+              "zh": "三角形"
+            },
+            {
+              "word": "diamond",
+              "zh": "菱形"
+            },
+            {
+              "word": "rectangle",
+              "zh": "長方形"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Describing hair",
+          "words": [
+            {
+              "word": "long",
+              "zh": "長"
+            },
+            {
+              "word": "short",
+              "zh": "短"
+            },
+            {
+              "word": "curly",
+              "zh": "捲髮"
+            },
+            {
+              "word": "brown",
+              "zh": "棕色"
+            },
+            {
+              "word": "blond",
+              "zh": "金髮"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 11,
+      "title": "I like monkeys!",
+      "topic": "Zoo animals & describing words",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Animals",
+          "words": [
+            {
+              "word": "seal",
+              "zh": "海豹"
+            },
+            {
+              "word": "snake",
+              "zh": "蛇"
+            },
+            {
+              "word": "tiger",
+              "zh": "老虎"
+            },
+            {
+              "word": "monkey",
+              "zh": "猴子"
+            },
+            {
+              "word": "parrot",
+              "zh": "鸚鵡"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Animals & describing",
+          "words": [
+            {
+              "word": "elephant",
+              "zh": "大象"
+            },
+            {
+              "word": "giraffe",
+              "zh": "長頸鹿"
+            },
+            {
+              "word": "tall",
+              "zh": "高"
+            },
+            {
+              "word": "funny",
+              "zh": "好笑"
+            },
+            {
+              "word": "little",
+              "zh": "小的"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 12,
+      "title": "Dinnertime!",
+      "topic": "Food & drinks · phonics: short e",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Food & drinks",
+          "words": [
+            {
+              "word": "bread",
+              "zh": "麵包"
+            },
+            {
+              "word": "meat",
+              "zh": "肉"
+            },
+            {
+              "word": "rice",
+              "zh": "米"
+            },
+            {
+              "word": "milk",
+              "zh": "牛奶"
+            },
+            {
+              "word": "water",
+              "zh": "水"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Short e",
+          "words": [
+            {
+              "word": "egg",
+              "zh": "蛋"
+            },
+            {
+              "word": "bed",
+              "zh": "床"
+            },
+            {
+              "word": "red",
+              "zh": "紅色"
+            },
+            {
+              "word": "pen",
+              "zh": "筆"
+            },
+            {
+              "word": "hen",
+              "zh": "母雞"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 13,
+      "title": "Clean up!",
+      "topic": "Bedroom furniture · phonics: short i",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Furniture",
+          "words": [
+            {
+              "word": "rug",
+              "zh": "地毯"
+            },
+            {
+              "word": "shelf",
+              "zh": "架子"
+            },
+            {
+              "word": "pillow",
+              "zh": "枕頭"
+            },
+            {
+              "word": "blanket",
+              "zh": "毯子"
+            },
+            {
+              "word": "cabinet",
+              "zh": "櫃子"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Short i",
+          "words": [
+            {
+              "word": "pin",
+              "zh": "圖釘"
+            },
+            {
+              "word": "in",
+              "zh": "裡面"
+            },
+            {
+              "word": "pig",
+              "zh": "豬"
+            },
+            {
+              "word": "fig",
+              "zh": "無花果"
+            },
+            {
+              "word": "big",
+              "zh": "大的"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 14,
+      "title": "Action Boy can run!",
+      "topic": "Action verbs · phonics: short o",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Verbs",
+          "words": [
+            {
+              "word": "swim",
+              "zh": "游泳"
+            },
+            {
+              "word": "sing",
+              "zh": "唱歌"
+            },
+            {
+              "word": "draw",
+              "zh": "畫"
+            },
+            {
+              "word": "read",
+              "zh": "讀"
+            },
+            {
+              "word": "play",
+              "zh": "玩"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Short o",
+          "words": [
+            {
+              "word": "pot",
+              "zh": "鍋子"
+            },
+            {
+              "word": "hot",
+              "zh": "熱"
+            },
+            {
+              "word": "box",
+              "zh": "盒子"
+            },
+            {
+              "word": "fox",
+              "zh": "狐狸"
+            },
+            {
+              "word": "dot",
+              "zh": "小圓點"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit": 15,
+      "title": "Let's play ball!",
+      "topic": "At the beach · phonics: short u",
+      "tests": [
+        {
+          "index": 1,
+          "focus": "Beach",
+          "words": [
+            {
+              "word": "boat",
+              "zh": "船"
+            },
+            {
+              "word": "crab",
+              "zh": "螃蟹"
+            },
+            {
+              "word": "shell",
+              "zh": "貝殼"
+            },
+            {
+              "word": "beach",
+              "zh": "海灘"
+            },
+            {
+              "word": "bat",
+              "zh": "球棒"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Short u",
+          "words": [
+            {
+              "word": "sun",
+              "zh": "太陽"
+            },
+            {
+              "word": "fun",
+              "zh": "有趣"
+            },
+            {
+              "word": "bug",
+              "zh": "昆蟲"
+            },
+            {
+              "word": "hug",
+              "zh": "擁抱"
+            },
+            {
+              "word": "run",
+              "zh": "跑"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
