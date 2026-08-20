@@ -33,9 +33,20 @@ export async function GET(request: NextRequest) {
             .where(inArray(spellingLists.classId, classIds))
             .orderBy(desc(spellingLists.isCurrent), desc(spellingLists.createdAt));
 
-        // Build class lookup
+        // Build class lookup. active + academicYear come along because class
+        // names repeat across years — a school runs a "1B" every year — so the
+        // teacher view needs to tell this year's 1B from an archived one.
         const classMap = new Map(
-            (await db.select({ id: classes.id, name: classes.name }).from(classes).where(inArray(classes.id, classIds))).map(c => [c.id, c.name])
+            (await db
+                .select({
+                    id: classes.id,
+                    name: classes.name,
+                    active: classes.active,
+                    academicYear: classes.academicYear,
+                })
+                .from(classes)
+                .where(inArray(classes.id, classIds))
+            ).map(c => [c.id, c])
         );
 
         // Fetch words for each list
@@ -56,35 +67,54 @@ export async function GET(request: NextRequest) {
             classIds: string[];
             classNames: string[];
             duplicateIds: string[];
+            academicYears: string[];
+            anyActive: boolean;
         }>();
 
         for (const list of listsWithWords) {
             const wordKey = list.words.map(w => w.word.toLowerCase()).sort().join('|');
             const groupKey = `${list.title}::${wordKey}`;
+            const cls = classMap.get(list.classId);
+            const className = cls?.name || 'Unknown Class';
+            const academicYear = cls?.academicYear || '';
+            // A deduped card spans several classes; it counts as live if any of
+            // them is still active, so a list shared with an archived class
+            // doesn't vanish from the working view.
+            const isActive = cls?.active ?? true;
 
             if (grouped.has(groupKey)) {
                 const group = grouped.get(groupKey)!;
                 group.classIds.push(list.classId);
-                group.classNames.push(classMap.get(list.classId) || 'Unknown Class');
+                group.classNames.push(className);
                 group.duplicateIds.push(list.id);
+                if (academicYear) group.academicYears.push(academicYear);
+                group.anyActive = group.anyActive || isActive;
             } else {
                 grouped.set(groupKey, {
                     primary: list,
                     classIds: [list.classId],
-                    classNames: [classMap.get(list.classId) || 'Unknown Class'],
+                    classNames: [className],
                     duplicateIds: [list.id],
+                    academicYears: academicYear ? [academicYear] : [],
+                    anyActive: isActive,
                 });
             }
         }
 
         // Return deduplicated list with combined class info
-        const dedupedLists = Array.from(grouped.values()).map(({ primary, classIds, classNames, duplicateIds }) => ({
-            ...primary,
-            className: classNames.join(', '),
-            classIds,
-            classNames,
-            allListIds: duplicateIds,
-        }));
+        const dedupedLists = Array.from(grouped.values()).map(
+            ({ primary, classIds, classNames, duplicateIds, academicYears, anyActive }) => ({
+                ...primary,
+                className: classNames.join(', '),
+                classIds,
+                classNames,
+                allListIds: duplicateIds,
+                // Distinct years, so a card shared across two classes in the
+                // same year shows "2026-2027" once rather than twice.
+                academicYears: Array.from(new Set(academicYears)),
+                classActive: anyActive,
+            }),
+        );
 
         return NextResponse.json(dedupedLists);
     } catch (error) {

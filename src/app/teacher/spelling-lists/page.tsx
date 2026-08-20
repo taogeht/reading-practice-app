@@ -41,6 +41,7 @@ import {
   Wand2
 } from "lucide-react";
 import { format } from "date-fns";
+import { CollapsibleSection, ShowMoreToggle } from "@/components/ui/collapsible-section";
 import { ManageSpellingListDialog, SpellingWordInput } from "@/components/spelling/manage-spelling-list-dialog";
 import { ImportSpellingListDialog } from "@/components/spelling/import-spelling-list-dialog";
 import { SyllableEditorDialog } from "@/components/spelling/syllable-editor-dialog";
@@ -75,10 +76,43 @@ type SpellingList = {
   isPublic: boolean;
   isCurrent: boolean;
   active: boolean;
+  /** Distinct academic years of the class(es) this card covers. */
+  academicYears?: string[];
+  /** False when every class holding this list has been archived. */
+  classActive?: boolean;
   words: SpellingWord[];
   createdAt: string;
   updatedAt: string;
 };
+
+/** Stable key for a grade bucket. Untagged lists get their own bucket rather
+ *  than being folded into a grade, since a blank grade is a real state — the
+ *  create dialog leaves it optional, so hand-made one-offs often have none. */
+function gradeKey(gradeLevel: number | null): string {
+  return gradeLevel == null ? "none" : String(gradeLevel);
+}
+
+function gradeLabel(gradeLevel: number | null): string {
+  return gradeLevel == null ? "No grade set" : `Grade ${gradeLevel}`;
+}
+
+// Curriculum order within a grade. weekNumber is the primary key rather than
+// createdAt: a year-long curriculum import writes all 32 lists in one pass, so
+// their timestamps are milliseconds apart and ordering by date is effectively
+// arbitrary. Lists with no week (hand-made one-offs) fall to the end, where
+// createdAt still separates them sensibly.
+function compareLists(a: SpellingList, b: SpellingList, direction: number): number {
+  if (a.weekNumber != null && b.weekNumber != null) {
+    if (a.weekNumber !== b.weekNumber) return (a.weekNumber - b.weekNumber) * direction;
+  } else if (a.weekNumber != null) {
+    return -1;
+  } else if (b.weekNumber != null) {
+    return 1;
+  }
+  const at = new Date(a.createdAt).getTime();
+  const bt = new Date(b.createdAt).getTime();
+  return (at - bt) * direction;
+}
 
 export default function ManageSpellingListsPage() {
   const router = useRouter();
@@ -342,29 +376,80 @@ export default function ManageSpellingListsPage() {
     setShowManageDialog(true);
   };
 
-  // The list the teacher has marked as this week's test, if any.
-  const currentList = useMemo(() => lists.find((l) => l.isCurrent) ?? null, [lists]);
+  // is_current is per class, not global — the set-current endpoint clears the
+  // flag across the affected classes and sets it per list — so a teacher
+  // running weekly tests in more than one class legitimately has several
+  // "this week" lists at once. Anything that assumes a single one hides work.
+  const currentLists = useMemo(() => lists.filter((l) => l.isCurrent), [lists]);
 
-  // Sorted for display. weekNumber is the primary key rather than createdAt:
-  // a year-long curriculum import writes all 32 lists in one pass, so their
-  // timestamps are milliseconds apart and ordering by date is effectively
-  // arbitrary. Lists with no week (hand-made one-offs) fall to the end, where
-  // createdAt still separates them sensibly.
-  const sortedLists = useMemo(() => {
+  // Grouped by the grade each list is tagged with, then sorted in curriculum
+  // order inside each group. A year-long import is 32 lists per book, so a
+  // teacher covering two books faces 60+ cards without this split.
+  const gradeGroups = useMemo(() => {
     const direction = sortOrder === "oldest" ? 1 : -1;
-    return [...lists].sort((a, b) => {
-      if (a.weekNumber != null && b.weekNumber != null) {
-        if (a.weekNumber !== b.weekNumber) return (a.weekNumber - b.weekNumber) * direction;
-      } else if (a.weekNumber != null) {
-        return -1;
-      } else if (b.weekNumber != null) {
-        return 1;
+    const byGrade = new Map<
+      string,
+      { gradeLevel: number | null; lists: SpellingList[]; archived: SpellingList[] }
+    >();
+    for (const list of lists) {
+      const key = gradeKey(list.gradeLevel);
+      let group = byGrade.get(key);
+      if (!group) {
+        group = { gradeLevel: list.gradeLevel, lists: [], archived: [] };
+        byGrade.set(key, group);
       }
-      const at = new Date(a.createdAt).getTime();
-      const bt = new Date(b.createdAt).getTime();
-      return (at - bt) * direction;
+      // Class names repeat every year, so last year's "1B" lists would sit
+      // indistinguishable beside this year's. Split them out instead: the
+      // working view is the current cohort, archives stay one click away.
+      (list.classActive === false ? group.archived : group.lists).push(list);
+    }
+    for (const group of byGrade.values()) {
+      group.lists.sort((a, b) => compareLists(a, b, direction));
+      group.archived.sort((a, b) => compareLists(a, b, direction));
+    }
+    // Ascending by grade, with the untagged bucket last.
+    return [...byGrade.values()].sort((a, b) => {
+      if (a.gradeLevel == null) return 1;
+      if (b.gradeLevel == null) return -1;
+      return a.gradeLevel - b.gradeLevel;
     });
   }, [lists, sortOrder]);
+
+  // null until the lists land, so the one-time default below can tell "not
+  // initialised yet" apart from "the teacher closed every section".
+  const [openGrades, setOpenGrades] = useState<Set<string> | null>(null);
+
+  // Open every section holding a current list — a teacher with weekly tests in
+  // two classes wants both in front of them, not whichever one sorted first.
+  // Falls back to the lowest grade when nothing is marked current.
+  useEffect(() => {
+    if (openGrades !== null || gradeGroups.length === 0) return;
+    const withCurrent = currentLists.map((l) => gradeKey(l.gradeLevel));
+    setOpenGrades(
+      new Set(withCurrent.length > 0 ? withCurrent : [gradeKey(gradeGroups[0].gradeLevel)]),
+    );
+  }, [gradeGroups, currentLists, openGrades]);
+
+  const toggleGrade = (key: string) => {
+    setOpenGrades((prev) => {
+      const next = new Set(prev ?? []);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // Per-grade, so revealing last year's grade-1 lists doesn't also unfold
+  // every other grade's archive.
+  const [showArchived, setShowArchived] = useState<Set<string>>(new Set());
+  const toggleArchived = (key: string) => {
+    setShowArchived((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -437,13 +522,8 @@ export default function ManageSpellingListsPage() {
           <>
           <div className="flex items-center justify-between gap-3 mb-6">
             <p className="text-sm text-gray-600">
-              {sortedLists.length} list{sortedLists.length === 1 ? "" : "s"}
-              {currentList && (
-                <>
-                  {" · this week: "}
-                  <span className="font-medium text-amber-700">{currentList.title}</span>
-                </>
-              )}
+              {lists.length} list{lists.length === 1 ? "" : "s"}
+              {gradeGroups.length > 1 && ` across ${gradeGroups.length} grades`}
             </p>
             <div className="flex items-center gap-2 shrink-0">
               <label htmlFor="spelling-sort" className="text-sm text-gray-600">
@@ -463,8 +543,47 @@ export default function ManageSpellingListsPage() {
               </Select>
             </div>
           </div>
+          <div className="space-y-8">
+          {gradeGroups.map((group) => {
+            const key = gradeKey(group.gradeLevel);
+            const open = openGrades?.has(key) ?? false;
+            // Every current list in this grade, not just the first — two
+            // classes at the same grade each get their own week's test.
+            const groupCurrent = group.lists.filter((l) => l.isCurrent);
+            const archivedShown = showArchived.has(key);
+            const visibleLists = archivedShown
+              ? [...group.lists, ...group.archived]
+              : group.lists;
+            return (
+              <CollapsibleSection
+                key={key}
+                // Controlled: which grades start open is derived from the data
+                // (every grade holding a current list), not a user preference.
+                open={open}
+                onOpenChange={() => toggleGrade(key)}
+                title={gradeLabel(group.gradeLevel)}
+                meta={
+                  <>
+                    {group.lists.length} list{group.lists.length === 1 ? "" : "s"}
+                    {group.archived.length > 0 && ` · ${group.archived.length} archived`}
+                  </>
+                }
+                badges={groupCurrent.map((current) => (
+                  <span
+                    key={current.id}
+                    className="flex min-w-0 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-sm text-amber-800"
+                  >
+                    <Star className="w-3 h-3 shrink-0 fill-current" />
+                    {/* Class name first: with weekly tests running in more
+                        than one class, "which class" is the thing being
+                        scanned for, not the list title. */}
+                    <span className="font-medium shrink-0">{current.className}</span>
+                    <span className="truncate text-amber-700">{current.title}</span>
+                  </span>
+                ))}
+              >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedLists.map((list) => (
+            {visibleLists.map((list) => (
               <Card
                 key={list.id}
                 className={`hover:shadow-md transition-shadow flex flex-col ${
@@ -483,16 +602,23 @@ export default function ManageSpellingListsPage() {
                           </Badge>
                         )}
                       </div>
+                      {/* No grade badge here — the section header the card
+                          sits under already names the grade. */}
                       <CardDescription className="mt-1 flex items-center gap-2 flex-wrap">
                          <span>
                            {(list.classNames?.length || 0) > 1
                              ? `Classes: ${list.className}`
                              : `Class: ${list.className}`}
                          </span>
-                         {list.gradeLevel !== null && (
-                            <Badge variant="outline" className="text-xs font-normal px-1.5 py-0">
-                                Grade {list.gradeLevel}
-                            </Badge>
+                         {/* The class name alone is ambiguous once a school
+                             runs a "1B" every year, so an archived card states
+                             which year it belongs to. */}
+                         {list.classActive === false && (
+                           <Badge variant="outline" className="text-xs font-normal px-1.5 py-0 text-gray-500">
+                             {list.academicYears?.length
+                               ? `Archived · ${list.academicYears.join(", ")}`
+                               : "Archived"}
+                           </Badge>
                          )}
                       </CardDescription>
                     </div>
@@ -701,6 +827,22 @@ export default function ManageSpellingListsPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+                {group.archived.length > 0 && (
+                  <ShowMoreToggle
+                    className="mt-5"
+                    open={archivedShown}
+                    onToggle={() => toggleArchived(key)}
+                    label={(shown) =>
+                      `${shown ? "Hide" : "Show"} ${group.archived.length} list${
+                        group.archived.length === 1 ? "" : "s"
+                      } from archived classes`
+                    }
+                  />
+                )}
+              </CollapsibleSection>
+            );
+          })}
           </div>
           </>
         )}
