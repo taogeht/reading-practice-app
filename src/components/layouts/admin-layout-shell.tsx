@@ -2,8 +2,39 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
-import { Home, Users, School, Settings, BookOpen, LogOut, Layers, History, CalendarRange } from "lucide-react";
+import { usePathname } from "next/navigation";
+import {
+  Home,
+  Users,
+  School,
+  Settings,
+  BookOpen,
+  LogOut,
+  Layers,
+  History,
+  CalendarRange,
+  Library,
+  Sparkles,
+} from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
+
+// Every admin destination lives here. The dashboard used to repeat four of
+// these as "Quick Actions" buttons at the bottom of a long scroll; the nav is
+// the one place to look now, so anything reachable must be in this list.
+// Books and the avatar catalog were only ever reachable by URL — Books from
+// that removed button, the catalog from nothing at all.
+const NAV_ITEMS = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/users", label: "User Management", icon: Users },
+  { href: "/schools", label: "School Management", icon: School },
+  { href: "/classes", label: "Classes", icon: Layers },
+  { href: "/terms", label: "Academic Terms", icon: CalendarRange },
+  { href: "/stories", label: "Story Management", icon: BookOpen },
+  { href: "/admin/books", label: "Books", icon: Library },
+  { href: "/avatar-catalog", label: "Avatar Catalog", icon: Sparkles },
+  { href: "/settings", label: "System Settings", icon: Settings },
+  { href: "/audit-logs", label: "Audit Logs", icon: History },
+];
 
 interface AdminLayoutShellProps {
   user: {
@@ -18,6 +49,7 @@ interface AdminLayoutShellProps {
 
 export function AdminLayoutShell({ user, children }: AdminLayoutShellProps) {
   const { logout } = useAuth();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     try {
@@ -38,78 +70,27 @@ export function AdminLayoutShell({ user, children }: AdminLayoutShellProps) {
         </div>
         <nav className="mt-6">
           <ul>
-            <li>
-              <Link
-                href="/dashboard"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <Home className="w-6 h-6 mr-3" />
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/users"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <Users className="w-6 h-6 mr-3" />
-                User Management
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/schools"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <School className="w-6 h-6 mr-3" />
-                School Management
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/classes"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <Layers className="w-6 h-6 mr-3" />
-                Classes
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/terms"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <CalendarRange className="w-6 h-6 mr-3" />
-                Academic Terms
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/stories"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <BookOpen className="w-6 h-6 mr-3" />
-                Story Management
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/settings"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <Settings className="w-6 h-6 mr-3" />
-                System Settings
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/audit-logs"
-                className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <History className="w-6 h-6 mr-3" />
-                Audit Logs
-              </Link>
-            </li>
+            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              // Exact match only: "/classes" must not light up on
+              // "/admin/classes", which is a different page.
+              const isActive = pathname === href;
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex items-center px-6 py-3 hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                      isActive
+                        ? "bg-gray-100 dark:bg-gray-700 font-medium text-gray-900 dark:text-white border-l-2 border-blue-600"
+                        : "text-gray-700 dark:text-gray-200"
+                    }`}
+                  >
+                    <Icon className="w-6 h-6 mr-3 shrink-0" />
+                    {label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
         <div className="absolute bottom-0 w-64 p-4">

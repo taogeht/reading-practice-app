@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -296,6 +297,14 @@ export default function ClassManagementPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      {/* A real link, not a router.push: this is navigation,
+                          so middle-click and open-in-new-tab should work. It
+                          is also the only route to the detail page, which
+                          holds enrolment, schedule and per-student profiles
+                          that the Edit dialog does not cover. */}
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/classes/${classItem.id}`}>Manage</Link>
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"

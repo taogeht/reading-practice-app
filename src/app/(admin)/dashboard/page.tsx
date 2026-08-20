@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { CollapsibleSection } from '@/components/ui/collapsible-section';
+
+const STORAGE_PANEL_KEY = 'admin.dashboard.storagePanelOpen';
 
 interface DashboardStats {
   totalUsers: number;
@@ -49,6 +51,27 @@ export default function AdminDashboard() {
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  // Collapsed by default: the file table is the longest thing on the page and
+  // the stats above it are what the dashboard is actually for. Persisted so an
+  // admin who works in here daily isn't re-opening it every visit.
+  const [storageOpen, setStorageOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(STORAGE_PANEL_KEY) === 'open') setStorageOpen(true);
+    } catch {
+      // localStorage throws in private browsing; the default stands.
+    }
+  }, []);
+
+  const setStoragePanelOpen = (next: boolean) => {
+    setStorageOpen(next);
+    try {
+      window.localStorage.setItem(STORAGE_PANEL_KEY, next ? 'open' : 'closed');
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     async function fetchStats() {
@@ -83,9 +106,13 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
+  // Only hit R2 while the panel is open. Listing the bucket is the most
+  // expensive call on this page, and it used to run on every dashboard load
+  // whether or not anyone scrolled down to the table.
   useEffect(() => {
+    if (!storageOpen) return;
     loadStorage(true);
-  }, [storageFilter]);
+  }, [storageFilter, storageOpen]);
 
   const loadStorage = async (reset = false) => {
     try {
@@ -420,9 +447,16 @@ export default function AdminDashboard() {
         </Card>
       </div>
       <div className="mt-8 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Storage Files</h2>
-          <div className="flex items-center gap-2">
+        <CollapsibleSection
+          title="Storage Files"
+          titleClassName="text-2xl font-bold"
+          collapsedHint="Review and delete R2 assets"
+          // Controlled, because the page also gates its R2 fetch on this
+          // state — so the page owns persistence too.
+          open={storageOpen}
+          onOpenChange={setStoragePanelOpen}
+          actions={
+          <>
             {selectedKeys.size > 0 && (
               <Button
                 variant="destructive"
@@ -447,11 +481,11 @@ export default function AdminDashboard() {
             <Button variant="outline" onClick={() => loadStorage(true)} disabled={storageLoading}>
               Refresh
             </Button>
-          </div>
-        </div>
-
+          </>
+          }
+        >
         {storageError && (
-          <Card>
+          <Card className="mb-4">
             <CardContent className="text-red-600 dark:text-red-400 p-4">
               {storageError}
             </CardContent>
@@ -568,25 +602,9 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+        </CollapsibleSection>
       </div>
 
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/users">
-            <Button>Manage Users</Button>
-          </Link>
-          <Link href="/schools">
-            <Button>Manage Schools</Button>
-          </Link>
-          <Link href="/admin/books">
-            <Button>Manage Books</Button>
-          </Link>
-          <Link href="/settings">
-            <Button>System Settings</Button>
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }

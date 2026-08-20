@@ -97,11 +97,11 @@ export default function AdminClassDetailPage() {
         });
       } else {
         console.error('Failed to fetch class data');
-        router.push('/admin/classes');
+        router.push('/classes');
       }
     } catch (error) {
       console.error('Error fetching class data:', error);
-      router.push('/admin/classes');
+      router.push('/classes');
     } finally {
       setLoading(false);
     }
@@ -149,7 +149,7 @@ export default function AdminClassDetailPage() {
       });
 
       if (response.ok) {
-        router.push('/admin/classes');
+        router.push('/classes');
       } else {
         const data = await response.json();
         alert(data.error || 'Failed to delete class');
@@ -215,7 +215,7 @@ export default function AdminClassDetailPage() {
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Class Not Found</h2>
           <p className="text-gray-600 mb-4">The class you're looking for doesn't exist.</p>
-          <Button onClick={() => router.push('/admin/classes')}>
+          <Button onClick={() => router.push('/classes')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Classes
           </Button>
@@ -233,7 +233,7 @@ export default function AdminClassDetailPage() {
             <div className="flex items-center gap-4">
               <Button
                 variant="outline"
-                onClick={() => router.push('/admin/classes')}
+                onClick={() => router.push('/classes')}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Classes
