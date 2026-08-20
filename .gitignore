@@ -46,3 +46,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local prod snapshots pulled by scripts/sync-local-from-prod.ts.
+# Real student data — never commit.
+.local-snapshots/
