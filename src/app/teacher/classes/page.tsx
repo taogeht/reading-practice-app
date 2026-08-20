@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreateClassDialog } from "@/components/classes/create-class-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
+import { ShowMoreToggle } from "@/components/ui/collapsible-section";
 import {
   Users,
   Plus,
@@ -55,6 +56,14 @@ export default function TeacherClassesPage() {
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
+  // Class names repeat every year — a school runs a "1B" each September — so
+  // archived cohorts pile up here and read as duplicates of the live class.
+  // Hide them by default; they stay one click away.
+  const [showArchived, setShowArchived] = useState(false);
+
+  const activeClasses = useMemo(() => classes.filter((c) => c.active), [classes]);
+  const archivedClasses = useMemo(() => classes.filter((c) => !c.active), [classes]);
+  const visibleClasses = showArchived ? [...activeClasses, ...archivedClasses] : activeClasses;
 
   useEffect(() => {
     fetchClasses();
@@ -193,7 +202,16 @@ export default function TeacherClassesPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {classes.map((cls) => (
+            {visibleClasses.length === 0 && (
+              <Card className="border-dashed">
+                <CardContent className="py-10 text-center">
+                  <p className="text-gray-600">
+                    All {archivedClasses.length} of your classes are archived.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            {visibleClasses.map((cls) => (
               <Card key={cls.id} className="overflow-hidden">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -201,8 +219,12 @@ export default function TeacherClassesPage() {
                       <CardTitle className="flex items-center gap-2">
                         <BookOpen className="w-5 h-5 text-blue-600" />
                         {cls.name}
+                        {/* "Archived" rather than "Inactive" so the wording
+                            matches the spelling page's archived lists. */}
                         {!cls.active && (
-                          <Badge variant="secondary">Inactive</Badge>
+                          <Badge variant="secondary">
+                            {cls.academicYear ? `Archived · ${cls.academicYear}` : "Archived"}
+                          </Badge>
                         )}
                       </CardTitle>
                       <CardDescription className="mt-1">
@@ -315,6 +337,17 @@ export default function TeacherClassesPage() {
                 )}
               </Card>
             ))}
+            {archivedClasses.length > 0 && (
+              <ShowMoreToggle
+                open={showArchived}
+                onToggle={() => setShowArchived((prev) => !prev)}
+                label={(shown) =>
+                  `${shown ? "Hide" : "Show"} ${archivedClasses.length} archived class${
+                    archivedClasses.length === 1 ? "" : "es"
+                  }`
+                }
+              />
+            )}
           </div>
         )}
       </div>
