@@ -1,412 +1,219 @@
-"use client";
+// The Starling Rise front door.
+//
+// This is not a marketing site. Huaxia is the only school on the platform, so
+// nobody arrives here to be sold anything — the traffic is four teachers, the
+// students who typed the bare domain instead of using their /c/ code, and
+// parents wondering what their child is doing. The page's whole job is to get
+// each of those three people through the right door in a few seconds, in both
+// the languages they read.
+//
+// Server component on purpose: only the flock and the code field need JS.
 
 import Link from "next/link";
 import Image from "next/image";
-import {
-  BookOpen,
-  Mic,
-  Users,
-  BarChart3,
-  Headphones,
-  Shield,
-  ArrowRight,
-  CheckCircle2,
-  Play,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Bricolage_Grotesque, Public_Sans } from "next/font/google";
+import { ArrowRight, ChevronDown } from "lucide-react";
+import { Murmuration } from "@/components/landing/murmuration";
+import { ClassCodeEntry } from "@/components/landing/class-code-entry";
 
-const features = [
-  {
-    icon: BookOpen,
-    title: "Story Library",
-    description:
-      "Create and manage reading content with built-in text-to-speech audio generation.",
-  },
-  {
-    icon: Shield,
-    title: "Visual Authentication",
-    description:
-      "Password-free login for young students using picture-based visual passwords.",
-  },
-  {
-    icon: Mic,
-    title: "Audio Recording",
-    description:
-      "Students record themselves reading aloud with real-time feedback and playback.",
-  },
-  {
-    icon: BarChart3,
-    title: "Progress Tracking",
-    description:
-      "Monitor student reading development with detailed analytics and scoring.",
-  },
-  {
-    icon: Users,
-    title: "Class Management",
-    description:
-      "Organize students into classes with easy enrollment and assignment distribution.",
-  },
-  {
-    icon: Headphones,
-    title: "Teacher Review",
-    description:
-      "Listen to student recordings and provide personalized feedback efficiently.",
-  },
-];
+const display = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-display",
+});
 
-const steps = [
-  {
-    number: "01",
-    title: "Create Stories",
-    description: "Teachers add reading content and generate professional TTS audio.",
-  },
-  {
-    number: "02",
-    title: "Listen & Practice",
-    description: "Students listen to the story, then practice reading along.",
-  },
-  {
-    number: "03",
-    title: "Record & Review",
-    description: "Students record their reading. Teachers provide feedback.",
-  },
+const body = Public_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
+// Traditional Chinese is set in whatever the device already has. Every phone
+// and tablet in Taiwan ships a good zh-Hant face, and shipping a webfont for
+// the handful of Chinese lines here would cost school tablets a megabyte for
+// nothing.
+const CJK_STACK =
+  '"PingFang TC", "Heiti TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif';
+
+/** What a child actually does in a week, for a parent reading this cold.
+ *  Only things a student can genuinely open — the reading loop, then the
+ *  week's spelling list with its practice games. */
+const parentSteps = [
+  { en: "Listen to the story read aloud.", zh: "先聆聽故事朗讀。" },
+  { en: "Read it aloud and record.", zh: "接著自己大聲朗讀並錄音。" },
+  { en: "The teacher listens and writes back.", zh: "老師聆聽後給予回饋。" },
+  { en: "Practise this week's spelling words.", zh: "練習本週的拼字單字。" },
 ];
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-slate-900 rounded-lg">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-semibold text-slate-900">ReadingPractice</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link href="/login">
-                <Button variant="ghost" className="text-slate-600 hover:text-slate-900">
-                  Teacher Login
-                </Button>
-              </Link>
-            </div>
+    <div
+      className={`${display.variable} ${body.variable} min-h-screen bg-[var(--ink)] font-[family-name:var(--font-body)] text-[var(--chalk)]`}
+      style={
+        {
+          "--ink": "#07172E",
+          "--ink-2": "#0E2A4F",
+          "--edge": "#1E4272",
+          "--sky": "#3D8FD6",
+          "--gold": "#F2B705",
+          "--gold-lift": "#FFD873",
+          "--chalk": "#EAF0F7",
+          "--chalk-dim": "#93A9C4",
+          "--cjk": CJK_STACK,
+        } as React.CSSProperties
+      }
+    >
+      <header className="relative z-10">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/starling-mark.png"
+              alt=""
+              width={36}
+              height={36}
+              className="rounded-lg"
+              priority
+            />
+            <span className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight">
+              Starling Rise
+            </span>
           </div>
-        </div>
-      </nav>
+          <Link
+            href="/login"
+            className="rounded-lg px-3 py-2 text-sm text-[var(--chalk-dim)] transition-colors hover:text-[var(--chalk)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]"
+          >
+            Log in <span lang="zh-Hant" style={{ fontFamily: "var(--cjk)" }}>登入</span>
+          </Link>
+        </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
-                <Play className="w-4 h-4" />
-                Starling Rise — Reading Practice for Schools
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight">
-                Help Students Master{" "}
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Reading Aloud
-                </span>
-              </h1>
-
-              <p className="text-xl text-slate-600 leading-relaxed max-w-lg">
-                A comprehensive platform where teachers create assignments, students
-                practice reading with audio guidance, and progress is tracked
-                automatically.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/login">
-                  <Button
-                    size="lg"
-                    className="bg-slate-900 hover:bg-slate-800 text-white px-8 h-12 text-base"
-                  >
-                    Teacher Login
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-                <a href="#features">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-slate-300 text-slate-700 hover:bg-slate-50 px-8 h-12 text-base"
-                  >
-                    Explore Features
-                  </Button>
-                </a>
-              </div>
-
-              <div className="flex items-center gap-6 pt-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <span className="text-slate-600 text-sm">Free for schools</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <span className="text-slate-600 text-sm">No student passwords</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Hero Image */}
-            <div className="relative">
-              <div className="relative rounded-2xl shadow-2xl overflow-hidden aspect-[4/3] border border-slate-200">
-                <Image
-                  src="/screenshots/teacher-dashboard.png"
-                  alt="Teacher Dashboard"
-                  fill
-                  className="object-cover object-top"
-                  priority
-                />
-                {/* Decorative elements */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl" />
-                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl" />
-              </div>
-            </div>
-          </div>
+      {/* Hero — the flock drifts behind the lockup and nothing else moves. */}
+      <section className="relative overflow-hidden">
+        <Murmuration />
+        <div className="relative mx-auto max-w-6xl px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-14">
+          <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-[clamp(2.6rem,7.5vw,5.25rem)] font-bold leading-[0.95] tracking-[-0.035em]">
+            Read it out loud.
+          </h1>
+          <p
+            lang="zh-Hant"
+            style={{ fontFamily: "var(--cjk)" }}
+            className="mt-4 text-[clamp(1.35rem,3.4vw,2.15rem)] font-medium text-[var(--gold)]"
+          >
+            大聲朗讀出來。
+          </p>
+          <p className="mt-7 max-w-xl text-lg leading-relaxed text-[var(--chalk-dim)]">
+            Students at Huaxia record themselves reading and practise the
+            week&apos;s spelling words. Their teacher listens, and writes back.
+          </p>
+          <p
+            lang="zh-Hant"
+            style={{ fontFamily: "var(--cjk)" }}
+            className="mt-2 max-w-xl text-lg leading-relaxed text-[var(--chalk-dim)]"
+          >
+            華夏的學生錄下自己朗讀，並練習本週的拼字單字，老師聆聽後給予回饋。
+          </p>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Everything You Need for Reading Practice
+      {/* Three doors. Labelled by who you are — there is no sequence here, so
+          no numbering. */}
+      <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
+        <div className="grid gap-5 md:grid-cols-3">
+          {/* Students outnumber everyone else 25:1, so their door is the lit
+              one and it takes the code directly. */}
+          <div className="rounded-2xl border border-[var(--gold)]/35 bg-[var(--ink-2)] p-6 shadow-[0_0_0_1px_rgba(242,183,5,0.06)]">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+              I&apos;m a student
             </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              A complete toolkit for teachers to manage reading assignments and track
-              student progress with ease.
+            <p
+              lang="zh-Hant"
+              style={{ fontFamily: "var(--cjk)" }}
+              className="mt-1 text-[var(--gold)]"
+            >
+              我是學生
             </p>
+            <ClassCodeEntry />
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
-              <Card
-                key={feature.title}
-                className="bg-white border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300"
-              >
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-slate-700" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-slate-600 leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              How It Works
+          <div className="flex flex-col rounded-2xl border border-[var(--edge)] bg-[var(--ink-2)]/60 p-6">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+              I&apos;m a teacher
             </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              A simple three-step workflow that makes reading practice effective and
-              engaging.
+            <p
+              lang="zh-Hant"
+              style={{ fontFamily: "var(--cjk)" }}
+              className="mt-1 text-[var(--chalk-dim)]"
+            >
+              我是老師
             </p>
+            <p className="mt-4 text-sm leading-relaxed text-[var(--chalk-dim)]">
+              Assign stories and spelling, take attendance, and review what your
+              students recorded.
+            </p>
+            <Link
+              href="/login"
+              className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--sky)]/50 px-4 py-2.5 font-semibold text-[var(--chalk)] transition-colors hover:border-[var(--sky)] hover:bg-[var(--sky)]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink)]"
+            >
+              Log in
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {steps.map((step, index) => (
-              <div key={step.number} className="relative">
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-1/2 w-full h-0.5 bg-slate-200" />
-                )}
-                <div className="relative bg-white rounded-2xl p-8 border border-slate-200 hover:shadow-lg transition-shadow">
-                  <div className="text-5xl font-bold text-slate-200 mb-4">
-                    {step.number}
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-slate-600">{step.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* App Screenshots Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              See It In Action
+          <div className="flex flex-col rounded-2xl border border-[var(--edge)] bg-[var(--ink-2)]/60 p-6">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+              I&apos;m a parent
             </h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-              Designed for simplicity. Built for education.
+            <p
+              lang="zh-Hant"
+              style={{ fontFamily: "var(--cjk)" }}
+              className="mt-1 text-[var(--chalk-dim)]"
+            >
+              我是家長
             </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Teacher Dashboard",
-                desc: "Manage classes and view submissions",
-                image: "/screenshots/teacher-dashboard.png"
-              },
-              {
-                title: "Assignment Management",
-                desc: "Track student progress on assignments",
-                image: "/screenshots/assignments-list.png"
-              },
-              {
-                title: "Visual Password System",
-                desc: "Child-friendly authentication",
-                image: "/screenshots/add-student.png"
-              },
-            ].map((screen) => (
-              <div
-                key={screen.title}
-                className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-slate-500 transition-colors"
-              >
-                <div className="aspect-video relative overflow-hidden">
-                  <Image
-                    src={screen.image}
-                    alt={screen.title}
-                    fill
-                    className="object-cover object-top"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-white mb-1">{screen.title}</h3>
-                  <p className="text-slate-400 text-sm">{screen.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Login Cards Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Get Started
-            </h2>
-            <p className="text-lg text-slate-600">
-              Choose your role to access the platform.
+            <p className="mt-4 text-sm leading-relaxed text-[var(--chalk-dim)]">
+              There is nothing to sign in to. Your child&apos;s teacher shares
+              their progress directly.
             </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Teacher Card */}
-            <Card className="border-slate-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 overflow-hidden">
-              <CardContent className="p-8">
-                <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
-                  <Users className="w-7 h-7 text-blue-600" />
-                </div>
-
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">For Teachers</h3>
-
-                <p className="text-slate-600 mb-6 leading-relaxed">
-                  Create stories, manage classes, assign reading tasks, and review
-                  student recordings from your dashboard.
-                </p>
-
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3 text-slate-600">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    Text-to-speech audio generation
+            {/* Native <details>: no JS and keyboard-operable. Closed by
+                default so the three doors stay the same height. */}
+            <details className="group mt-4">
+              <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-[var(--sky)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink)]">
+                What my child does each week
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <ul className="mt-4 space-y-3.5">
+                {parentSteps.map((step) => (
+                  <li key={step.en} className="border-l-2 border-[var(--edge)] pl-3">
+                    <span className="block text-sm text-[var(--chalk)]">
+                      {step.en}
+                    </span>
+                    <span
+                      lang="zh-Hant"
+                      style={{ fontFamily: "var(--cjk)" }}
+                      className="block text-sm text-[var(--chalk-dim)]"
+                    >
+                      {step.zh}
+                    </span>
                   </li>
-                  <li className="flex items-center gap-3 text-slate-600">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    Class and student management
-                  </li>
-                  <li className="flex items-center gap-3 text-slate-600">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    Recording review and feedback
-                  </li>
-                </ul>
-
-                <Link href="/login">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base">
-                    Teacher Login
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Student Card */}
-            <Card className="border-slate-200 hover:border-indigo-300 hover:shadow-xl transition-all duration-300 overflow-hidden">
-              <CardContent className="p-8">
-                <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-6">
-                  <Mic className="w-7 h-7 text-indigo-600" />
-                </div>
-
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">For Students</h3>
-
-                <p className="text-slate-600 mb-6 leading-relaxed">
-                  Access your class using a special link or QR code from your teacher.
-                  No password needed!
-                </p>
-
-                <div className="bg-slate-50 rounded-xl p-5 mb-6">
-                  <h4 className="font-semibold text-slate-900 mb-3">How to Join:</h4>
-                  <ol className="space-y-2 text-slate-600">
-                    <li className="flex items-start gap-3">
-                      <span className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-sm font-semibold text-indigo-600 flex-shrink-0">
-                        1
-                      </span>
-                      Get the class link or QR code from your teacher
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-sm font-semibold text-indigo-600 flex-shrink-0">
-                        2
-                      </span>
-                      Choose your avatar and picture password
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-sm font-semibold text-indigo-600 flex-shrink-0">
-                        3
-                      </span>
-                      Start reading and recording!
-                    </li>
-                  </ol>
-                </div>
-
-                <div className="bg-indigo-50 rounded-lg p-4 text-center">
-                  <p className="text-indigo-700 font-medium">
-                    Visual password authentication — no typing required
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </ul>
+            </details>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-slate-800 rounded-lg">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-semibold text-white">ReadingPractice</span>
-            </div>
-
-            <p className="text-slate-400 text-sm">
-              &copy; {new Date().getFullYear()} ReadingPractice. Built for education.
-            </p>
+      <footer className="border-t border-[var(--edge)]/60">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-8 text-sm text-[var(--chalk-dim)] sm:flex-row sm:px-8">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/starling-mark.png"
+              alt=""
+              width={22}
+              height={22}
+              className="rounded"
+            />
+            <span>Starling Rise · Huaxia</span>
           </div>
+          <span>&copy; {new Date().getFullYear()}</span>
         </div>
       </footer>
     </div>
