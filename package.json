@@ -54,6 +54,7 @@
     "bulk:passage": "tsx scripts/bulk-passage-run.ts",
     "eval:story-generation": "tsx scripts/eval-story-generation.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
+    "check:prod-sql": "tsx scripts/check-prod-sql.ts",
     "db:sync-from-prod": "tsx scripts/sync-local-from-prod.ts",
     "test:story-generation": "node --import tsx --test src/lib/reading/story-generation.test.ts"
   },
