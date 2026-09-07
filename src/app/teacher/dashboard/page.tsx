@@ -8,6 +8,13 @@ import { CreateClassDialog } from "@/components/classes/create-class-dialog";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { CreateStoryDialog } from "@/components/stories/create-story-dialog";
 import { ClassQRCode } from "@/components/classes/class-qr-code";
+import { ShowMoreToggle } from "@/components/ui/collapsible-section";
+import {
+  splitByTerm,
+  visibleClasses as pickVisibleClasses,
+  isCurrentTermClass,
+  otherClassLabel,
+} from "@/lib/classes/term-grouping";
 import { TeacherLoginActivityCard } from "@/components/activity/teacher-login-activity-card";
 import { TeacherActivityFeed } from "@/components/activity/teacher-activity-feed";
 import { TeacherHomeV2 } from "@/components/teacher/teacher-home-v2";
@@ -41,6 +48,11 @@ type Teacher = {
     id: string;
     name: string;
     studentCount: number;
+    active: boolean;
+    /** NULL for classes created before the term model existed. */
+    termId: string | null;
+    termName: string | null;
+    termIsCurrent: boolean;
     pendingSubmissions: number;
     recentActivity: number;
   }[];
@@ -105,6 +117,7 @@ function LegacyTeacherDashboard() {
   const [showCreateClass, setShowCreateClass] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   const [showCreateStory, setShowCreateStory] = useState(false);
+  const [showOtherClasses, setShowOtherClasses] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -205,6 +218,13 @@ function LegacyTeacherDashboard() {
   }
 
   const { teacher, stats, recentSubmissions, assignmentsSummary = [] } = dashboardData;
+
+  // Same rule as TeacherHomeV2, from one shared helper so the two dashboards
+  // cannot drift while TEACHER_NAV_V2 keeps both alive.
+  const termSplit = splitByTerm(teacher.classes);
+  const visibleClasses = pickVisibleClasses(termSplit, teacher.classes, showOtherClasses);
+  const currentTermName = termSplit.currentTermName;
+  const isThisTerm = isCurrentTermClass;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -389,9 +409,14 @@ function LegacyTeacherDashboard() {
         {/* Class Selection - Prominent Buttons */}
         {teacher.classes.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-700 mb-3">Your Classes</h2>
+            <div className="flex items-baseline gap-3 mb-3">
+              <h2 className="text-lg font-semibold text-gray-700">Your Classes</h2>
+              {currentTermName && (
+                <span className="text-sm text-gray-500">{currentTermName}</span>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {teacher.classes.map((classInfo) => (
+              {visibleClasses.map((classInfo) => (
                 <button
                   key={classInfo.id}
                   onClick={() => router.push(`/teacher/classes/${classInfo.id}`)}
@@ -400,6 +425,14 @@ function LegacyTeacherDashboard() {
                   <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-700 truncate">
                     {classInfo.name}
                   </h3>
+                  {/* Only shown for the folded-away classes, where "which one
+                      is this?" is the actual question — class names repeat
+                      across years. */}
+                  {!isThisTerm(classInfo) && (
+                    <span className="mt-1 inline-block rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                      {otherClassLabel(classInfo)}
+                    </span>
+                  )}
                   <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
                     <span className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
@@ -425,6 +458,18 @@ function LegacyTeacherDashboard() {
                 </button>
               )}
             </div>
+            {termSplit.hasCurrentTerm && termSplit.other.length > 0 && (
+              <ShowMoreToggle
+                className="mt-3"
+                open={showOtherClasses}
+                onToggle={() => setShowOtherClasses((prev) => !prev)}
+                label={(shown) =>
+                  `${shown ? "Hide" : "Show"} ${termSplit.other.length} other class${
+                    termSplit.other.length === 1 ? "" : "es"
+                  }`
+                }
+              />
+            )}
           </div>
         )}
 

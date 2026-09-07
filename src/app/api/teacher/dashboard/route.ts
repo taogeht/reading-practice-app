@@ -14,6 +14,7 @@ import {
   teachers,
   schools,
   schoolMemberships,
+  academicTerms,
 } from '@/lib/db/schema';
 import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
@@ -93,17 +94,28 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get teacher's classes with student counts
+    // Get teacher's classes with student counts.
+    //
+    // active and the term flags come back so the dashboard can show this
+    // term's classes and fold the rest away. term_id is the signal, not
+    // academic_year: a class can carry last year's academic_year string while
+    // belonging to the current term, and every class predating the term model
+    // has a NULL term_id rather than an old one.
     const teacherClasses = await db
       .select({
         id: classes.id,
         name: classes.name,
+        active: classes.active,
+        termId: classes.termId,
+        termName: academicTerms.name,
+        termIsCurrent: academicTerms.isCurrent,
         studentCount: sql<number>`count(${classEnrollments.studentId})::integer`,
       })
       .from(classes)
       .leftJoin(classEnrollments, eq(classes.id, classEnrollments.classId))
+      .leftJoin(academicTerms, eq(classes.termId, academicTerms.id))
       .where(user.role === 'admin' ? undefined : inArray(classes.id, allowedClassIds))
-      .groupBy(classes.id, classes.name);
+      .groupBy(classes.id, classes.name, academicTerms.name, academicTerms.isCurrent);
 
     const assignmentProgressRows = await db
       .select({
@@ -236,6 +248,10 @@ export async function GET(request: NextRequest) {
           id: cls.id,
           name: cls.name,
           studentCount: cls.studentCount,
+          active: cls.active ?? true,
+          termId: cls.termId,
+          termName: cls.termName,
+          termIsCurrent: cls.termIsCurrent ?? false,
           pendingSubmissions: 0, // We'll calculate this per class if needed
           recentActivity: 0, // We'll calculate this per class if needed
         }))

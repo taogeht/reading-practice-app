@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateAssignmentDialog } from "@/components/assignments/create-assignment-dialog";
 import { CreateClassDialog } from "@/components/classes/create-class-dialog";
+import { ShowMoreToggle } from "@/components/ui/collapsible-section";
+import {
+  splitByTerm,
+  visibleClasses as pickVisibleClasses,
+  isCurrentTermClass,
+  otherClassLabel,
+} from "@/lib/classes/term-grouping";
 import { TeacherLoginActivityCard } from "@/components/activity/teacher-login-activity-card";
 import {
   Plus,
@@ -23,6 +30,10 @@ type ClassInfo = {
   id: string;
   name: string;
   studentCount: number;
+  active: boolean;
+  termId: string | null;
+  termName: string | null;
+  termIsCurrent: boolean;
   pendingSubmissions: number;
   recentActivity: number;
 };
@@ -58,6 +69,7 @@ export function TeacherHomeV2() {
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [showCreateClass, setShowCreateClass] = useState(false);
   const [dismissed, setDismissed] = useState(true);
+  const [showOtherClasses, setShowOtherClasses] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -87,6 +99,10 @@ export function TeacherHomeV2() {
 
   const { teacher, isCoTeacherOnly, canManageAssignments, stats, recentSubmissions } = data;
   const classes = teacher.classes ?? [];
+  // Only this term's live classes by default — archived cohorts and past-term
+  // classes accumulate every year and read as duplicates of the real ones.
+  const termSplit = splitByTerm(classes);
+  const shownClasses = pickVisibleClasses(termSplit, classes, showOtherClasses);
 
   const steps = [
     { label: "Create a class", done: classes.length > 0 },
@@ -177,7 +193,12 @@ export function TeacherHomeV2() {
 
       {/* Your classes */}
       <div className="mb-6">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Your Classes</h2>
+        <div className="mb-3 flex items-baseline gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">Your Classes</h2>
+          {termSplit.currentTermName && (
+            <span className="text-sm text-gray-500">{termSplit.currentTermName}</span>
+          )}
+        </div>
         {classes.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-sm text-gray-500">
@@ -191,7 +212,7 @@ export function TeacherHomeV2() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {classes.map((c) => (
+            {shownClasses.map((c) => (
               <button
                 key={c.id}
                 onClick={() => router.push(`/teacher/classes/${c.id}`)}
@@ -201,6 +222,11 @@ export function TeacherHomeV2() {
                   <span className="font-semibold text-gray-900 group-hover:text-blue-700">{c.name}</span>
                   <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-400" />
                 </div>
+                {!isCurrentTermClass(c) && (
+                  <span className="mb-1 inline-block self-start rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                    {otherClassLabel(c)}
+                  </span>
+                )}
                 <div className="flex items-center gap-3 text-xs text-gray-500">
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
@@ -213,6 +239,18 @@ export function TeacherHomeV2() {
               </button>
             ))}
           </div>
+        )}
+        {termSplit.hasCurrentTerm && termSplit.other.length > 0 && (
+          <ShowMoreToggle
+            className="mt-3"
+            open={showOtherClasses}
+            onToggle={() => setShowOtherClasses((prev) => !prev)}
+            label={(shown) =>
+              `${shown ? "Hide" : "Show"} ${termSplit.other.length} other class${
+                termSplit.other.length === 1 ? "" : "es"
+              }`
+            }
+          />
         )}
       </div>
 
