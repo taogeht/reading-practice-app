@@ -91,6 +91,7 @@ const ART_PLAN_JSON_SCHEMA = {
           },
         },
         required: ['name', 'description'],
+        additionalProperties: false,
       },
     },
     pageScenes: {
@@ -106,10 +107,12 @@ const ART_PLAN_JSON_SCHEMA = {
           },
         },
         required: ['pageNumber', 'sceneDescription'],
+        additionalProperties: false,
       },
     },
   },
   required: ['title', 'summary', 'setting', 'characters', 'pageScenes'],
+  additionalProperties: false,
 };
 
 /**
@@ -213,6 +216,7 @@ const QUESTIONS_JSON_SCHEMA = {
           evidencePageNumber: { type: 'integer' },
         },
         required: ['questionText', 'options', 'correctIndex', 'evidenceQuote', 'evidencePageNumber'],
+        additionalProperties: false,
       },
     },
     sequenceQuestion: {
@@ -223,9 +227,11 @@ const QUESTIONS_JSON_SCHEMA = {
         correctOrder: { type: 'array', items: { type: 'integer' }, minItems: 3, maxItems: 4 },
       },
       required: ['questionText', 'events', 'correctOrder'],
+      additionalProperties: false,
     },
   },
   required: ['mcqQuestions', 'sequenceQuestion'],
+  additionalProperties: false,
 };
 
 /**
