@@ -536,6 +536,8 @@ export interface GeneratePassageImagesInput {
   pages: GeneratedPageProse[];
   /** If omitted, DEFAULT_IMAGE_STYLE in images.ts applies. */
   style?: ImageStyle;
+  /** Optional callback fired after each page illustration finishes generating */
+  onPageGenerated?: (pageNumber: number, totalPages: number) => void;
 }
 
 export interface GeneratePassageImagesResult {

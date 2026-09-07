@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -21,6 +22,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { CustomStoryForm } from '@/components/reading/custom-story-form';
 import {
   Card,
   CardContent,
@@ -114,6 +116,9 @@ function levelDefaults(levelId: number) {
 
 export default function TeacherGeneratePage() {
   const router = useRouter();
+
+  // Mode switcher: 'ai' | 'custom'
+  const [generationMode, setGenerationMode] = useState<'ai' | 'custom'>('ai');
 
   // Simple-mode state.
   const [levelId, setLevelId] = useState<number>(2);
@@ -338,8 +343,40 @@ export default function TeacherGeneratePage() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader />
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        {/* Simple mode */}
-        <Card>
+        {/* Mode Switcher */}
+        <div className="flex items-center bg-gray-200/90 p-1.5 rounded-xl shadow-inner border border-gray-300 max-w-md mx-auto">
+          <button
+            type="button"
+            onClick={() => setGenerationMode('ai')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold transition ${
+              generationMode === 'ai'
+                ? 'bg-white text-gray-900 shadow-xs'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            AI Generated Story
+          </button>
+          <button
+            type="button"
+            onClick={() => setGenerationMode('custom')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold transition ${
+              generationMode === 'custom'
+                ? 'bg-white text-gray-900 shadow-xs'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 text-blue-600" />
+            Supply Your Own Story
+          </button>
+        </div>
+
+        {generationMode === 'custom' ? (
+          <CustomStoryForm />
+        ) : (
+          <>
+            {/* Simple mode */}
+            <Card>
           <CardHeader>
             <CardTitle>Quick generate</CardTitle>
             <CardDescription>
@@ -519,30 +556,32 @@ export default function TeacherGeneratePage() {
             {' '}{questionMixSum}).
           </div>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white border rounded-lg p-4 shadow-sm">
-          <p className="text-sm text-gray-600">
-            Generating {countToGenerate} {countToGenerate === 1 ? 'story' : 'stories'} —
-            about {estMinutes} minute{estMinutes === 1 ? '' : 's'}.
-          </p>
-          <Button
-            onClick={() => void submit()}
-            disabled={submitDisabled}
-            size="lg"
-            className="px-6"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Starting…
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate
-              </>
-            )}
-          </Button>
-        </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white border rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-gray-600">
+                Generating {countToGenerate} {countToGenerate === 1 ? 'story' : 'stories'} —
+                about {estMinutes} minute{estMinutes === 1 ? '' : 's'}.
+              </p>
+              <Button
+                onClick={() => void submit()}
+                disabled={submitDisabled}
+                size="lg"
+                className="px-6"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Starting…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        )}
 
         <RecentJobsPanel />
       </div>

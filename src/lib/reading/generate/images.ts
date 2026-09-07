@@ -160,6 +160,7 @@ export async function generatePassageImages(
     };
     generated.push(image);
     if (isFirstPage) pageOneImage = image;
+    input.onPageGenerated?.(proseRow.pageNumber, ordered.length);
   }
 
   const totalDurationMs = Date.now() - startedAt;
