@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { classEnrollments, classPracticeUnits } from '@/lib/db/schema';
+import { classEnrollments, classPracticeUnits, classes } from '@/lib/db/schema';
 import { BOOKS, isValidBookSlug } from '@/lib/practice/books';
 import { getBookUnits } from '@/lib/practice/book-units';
 
@@ -22,7 +22,12 @@ export async function GET(_request: NextRequest) {
     const enrollments = await db
         .select({ classId: classEnrollments.classId })
         .from(classEnrollments)
-        .where(eq(classEnrollments.studentId, user.id));
+        .innerJoin(classes, eq(classes.id, classEnrollments.classId))
+        .where(and(
+            eq(classEnrollments.studentId, user.id),
+            eq(classes.active, true),
+            isNull(classes.promotedToClassId),
+        ));
 
     const classIds = enrollments.map((e) => e.classId);
     if (classIds.length === 0) {

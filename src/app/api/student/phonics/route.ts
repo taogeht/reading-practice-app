@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { classes, classEnrollments } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { logError } from '@/lib/logger';
@@ -101,7 +101,11 @@ export async function GET(request: NextRequest) {
         .select({ currentUnit: classes.currentUnit })
         .from(classEnrollments)
         .innerJoin(classes, eq(classes.id, classEnrollments.classId))
-        .where(eq(classEnrollments.studentId, user.id))
+        .where(and(
+          eq(classEnrollments.studentId, user.id),
+          eq(classes.active, true),
+          isNull(classes.promotedToClassId),
+        ))
         .limit(1);
       const classUnit = enrollment[0]?.currentUnit ?? 1;
       // If the class's current unit has phonics, use it. Otherwise fall back

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { classProgress, classEnrollments, books } from '@/lib/db/schema';
+import { classProgress, classEnrollments, classes, books } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
-import { eq, and, gte, desc, isNotNull } from 'drizzle-orm';
+import { eq, and, gte, desc, isNotNull, isNull } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 
@@ -15,11 +15,16 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get the student's enrolled classes
+        // Get the student's active enrolled classes
         const enrollments = await db
             .select({ classId: classEnrollments.classId })
             .from(classEnrollments)
-            .where(eq(classEnrollments.studentId, user.id));
+            .innerJoin(classes, eq(classes.id, classEnrollments.classId))
+            .where(and(
+                eq(classEnrollments.studentId, user.id),
+                eq(classes.active, true),
+                isNull(classes.promotedToClassId),
+            ));
 
         if (enrollments.length === 0) {
             return NextResponse.json({ homework: [] });
