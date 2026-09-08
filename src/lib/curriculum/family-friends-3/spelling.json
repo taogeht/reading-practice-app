@@ -1,14 +1,14 @@
 {
   "bookSlug": "family-friends-3",
-  "generatedFrom": "family-friends-3-spelling-list.html",
+  "generatedFrom": "family-friends-3-spelling-list-8word.html",
   "unitCount": 16,
   "testCount": 32,
-  "uniqueWordCount": 201,
+  "uniqueWordCount": 241,
   "units": [
     {
       "unit": 0,
       "title": "My family",
-      "topic": "Family & months (review)",
+      "topic": "Family · phonics: short-vowel review",
       "tests": [
         {
           "index": 1,
@@ -46,31 +46,39 @@
         },
         {
           "index": 2,
-          "focus": "Months",
+          "focus": "Short vowels (review)",
           "words": [
             {
-              "word": "january",
-              "zh": "一月"
+              "word": "desk",
+              "zh": "桌子"
             },
             {
-              "word": "february",
-              "zh": "二月"
+              "word": "bell",
+              "zh": "鈴"
             },
             {
-              "word": "march",
-              "zh": "三月"
+              "word": "milk",
+              "zh": "牛奶"
             },
             {
-              "word": "april",
-              "zh": "四月"
+              "word": "drum",
+              "zh": "鼓"
             },
             {
-              "word": "may",
-              "zh": "五月"
+              "word": "clock",
+              "zh": "時鐘"
             },
             {
-              "word": "june",
-              "zh": "六月"
+              "word": "jump",
+              "zh": "跳"
+            },
+            {
+              "word": "sock",
+              "zh": "襪子"
+            },
+            {
+              "word": "black",
+              "zh": "黑色"
             }
           ]
         }
@@ -78,42 +86,12 @@
     },
     {
       "unit": 1,
-      "title": "They're from Australia!",
-      "topic": "Countries & seasons",
+      "title": "They’re from Australia!",
+      "topic": "Countries & seasons · phonics: consonant blends",
       "tests": [
         {
           "index": 1,
-          "focus": "Countries",
-          "words": [
-            {
-              "word": "mexico",
-              "zh": "墨西哥"
-            },
-            {
-              "word": "spain",
-              "zh": "西班牙"
-            },
-            {
-              "word": "brazil",
-              "zh": "巴西"
-            },
-            {
-              "word": "vietnam",
-              "zh": "越南"
-            },
-            {
-              "word": "thailand",
-              "zh": "泰國"
-            },
-            {
-              "word": "australia",
-              "zh": "澳洲"
-            }
-          ]
-        },
-        {
-          "index": 2,
-          "focus": "Seasons",
+          "focus": "Countries & seasons",
           "words": [
             {
               "word": "spring",
@@ -132,12 +110,54 @@
               "zh": "冬天"
             },
             {
-              "word": "garden",
-              "zh": "花園"
+              "word": "mexico",
+              "zh": "墨西哥"
             },
             {
-              "word": "season",
-              "zh": "季節"
+              "word": "spain",
+              "zh": "西班牙"
+            },
+            {
+              "word": "brazil",
+              "zh": "巴西"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "focus": "Blends: cr br dr sp sn pl",
+          "words": [
+            {
+              "word": "crab",
+              "zh": "螃蟹"
+            },
+            {
+              "word": "crayon",
+              "zh": "蠟筆"
+            },
+            {
+              "word": "brush",
+              "zh": "刷子"
+            },
+            {
+              "word": "draw",
+              "zh": "畫畫"
+            },
+            {
+              "word": "drink",
+              "zh": "喝"
+            },
+            {
+              "word": "spoon",
+              "zh": "湯匙"
+            },
+            {
+              "word": "snake",
+              "zh": "蛇"
+            },
+            {
+              "word": "play",
+              "zh": "玩"
             }
           ]
         }
@@ -150,7 +170,7 @@
       "tests": [
         {
           "index": 1,
-          "focus": "Hobby words",
+          "focus": "Hobbies",
           "words": [
             {
               "word": "paint",
@@ -169,6 +189,10 @@
               "zh": "魚"
             },
             {
+              "word": "chess",
+              "zh": "西洋棋"
+            },
+            {
               "word": "guitar",
               "zh": "吉他"
             },
@@ -177,14 +201,14 @@
               "zh": "鋼琴"
             },
             {
-              "word": "chess",
-              "zh": "西洋棋"
+              "word": "photos",
+              "zh": "照片"
             }
           ]
         },
         {
           "index": 2,
-          "focus": "Magic e",
+          "focus": "Magic e: a_e i_e o_e u_e",
           "words": [
             {
               "word": "face",
@@ -209,6 +233,14 @@
             {
               "word": "stone",
               "zh": "石頭"
+            },
+            {
+              "word": "cube",
+              "zh": "方塊"
+            },
+            {
+              "word": "cute",
+              "zh": "可愛的"
             }
           ]
         }
@@ -224,24 +256,20 @@
           "focus": "Things & collections",
           "words": [
             {
-              "word": "camera",
-              "zh": "相機"
-            },
-            {
               "word": "computer",
               "zh": "電腦"
             },
             {
-              "word": "comics",
-              "zh": "漫畫"
+              "word": "camera",
+              "zh": "相機"
             },
             {
               "word": "posters",
               "zh": "海報"
             },
             {
-              "word": "stickers",
-              "zh": "貼紙"
+              "word": "comics",
+              "zh": "漫畫"
             },
             {
               "word": "pins",
@@ -276,6 +304,18 @@
             {
               "word": "scarf",
               "zh": "圍巾"
+            },
+            {
+              "word": "farm",
+              "zh": "農場"
+            },
+            {
+              "word": "card",
+              "zh": "卡片"
+            },
+            {
+              "word": "hard",
+              "zh": "硬的"
             }
           ]
         }
@@ -283,8 +323,8 @@
     },
     {
       "unit": 4,
-      "title": "We're having fun at the beach!",
-      "topic": "Water sports & adjectives",
+      "title": "We’re having fun at the beach!",
+      "topic": "Water sports · phonics: all",
       "tests": [
         {
           "index": 1,
@@ -317,36 +357,48 @@
             {
               "word": "windsurf",
               "zh": "風浪衝浪"
+            },
+            {
+              "word": "waterski",
+              "zh": "滑水"
             }
           ]
         },
         {
           "index": 2,
-          "focus": "Describing places",
+          "focus": "Words ending in -all",
           "words": [
             {
-              "word": "clean",
-              "zh": "打掃"
+              "word": "ball",
+              "zh": "球"
             },
             {
-              "word": "safe",
-              "zh": "安全的"
+              "word": "mall",
+              "zh": "購物中心"
             },
             {
-              "word": "ugly",
-              "zh": "醜"
+              "word": "wall",
+              "zh": "牆壁"
             },
             {
-              "word": "dangerous",
-              "zh": "危險的"
+              "word": "tall",
+              "zh": "高的"
             },
             {
-              "word": "beautiful",
-              "zh": "美麗的"
+              "word": "small",
+              "zh": "小的"
             },
             {
-              "word": "polluted",
-              "zh": "污染的"
+              "word": "call",
+              "zh": "打電話"
+            },
+            {
+              "word": "hall",
+              "zh": "走廊"
+            },
+            {
+              "word": "all",
+              "zh": "全部"
             }
           ]
         }
@@ -359,8 +411,12 @@
       "tests": [
         {
           "index": 1,
-          "focus": "Animals",
+          "focus": "Zoo animals",
           "words": [
+            {
+              "word": "penguin",
+              "zh": "企鵝"
+            },
             {
               "word": "zebra",
               "zh": "斑馬"
@@ -370,20 +426,16 @@
               "zh": "猴子"
             },
             {
+              "word": "kangaroo",
+              "zh": "袋鼠"
+            },
+            {
               "word": "camel",
               "zh": "駱駝"
             },
             {
               "word": "lizard",
               "zh": "蜥蜴"
-            },
-            {
-              "word": "penguin",
-              "zh": "企鵝"
-            },
-            {
-              "word": "crocodile",
-              "zh": "鱷魚"
             }
           ]
         },
@@ -404,6 +456,10 @@
               "zh": "玉米"
             },
             {
+              "word": "storm",
+              "zh": "暴風雨"
+            },
+            {
               "word": "straw",
               "zh": "吸管"
             },
@@ -414,6 +470,10 @@
             {
               "word": "yawn",
               "zh": "打呵欠"
+            },
+            {
+              "word": "lawn",
+              "zh": "草坪"
             }
           ]
         }
@@ -421,13 +481,33 @@
     },
     {
       "unit": 6,
-      "title": "Jim's day",
+      "title": "Jim’s day",
       "topic": "Daily routine · phonics: oy, oi",
       "tests": [
         {
           "index": 1,
-          "focus": "Time & routine",
+          "focus": "Routine & sequence",
           "words": [
+            {
+              "word": "shower",
+              "zh": "淋浴"
+            },
+            {
+              "word": "teeth",
+              "zh": "牙齒"
+            },
+            {
+              "word": "dressed",
+              "zh": "穿好衣服"
+            },
+            {
+              "word": "breakfast",
+              "zh": "早餐"
+            },
+            {
+              "word": "walk",
+              "zh": "走路"
+            },
             {
               "word": "first",
               "zh": "第一"
@@ -437,20 +517,8 @@
               "zh": "然後"
             },
             {
-              "word": "next",
-              "zh": "下一個"
-            },
-            {
-              "word": "breakfast",
-              "zh": "早餐"
-            },
-            {
-              "word": "shower",
-              "zh": "淋浴"
-            },
-            {
-              "word": "teeth",
-              "zh": "牙齒"
+              "word": "finally",
+              "zh": "最後"
             }
           ]
         },
@@ -467,6 +535,14 @@
               "zh": "玩具"
             },
             {
+              "word": "oyster",
+              "zh": "牡蠣"
+            },
+            {
+              "word": "joy",
+              "zh": "快樂"
+            },
+            {
               "word": "coin",
               "zh": "硬幣"
             },
@@ -479,8 +555,8 @@
               "zh": "土壤"
             },
             {
-              "word": "oyster",
-              "zh": "牡蠣"
+              "word": "point",
+              "zh": "指"
             }
           ]
         }
@@ -500,32 +576,28 @@
               "zh": "咖啡店"
             },
             {
+              "word": "library",
+              "zh": "圖書館"
+            },
+            {
               "word": "museum",
               "zh": "博物館"
             },
             {
-              "word": "library",
-              "zh": "圖書館"
+              "word": "playground",
+              "zh": "遊樂場"
             },
             {
               "word": "theater",
               "zh": "戲院"
             },
             {
-              "word": "concert",
-              "zh": "音樂會"
-            },
-            {
-              "word": "movie",
-              "zh": "電影"
+              "word": "actor",
+              "zh": "演員"
             },
             {
               "word": "singer",
               "zh": "歌手"
-            },
-            {
-              "word": "actor",
-              "zh": "演員"
             }
           ]
         },
@@ -546,6 +618,10 @@
               "zh": "花"
             },
             {
+              "word": "brown",
+              "zh": "棕色"
+            },
+            {
               "word": "house",
               "zh": "房子"
             },
@@ -556,6 +632,10 @@
             {
               "word": "mouse",
               "zh": "老鼠"
+            },
+            {
+              "word": "cloud",
+              "zh": "雲"
             }
           ]
         }
@@ -563,7 +643,7 @@
     },
     {
       "unit": 8,
-      "title": "I'd like a melon!",
+      "title": "I’d like a melon!",
       "topic": "Food · phonics: ld, lt",
       "tests": [
         {
@@ -573,6 +653,10 @@
             {
               "word": "bread",
               "zh": "麵包"
+            },
+            {
+              "word": "cereal",
+              "zh": "穀片"
             },
             {
               "word": "meat",
@@ -595,8 +679,8 @@
               "zh": "起司"
             },
             {
-              "word": "peas",
-              "zh": "豌豆"
+              "word": "potato",
+              "zh": "馬鈴薯"
             }
           ]
         },
@@ -617,6 +701,10 @@
               "zh": "盾牌"
             },
             {
+              "word": "cold",
+              "zh": "冷"
+            },
+            {
               "word": "belt",
               "zh": "腰帶"
             },
@@ -627,6 +715,10 @@
             {
               "word": "adult",
               "zh": "成人"
+            },
+            {
+              "word": "salt",
+              "zh": "鹽巴"
             }
           ]
         }
@@ -662,12 +754,12 @@
               "zh": "山"
             },
             {
-              "word": "country",
-              "zh": "國家"
+              "word": "waterfall",
+              "zh": "瀑布"
             },
             {
-              "word": "building",
-              "zh": "建築物"
+              "word": "country",
+              "zh": "國家"
             }
           ]
         },
@@ -684,12 +776,20 @@
               "zh": "池塘"
             },
             {
+              "word": "sand",
+              "zh": "沙子"
+            },
+            {
               "word": "plant",
               "zh": "植物"
             },
             {
               "word": "tent",
               "zh": "帳篷"
+            },
+            {
+              "word": "print",
+              "zh": "列印"
             },
             {
               "word": "lamp",
@@ -706,7 +806,7 @@
     {
       "unit": 10,
       "title": "In the park!",
-      "topic": "The park & verbs · phonics: long a",
+      "topic": "The park · phonics: long a",
       "tests": [
         {
           "index": 1,
@@ -735,36 +835,52 @@
             {
               "word": "fountain",
               "zh": "噴泉"
+            },
+            {
+              "word": "shout",
+              "zh": "大叫"
+            },
+            {
+              "word": "chase",
+              "zh": "追"
             }
           ]
         },
         {
           "index": 2,
-          "focus": "Action verbs",
+          "focus": "Long a: ai ay a_e",
           "words": [
             {
-              "word": "shout",
-              "zh": "喊叫"
+              "word": "rain",
+              "zh": "雨"
             },
             {
-              "word": "chase",
-              "zh": "追逐"
+              "word": "snail",
+              "zh": "蝸牛"
             },
             {
-              "word": "catch",
-              "zh": "抓"
+              "word": "monday",
+              "zh": "星期一"
             },
             {
-              "word": "meet",
-              "zh": "遇到"
+              "word": "tray",
+              "zh": "托盤"
             },
             {
-              "word": "cross",
-              "zh": "馬路"
+              "word": "day",
+              "zh": "天"
             },
             {
-              "word": "laugh",
-              "zh": "笑"
+              "word": "case",
+              "zh": "箱子"
+            },
+            {
+              "word": "race",
+              "zh": "賽跑"
+            },
+            {
+              "word": "gate",
+              "zh": "門"
             }
           ]
         }
@@ -800,14 +916,6 @@
               "zh": "渡輪"
             },
             {
-              "word": "trolley",
-              "zh": "手推車"
-            },
-            {
-              "word": "helicopter",
-              "zh": "直升機"
-            },
-            {
               "word": "motorcycle",
               "zh": "機車"
             }
@@ -815,31 +923,39 @@
         },
         {
           "index": 2,
-          "focus": "Long e",
+          "focus": "Long e: ea ee y",
           "words": [
             {
-              "word": "tree",
-              "zh": "樹"
-            },
-            {
-              "word": "green",
-              "zh": "綠色"
-            },
-            {
-              "word": "sheep",
-              "zh": "綿羊"
+              "word": "dream",
+              "zh": "夢想"
             },
             {
               "word": "eat",
               "zh": "吃"
             },
             {
-              "word": "dream",
-              "zh": "夢想"
+              "word": "please",
+              "zh": "請"
             },
             {
               "word": "queen",
               "zh": "女王"
+            },
+            {
+              "word": "green",
+              "zh": "綠色"
+            },
+            {
+              "word": "tree",
+              "zh": "樹"
+            },
+            {
+              "word": "week",
+              "zh": "星期"
+            },
+            {
+              "word": "happy",
+              "zh": "開心的"
             }
           ]
         }
@@ -863,8 +979,8 @@
               "zh": "年輕"
             },
             {
-              "word": "tall",
-              "zh": "高"
+              "word": "pretty",
+              "zh": "漂亮的"
             },
             {
               "word": "short",
@@ -875,18 +991,14 @@
               "zh": "害羞的"
             },
             {
-              "word": "pretty",
-              "zh": "漂亮的"
-            },
-            {
-              "word": "friendly",
-              "zh": "友好的"
+              "word": "cheerful",
+              "zh": "開心的"
             }
           ]
         },
         {
           "index": 2,
-          "focus": "Long i",
+          "focus": "Long i: igh y i_e",
           "words": [
             {
               "word": "night",
@@ -897,12 +1009,20 @@
               "zh": "光"
             },
             {
+              "word": "right",
+              "zh": "右邊"
+            },
+            {
               "word": "sky",
               "zh": "天空"
             },
             {
               "word": "dry",
               "zh": "乾的"
+            },
+            {
+              "word": "fly",
+              "zh": "飛"
             },
             {
               "word": "smile",
@@ -961,23 +1081,31 @@
         },
         {
           "index": 2,
-          "focus": "Long o",
+          "focus": "Long o: ow oa o_e",
           "words": [
             {
               "word": "snow",
               "zh": "雪"
             },
             {
+              "word": "elbow",
+              "zh": "手肘"
+            },
+            {
+              "word": "show",
+              "zh": "展示"
+            },
+            {
               "word": "coat",
               "zh": "大衣"
             },
             {
-              "word": "boat",
-              "zh": "船"
+              "word": "soap",
+              "zh": "肥皂"
             },
             {
-              "word": "goat",
-              "zh": "山羊"
+              "word": "boat",
+              "zh": "船"
             },
             {
               "word": "nose",
@@ -994,7 +1122,7 @@
     {
       "unit": 14,
       "title": "Did you have a good day?",
-      "topic": "School & camping things · phonics: long u",
+      "topic": "School & camping · phonics: long u",
       "tests": [
         {
           "index": 1,
@@ -1009,20 +1137,16 @@
               "zh": "便當盒"
             },
             {
-              "word": "paint",
-              "zh": "油漆"
+              "word": "paintbrush",
+              "zh": "畫筆"
+            },
+            {
+              "word": "calculator",
+              "zh": "計算機"
             },
             {
               "word": "apron",
               "zh": "圍裙"
-            },
-            {
-              "word": "tent",
-              "zh": "帳篷"
-            },
-            {
-              "word": "rope",
-              "zh": "繩子"
             },
             {
               "word": "matches",
@@ -1032,7 +1156,7 @@
         },
         {
           "index": 2,
-          "focus": "Long u",
+          "focus": "Long u: oo ue u_e",
           "words": [
             {
               "word": "moon",
@@ -1043,12 +1167,20 @@
               "zh": "靴子"
             },
             {
+              "word": "room",
+              "zh": "房間"
+            },
+            {
               "word": "blue",
               "zh": "藍色"
             },
             {
               "word": "glue",
               "zh": "膠水"
+            },
+            {
+              "word": "true",
+              "zh": "真的"
             },
             {
               "word": "tune",
@@ -1065,15 +1197,19 @@
     {
       "unit": 15,
       "title": "Our vacation!",
-      "topic": "Vacation things · phonics: oo",
+      "topic": "Vacation things · phonics: short oo",
       "tests": [
         {
           "index": 1,
           "focus": "Vacation things",
           "words": [
             {
-              "word": "soap",
-              "zh": "肥皂"
+              "word": "suitcase",
+              "zh": "行李箱"
+            },
+            {
+              "word": "sunscreen",
+              "zh": "防曬霜"
             },
             {
               "word": "towel",
@@ -1082,14 +1218,6 @@
             {
               "word": "shampoo",
               "zh": "洗髮精"
-            },
-            {
-              "word": "suitcase",
-              "zh": "行李箱"
-            },
-            {
-              "word": "sunscreen",
-              "zh": "防曬霜"
             },
             {
               "word": "hairbrush",
@@ -1107,7 +1235,7 @@
         },
         {
           "index": 2,
-          "focus": "oo sound",
+          "focus": "Short oo",
           "words": [
             {
               "word": "book",
@@ -1126,8 +1254,20 @@
               "zh": "帽子"
             },
             {
-              "word": "cook",
-              "zh": "煮飯"
+              "word": "look",
+              "zh": "看"
+            },
+            {
+              "word": "took",
+              "zh": "拿了"
+            },
+            {
+              "word": "foot",
+              "zh": "腳"
+            },
+            {
+              "word": "good",
+              "zh": "好"
             }
           ]
         }
