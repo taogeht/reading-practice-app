@@ -26,12 +26,14 @@ export type SpellingWordInput = {
 type ClassOption = {
   id: string;
   name: string;
+  gradeLevel?: number | null;
 };
 
 type ManageSpellingListDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  defaultClassId?: string;
   initialData?: {
     id: string;
     title: string;
@@ -48,6 +50,7 @@ export function ManageSpellingListDialog({
   open,
   onOpenChange,
   onSuccess,
+  defaultClassId,
   initialData,
   classes,
 }: ManageSpellingListDialogProps) {
@@ -77,14 +80,18 @@ export function ManageSpellingListDialog({
         setWords(initialData.words?.length > 0 ? initialData.words.map(w => ({ word: w.word, mandarinTranslation: w.mandarinTranslation || "", syllables: w.syllables, audioUrl: w.audioUrl, imageUrl: w.imageUrl })) : [{ word: "", mandarinTranslation: "" }]);
       } else {
         setTitle("");
-        setSelectedClassIds(classes.length === 1 ? [classes[0].id] : []);
-        setGradeLevel("");
+        const initialSelected = defaultClassId
+          ? [defaultClassId]
+          : (classes.length === 1 ? [classes[0].id] : []);
+        setSelectedClassIds(initialSelected);
+        const matchingClass = defaultClassId ? classes.find(c => c.id === defaultClassId) : (classes.length === 1 ? classes[0] : null);
+        setGradeLevel(matchingClass?.gradeLevel != null ? String(matchingClass.gradeLevel) : "");
         setIsPublic(false);
         setWords([{ word: "", mandarinTranslation: "" }, { word: "", mandarinTranslation: "" }, { word: "", mandarinTranslation: "" }]);
         setError(null);
       }
     }
-  }, [open, initialData, classes]);
+  }, [open, initialData, classes, defaultClassId]);
 
   const handleWordChange = (index: number, field: 'word' | 'mandarinTranslation', value: string) => {
     const newWords = [...words];

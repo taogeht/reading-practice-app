@@ -26,11 +26,21 @@ export async function GET(request: NextRequest) {
             return NextResponse.json([]);
         }
 
-        // Get all spelling lists for these classes (current week first)
+        // Optional filter to a single class
+        const filterClassId = request.nextUrl.searchParams.get('classId');
+        if (filterClassId && filterClassId !== 'all') {
+            if (!classIds.includes(filterClassId)) {
+                return NextResponse.json({ error: 'Not authorized for this class' }, { status: 403 });
+            }
+        }
+
+        const targetClassIds = filterClassId && filterClassId !== 'all' ? [filterClassId] : classIds;
+
+        // Get spelling lists for target classes (current week first)
         const lists = await db
             .select()
             .from(spellingLists)
-            .where(inArray(spellingLists.classId, classIds))
+            .where(inArray(spellingLists.classId, targetClassIds))
             .orderBy(desc(spellingLists.isCurrent), desc(spellingLists.createdAt));
 
         // Build class lookup. active + academicYear come along because class
@@ -45,7 +55,7 @@ export async function GET(request: NextRequest) {
                     academicYear: classes.academicYear,
                 })
                 .from(classes)
-                .where(inArray(classes.id, classIds))
+                .where(inArray(classes.id, targetClassIds))
             ).map(c => [c.id, c])
         );
 
@@ -61,6 +71,26 @@ export async function GET(request: NextRequest) {
             })
         );
 
+        // When scoped to a single class, return lists directly without cross-class merging
+        if (filterClassId && filterClassId !== 'all') {
+            const singleClassLists = listsWithWords.map((list) => {
+                const cls = classMap.get(list.classId);
+                const className = cls?.name || 'Unknown Class';
+                const academicYear = cls?.academicYear || '';
+                return {
+                    ...list,
+                    className,
+                    classIds: [list.classId],
+                    classNames: [className],
+                    allListIds: [list.id],
+                    academicYears: academicYear ? [academicYear] : [],
+                    classActive: cls?.active ?? true,
+                    currentClassNames: list.isCurrent ? [className] : [],
+                };
+            });
+            return NextResponse.json(singleClassLists);
+        }
+
         // Deduplicate: group lists with the same title and identical word sets
         const grouped = new Map<string, {
             primary: typeof listsWithWords[0];
@@ -69,6 +99,7 @@ export async function GET(request: NextRequest) {
             duplicateIds: string[];
             academicYears: string[];
             anyActive: boolean;
+            currentClassNames: string[];
         }>();
 
         for (const list of listsWithWords) {
@@ -89,6 +120,9 @@ export async function GET(request: NextRequest) {
                 group.duplicateIds.push(list.id);
                 if (academicYear) group.academicYears.push(academicYear);
                 group.anyActive = group.anyActive || isActive;
+                if (list.isCurrent && !group.currentClassNames.includes(className)) {
+                    group.currentClassNames.push(className);
+                }
             } else {
                 grouped.set(groupKey, {
                     primary: list,
@@ -97,13 +131,14 @@ export async function GET(request: NextRequest) {
                     duplicateIds: [list.id],
                     academicYears: academicYear ? [academicYear] : [],
                     anyActive: isActive,
+                    currentClassNames: list.isCurrent ? [className] : [],
                 });
             }
         }
 
         // Return deduplicated list with combined class info
         const dedupedLists = Array.from(grouped.values()).map(
-            ({ primary, classIds, classNames, duplicateIds, academicYears, anyActive }) => ({
+            ({ primary, classIds, classNames, duplicateIds, academicYears, anyActive, currentClassNames }) => ({
                 ...primary,
                 className: classNames.join(', '),
                 classIds,
@@ -113,6 +148,7 @@ export async function GET(request: NextRequest) {
                 // same year shows "2026-2027" once rather than twice.
                 academicYears: Array.from(new Set(academicYears)),
                 classActive: anyActive,
+                currentClassNames,
             }),
         );
 

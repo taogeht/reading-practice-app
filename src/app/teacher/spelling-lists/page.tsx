@@ -70,6 +70,7 @@ type SpellingList = {
   classIds?: string[];
   classNames?: string[];
   allListIds?: string[];
+  currentClassNames?: string[];
   title: string;
   weekNumber: number | null;
   gradeLevel: number | null;
@@ -122,6 +123,7 @@ export default function ManageSpellingListsPage() {
   // within milliseconds of its siblings.
   const [sortOrder, setSortOrder] = useState<"oldest" | "newest">("oldest");
   const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,6 +140,15 @@ export default function ManageSpellingListsPage() {
   const [regeneratingAudio, setRegeneratingAudio] = useState<{ word: SpellingWord; listIds: string[] } | null>(null);
   const [bulkAudioFor, setBulkAudioFor] = useState<{ list: SpellingList; isRegenerate: boolean } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const sortedClasses = useMemo(() => {
+    return [...classes].sort((a, b) => {
+      const gA = a.gradeLevel ?? 999;
+      const gB = b.gradeLevel ?? 999;
+      if (gA !== gB) return gA - gB;
+      return a.name.localeCompare(b.name);
+    });
+  }, [classes]);
 
   const handlePlayAudio = useCallback((word: SpellingWord) => {
     if (!word.audioUrl) return;
@@ -186,39 +197,50 @@ export default function ManageSpellingListsPage() {
     );
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchLists = useCallback(async (classId: string) => {
     try {
       setLoading(true);
       setError(null);
-
-      // Fetch classes for dropdowns
-      const classesRes = await fetch('/api/teacher/classes');
-      if (!classesRes.ok) throw new Error('Failed to fetch classes');
-      const classesData = await classesRes.json();
-      // The API returns { classes: [...] } so unwrap it; fall back to direct array for safety
-      const classesArray = Array.isArray(classesData) ? classesData : (classesData.classes ?? []);
-      setClasses(classesArray);
-
-      // Fetch all spelling lists for this teacher
-      const listsRes = await fetch('/api/teacher/spelling-lists');
-      if (!listsRes.ok) throw new Error('Failed to fetch spelling lists');
+      const url = classId && classId !== "all"
+        ? `/api/teacher/spelling-lists?classId=${encodeURIComponent(classId)}`
+        : "/api/teacher/spelling-lists";
+      const listsRes = await fetch(url);
+      if (!listsRes.ok) throw new Error("Failed to fetch spelling lists");
       const listsData = await listsRes.json();
       setLists(Array.isArray(listsData) ? listsData : []);
-
     } catch (err: any) {
-      setError(err.message || 'An error occurred while fetching data');
+      setError(err.message || "An error occurred while fetching data");
       console.error(err);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const classesRes = await fetch("/api/teacher/classes");
+      if (!classesRes.ok) throw new Error("Failed to fetch classes");
+      const classesData = await classesRes.json();
+      const classesArray = Array.isArray(classesData) ? classesData : (classesData.classes ?? []);
+      setClasses(classesArray);
+    } catch (err) {
+      console.error("Failed to fetch classes:", err);
+    }
   };
 
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  useEffect(() => {
+    fetchLists(selectedClassId);
+  }, [selectedClassId, fetchLists]);
+
   const handleDelete = async (list: SpellingList) => {
-    const classCount = list.allListIds?.length || 1;
+    const idsToDelete = selectedClassId !== "all"
+      ? [list.id]
+      : (list.allListIds || [list.id]);
+    const classCount = idsToDelete.length;
     const message = classCount > 1
       ? `This spelling list is shared across ${classCount} classes (${list.className}). Delete from all classes? This action cannot be undone.`
       : "Are you sure you want to delete this spelling list? This action cannot be undone.";
@@ -228,8 +250,6 @@ export default function ManageSpellingListsPage() {
     }
 
     try {
-      // Delete all copies of this list across classes
-      const idsToDelete = list.allListIds || [list.id];
       await Promise.all(
         idsToDelete.map(id =>
           fetch(`/api/teacher/spelling-lists/${id}`, { method: "DELETE" })
@@ -276,7 +296,7 @@ export default function ManageSpellingListsPage() {
       }
 
       alert(`Audio generated: ${result.successCount} words completed, ${result.errorCount} errors`);
-      fetchData();
+      fetchLists(selectedClassId);
     } catch (err: any) {
       console.error("Error generating audio:", err);
       throw err;
@@ -314,7 +334,7 @@ export default function ManageSpellingListsPage() {
       }
 
       alert(`Images generated: ${result.successCount} words completed, ${result.errorCount} errors`);
-      fetchData();
+      fetchLists(selectedClassId);
     } catch (err: any) {
       console.error("Error generating images:", err);
       alert(err.message || "Failed to generate images. Please try again.");
@@ -326,7 +346,11 @@ export default function ManageSpellingListsPage() {
   const handleToggleCurrent = async (list: SpellingList) => {
     setSettingCurrentFor(list.id);
     try {
-      const applyToListIds = list.allListIds || [list.id];
+      // When viewing a specific class, only toggle this class's copy.
+      // When viewing all classes, toggle all linked classes together.
+      const applyToListIds = selectedClassId !== "all"
+        ? [list.id]
+        : (list.allListIds || [list.id]);
       const isMakingCurrent = !list.isCurrent;
 
       if (isMakingCurrent) {
@@ -350,11 +374,34 @@ export default function ManageSpellingListsPage() {
         }
       }
 
-      // Optimistic local update: only one list can be current per class group, so clear others
+      // Classes affected by this toggle
+      const affectedClassSet = new Set(
+        selectedClassId !== "all"
+          ? [selectedClassId]
+          : (list.classIds || [list.classId])
+      );
+
+      // Optimistic local update: only clear other lists if they overlap with the affected class(es)
       setLists((prev) =>
         prev.map((l) => {
-          if (l.id === list.id) return { ...l, isCurrent: isMakingCurrent };
-          if (isMakingCurrent) return { ...l, isCurrent: false };
+          if (l.id === list.id) {
+            return {
+              ...l,
+              isCurrent: isMakingCurrent,
+              currentClassNames: isMakingCurrent ? (l.classNames || [l.className]) : [],
+            };
+          }
+          if (isMakingCurrent) {
+            const listClasses = l.classIds || [l.classId];
+            const overlaps = listClasses.some((c) => affectedClassSet.has(c));
+            if (overlaps) {
+              return {
+                ...l,
+                isCurrent: false,
+                currentClassNames: [],
+              };
+            }
+          }
           return l;
         })
       );
@@ -500,33 +547,36 @@ export default function ManageSpellingListsPage() {
           </div>
         )}
 
-        {lists.length === 0 ? (
-          <Card className="border-dashed shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="bg-blue-50 p-4 rounded-full mb-4">
-                <BookOpen className="w-10 h-10 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Spelling Lists Yet</h3>
-              <p className="text-gray-500 max-w-md mb-6">
-                Create your first spelling list to assign words to your students, or import a public list from another teacher.
-              </p>
-              <div className="flex gap-4">
-                <Button onClick={handleCreateClick}>Create First List</Button>
-                <Button variant="outline" onClick={() => setShowImportDialog(true)}>
-                  Browse Public Lists
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-          <div className="flex items-center justify-between gap-3 mb-6">
-            <p className="text-sm text-gray-600">
-              {lists.length} list{lists.length === 1 ? "" : "s"}
-              {gradeGroups.length > 1 && ` across ${gradeGroups.length} grades`}
-            </p>
+        {/* Controls Toolbar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <p className="text-sm text-gray-600">
+            {lists.length} list{lists.length === 1 ? "" : "s"}
+            {selectedClassId === "all" && gradeGroups.length > 1 && ` across ${gradeGroups.length} grades`}
+          </p>
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2 shrink-0">
-              <label htmlFor="spelling-sort" className="text-sm text-gray-600">
+              <label htmlFor="spelling-class" className="text-sm text-gray-600 font-medium">
+                Class
+              </label>
+              <Select
+                value={selectedClassId}
+                onValueChange={(value) => setSelectedClassId(value)}
+              >
+                <SelectTrigger id="spelling-class" className="w-[190px] h-9">
+                  <SelectValue placeholder="All Classes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {sortedClasses.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.gradeLevel != null ? `Grade ${cls.gradeLevel} · ${cls.name}` : cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <label htmlFor="spelling-sort" className="text-sm text-gray-600 font-medium">
                 Sort
               </label>
               <Select
@@ -543,6 +593,37 @@ export default function ManageSpellingListsPage() {
               </Select>
             </div>
           </div>
+        </div>
+
+        {lists.length === 0 ? (
+          <Card className="border-dashed shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="bg-blue-50 p-4 rounded-full mb-4">
+                <BookOpen className="w-10 h-10 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Spelling Lists Yet</h3>
+              <p className="text-gray-500 max-w-md mb-6">
+                {selectedClassId !== "all"
+                  ? "This class has no spelling lists assigned yet. Create a list or switch classes."
+                  : "Create your first spelling list to assign words to your students, or import a public list from another teacher."}
+              </p>
+              <div className="flex gap-4">
+                <Button onClick={handleCreateClick}>Create First List</Button>
+                {selectedClassId !== "all" && (
+                  <Button variant="outline" onClick={() => setSelectedClassId("all")}>
+                    Show All Classes
+                  </Button>
+                )}
+                {selectedClassId === "all" && (
+                  <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+                    Browse Public Lists
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
           <div className="space-y-8">
           {gradeGroups.map((group) => {
             const key = gradeKey(group.gradeLevel);
@@ -599,6 +680,14 @@ export default function ManageSpellingListsPage() {
                           <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2 py-0.5 flex items-center gap-1">
                             <Star className="w-3 h-3 fill-current" />
                             Current Week
+                            {selectedClassId === "all" &&
+                              list.currentClassNames &&
+                              list.currentClassNames.length > 0 &&
+                              list.currentClassNames.length < (list.classNames?.length || 0) && (
+                                <span className="opacity-90 font-normal ml-0.5">
+                                  ({list.currentClassNames.join(", ")})
+                                </span>
+                            )}
                           </Badge>
                         )}
                       </div>
@@ -851,7 +940,8 @@ export default function ManageSpellingListsPage() {
       <ManageSpellingListDialog
         open={showManageDialog}
         onOpenChange={setShowManageDialog}
-        onSuccess={fetchData}
+        onSuccess={() => fetchLists(selectedClassId)}
+        defaultClassId={selectedClassId !== "all" ? selectedClassId : undefined}
         classes={classes}
         initialData={editingList ? {
           id: editingList.id,
@@ -867,7 +957,7 @@ export default function ManageSpellingListsPage() {
       <ImportSpellingListDialog
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
-        onSuccess={fetchData}
+        onSuccess={() => fetchLists(selectedClassId)}
         classes={classes}
       />
 
