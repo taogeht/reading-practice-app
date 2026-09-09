@@ -81,7 +81,13 @@ export async function GET(request: NextRequest) {
         maxAttempts: assignments.maxAttempts,
         instructions: assignments.instructions,
         recordingMode: assignments.recordingMode,
+        createdAt: assignments.createdAt,
+        classId: classes.id,
         className: classes.name,
+        classGradeLevel: classes.gradeLevel,
+        classAcademicYear: classes.academicYear,
+        classActive: classes.active,
+        classPromotedToClassId: classes.promotedToClassId,
       })
       .from(assignments)
       .innerJoin(stories, eq(assignments.storyId, stories.id))
@@ -210,6 +216,11 @@ export async function GET(request: NextRequest) {
         status = 'pending';
       }
 
+      const isPast =
+        assignment.status === 'archived' ||
+        assignment.classActive === false ||
+        Boolean(assignment.classPromotedToClassId);
+
       return {
         id: assignment.id,
         title: assignment.title,
@@ -217,6 +228,8 @@ export async function GET(request: NextRequest) {
         storyId: assignment.storyId,
         storyTitle: assignment.storyTitle,
         dueAt: assignment.dueAt?.toISOString() || null,
+        assignedAt: assignment.assignedAt?.toISOString() || null,
+        createdAt: assignment.createdAt?.toISOString() || null,
         // `status` (below) is the kid-facing rollup of THIS student's
         // recording state (pending/submitted/completed). Distinct from
         // the assignment-row status the teacher controls; we surface
@@ -224,6 +237,7 @@ export async function GET(request: NextRequest) {
         // route archived rows into pastAssignments without mistaking
         // them for "completed by the kid".
         assignmentStatus: assignment.status,
+        isPast,
         status,
         attempts: assignmentRecordings.length,
         maxAttempts: assignment.maxAttempts || 3,
@@ -231,7 +245,11 @@ export async function GET(request: NextRequest) {
         letterGrade: bestLetterGrade,
         recordingMode: assignment.recordingMode,
         instructions: assignment.instructions,
+        classId: assignment.classId,
         className: assignment.className,
+        classGradeLevel: assignment.classGradeLevel,
+        classAcademicYear: assignment.classAcademicYear,
+        classActive: assignment.classActive,
         teacherFeedback: latestRecordingWithFeedback?.teacherFeedback || null,
         teacherReplyAudioUrl: latestRecordingWithFeedback?.teacherReplyAudioUrl || null,
         teacherReplyDurationSeconds: latestRecordingWithFeedback?.teacherReplyDurationSeconds ?? null,
@@ -243,12 +261,11 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Calculate statistics. Archived rows are excluded so "pending
-    // assignments = 3" reflects what's actually on the kid's active
-    // board, not lingering counts from teacher-archived work.
-    const activeAssignments = assignmentsWithStatus.filter(
-      (a) => a.assignmentStatus !== 'archived',
-    );
+    // Calculate statistics. Archived rows and assignments from past/promoted
+    // classes are excluded so "pending assignments = 3" reflects what's actually
+    // on the kid's active board, not lingering counts from past semesters.
+    const activeAssignments = assignmentsWithStatus.filter((a) => !a.isPast);
+    const pastAssignments = assignmentsWithStatus.filter((a) => a.isPast);
     const pendingAssignments = activeAssignments.filter((a) => a.status === 'pending');
     const submittedAssignments = activeAssignments.filter((a) => a.status === 'submitted');
     const completedAssignments = activeAssignments.filter((a) => a.status === 'completed');
@@ -290,17 +307,10 @@ export async function GET(request: NextRequest) {
       // Top-level split: `assignments` is the kid's active list (used
       // by every existing UI block — pending/submitted/completed
       // counters, the Reading tab's Assignment History sub-tabs,
-      // stats etc.), while `pastAssignments` is the bucket the new
-      // "Past stories" section renders. Splitting on the assignment-
-      // row status (not the recording status) preserves the
-      // teacher's intent: archived = "off the active board, but the
-      // kid's history of it is still revisitable."
-      assignments: assignmentsWithStatus.filter(
-        (a) => a.assignmentStatus !== 'archived',
-      ),
-      pastAssignments: assignmentsWithStatus.filter(
-        (a) => a.assignmentStatus === 'archived',
-      ),
+      // stats etc.), while `pastAssignments` is the bucket for
+      // past work and progression over time.
+      assignments: activeAssignments,
+      pastAssignments: pastAssignments,
       stats: {
         totalAssignments: activeAssignments.length,
         pendingAssignments: pendingAssignments.length,

@@ -11,7 +11,7 @@ import {
   users,
   recordings,
 } from '@/lib/db/schema';
-import { eq, and, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray, ne, isNull, isNotNull, or } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 import { accessibleClassIds, userCanManageClass } from '@/lib/auth/class-access';
 import { canManageAssignments } from '@/lib/auth/teacher-capabilities';
@@ -41,6 +41,42 @@ export async function GET(request: NextRequest) {
     // assignments. Admins see all.
     const allowedClassIds = await accessibleClassIds(user.id, user.role);
 
+    const { searchParams } = request.nextUrl;
+    const requestedClassId = searchParams.get('classId');
+    const requestedStatus = searchParams.get('status'); // 'active' | 'archived' | 'all'
+
+    let filterClassIds = allowedClassIds;
+    if (requestedClassId && requestedClassId !== 'all') {
+      if (!allowedClassIds.includes(requestedClassId)) {
+        return NextResponse.json({ success: true, assignments: [] });
+      }
+      filterClassIds = [requestedClassId];
+    }
+
+    if (filterClassIds.length === 0) {
+      return NextResponse.json({ success: true, assignments: [] });
+    }
+
+    const whereConditions = [inArray(assignments.classId, filterClassIds)];
+
+    if (requestedStatus === 'active') {
+      whereConditions.push(
+        and(
+          ne(assignments.status, 'archived'),
+          eq(classes.active, true),
+          isNull(classes.promotedToClassId)
+        )!
+      );
+    } else if (requestedStatus === 'archived') {
+      whereConditions.push(
+        or(
+          eq(assignments.status, 'archived'),
+          eq(classes.active, false),
+          isNotNull(classes.promotedToClassId)
+        )!
+      );
+    }
+
     // Get assignments for this teacher
     const teacherAssignments = await db
       .select({
@@ -58,11 +94,15 @@ export async function GET(request: NextRequest) {
         storyTitle: stories.title,
         classId: assignments.classId,
         className: classes.name,
+        classGradeLevel: classes.gradeLevel,
+        classAcademicYear: classes.academicYear,
+        classActive: classes.active,
+        classPromotedToClassId: classes.promotedToClassId,
       })
       .from(assignments)
       .leftJoin(stories, eq(assignments.storyId, stories.id))
       .leftJoin(classes, eq(assignments.classId, classes.id))
-      .where(allowedClassIds.length > 0 ? inArray(assignments.classId, allowedClassIds) : sql`false`)
+      .where(and(...whereConditions))
       .orderBy(desc(assignments.createdAt));
 
     const progressRows = await db
@@ -88,7 +128,7 @@ export async function GET(request: NextRequest) {
           inArray(recordings.status, ['submitted', 'reviewed'])
         )
       )
-      .where(allowedClassIds.length > 0 ? inArray(assignments.classId, allowedClassIds) : sql`false`)
+      .where(filterClassIds.length > 0 ? inArray(assignments.classId, filterClassIds) : sql`false`)
       .groupBy(
         assignments.id,
         classEnrollments.studentId,

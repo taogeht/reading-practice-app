@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assignments, recordings, stories, classes, users, students, classEnrollments } from '@/lib/db/schema';
-import { eq, and, desc, count, sql } from 'drizzle-orm';
+import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 import { normalizeTtsAudio } from '@/types/story';
 import { r2Client } from '@/lib/storage/r2-client';
@@ -68,6 +68,8 @@ export async function GET(
         storyWordCount: stories.wordCount,
         storyEstimatedReadingTimeMinutes: stories.estimatedReadingTimeMinutes,
         storyAuthor: stories.author,
+        storyIllustrator: stories.illustrator,
+        storyCoverImageUrl: stories.coverImageUrl,
         storyGenre: stories.genre,
         storyTtsAudio: stories.ttsAudio,
         storyCreatedAt: stories.createdAt,
@@ -79,11 +81,11 @@ export async function GET(
         eq(classEnrollments.classId, classes.id),
         eq(classEnrollments.studentId, user.id)
       ))
-      // Archived assignments are hidden from students entirely; a stale
-      // bookmark to one returns 404.
+      // Both active and archived assignments are viewable so students can
+      // listen back to past recordings, hear narrator audio, and review feedback.
       .where(and(
         eq(assignments.id, assignmentId),
-        eq(assignments.status, 'published')
+        inArray(assignments.status, ['published', 'archived'])
       ))
       .limit(1);
 

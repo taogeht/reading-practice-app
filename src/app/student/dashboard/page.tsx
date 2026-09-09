@@ -28,7 +28,7 @@ import { PhonicsDeck } from "@/components/practice/phonics-deck";
 import { WeeklyRecapView } from "@/components/recap/weekly-recap-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AVATARS } from "@/components/auth/visual-password-options";
-import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy, Layers, CalendarDays, Library } from "lucide-react";
+import { BookOpen, Clock, Star, Headphones, LogOut, SmilePlus, Send, Gamepad2, Mic, ExternalLink, Copy, Check, SpellCheck, Trophy, Layers, CalendarDays, Library, GraduationCap } from "lucide-react";
 import { ReadingLibrary } from "@/components/reading/reading-library";
 import { useRouter } from "next/navigation";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
@@ -58,7 +58,11 @@ type Assignment = {
   letterGrade: string | null;
   recordingMode: 'teacher_review' | 'ai_graded';
   instructions: string | null;
+  classId?: string;
   className: string;
+  classGradeLevel?: number | null;
+  classAcademicYear?: string | null;
+  classActive?: boolean | null;
   teacherFeedback: string | null;
   teacherReplyAudioUrl: string | null;
   teacherReplyDurationSeconds: number | null;
@@ -589,7 +593,7 @@ export default function StudentDashboardPage() {
         {pastAssignments.length > 0 && (
           <CollapsibleCard
             title="Past stories"
-            description="Old reading homework you've finished — tap to listen back."
+            description="Old reading homework you've finished — tap to listen back to your voice."
             defaultOpen={false}
             storageKey="student-dashboard.past-stories"
             headerAccessory={
@@ -598,54 +602,83 @@ export default function StudentDashboardPage() {
               </Badge>
             }
           >
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-              {pastAssignments.map((assignment) => (
-                <div
-                  key={assignment.id}
-                  className="border border-gray-200 bg-gray-50 rounded-lg p-3"
-                >
-                  <div className="flex items-center justify-between mb-1 gap-2">
-                    <div className="min-w-0">
-                      <h4 className="font-medium text-sm text-gray-900 truncate">
-                        {assignment.title}
-                      </h4>
-                      <p className="text-xs text-gray-600 truncate">
-                        {assignment.storyTitle}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {assignment.letterGrade && (
-                        <Badge
-                          variant="default"
-                          className="bg-purple-600 text-white text-[10px] px-1.5 py-0 h-5 font-bold"
-                        >
-                          {assignment.letterGrade}
-                        </Badge>
-                      )}
-                      {assignment.bestScore && (
-                        <Badge variant="default" className="bg-green-600 text-[10px] px-1.5 py-0 h-5">
-                          {assignment.bestScore}%
-                        </Badge>
-                      )}
-                    </div>
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+              {Object.entries(
+                pastAssignments.reduce<Record<string, { label: string; items: Assignment[] }>>((acc, assignment) => {
+                  const key = assignment.classAcademicYear || assignment.className || 'past';
+                  const label = assignment.classGradeLevel != null
+                    ? `Grade ${assignment.classGradeLevel} · ${assignment.className}${assignment.classAcademicYear ? ` (${assignment.classAcademicYear})` : ''}`
+                    : `${assignment.className}${assignment.classAcademicYear ? ` (${assignment.classAcademicYear})` : ''}`;
+                  if (!acc[key]) acc[key] = { label, items: [] };
+                  acc[key].items.push(assignment);
+                  return acc;
+                }, {})
+              ).map(([key, group]) => (
+                <div key={key} className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider pb-1 border-b border-gray-100">
+                    <GraduationCap className="w-3.5 h-3.5 text-blue-500" />
+                    <span>{group.label}</span>
+                    <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0 font-normal">
+                      {group.items.length}
+                    </Badge>
                   </div>
-                  {assignment.attemptsList.length > 0 ? (
-                    <div className="mt-3 space-y-2">
-                      {assignment.attemptsList.map((att) => (
-                        <StudentAttemptCard
-                          key={att.attemptNumber ?? Math.random()}
-                          attempt={{
-                            ...att,
-                            analysisJson: att.analysisJson as never,
-                          }}
-                        />
-                      ))}
+                  {group.items.map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className="border border-gray-200 bg-white rounded-xl p-3 shadow-xs"
+                    >
+                      <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <h4 className="font-medium text-sm text-gray-900 truncate">
+                            {assignment.title}
+                          </h4>
+                          <p className="text-xs text-gray-600 truncate">
+                            {assignment.storyTitle}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {assignment.letterGrade && (
+                            <Badge
+                              variant="default"
+                              className="bg-purple-600 text-white text-[10px] px-1.5 py-0 h-5 font-bold"
+                            >
+                              {assignment.letterGrade}
+                            </Badge>
+                          )}
+                          {assignment.bestScore && (
+                            <Badge variant="default" className="bg-green-600 text-[10px] px-1.5 py-0 h-5">
+                              {assignment.bestScore}%
+                            </Badge>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => router.push(`/student/assignments/${assignment.id}/practice`)}
+                          >
+                            Review Story
+                          </Button>
+                        </div>
+                      </div>
+                      {assignment.attemptsList.length > 0 ? (
+                        <div className="mt-3 space-y-2">
+                          {assignment.attemptsList.map((att) => (
+                            <StudentAttemptCard
+                              key={att.id || att.attemptNumber || Math.random()}
+                              attempt={{
+                                ...att,
+                                analysisJson: att.analysisJson as never,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 mt-2 italic">
+                          No recordings submitted for this assignment.
+                        </p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-xs text-gray-500 mt-2 italic">
-                      No recordings on this assignment.
-                    </p>
-                  )}
+                  ))}
                 </div>
               ))}
             </div>

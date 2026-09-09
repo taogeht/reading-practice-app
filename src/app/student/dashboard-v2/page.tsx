@@ -14,6 +14,7 @@ import {
   Copy,
   Check,
   ChevronRight,
+  GraduationCap,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
@@ -64,6 +65,11 @@ type Assignment = {
   bestScore: number | null;
   letterGrade: string | null;
   hasTeacherFeedback: boolean;
+  classId?: string;
+  className?: string;
+  classGradeLevel?: number | null;
+  classAcademicYear?: string | null;
+  isPast?: boolean;
   attemptsList: Attempt[];
 };
 type Student = {
@@ -310,14 +316,32 @@ export default function StudentDashboardV2Page() {
             )}
             {recordingsForReview.map((a) => (
               <div key={a.id} className="rounded-2xl border-2 border-violet-100 bg-white p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="min-w-0">
-                    <p className="font-[family-name:var(--font-kid-display)] font-semibold text-slate-800 truncate">{a.title}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-[family-name:var(--font-kid-display)] font-semibold text-slate-800 truncate">{a.title}</p>
+                      {a.className && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                          <GraduationCap className="w-3 h-3 text-sky-500" />
+                          {a.classGradeLevel != null ? `Grade ${a.classGradeLevel} · ${a.className}` : a.className}
+                          {a.classAcademicYear ? ` (${a.classAcademicYear})` : ''}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-slate-500 truncate">{a.storyTitle}</p>
                   </div>
-                  {a.letterGrade && (
-                    <span className="shrink-0 rounded-full bg-violet-600 text-white text-xs font-bold px-2 py-0.5">{a.letterGrade}</span>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {a.letterGrade && (
+                      <span className="shrink-0 rounded-full bg-violet-600 text-white text-xs font-bold px-2 py-0.5">{a.letterGrade}</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/student/assignments/${a.id}/practice`)}
+                      className="rounded-lg border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold px-2.5 py-1 transition-colors"
+                    >
+                      Review Story
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {a.attemptsList.map((att) => (
