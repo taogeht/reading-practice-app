@@ -22,6 +22,7 @@ export const UI_STRINGS = {
   'tab.recordings': { en: 'My Recordings', zh: '我的錄音' },
   'tab.spelling': { en: 'Spelling', zh: '拼字' },
   'tab.stories': { en: 'Stories', zh: '讀故事' },
+  'tab.practice': { en: 'Practice', zh: '課堂練習' },
 
   // Homework hero
   'hero.title': { en: "Today's homework", zh: '今天的功課' },

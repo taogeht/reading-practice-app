@@ -15,6 +15,7 @@ import {
   Check,
   ChevronRight,
   GraduationCap,
+  Trophy,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
@@ -123,19 +124,30 @@ const TAB_COLOR: Record<string, string> = {
   recordings: 'data-[state=active]:bg-violet-100 data-[state=active]:border-violet-300 data-[state=active]:text-violet-800',
   spelling: 'data-[state=active]:bg-sky-100 data-[state=active]:border-sky-300 data-[state=active]:text-sky-800',
   stories: 'data-[state=active]:bg-emerald-100 data-[state=active]:border-emerald-300 data-[state=active]:text-emerald-800',
+  practice: 'data-[state=active]:bg-indigo-100 data-[state=active]:border-indigo-300 data-[state=active]:text-indigo-800',
 };
 
-function BigTab({ value, labelId, icon: Icon }: { value: string; labelId: UiStringId; icon: typeof HomeIcon }) {
+function BigTab({
+  value,
+  labelId,
+  icon: Icon,
+  className = '',
+}: {
+  value: string;
+  labelId: UiStringId;
+  icon: typeof HomeIcon;
+  className?: string;
+}) {
   const s = UI_STRINGS[labelId];
   return (
     <TabsTrigger
       value={value}
-      className={`flex flex-col items-center justify-center gap-1 min-h-[76px] rounded-2xl border-2 border-transparent bg-white/70 text-slate-600 transition-all data-[state=active]:shadow-[0_4px_0_rgba(0,0,0,0.06)] data-[state=active]:-translate-y-0.5 ${TAB_COLOR[value]}`}
+      className={`flex flex-col items-center justify-center gap-1 min-h-[72px] sm:min-h-[76px] px-1 sm:px-2 py-2 rounded-2xl border-2 border-transparent bg-white/70 text-slate-600 transition-all data-[state=active]:shadow-[0_4px_0_rgba(0,0,0,0.06)] data-[state=active]:-translate-y-0.5 ${TAB_COLOR[value]} ${className}`}
     >
-      <Icon className="w-7 h-7 shrink-0" />
+      <Icon className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
       <span className="leading-tight text-center">
-        <span className="block font-[family-name:var(--font-kid-display)] font-semibold text-sm">{s.en}</span>
-        <span lang="zh-Hant" className="block font-[family-name:var(--font-kid-zh)] text-[11px] opacity-70">{s.zh}</span>
+        <span className="block font-[family-name:var(--font-kid-display)] font-semibold text-xs sm:text-sm truncate max-w-full">{s.en}</span>
+        <span lang="zh-Hant" className="block font-[family-name:var(--font-kid-zh)] text-[10px] sm:text-[11px] opacity-70 truncate max-w-full">{s.zh}</span>
       </span>
     </TabsTrigger>
   );
@@ -207,16 +219,13 @@ export default function StudentDashboardV2Page() {
 
       <main className="max-w-5xl mx-auto px-3 sm:px-4 pt-4">
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          {/* Four big picture buttons. */}
-          {/* h-auto! (important) is required: shadcn's TabsList base injects a
-              fixed h-9 via a variant selector that out-specifies a plain
-              h-auto, which would pin the bar to 36px and let the tall tab
-              cards overflow onto the content below. */}
-          <TabsList className="w-full h-auto! bg-transparent p-0 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
-            <BigTab value="home" labelId="tab.home" icon={HomeIcon} />
-            <BigTab value="recordings" labelId="tab.recordings" icon={Mic} />
-            <BigTab value="spelling" labelId="tab.spelling" icon={BookA} />
-            <BigTab value="stories" labelId="tab.stories" icon={BookOpen} />
+          {/* Five big picture buttons. Balanced 5-col on desktop/tablet, 2 + 3 row split on mobile so text never wraps or squishes */}
+          <TabsList className="w-full h-auto! bg-transparent p-0 grid grid-cols-6 sm:grid-cols-5 gap-2 sm:gap-3 mb-5">
+            <BigTab value="home" labelId="tab.home" icon={HomeIcon} className="col-span-3 sm:col-span-1" />
+            <BigTab value="recordings" labelId="tab.recordings" icon={Mic} className="col-span-3 sm:col-span-1" />
+            <BigTab value="spelling" labelId="tab.spelling" icon={BookA} className="col-span-2 sm:col-span-1" />
+            <BigTab value="stories" labelId="tab.stories" icon={BookOpen} className="col-span-2 sm:col-span-1" />
+            <BigTab value="practice" labelId="tab.practice" icon={Trophy} className="col-span-2 sm:col-span-1" />
           </TabsList>
 
           {/* ---------------- HOME ---------------- */}
@@ -398,7 +407,14 @@ export default function StudentDashboardV2Page() {
               </div>
             )}
             <StudentHomeworkSection />
-            <div className="space-y-3">
+          </TabsContent>
+
+          {/* ---------------- PRACTICE (GRAMMAR & QUIZZES) ---------------- */}
+          <TabsContent value="practice" className="space-y-6 mt-0">
+            <div className="space-y-4">
+              <h2 className="flex items-center gap-2 font-[family-name:var(--font-kid-display)] text-xl font-bold text-slate-800">
+                <Trophy className="w-6 h-6 text-indigo-500" /> Grammar & Unit Practice · 課堂練習
+              </h2>
               <PracticeStatsCard />
               <PracticeSession />
               {process.env.NEXT_PUBLIC_ENABLE_STUDENT_PHONICS === 'true' && <PhonicsDeck />}
