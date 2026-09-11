@@ -62,6 +62,41 @@ export default function TeacherStudentProfilePage() {
   const [levelSaving, setLevelSaving] = useState(false);
   const [journeyKey, setJourneyKey] = useState(0);
 
+  // Inline student name editing
+  const [editingName, setEditingName] = useState(false);
+  const [firstNameInput, setFirstNameInput] = useState("");
+  const [lastNameInput, setLastNameInput] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+
+  const saveStudentName = async () => {
+    const trimmedFirst = firstNameInput.trim();
+    const trimmedLast = lastNameInput.trim();
+    if (!trimmedFirst) {
+      toast.error("First name cannot be empty");
+      return;
+    }
+    setNameSaving(true);
+    try {
+      const res = await fetch(`/api/teacher/students/${studentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to update student name");
+      setProfile((prev) => (prev ? { ...prev, firstName: trimmedFirst, lastName: trimmedLast } : prev));
+      setEditingName(false);
+      toast.success("Student name updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update student name");
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
   const saveReadingLevel = async () => {
     const next = levelInput.trim();
     if (!next) {
@@ -159,10 +194,73 @@ export default function TeacherStudentProfilePage() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {profile.firstName} {profile.lastName}
-              </h1>
-              <p className="text-sm text-gray-600">Student Profile</p>
+              {editingName ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    saveStudentName();
+                  }}
+                  className="flex flex-wrap items-center gap-2"
+                >
+                  <Input
+                    value={firstNameInput}
+                    onChange={(e) => setFirstNameInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setEditingName(false);
+                    }}
+                    placeholder="First name"
+                    className="h-9 w-36 text-base font-semibold bg-white"
+                    autoFocus
+                  />
+                  <Input
+                    value={lastNameInput}
+                    onChange={(e) => setLastNameInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setEditingName(false);
+                    }}
+                    placeholder="Last name"
+                    className="h-9 w-36 text-base font-semibold bg-white"
+                  />
+                  <Button size="sm" type="submit" className="h-9 px-3" disabled={nameSaving}>
+                    {nameSaving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-1" /> Save
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    type="button"
+                    className="h-9 px-2.5"
+                    onClick={() => setEditingName(false)}
+                    disabled={nameSaving}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </form>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {profile.firstName} {profile.lastName}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFirstNameInput(profile.firstName || "");
+                      setLastNameInput(profile.lastName || "");
+                      setEditingName(true);
+                    }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                    title="Edit student name"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              <p className="text-sm text-gray-600 mt-0.5">Student Profile</p>
             </div>
           </div>
         </div>

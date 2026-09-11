@@ -100,16 +100,13 @@ export async function PUT(
   try {
     const user = await getCurrentUser();
 
-    if (!user || user.role !== 'teacher') {
+    if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
     }
 
     const { studentId } = await params;
 
-    // PUT (edit OUP credentials) is still gated to classes the user sees;
-    // co-teachers can adjust student records on shared classes too. If
-    // this should be primary-only later, swap accessibleClassIds for a
-    // userIsClassPrimary check per-enrollment.
+    // Gated to classes the user sees; co-teachers can adjust student records on shared classes too.
     const allowedClassIds = await accessibleClassIds(user.id, user.role);
     if (allowedClassIds.length === 0) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
@@ -126,18 +123,51 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { oupEmail, oupPassword } = body;
+    const { oupEmail, oupPassword, firstName, lastName } = body;
 
-    await db
-      .update(students)
-      .set({
-        oupEmail: oupEmail?.trim() || null,
-        oupPassword: oupPassword?.trim() || null,
+    let updatedFirstName: string | undefined;
+    let updatedLastName: string | undefined;
+
+    if (firstName !== undefined || lastName !== undefined) {
+      const userUpdates: Partial<typeof users.$inferInsert> = {
         updatedAt: new Date(),
-      })
-      .where(eq(students.id, studentId));
+      };
+      if (firstName !== undefined) {
+        const trimmedFirst = typeof firstName === 'string' ? firstName.trim() : '';
+        if (!trimmedFirst) {
+          return NextResponse.json({ error: 'First name is required' }, { status: 400 });
+        }
+        userUpdates.firstName = trimmedFirst;
+        updatedFirstName = trimmedFirst;
+      }
+      if (lastName !== undefined) {
+        const trimmedLast = typeof lastName === 'string' ? lastName.trim() : '';
+        userUpdates.lastName = trimmedLast;
+        updatedLastName = trimmedLast;
+      }
 
-    return NextResponse.json({ success: true });
+      await db
+        .update(users)
+        .set(userUpdates)
+        .where(eq(users.id, studentId));
+    }
+
+    if (oupEmail !== undefined || oupPassword !== undefined) {
+      await db
+        .update(students)
+        .set({
+          ...(oupEmail !== undefined ? { oupEmail: oupEmail?.trim() || null } : {}),
+          ...(oupPassword !== undefined ? { oupPassword: oupPassword?.trim() || null } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(students.id, studentId));
+    }
+
+    return NextResponse.json({
+      success: true,
+      ...(updatedFirstName !== undefined ? { firstName: updatedFirstName } : {}),
+      ...(updatedLastName !== undefined ? { lastName: updatedLastName } : {}),
+    });
   } catch (error) {
     logError(error, 'api/teacher/students/[studentId] PUT');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
