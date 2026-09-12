@@ -8,8 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building, ExternalLink, Save, Pencil, Check, X } from "lucide-react";
+import { Loader2, ArrowLeft, BookOpen, GraduationCap, Mail, Building, ExternalLink, Save, Pencil, Check, X, KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { VisualPasswordCreator } from "@/components/students/visual-password-creator";
 import { TeacherMediaSection } from "@/components/student-media/teacher-media-section";
 import { TeacherStudentPracticeSection } from "@/components/practice/teacher-student-practice-section";
 import { StudentWordMasterySection } from "@/components/spelling/student-word-mastery-section";
@@ -94,6 +96,51 @@ export default function TeacherStudentProfilePage() {
       toast.error(err instanceof Error ? err.message : "Failed to update student name");
     } finally {
       setNameSaving(false);
+    }
+  };
+
+  // Picture password editing
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordTypeInput, setPasswordTypeInput] = useState<string>("animal");
+  const [passwordDataInput, setPasswordDataInput] = useState<any>({});
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
+  const saveVisualPassword = async () => {
+    if (passwordTypeInput === "animal" && !passwordDataInput?.animal) {
+      toast.error("Please select an animal password");
+      return;
+    }
+    if (passwordTypeInput === "object" && !passwordDataInput?.object) {
+      toast.error("Please select a picture password");
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const res = await fetch(`/api/teacher/students/${studentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          visualPasswordType: passwordTypeInput,
+          visualPasswordData: passwordDataInput,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to update picture password");
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              visualPasswordType: passwordTypeInput,
+              visualPasswordData: passwordDataInput,
+            }
+          : prev
+      );
+      setShowPasswordDialog(false);
+      toast.success("Picture password updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update picture password");
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -315,9 +362,21 @@ export default function TeacherStudentProfilePage() {
                 )}
               </div>
               <div className="text-sm text-gray-700 space-y-1">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-blue-600" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>{visualPasswordDescription}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 ml-1"
+                    onClick={() => {
+                      setPasswordTypeInput(profile.visualPasswordType || "animal");
+                      setPasswordDataInput(profile.visualPasswordData || {});
+                      setShowPasswordDialog(true);
+                    }}
+                  >
+                    <Pencil className="w-3 h-3 mr-1" /> Change
+                  </Button>
                 </div>
                 {profile.parentEmail && (
                   <div className="flex items-center gap-2">
@@ -450,6 +509,54 @@ export default function TeacherStudentProfilePage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Change Picture Password Dialog */}
+        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle>
+                <span className="flex items-center gap-2">
+                  <KeyRound className="w-5 h-5 text-blue-600" />
+                  Change Picture Password
+                </span>
+              </DialogTitle>
+              <DialogDescription>
+                Choose an animal or picture login password for {profile.firstName}.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-2">
+              <VisualPasswordCreator
+                value={{ type: passwordTypeInput, data: passwordDataInput }}
+                onPasswordChange={(type, data) => {
+                  setPasswordTypeInput(type);
+                  setPasswordDataInput(data);
+                }}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowPasswordDialog(false)}
+                disabled={passwordSaving}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={saveVisualPassword}
+                disabled={passwordSaving}
+              >
+                {passwordSaving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Save Password
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

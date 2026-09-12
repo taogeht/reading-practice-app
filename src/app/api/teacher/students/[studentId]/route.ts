@@ -6,6 +6,8 @@ import { students, users, classEnrollments, classes } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
+import { VISUAL_PASSWORD_ANIMALS, VISUAL_PASSWORD_OBJECTS } from '@starling-rise/contracts';
+
 export const runtime = 'nodejs';
 
 export async function GET(
@@ -123,10 +125,12 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { oupEmail, oupPassword, firstName, lastName } = body;
+    const { oupEmail, oupPassword, firstName, lastName, visualPasswordType, visualPasswordData } = body;
 
     let updatedFirstName: string | undefined;
     let updatedLastName: string | undefined;
+    let updatedVisualPasswordType: 'animal' | 'object' | undefined;
+    let updatedVisualPasswordData: any = undefined;
 
     if (firstName !== undefined || lastName !== undefined) {
       const userUpdates: Partial<typeof users.$inferInsert> = {
@@ -152,14 +156,56 @@ export async function PUT(
         .where(eq(users.id, studentId));
     }
 
-    if (oupEmail !== undefined || oupPassword !== undefined) {
+    if (visualPasswordType !== undefined || visualPasswordData !== undefined) {
+      if (visualPasswordType !== 'animal' && visualPasswordType !== 'object') {
+        return NextResponse.json(
+          { error: 'Visual password type must be animal or object' },
+          { status: 400 }
+        );
+      }
+      if (!visualPasswordData || typeof visualPasswordData !== 'object') {
+        return NextResponse.json(
+          { error: 'Invalid visual password data' },
+          { status: 400 }
+        );
+      }
+      if (visualPasswordType === 'animal') {
+        const animalId = visualPasswordData.animal;
+        if (!animalId || typeof animalId !== 'string' || !VISUAL_PASSWORD_ANIMALS.some((a) => a.id === animalId)) {
+          return NextResponse.json(
+            { error: 'Invalid animal password selection' },
+            { status: 400 }
+          );
+        }
+        updatedVisualPasswordType = 'animal';
+        updatedVisualPasswordData = { animal: animalId };
+      } else {
+        const objectId = visualPasswordData.object;
+        if (!objectId || typeof objectId !== 'string' || !VISUAL_PASSWORD_OBJECTS.some((o) => o.id === objectId)) {
+          return NextResponse.json(
+            { error: 'Invalid object password selection' },
+            { status: 400 }
+          );
+        }
+        updatedVisualPasswordType = 'object';
+        updatedVisualPasswordData = { object: objectId };
+      }
+    }
+
+    const studentUpdates: Partial<typeof students.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+    if (oupEmail !== undefined) studentUpdates.oupEmail = oupEmail?.trim() || null;
+    if (oupPassword !== undefined) studentUpdates.oupPassword = oupPassword?.trim() || null;
+    if (updatedVisualPasswordType !== undefined) {
+      studentUpdates.visualPasswordType = updatedVisualPasswordType;
+      studentUpdates.visualPasswordData = updatedVisualPasswordData;
+    }
+
+    if (Object.keys(studentUpdates).length > 1) {
       await db
         .update(students)
-        .set({
-          ...(oupEmail !== undefined ? { oupEmail: oupEmail?.trim() || null } : {}),
-          ...(oupPassword !== undefined ? { oupPassword: oupPassword?.trim() || null } : {}),
-          updatedAt: new Date(),
-        })
+        .set(studentUpdates)
         .where(eq(students.id, studentId));
     }
 
@@ -167,6 +213,12 @@ export async function PUT(
       success: true,
       ...(updatedFirstName !== undefined ? { firstName: updatedFirstName } : {}),
       ...(updatedLastName !== undefined ? { lastName: updatedLastName } : {}),
+      ...(updatedVisualPasswordType !== undefined
+        ? {
+            visualPasswordType: updatedVisualPasswordType,
+            visualPasswordData: updatedVisualPasswordData,
+          }
+        : {}),
     });
   } catch (error) {
     logError(error, 'api/teacher/students/[studentId] PUT');

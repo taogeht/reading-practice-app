@@ -35,26 +35,28 @@ export async function GET(request: NextRequest) {
             startDate.setHours(0, 0, 0, 0);
         }
 
-        // Every class the user can manage (primary + co-teacher; admins see
-        // all). Excludes classes marked untracked.
+        // Every active class the user can manage (primary + co-teacher; admins see
+        // all). Excludes archived/inactive classes and untracked classes.
         const allowedIds = await accessibleClassIds(user.id, user.role);
         const teacherClasses = await db
             .select({ id: classes.id, name: classes.name })
             .from(classes)
             .where(
                 user.role === 'admin'
-                    ? eq(classes.trackLoginActivity, true)
+                    ? and(eq(classes.trackLoginActivity, true), eq(classes.active, true))
                     : and(
                           allowedIds.length > 0
                               ? inArray(classes.id, allowedIds)
                               : eq(classes.id, '00000000-0000-0000-0000-000000000000'),
                           eq(classes.trackLoginActivity, true),
+                          eq(classes.active, true),
                       )
             );
 
         if (teacherClasses.length === 0) {
             return NextResponse.json({
                 activity: [],
+                classes: [],
                 daysIncluded: days ?? 'all',
                 totalEnrollments: 0,
                 uniqueStudents: 0,
@@ -65,7 +67,7 @@ export async function GET(request: NextRequest) {
 
         const classIds = teacherClasses.map((c) => c.id);
 
-        // All (student, class) enrollments under this teacher, joined with profile data.
+        // All (student, class) enrollments under this teacher's active classes, joined with profile data.
         const enrollments = await db
             .select({
                 studentId: classEnrollments.studentId,
@@ -82,6 +84,7 @@ export async function GET(request: NextRequest) {
         if (enrollments.length === 0) {
             return NextResponse.json({
                 activity: [],
+                classes: teacherClasses,
                 daysIncluded: days ?? 'all',
                 totalEnrollments: 0,
                 uniqueStudents: 0,
@@ -95,12 +98,43 @@ export async function GET(request: NextRequest) {
 
         const classNameById = new Map(teacherClasses.map((c) => [c.id, c.name]));
 
-        const activity = enrollments.map((e) => {
+        // Group enrollments by studentId to prevent duplicate cards when a
+        // student is enrolled in multiple classes (or an older class).
+        interface GroupedStudentEnrollment {
+            studentId: string;
+            firstName: string;
+            lastName: string;
+            avatarUrl: string | null;
+            classes: Array<{ id: string; name: string }>;
+        }
+
+        const enrollmentsByStudent = new Map<string, GroupedStudentEnrollment>();
+
+        for (const e of enrollments) {
+            let record = enrollmentsByStudent.get(e.studentId);
+            const cName = classNameById.get(e.classId) ?? 'Unknown class';
+            if (!record) {
+                record = {
+                    studentId: e.studentId,
+                    firstName: e.firstName,
+                    lastName: e.lastName,
+                    avatarUrl: e.avatarUrl,
+                    classes: [],
+                };
+                enrollmentsByStudent.set(e.studentId, record);
+            }
+            if (!record.classes.some((c) => c.id === e.classId)) {
+                record.classes.push({ id: e.classId, name: cName });
+            }
+        }
+
+        const activity = Array.from(enrollmentsByStudent.values()).map((e) => {
             const m = metricsById.get(e.studentId)!;
             return {
                 studentId: e.studentId,
-                classId: e.classId,
-                className: classNameById.get(e.classId) ?? 'Unknown class',
+                classId: e.classes[0]?.id ?? '',
+                className: e.classes.map((c) => c.name).join(', '),
+                classes: e.classes,
                 firstName: e.firstName,
                 lastName: e.lastName,
                 avatarUrl: e.avatarUrl,
@@ -136,6 +170,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             activity,
+            classes: teacherClasses,
             daysIncluded: days ?? 'all',
             totalEnrollments: enrollments.length,
             uniqueStudents: studentIds.length,

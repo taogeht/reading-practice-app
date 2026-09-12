@@ -23,14 +23,21 @@ import {
     Loader2,
     RefreshCw,
     ArrowUpDown,
+    GraduationCap,
 } from "lucide-react";
 
 type ActivityStatus = "online" | "active" | "slipping" | "never";
+
+interface StudentClassTag {
+    id: string;
+    name: string;
+}
 
 interface StudentEnrollmentActivity {
     studentId: string;
     classId: string;
     className: string;
+    classes?: StudentClassTag[];
     firstName: string;
     lastName: string;
     avatarUrl: string | null;
@@ -60,6 +67,7 @@ interface ActivityCounts {
 
 interface ApiResponse {
     activity: StudentEnrollmentActivity[];
+    classes?: StudentClassTag[];
     daysIncluded: number | "all";
     totalEnrollments: number;
     uniqueStudents: number;
@@ -119,6 +127,7 @@ export function TeacherLoginActivityCard() {
     const [data, setData] = useState<ApiResponse | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>("status");
     const [dateRange, setDateRange] = useState<DateRange>("7");
+    const [selectedClassId, setSelectedClassId] = useState<string>("all");
     // Collapsed by default — the summary line is enough at a glance; teachers
     // expand for the full per-student breakdown.
     const [expanded, setExpanded] = useState(false);
@@ -144,7 +153,15 @@ export function TeacherLoginActivityCard() {
     };
 
     const sortedActivity = useMemo(() => {
-        const sorted = [...(data?.activity ?? [])];
+        let list = data?.activity ?? [];
+        if (selectedClassId !== "all") {
+            list = list.filter((s) =>
+                s.classes && s.classes.length > 0
+                    ? s.classes.some((c) => c.id === selectedClassId)
+                    : s.classId === selectedClassId
+            );
+        }
+        const sorted = [...list];
         const byName = (a: StudentEnrollmentActivity, b: StudentEnrollmentActivity) =>
             `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
         switch (sortBy) {
@@ -179,7 +196,7 @@ export function TeacherLoginActivityCard() {
                 break;
         }
         return sorted;
-    }, [data, sortBy]);
+    }, [data, sortBy, selectedClassId]);
 
     const formatTimeAgo = (dateStr: string | null) => {
         if (!dateStr) return "never";
@@ -297,6 +314,23 @@ export function TeacherLoginActivityCard() {
                                 </SelectContent>
                             </Select>
 
+                            {data?.classes && data.classes.length > 1 && (
+                                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                                    <SelectTrigger className="h-9 w-[150px] text-sm">
+                                        <GraduationCap className="w-3.5 h-3.5 mr-1 shrink-0 text-gray-400" />
+                                        <SelectValue placeholder="All Classes" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Classes</SelectItem>
+                                        {data.classes.map((c) => (
+                                            <SelectItem key={c.id} value={c.id}>
+                                                {c.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+
                             <Button
                                 variant="outline"
                                 size="icon"
@@ -350,7 +384,9 @@ export function TeacherLoginActivityCard() {
                     </div>
                 ) : sortedActivity.length === 0 ? (
                     <div className="text-center py-10 text-gray-500 text-sm">
-                        No students enrolled in your classes yet.
+                        {selectedClassId !== "all"
+                            ? "No students found in the selected class."
+                            : "No students enrolled in your classes yet."}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[480px] overflow-y-auto pr-1">
@@ -367,7 +403,7 @@ export function TeacherLoginActivityCard() {
                                             : formatTimeAgo(s.lastActivityAt ?? s.lastLoginAt);
                             return (
                             <button
-                                key={`${s.studentId}-${s.classId}`}
+                                key={s.studentId}
                                 onClick={() => router.push(`/teacher/students/${s.studentId}`)}
                                 className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors group ${meta.card}`}
                             >
@@ -385,12 +421,24 @@ export function TeacherLoginActivityCard() {
                                         <span className="font-medium text-sm text-gray-900 group-hover:text-blue-600 truncate">
                                             {s.firstName} {s.lastName}
                                         </span>
-                                        <Badge
-                                            variant="outline"
-                                            className="text-[10px] font-normal px-1.5 py-0 bg-gray-50 text-gray-600 border-gray-200 shrink-0"
-                                        >
-                                            {s.className}
-                                        </Badge>
+                                        {s.classes && s.classes.length > 0 ? (
+                                            s.classes.map((cls) => (
+                                                <Badge
+                                                    key={cls.id}
+                                                    variant="outline"
+                                                    className="text-[10px] font-normal px-1.5 py-0 bg-gray-50 text-gray-600 border-gray-200 shrink-0"
+                                                >
+                                                    {cls.name}
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <Badge
+                                                variant="outline"
+                                                className="text-[10px] font-normal px-1.5 py-0 bg-gray-50 text-gray-600 border-gray-200 shrink-0"
+                                            >
+                                                {s.className}
+                                            </Badge>
+                                        )}
                                     </div>
 
                                     {/* Status pill + when */}
