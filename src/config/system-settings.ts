@@ -106,6 +106,19 @@ export const SYSTEM_SETTING_DEFINITIONS: SystemSettingDefinition[] = [
       + 'costs about five calls. Requires HETZNER_INFERENCE_TOKEN. Takes effect '
       + 'within a few seconds; no redeploy needed.',
   },
+  {
+    key: 'audio.transcriptionModel',
+    label: 'Speech-to-Text Model (Whisper)',
+    description: 'Which Whisper provider transcribes student recordings for AI grading and fluency analysis.',
+    type: 'select',
+    group: 'Audio & Speech Recognition',
+    defaultValue: 'openai',
+    options: [
+      { value: 'openai', label: 'OpenAI Whisper-1 (default)' },
+      { value: 'groq', label: 'Groq Whisper Large v3 Turbo (fastest, ~70% cheaper)' },
+    ],
+    helpText: 'Groq runs Whisper Large v3 Turbo on LPUs in under 1 second. Requires GROQ_API_KEY. Falls back to OpenAI if GROQ_API_KEY is not set.',
+  },
 ];
 
 export const SYSTEM_SETTING_DEFINITION_MAP = SYSTEM_SETTING_DEFINITIONS.reduce<Record<string, SystemSettingDefinition>>(

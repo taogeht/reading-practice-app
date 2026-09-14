@@ -172,7 +172,12 @@ export async function analyzeAudioBuffer(opts: {
   passageLevel: number | null;
 }): Promise<RawAnalysis> {
   const filename = `recording.${opts.audioExtension}`;
-  const whisper = await transcribeAudio(opts.audioBuffer, filename, opts.audioMime);
+  const whisper = await transcribeAudio(
+    opts.audioBuffer,
+    filename,
+    opts.audioMime,
+    opts.storyText,
+  );
   const grade = gradeRecording({
     storyText: opts.storyText,
     transcript: whisper.text,

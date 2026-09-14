@@ -2,34 +2,24 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { generatedTests } from '@/lib/db/schema';
 import { googleTtsClient } from '@/lib/tts/client';
-import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { r2Client } from '@/lib/storage/r2-client';
 import { logError } from '@/lib/logger';
 import type { TestDocument, TestItem } from './test-types';
 
 type ResolvedTts = {
-  client: typeof googleTtsClient | typeof elevenLabsTtsClient | null;
+  client: typeof googleTtsClient | null;
   voiceId: string | undefined;
 };
 
-// Resolves which TTS client + voice to use. A voiceId is namespaced
-// "provider:voice" (matching the spelling flow); falls back to ElevenLabs if
-// configured, else Google, else none — same preference order as the rest of the
-// app.
+// Resolves which TTS client + voice to use with Google Cloud Journey voices.
 function resolveTts(voiceId?: string): ResolvedTts {
+  if (!googleTtsClient.isConfigured()) return { client: null, voiceId: undefined };
   if (voiceId) {
-    const [provider, ...rest] = voiceId.split(':');
-    const v = rest.join(':') || undefined;
-    if (provider === 'elevenlabs' && elevenLabsTtsClient.isConfigured()) {
-      return { client: elevenLabsTtsClient, voiceId: v };
-    }
-    if (provider === 'google' && googleTtsClient.isConfigured()) {
-      return { client: googleTtsClient, voiceId: v };
-    }
+    const [, ...rest] = voiceId.split(':');
+    const v = rest.join(':') || voiceId;
+    return { client: googleTtsClient, voiceId: v };
   }
-  if (elevenLabsTtsClient.isConfigured()) return { client: elevenLabsTtsClient, voiceId: undefined };
-  if (googleTtsClient.isConfigured()) return { client: googleTtsClient, voiceId: undefined };
-  return { client: null, voiceId: undefined };
+  return { client: googleTtsClient, voiceId: undefined };
 }
 
 // Re-reads the test row, sets one item's audioUrl by id, writes the document

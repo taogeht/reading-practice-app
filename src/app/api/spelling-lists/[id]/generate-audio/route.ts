@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { eq, sql } from 'drizzle-orm';
 import { canManageSpellingLists } from '@/lib/auth/teacher-capabilities';
 import { googleTtsClient } from '@/lib/tts/client';
-import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
@@ -29,37 +28,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const { searchParams } = new URL(request.url);
         const force = searchParams.get('force') === 'true';
-        const voiceParam = searchParams.get('voiceId'); // e.g. "elevenlabs:EXAVITQu4vr4xnSDxMaL" or "google:en-US-Journey-F"
+        const voiceParam = searchParams.get('voiceId'); // e.g. "google:en-US-Journey-F"
 
-        // Determine which TTS client and voice to use
-        let ttsClient: typeof googleTtsClient | typeof elevenLabsTtsClient;
-        let ttsProvider: string;
+        // Determine voice ID for Google Cloud TTS (Journey voices)
         let voiceId: string | undefined;
-
         if (voiceParam) {
-            const [provider, ...rest] = voiceParam.split(':');
-            voiceId = rest.join(':');
-            if (provider === 'elevenlabs' && elevenLabsTtsClient.isConfigured()) {
-                ttsClient = elevenLabsTtsClient;
-                ttsProvider = 'elevenlabs';
-            } else if (provider === 'google' && googleTtsClient.isConfigured()) {
-                ttsClient = googleTtsClient;
-                ttsProvider = 'google';
-            } else {
-                // Fallback
-                ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
-                ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
-                voiceId = undefined;
-            }
-        } else {
-            // Default: prefer ElevenLabs, fall back to Google
-            ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
-            ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
+            const [, ...rest] = voiceParam.split(':');
+            voiceId = rest.join(':') || voiceParam;
         }
 
-        if (!ttsClient.isConfigured()) {
+        if (!googleTtsClient.isConfigured()) {
             return NextResponse.json(
-                { error: 'Text-to-speech is not configured on this server' },
+                { error: 'Google Cloud Text-to-speech is not configured on this server' },
                 { status: 503 }
             );
         }
@@ -117,7 +97,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 }
 
                 // Generate TTS audio for the word
-                const ttsResult = await ttsClient.generateSpeech({ text: word.word, voice_id: voiceId });
+                const ttsResult = await googleTtsClient.generateSpeech({ text: word.word, voice_id: voiceId });
 
                 if (!ttsResult.success || !ttsResult.audioBuffer) {
                     throw new Error(ttsResult.error || 'TTS generation failed');
@@ -150,14 +130,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     FROM spelling_lists sl
                     JOIN classes c ON c.id = sl.class_id
                     WHERE sw.spelling_list_id = sl.id
-                      AND c.school_id = (
-                          SELECT c2.school_id FROM classes c2
-                          JOIN spelling_lists sl2 ON sl2.class_id = c2.id
-                          WHERE sl2.id = ${list.id}
-                      )
-                      AND LOWER(sw.word) = LOWER(${word.word})
-                      AND sw.audio_url IS NULL
-                      AND sw.id != ${word.id}
+                    AND c.school_id = (
+                        SELECT c2.school_id FROM classes c2
+                        JOIN spelling_lists sl2 ON sl2.class_id = c2.id
+                        WHERE sl2.id = ${list.id}
+                    )
+                    AND LOWER(sw.word) = LOWER(${word.word})
+                    AND sw.audio_url IS NULL
+                    AND sw.id != ${word.id}
                 `);
 
                 results.push({ word: word.word, status: 'success', audioUrl });
@@ -170,7 +150,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         return NextResponse.json({
-            message: `Generated audio for ${successCount} words, ${errorCount} errors (using ${ttsProvider})`,
+            message: `Generated audio for ${successCount} words, ${errorCount} errors (using Google Cloud TTS)`,
             successCount,
             errorCount,
             results,

@@ -10,7 +10,7 @@ import { Loader2, Volume2 } from "lucide-react";
 interface Voice {
     voice_id: string;
     name: string;
-    provider: "google" | "elevenlabs";
+    provider: "google";
     description?: string;
 }
 
@@ -113,15 +113,8 @@ export function BulkAudioDialog({
                                     {voices.map((voice) => (
                                         <SelectItem key={voice.voice_id} value={voice.voice_id}>
                                             <span className="flex items-center gap-2">
-                                                <span
-                                                    className={`inline-block w-1.5 h-1.5 rounded-full ${
-                                                        voice.provider === "elevenlabs" ? "bg-violet-500" : "bg-blue-500"
-                                                    }`}
-                                                />
+                                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
                                                 <span>{voice.name}</span>
-                                                <span className="text-xs text-gray-500 capitalize">
-                                                    ({voice.provider})
-                                                </span>
                                             </span>
                                         </SelectItem>
                                     ))}

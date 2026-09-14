@@ -9,21 +9,9 @@ export interface StoryTtsAudio {
 }
 
 const VOICE_LABEL_MAP: Record<string, string> = {
-  // Google Journey
+  // Google Journey voices
   'en-US-Journey-F': 'Journey (Female)',
   'en-US-Journey-D': 'Journey (Male)',
-  'en-US-Journey-O': 'Journey (Child)',
-  // Google Studio
-  'en-US-Studio-O': 'Studio (Female)',
-  'en-US-Studio-Q': 'Studio (Male)',
-  // Google Neural2
-  'en-US-Neural2-F': 'Neural2 (Female)',
-  'en-US-Neural2-D': 'Neural2 (Male)',
-  'en-GB-Neural2-A': 'UK Narrator (Female)',
-  // ElevenLabs
-  'EXAVITQu4vr4xnSDxMaL': 'Sarah - Confident',
-  'Xb7hH8MSUJpSbSDYk0k2': 'Alice - Educator',
-  'JBFqnCBsd6RMkjVDRZzb': 'George - Storyteller',
 };
 
 const resolveVoiceLabel = (voiceId?: string | null, fallback?: string | null) => {
@@ -45,8 +33,8 @@ const createId = () => {
 export function normalizeTtsAudio(value: unknown): StoryTtsAudio[] {
   if (!value) return [];
   if (Array.isArray(value)) {
-    return value
-      .map((item) => {
+    const parsed = value
+      .map((item): StoryTtsAudio | null => {
         if (!item || typeof item !== 'object') return null;
         const record = item as Record<string, unknown>;
         const urlRaw = record.url ?? record['audioUrl'];
@@ -66,9 +54,9 @@ export function normalizeTtsAudio(value: unknown): StoryTtsAudio[] {
           voiceId,
           label: resolveVoiceLabel(voiceId, record.label ? String(record.label) : null),
           storageKey: record.storageKey ? String(record.storageKey) : null,
-        } satisfies StoryTtsAudio;
-      })
-      .filter((item): item is StoryTtsAudio => Boolean(item && item.url));
+        };
+      });
+    return parsed.filter((item): item is StoryTtsAudio => item !== null);
   }
   try {
     const parsed = JSON.parse(String(value));

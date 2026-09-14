@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { randomUUID } from 'crypto';
 import { googleTtsClient } from '@/lib/tts/client';
-import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { r2Client } from '@/lib/storage/r2-client';
 import { db } from '@/lib/db';
 import { stories } from '@/lib/db/schema';
@@ -54,27 +53,17 @@ export async function POST(request: NextRequest) {
       textToGenerate = storyToUpdate.content;
     }
 
-    // Determine which TTS client and voice to use based on provider:voiceId format
-    let ttsClient: typeof googleTtsClient | typeof elevenLabsTtsClient = googleTtsClient;
-    let ttsProvider = 'google';
+    // Determine voice ID (strip any legacy google: prefix)
     let resolvedVoiceId: string | undefined;
-
     if (voiceId && voiceId.includes(':')) {
-      const [provider, ...rest] = voiceId.split(':');
+      const [, ...rest] = voiceId.split(':');
       resolvedVoiceId = rest.join(':');
-      if (provider === 'elevenlabs' && elevenLabsTtsClient.isConfigured()) {
-        ttsClient = elevenLabsTtsClient;
-        ttsProvider = 'elevenlabs';
-      } else if (provider === 'google' && googleTtsClient.isConfigured()) {
-        ttsClient = googleTtsClient;
-        ttsProvider = 'google';
-      }
     } else {
       resolvedVoiceId = voiceId;
     }
 
-    // Generate TTS audio
-    const ttsResult = await ttsClient.generateSpeech({
+    // Generate TTS audio with Google Cloud Journey voices
+    const ttsResult = await googleTtsClient.generateSpeech({
       text: textToGenerate,
       voice_id: resolvedVoiceId,
     });

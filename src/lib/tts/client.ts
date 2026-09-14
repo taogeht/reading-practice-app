@@ -1,4 +1,4 @@
-import textToSpeech from '@google-cloud/text-to-speech';
+import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 
 export interface TTSVoice {
   voice_id: string;
@@ -25,8 +25,6 @@ export interface TTSGenerationResult {
   contentType?: string;
 }
 
-const { TextToSpeechClient } = textToSpeech;
-
 /** Normalise a PEM private key read from an env var. Handles:
  *   1. Surrounding double or single quotes that some env loaders leave in.
  *   2. Literal `\n` (backslash + n) → real newline.
@@ -46,7 +44,7 @@ function normalizePemKey(input: string): string {
 }
 
 const DEFAULT_VOICES: TTSVoice[] = [
-  // Journey voices — Google's most natural, conversational voices
+  // Google Journey voices — only Female and Male
   {
     voice_id: 'en-US-Journey-F',
     name: 'Journey (Female)',
@@ -67,72 +65,10 @@ const DEFAULT_VOICES: TTSVoice[] = [
     pitch: 0,
     category: 'narration',
   },
-  {
-    voice_id: 'en-US-Journey-O',
-    name: 'Journey (Child)',
-    languageCode: 'en-US',
-    ssmlGender: 'FEMALE',
-    description: 'Youthful, friendly voice great for young students.',
-    speakingRate: 1.0,
-    pitch: 0,
-    category: 'narration',
-  },
-  // Studio voices — professional quality
-  {
-    voice_id: 'en-US-Studio-O',
-    name: 'Studio (Female)',
-    languageCode: 'en-US',
-    ssmlGender: 'FEMALE',
-    description: 'Professional studio-quality female voice.',
-    speakingRate: 1.0,
-    pitch: 0,
-    category: 'narration',
-  },
-  {
-    voice_id: 'en-US-Studio-Q',
-    name: 'Studio (Male)',
-    languageCode: 'en-US',
-    ssmlGender: 'MALE',
-    description: 'Professional studio-quality male voice.',
-    speakingRate: 1.0,
-    pitch: 0,
-    category: 'narration',
-  },
-  // Neural2 voices — good quality, reliable
-  {
-    voice_id: 'en-US-Neural2-F',
-    name: 'Neural2 (Female)',
-    languageCode: 'en-US',
-    ssmlGender: 'FEMALE',
-    description: 'Clear, expressive female voice.',
-    speakingRate: 1.0,
-    pitch: 0,
-    category: 'narration',
-  },
-  {
-    voice_id: 'en-US-Neural2-D',
-    name: 'Neural2 (Male)',
-    languageCode: 'en-US',
-    ssmlGender: 'MALE',
-    description: 'Calm and confident male voice.',
-    speakingRate: 1.0,
-    pitch: 0,
-    category: 'narration',
-  },
-  {
-    voice_id: 'en-GB-Neural2-A',
-    name: 'UK Narrator (Female)',
-    languageCode: 'en-GB',
-    ssmlGender: 'FEMALE',
-    description: 'British English voice with friendly classroom tone.',
-    speakingRate: 1.0,
-    pitch: 0,
-    category: 'narration',
-  },
 ];
 
 class GoogleTtsClient {
-  private client: textToSpeech.TextToSpeechClient | null = null;
+  private client: TextToSpeechClient | null = null;
   private configured = false;
 
   constructor() {

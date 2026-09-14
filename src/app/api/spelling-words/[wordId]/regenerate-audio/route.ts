@@ -4,7 +4,6 @@ import { spellingWords, spellingLists, classes } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { googleTtsClient } from '@/lib/tts/client';
-import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { r2Client } from '@/lib/storage/r2-client';
 
 export const runtime = 'nodejs';
@@ -38,33 +37,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             ? body.applyToListIds.filter((id: unknown): id is string => typeof id === 'string')
             : [];
 
-        // Resolve TTS client + voice (mirrors /api/spelling-lists/[id]/generate-audio)
-        let ttsClient: typeof googleTtsClient | typeof elevenLabsTtsClient;
-        let ttsProvider: string;
+        // Resolve voice ID for Google Cloud TTS (Journey voices)
         let voiceId: string | undefined;
-
         if (voiceParam) {
-            const [provider, ...rest] = voiceParam.split(':');
-            voiceId = rest.join(':');
-            if (provider === 'elevenlabs' && elevenLabsTtsClient.isConfigured()) {
-                ttsClient = elevenLabsTtsClient;
-                ttsProvider = 'elevenlabs';
-            } else if (provider === 'google' && googleTtsClient.isConfigured()) {
-                ttsClient = googleTtsClient;
-                ttsProvider = 'google';
-            } else {
-                ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
-                ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
-                voiceId = undefined;
-            }
-        } else {
-            ttsClient = elevenLabsTtsClient.isConfigured() ? elevenLabsTtsClient : googleTtsClient;
-            ttsProvider = elevenLabsTtsClient.isConfigured() ? 'elevenlabs' : 'google';
+            const [, ...rest] = voiceParam.split(':');
+            voiceId = rest.join(':') || voiceParam;
         }
 
-        if (!ttsClient.isConfigured()) {
+        if (!googleTtsClient.isConfigured()) {
             return NextResponse.json(
-                { error: 'Text-to-speech is not configured on this server' },
+                { error: 'Google Cloud Text-to-speech is not configured on this server' },
                 { status: 503 }
             );
         }
@@ -89,8 +71,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
-        // Generate the audio
-        const ttsResult = await ttsClient.generateSpeech({ text: word.word, voice_id: voiceId });
+        // Generate the audio with Google Cloud Journey voices
+        const ttsResult = await googleTtsClient.generateSpeech({ text: word.word, voice_id: voiceId });
 
         if (!ttsResult.success || !ttsResult.audioBuffer) {
             return NextResponse.json(
@@ -157,7 +139,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             success: true,
             wordId: word.id,
             audioUrl,
-            provider: ttsProvider,
+            provider: 'google',
             voiceId,
             siblingsUpdated,
             schoolUpdated,

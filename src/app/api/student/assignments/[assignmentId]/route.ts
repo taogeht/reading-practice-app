@@ -7,12 +7,23 @@ import { logError } from '@/lib/logger';
 import { normalizeTtsAudio } from '@/types/story';
 import { r2Client } from '@/lib/storage/r2-client';
 
+function toIsoStringSafe(val: unknown): string | null {
+  if (!val) return null;
+  if (val instanceof Date) {
+    return isNaN(val.getTime()) ? null : val.toISOString();
+  }
+  const d = new Date(val as string | number);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ assignmentId: string }> }
 ) {
+  const { assignmentId } = await params;
+
   try {
     const user = await getCurrentUser();
 
@@ -22,8 +33,6 @@ export async function GET(
         { status: 401 }
       );
     }
-
-    const { assignmentId } = await params;
 
     // Get student details
     const studentDetails = await db
@@ -68,8 +77,6 @@ export async function GET(
         storyWordCount: stories.wordCount,
         storyEstimatedReadingTimeMinutes: stories.estimatedReadingTimeMinutes,
         storyAuthor: stories.author,
-        storyIllustrator: stories.illustrator,
-        storyCoverImageUrl: stories.coverImageUrl,
         storyGenre: stories.genre,
         storyTtsAudio: stories.ttsAudio,
         storyCreatedAt: stories.createdAt,
@@ -139,14 +146,14 @@ export async function GET(
       title: assignment.title,
       description: assignment.description,
       instructions: assignment.instructions,
-      dueAt: assignment.dueAt?.toISOString() || null,
+      dueAt: toIsoStringSafe(assignment.dueAt),
       maxAttempts: assignment.maxAttempts || 3,
       maxRecordingSeconds: assignment.maxRecordingSeconds || 60,
       attempts: studentRecordings.length,
       status: completedRecordings.length > 0 ? 'completed' as const : 'pending' as const,
       bestScore: bestScore ? Math.round(bestScore) : null,
       teacherFeedback: latestRecordingWithFeedback?.teacherFeedback || null,
-      reviewedAt: latestRecordingWithFeedback?.reviewedAt?.toISOString() || null,
+      reviewedAt: toIsoStringSafe(latestRecordingWithFeedback?.reviewedAt),
       hasTeacherFeedback: !!latestRecordingWithFeedback?.teacherFeedback,
       story: {
         id: assignment.storyId,
@@ -159,16 +166,16 @@ export async function GET(
         author: assignment.storyAuthor,
         genre: assignment.storyGenre,
         ttsAudio: storyTtsAudio,
-        createdAt: assignment.storyCreatedAt?.toISOString() || new Date().toISOString(),
+        createdAt: toIsoStringSafe(assignment.storyCreatedAt) || new Date().toISOString(),
       },
       recordings: studentRecordings.map(recording => ({
         id: recording.id,
         attemptNumber: recording.attemptNumber,
         status: recording.status,
         accuracyScore: recording.accuracyScore ? Math.round(Number(recording.accuracyScore)) : null,
-        submittedAt: recording.submittedAt?.toISOString() || new Date().toISOString(),
+        submittedAt: toIsoStringSafe(recording.submittedAt) || new Date().toISOString(),
         teacherFeedback: recording.teacherFeedback,
-        reviewedAt: recording.reviewedAt?.toISOString() || null,
+        reviewedAt: toIsoStringSafe(recording.reviewedAt),
       })),
     };
 
@@ -178,7 +185,7 @@ export async function GET(
     });
 
   } catch (error) {
-    logError(error, 'api/student/assignments/[assignmentId]');
+    logError(error, `api/student/assignments/[assignmentId] (assignmentId: ${assignmentId})`);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

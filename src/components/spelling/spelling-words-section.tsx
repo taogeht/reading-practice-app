@@ -446,7 +446,7 @@ export function SpellingWordsSection({ classId, defaultExpanded = true }: Spelli
                                                         {availableVoices.map((voice) => (
                                                             <SelectItem key={voice.voice_id} value={voice.voice_id}>
                                                                 <span className="flex items-center gap-1.5">
-                                                                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${voice.provider === 'elevenlabs' ? 'bg-violet-500' : 'bg-blue-500'}`} />
+                                                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
                                                                     {voice.name}
                                                                 </span>
                                                             </SelectItem>

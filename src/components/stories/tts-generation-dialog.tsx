@@ -47,7 +47,7 @@ interface TTSGenerationDialogProps {
 interface Voice {
   voice_id: string;
   name: string;
-  provider?: 'google' | 'elevenlabs';
+  provider?: 'google';
   category?: string;
   description?: string;
   languageCode?: string;
@@ -277,7 +277,7 @@ export function TTSGenerationDialog({
                     {voices.map((voice) => (
                       <SelectItem key={voice.voice_id} value={voice.voice_id}>
                         <div className="flex items-center gap-2">
-                          <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${voice.provider === 'elevenlabs' ? 'bg-violet-500' : 'bg-blue-500'}`} />
+                          <span className="inline-block w-2 h-2 rounded-full flex-shrink-0 bg-blue-500" />
                           <span className="font-medium">{voice.name}</span>
                           {voice.description && (
                             <span className="text-xs text-muted-foreground truncate max-w-[200px]">
@@ -294,10 +294,10 @@ export function TTSGenerationDialog({
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
                       <div className="flex items-center gap-2 font-medium">
-                        <span className={`inline-block w-2 h-2 rounded-full ${selectedVoice.provider === 'elevenlabs' ? 'bg-violet-500' : 'bg-blue-500'}`} />
+                        <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
                         {selectedVoice.name}
                         <span className="text-xs font-normal text-muted-foreground">
-                          {selectedVoice.provider === 'elevenlabs' ? 'ElevenLabs' : 'Google Cloud'}
+                          Google Journey
                         </span>
                       </div>
                       {selectedVoice.description && (

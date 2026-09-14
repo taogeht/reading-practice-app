@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { googleTtsClient } from '@/lib/tts/client';
-import { elevenLabsTtsClient } from '@/lib/tts/elevenlabs-client';
 import { logError } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -17,23 +16,11 @@ export async function GET(request: NextRequest) {
     const allVoices: Array<{
       voice_id: string;
       name: string;
-      provider: 'google' | 'elevenlabs';
+      provider: 'google';
       description?: string;
     }> = [];
 
-    // Add ElevenLabs voices first (higher quality)
-    if (elevenLabsTtsClient.isConfigured()) {
-      for (const v of elevenLabsTtsClient.getVoices()) {
-        allVoices.push({
-          voice_id: `elevenlabs:${v.voice_id}`,
-          name: v.name,
-          provider: 'elevenlabs',
-          description: v.description,
-        });
-      }
-    }
-
-    // Add Google voices
+    // Add Google Journey voices (Female and Male only)
     if (googleTtsClient.isConfigured()) {
       for (const v of googleTtsClient.getVoices()) {
         allVoices.push({
