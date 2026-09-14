@@ -217,12 +217,19 @@ function LegacyTeacherDashboard() {
     );
   }
 
-  const { teacher, stats, recentSubmissions, assignmentsSummary = [] } = dashboardData;
+  const teacher = dashboardData.teacher ?? {
+    id: '',
+    firstName: 'Teacher',
+    lastName: '',
+    classes: [],
+  };
+  const { stats, recentSubmissions, assignmentsSummary = [] } = dashboardData;
+  const classes = teacher.classes ?? [];
 
   // Same rule as TeacherHomeV2, from one shared helper so the two dashboards
   // cannot drift while TEACHER_NAV_V2 keeps both alive.
-  const termSplit = splitByTerm(teacher.classes);
-  const visibleClasses = pickVisibleClasses(termSplit, teacher.classes, showOtherClasses);
+  const termSplit = splitByTerm(classes);
+  const visibleClasses = pickVisibleClasses(termSplit, classes, showOtherClasses);
   const currentTermName = termSplit.currentTermName;
   const isThisTerm = isCurrentTermClass;
 
@@ -407,7 +414,7 @@ function LegacyTeacherDashboard() {
         <TeacherActivityFeed />
 
         {/* Class Selection - Prominent Buttons */}
-        {teacher.classes.length > 0 && (
+        {classes.length > 0 && (
           <div className="mb-8">
             <div className="flex items-baseline gap-3 mb-3">
               <h2 className="text-lg font-semibold text-gray-700">Your Classes</h2>

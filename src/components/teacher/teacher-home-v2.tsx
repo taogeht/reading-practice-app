@@ -97,7 +97,14 @@ export function TeacherHomeV2() {
     return <div className="p-6 text-sm text-gray-500">Couldn&apos;t load your dashboard.</div>;
   }
 
-  const { teacher, isCoTeacherOnly, canManageAssignments, stats, recentSubmissions } = data;
+  const teacher = data.teacher ?? {
+    firstName: "Teacher",
+    classes: [],
+  };
+  const isCoTeacherOnly = Boolean(data.isCoTeacherOnly);
+  const canManageAssignments = Boolean(data.canManageAssignments);
+  const stats = data.stats ?? { totalStudents: 0, activeAssignments: 0, pendingReviews: 0 };
+  const recentSubmissions = data.recentSubmissions ?? [];
   const classes = teacher.classes ?? [];
   // Only this term's live classes by default — archived cohorts and past-term
   // classes accumulate every year and read as duplicates of the real ones.

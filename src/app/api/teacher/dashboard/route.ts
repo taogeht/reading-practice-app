@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
 
-    if (!user || user.role !== 'teacher') {
+    if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 401 }
@@ -66,7 +66,6 @@ export async function GET(request: NextRequest) {
         .values({
           name: `${user.firstName} ${user.lastName}'s School`,
           district: null,
-          address: null,
           city: null,
           state: null,
           zipCode: null,
@@ -86,11 +85,34 @@ export async function GET(request: NextRequest) {
     // Every class the user can manage (primary + co-teacher; admins see all).
     const allowedClassIds = await accessibleClassIds(user.id, user.role);
     if (allowedClassIds.length === 0 && user.role !== 'admin') {
+      const caps =
+        user.role === 'admin'
+          ? {
+              canManageSpellingLists: true,
+              canManageAssignments: true,
+              canGenerateReadingContent: true,
+              canGeneratePracticeQuestions: true,
+              canUseSunnyPreview: true,
+            }
+          : await getTeacherCapabilities(user.id);
+
       return NextResponse.json({
-        classes: [],
-        upcomingAssignments: [],
+        teacher: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          classes: [],
+        },
+        isCoTeacherOnly: false,
+        ...caps,
+        stats: {
+          totalStudents: 0,
+          activeAssignments: 0,
+          pendingReviews: 0,
+          storiesWithoutAudio: 0,
+        },
         recentSubmissions: [],
-        stats: { activeStudents: 0, totalAssignments: 0, pendingReviews: 0 },
+        assignmentsSummary: [],
       });
     }
 
