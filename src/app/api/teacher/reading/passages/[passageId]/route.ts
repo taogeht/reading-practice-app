@@ -10,6 +10,7 @@ import {
   users,
 } from '@/lib/db/schema';
 import { logError } from '@/lib/logger';
+import { assessPassageForPublication } from '@/lib/reading/publication';
 
 export const runtime = 'nodejs';
 
@@ -87,7 +88,21 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       .where(eq(readingQuestions.passageId, passageId))
       .orderBy(readingQuestions.orderIndex);
 
-    return NextResponse.json({ passage, pages, questions });
+    let assessment = null;
+    try {
+      const pubAssessment = await assessPassageForPublication(passageId);
+      if (pubAssessment.found) {
+        assessment = {
+          publishable: pubAssessment.publishable,
+          issues: pubAssessment.issues,
+          qualityReport: pubAssessment.qualityReport,
+        };
+      }
+    } catch (assessErr) {
+      logError(assessErr, 'api/teacher/reading/passages/[passageId] assessPassageForPublication');
+    }
+
+    return NextResponse.json({ passage, pages, questions, assessment });
   } catch (error) {
     logError(error, 'api/teacher/reading/passages/[passageId]');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

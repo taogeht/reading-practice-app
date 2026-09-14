@@ -106,10 +106,26 @@ interface QuestionRow {
   evidencePageNumber: number | null;
 }
 
+interface PublicationIssue {
+  severity: 'error' | 'warning';
+  code: string;
+  message: string;
+}
+
 interface FetchResult {
   passage: PassageRow;
   pages: PageRow[];
   questions: QuestionRow[];
+  assessment?: {
+    publishable: boolean;
+    issues: PublicationIssue[];
+    qualityReport?: {
+      proseScore: number;
+      questionsScore: number;
+      imagesValid: boolean;
+      passageReady: boolean;
+    };
+  } | null;
 }
 
 function levelLabel(id: number): string {
@@ -131,6 +147,7 @@ export default function ReadingReviewFocusPage() {
   const [data, setData] = useState<FetchResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approvalIssues, setApprovalIssues] = useState<PublicationIssue[]>([]);
   const [action, setAction] = useState<null | 'approving' | 'rejecting' | string>(null);
   const [zoomImageKey, setZoomImageKey] = useState<string | null>(null);
   // Title editing — local state; toggled by the pencil button next to the
@@ -164,6 +181,11 @@ export default function ReadingReviewFocusPage() {
       }
       const payload: FetchResult = await res.json();
       setData(payload);
+      if (payload.assessment?.issues) {
+        setApprovalIssues(payload.assessment.issues);
+      } else {
+        setApprovalIssues([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
@@ -177,8 +199,12 @@ export default function ReadingReviewFocusPage() {
 
   const onApprove = async () => {
     if (!passageId || !data) return;
-    const errCount = countErrors(data);
-    if (errCount > 0 && !confirm(`This passage has ${errCount} validation errors. Approve anyway?`)) return;
+    const errors = approvalIssues.filter((i) => i.severity === 'error');
+    if (errors.length > 0) {
+      const issueList = errors.map((i) => `• ${i.message}`).join('\n');
+      alert(`Cannot approve this passage. Please resolve the following ${errors.length} issue(s) first:\n\n${issueList}`);
+      return;
+    }
     setAction('approving');
     try {
       const res = await fetch(`/api/teacher/reading/passages/${passageId}/approve`, {
@@ -186,6 +212,11 @@ export default function ReadingReviewFocusPage() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+        if (body.issues && Array.isArray(body.issues)) {
+          setApprovalIssues(body.issues);
+          const issueList = body.issues.map((i: any) => `• ${i.message}`).join('\n');
+          throw new Error(`Cannot approve this passage:\n\n${issueList}`);
+        }
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       router.push('/teacher/reading/review');
@@ -494,6 +525,42 @@ export default function ReadingReviewFocusPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {/* Publication blockers & warnings */}
+        {approvalIssues.length > 0 && (
+          <div
+            className={`p-4 rounded-lg border flex items-start gap-3 ${
+              approvalIssues.some((i) => i.severity === 'error')
+                ? 'bg-red-50 border-red-200 text-red-900'
+                : 'bg-amber-50 border-amber-200 text-amber-900'
+            }`}
+          >
+            <AlertTriangle
+              className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                approvalIssues.some((i) => i.severity === 'error')
+                  ? 'text-red-600'
+                  : 'text-amber-600'
+              }`}
+            />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold">
+                {approvalIssues.some((i) => i.severity === 'error')
+                  ? `Cannot Approve Passage: ${approvalIssues.filter((i) => i.severity === 'error').length} blocking issue(s)`
+                  : 'Review Notices'}
+              </h3>
+              <ul className="mt-1.5 space-y-1 text-sm list-disc list-inside">
+                {approvalIssues.map((issue, idx) => (
+                  <li key={idx} className="leading-snug">
+                    <span className="font-medium">
+                      {issue.severity === 'error' ? 'Blocker: ' : 'Note: '}
+                    </span>
+                    {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {/* Quality breakdown */}
         {q && (
           <Card>
@@ -948,13 +1015,7 @@ function renderQuestionPayload(qq: QuestionRow) {
   );
 }
 
-function countErrors(_data: FetchResult): number {
-  // Validation issues aren't reattached on read — qualityReport summary
-  // is on the passage but per-issue lists were a transient generation
-  // artifact. For now, the orchestrator's passageReady flag captures
-  // "has errors" implicitly: when ready=false there's something to
-  // worry about. Leave at 0 for the confirm-prompt heuristic so the
-  // approve button doesn't false-prompt; teacher can still see the
-  // quality badges.
-  return 0;
+function countErrors(data: FetchResult): number {
+  if (!data.assessment?.issues) return 0;
+  return data.assessment.issues.filter((i) => i.severity === 'error').length;
 }
