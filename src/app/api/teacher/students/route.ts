@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, generateLoginToken } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, students, teachers, classEnrollments, classes, schoolMemberships, schools, studentReadingLevelHistory } from '@/lib/db/schema';
+import { users, students, teachers, classEnrollments, classes, schoolMemberships, schools, studentReadingLevelHistory, academicTerms } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
+import { accessibleClassIds } from '@/lib/auth/class-access';
+import { splitByTerm } from '@/lib/classes/term-grouping';
 
 export const runtime = 'nodejs';
 
@@ -11,14 +13,54 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
 
-    if (!user || user.role !== 'teacher') {
+    if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 401 }
       );
     }
 
-    // Get all students from teacher's classes
+    const classIds = await accessibleClassIds(user.id, user.role);
+    if (classIds.length === 0) {
+      return NextResponse.json({ students: [] }, { status: 200 });
+    }
+
+    const teacherClasses = await db
+      .select({
+        id: classes.id,
+        active: classes.active,
+        promotedToClassId: classes.promotedToClassId,
+        termId: classes.termId,
+        termName: academicTerms.name,
+        termIsCurrent: academicTerms.isCurrent,
+      })
+      .from(classes)
+      .leftJoin(academicTerms, eq(classes.termId, academicTerms.id))
+      .where(inArray(classes.id, classIds));
+
+    const activeClasses = teacherClasses.filter(
+      (c) => Boolean(c.active) && !c.promotedToClassId
+    );
+
+    const termSplit = splitByTerm(
+      activeClasses.map((c) => ({
+        ...c,
+        active: true,
+        termName: c.termName ?? null,
+        termIsCurrent: Boolean(c.termIsCurrent),
+      }))
+    );
+
+    const currentClasses = termSplit.hasCurrentTerm
+      ? activeClasses.filter((c) => Boolean(c.termIsCurrent))
+      : activeClasses;
+
+    const currentClassIds = currentClasses.map((c) => c.id);
+    if (currentClassIds.length === 0) {
+      return NextResponse.json({ students: [] }, { status: 200 });
+    }
+
+    // Get all students from teacher's current classes
     const teacherStudents = await db
       .select({
         id: students.id,
@@ -38,7 +80,12 @@ export async function GET(request: NextRequest) {
       .innerJoin(users, eq(students.id, users.id))
       .innerJoin(classEnrollments, eq(students.id, classEnrollments.studentId))
       .innerJoin(classes, eq(classEnrollments.classId, classes.id))
-      .where(eq(classes.teacherId, user.id))
+      .where(
+        and(
+          inArray(classEnrollments.classId, currentClassIds),
+          eq(users.active, true)
+        )
+      )
       .orderBy(users.firstName, users.lastName);
 
     return NextResponse.json({ students: teacherStudents }, { status: 200 });
