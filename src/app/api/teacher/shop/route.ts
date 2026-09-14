@@ -16,7 +16,7 @@ export const runtime = 'nodejs';
 export async function GET(_request: NextRequest) {
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== 'teacher') {
+        if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
         }
 

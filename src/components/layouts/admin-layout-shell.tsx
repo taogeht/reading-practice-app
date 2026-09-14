@@ -31,7 +31,7 @@ const NAV_ITEMS = [
   { href: "/terms", label: "Academic Terms", icon: CalendarRange },
   { href: "/stories", label: "Story Management", icon: BookOpen },
   { href: "/admin/books", label: "Books", icon: Library },
-  { href: "/avatar-catalog", label: "Avatar Catalog", icon: Sparkles },
+  { href: "/avatar-catalog", label: "Avatar & Shop Catalog", icon: Sparkles },
   { href: "/settings", label: "System Settings", icon: Settings },
   { href: "/audit-logs", label: "Audit Logs", icon: History },
 ];

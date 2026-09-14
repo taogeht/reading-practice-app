@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Camera, Loader2, RefreshCw, ShoppingBag, Sparkles, Star } from "lucide-react";
+import { ClassShopSection } from "@/components/gamification/class-shop-section";
 
 type Status = "pending" | "generating" | "complete" | "failed";
 
@@ -61,6 +62,9 @@ export default function AvatarCatalogPage() {
     const [snapshotRegen, setSnapshotRegen] = useState<{ running: boolean; started: number | null }>({ running: false, started: null });
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    const [classList, setClassList] = useState<Array<{ id: string; name: string }>>([]);
+    const [selectedClassId, setSelectedClassId] = useState<string>("");
+
     const load = useCallback(async () => {
         try {
             const res = await fetch("/api/admin/avatar-catalog/status", { cache: "no-store" });
@@ -69,6 +73,18 @@ export default function AvatarCatalogPage() {
             setCharacters(data.characters);
             setScenes(data.scenes);
             setCosmetics(data.cosmetics ?? []);
+
+            const resClasses = await fetch("/api/admin/classes", { cache: "no-store" });
+            if (resClasses.ok) {
+                const classesData = await resClasses.json();
+                if (Array.isArray(classesData)) {
+                    const activeClasses = classesData
+                        .filter((c: any) => c.active !== false)
+                        .map((c: any) => ({ id: c.id as string, name: c.name as string }));
+                    setClassList(activeClasses);
+                    setSelectedClassId((curr) => curr || (activeClasses.length > 0 ? activeClasses[0].id : ""));
+                }
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -259,10 +275,9 @@ export default function AvatarCatalogPage() {
         <div className="max-w-6xl mx-auto p-6 space-y-8">
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Avatar Catalog</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Avatar & Shop Catalog</h1>
                     <p className="text-sm text-gray-600">
-                        Pre-generate the 9 base character portraits and the 3 starter scenes. Students never wait
-                        for these — Gemini runs here, students see finished images.
+                        Pre-generate avatar character portraits, cosmetic items, and background scenes.
                     </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -305,6 +320,17 @@ export default function AvatarCatalogPage() {
                         Generate all pending ({pendingCount})
                     </Button>
                 </div>
+            </div>
+
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <div className="font-semibold flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-amber-600" />
+                    Avatar & Star Shop Staging
+                </div>
+                <p className="mt-1 text-amber-800">
+                    The student-facing star shop and teacher-facing class shop controls are currently disabled while avatar mechanics are being refined.
+                    All assets, star pricing, generation status, and per-class item availability are managed and staged on this admin page so the system is fully prepared when reintroduced.
+                </p>
             </div>
 
             <section className="space-y-4">
@@ -388,11 +414,15 @@ export default function AvatarCatalogPage() {
                                     </div>
                                     <div>
                                         <div className="text-sm font-semibold text-gray-900 truncate">{c.name}</div>
-                                        <div className="flex items-center gap-2 text-xs">
+                                        <div className="flex items-center gap-2 text-xs flex-wrap">
                                             <Badge className="bg-gray-200 text-gray-700 capitalize">{c.category}</Badge>
                                             <Badge className={generated ? STATUS_BADGE.complete.cls : STATUS_BADGE.pending.cls}>
                                                 {generated ? "Image" : "CSS"}
                                             </Badge>
+                                            <span className="text-amber-700 font-medium flex items-center gap-0.5">
+                                                <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                                                {c.star_cost}
+                                            </span>
                                         </div>
                                     </div>
                                     <Button
@@ -442,6 +472,10 @@ export default function AvatarCatalogPage() {
                                             <Badge className={generated ? STATUS_BADGE.complete.cls : STATUS_BADGE.pending.cls}>
                                                 {generated ? "Image" : "CSS only"}
                                             </Badge>
+                                            <span className="text-xs text-amber-700 font-medium flex items-center gap-0.5">
+                                                <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                                                {s.star_cost} stars
+                                            </span>
                                         </div>
                                         <p className="text-sm text-gray-600 mt-1">{s.description}</p>
                                         {s.asset_data?.scene_prompt && (
@@ -470,6 +504,45 @@ export default function AvatarCatalogPage() {
                         );
                     })}
                 </div>
+            </section>
+
+            <section className="space-y-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <ShoppingBag className="w-5 h-5 text-amber-500" />
+                            Class Shop Availability Controls
+                        </h2>
+                        <p className="text-sm text-gray-600">
+                            Preview or toggle which items are enabled for each class (hidden from teacher dashboards).
+                        </p>
+                    </div>
+                    {classList.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="admin-class-shop-select" className="text-sm font-medium text-gray-700">
+                                Class:
+                            </label>
+                            <select
+                                id="admin-class-shop-select"
+                                value={selectedClassId}
+                                onChange={(e) => setSelectedClassId(e.target.value)}
+                                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                {classList.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+
+                {selectedClassId ? (
+                    <ClassShopSection key={selectedClassId} classId={selectedClassId} defaultExpanded={true} />
+                ) : (
+                    <p className="text-sm text-gray-500">No active classes found.</p>
+                )}
             </section>
         </div>
     );
