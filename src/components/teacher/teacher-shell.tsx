@@ -3,6 +3,7 @@
 import { useState, type ReactNode, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/auth-provider";
 import { cn } from "@/lib/utils";
 import {
   Home,
@@ -87,13 +88,14 @@ export function TeacherShell({
   const isActive = (href: string) =>
     href === "/teacher/dashboard" ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
+  const { logout } = useAuth();
+
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await logout();
     } catch {
-      /* navigate regardless */
+      window.location.href = "/login";
     }
-    router.push("/login");
   }
 
   const NavLink = ({ item }: { item: NavItem }) => {

@@ -148,21 +148,16 @@ function LegacyTeacherDashboard() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-
-      if (response.ok) {
-        // Redirect to login page or home page after successful logout
-        window.location.href = '/login';
-      } else {
-        console.error('Logout failed');
-      }
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      window.location.href = '/login';
     }
   };
 
