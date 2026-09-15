@@ -53,7 +53,8 @@ const IRREGULAR_PAST_VERBS = new Set([
 const NON_PAST_ED_WORDS = new Set([
   'bed', 'red', 'sled', 'shed', 'feed', 'need', 'seed', 'weed', 'bleed', 'speed',
   'breed', 'freed', 'greed', 'steed', 'creed', 'hundred', 'tired', 'scared',
-  'bored', 'excited', 'wicked', 'naked', 'sacred',
+  'bored', 'excited', 'wicked', 'naked', 'sacred', 'closed', 'surprised',
+  'pleased', 'worried', 'striped', 'spotted', 'pointed',
 ]);
 
 export function validatePagesProse(
