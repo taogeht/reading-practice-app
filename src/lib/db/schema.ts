@@ -1505,6 +1505,12 @@ export interface PassageGenerationMeta {
    *  was added will simply have plan undefined; the regen endpoints
    *  return 400 in that case. */
   plan?: unknown;
+  /** Pages whose prose text was edited after the image was generated. */
+  stalePageImages?: number[];
+  /** Questions whose evidence quote is no longer supported by current prose. */
+  staleQuestionIds?: string[];
+  /** SHA-256 hash prefix of the page text at last edit/generation. */
+  pageTextHashes?: Record<number, string>;
 }
 
 export const readingPassages = pgTable(

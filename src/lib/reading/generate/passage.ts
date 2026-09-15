@@ -318,6 +318,25 @@ export async function generatePassage(
       `stage complete`,
       `lib/reading/generate/passage stage=prose passage_id=${passageId} ms=${timing.proseMs} attempts=${proseAttemptCount} tokens_in=${r.totalInputTokens} tokens_out=${r.totalOutputTokens} score=${proseValidation.qualityScore.toFixed(2)}`,
     );
+
+    if (!r.success || proseValidation.errorCount > 0) {
+      timing.totalMs = Date.now() - overallStart;
+      return failedResult(
+        passageId,
+        `Stage 2/3 (prose) remained invalid after ${proseAttemptCount} attempts (${proseValidation.errorCount} blocking errors)`,
+        {
+          timing,
+          cost,
+          issues,
+          qualityReport: {
+            proseScore: proseValidation.qualityScore,
+            questionsScore: 0,
+            imagesValid: false,
+            passageReady: false,
+          },
+        },
+      );
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logError(err, `lib/reading/generate/passage stage=prose passage_id=${passageId}`);

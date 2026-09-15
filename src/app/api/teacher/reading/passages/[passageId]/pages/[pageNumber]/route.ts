@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
@@ -5,6 +6,7 @@ import { canGenerateReadingContent } from '@/lib/auth/teacher-capabilities';
 import { db } from '@/lib/db';
 import {
   readingPassages,
+  readingQuestions,
   storyPages,
   type PassageGenerationMeta,
 } from '@/lib/db/schema';
@@ -152,28 +154,66 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       overrides,
     );
 
-    // 5. Refresh proseScore on the passage's generationMeta. Other
-    //    quality fields (questionsScore, imagesValid, passageReady)
-    //    aren't recomputed here — the edit only affects prose.
+    // 5. Track staleness and hashes across dependent assets:
+    //    - Compute text hash for change tracking.
+    //    - Detect questions on this page whose evidence quotes no longer match the edited text.
+    //    - Mark the page illustration as stale (text changed since image was generated).
+    //    - Force passageReady to false: text edits invalidate audio and require teacher re-approval.
+    const sourceTextHash = crypto
+      .createHash('sha256')
+      .update(text)
+      .digest('hex')
+      .slice(0, 16);
+
+    const passageQuestions = await db
+      .select({
+        id: readingQuestions.id,
+        evidenceQuote: readingQuestions.evidenceQuote,
+        evidencePageNumber: readingQuestions.evidencePageNumber,
+      })
+      .from(readingQuestions)
+      .where(eq(readingQuestions.passageId, passageId));
+
+    const staleQuestionIdsSet = new Set<string>(generationMeta.staleQuestionIds ?? []);
+    for (const q of passageQuestions) {
+      if (q.evidencePageNumber === pageNumber && q.evidenceQuote) {
+        if (!text.includes(q.evidenceQuote)) {
+          staleQuestionIdsSet.add(q.id);
+        } else {
+          // If a prior edit broke it, but this edit restored the quote, clear staleness
+          staleQuestionIdsSet.delete(q.id);
+        }
+      }
+    }
+    const staleQuestionIds = Array.from(staleQuestionIdsSet);
+
+    const stalePageImagesSet = new Set<number>(generationMeta.stalePageImages ?? []);
+    stalePageImagesSet.add(pageNumber);
+    const stalePageImages = Array.from(stalePageImagesSet).sort((a, b) => a - b);
+
+    const pageTextHashes: Record<number, string> = {
+      ...(generationMeta.pageTextHashes ?? {}),
+      [pageNumber]: sourceTextHash,
+    };
+
     const existingQuality = generationMeta.qualityReport ?? {
       proseScore: 0,
       questionsScore: 0,
       imagesValid: false,
       passageReady: false,
     };
+
     const newGenerationMeta: PassageGenerationMeta = {
       ...generationMeta,
+      stalePageImages,
+      staleQuestionIds,
+      pageTextHashes,
       qualityReport: {
         ...existingQuality,
         proseScore: validation.qualityScore,
-        // Re-derive passageReady conservatively — keep the existing
-        // gate logic but recompute only the prose half. If prose drops
-        // below the threshold, ready flips false.
-        passageReady:
-          existingQuality.questionsScore > 0 &&
-          existingQuality.imagesValid &&
-          validation.qualityScore >= 0.7 &&
-          existingQuality.questionsScore >= 0.5,
+        // Teacher edits invalidate audio, may desync illustrations/questions,
+        // and require re-approval before the passage can be assigned/published.
+        passageReady: false,
       },
     };
 
@@ -192,7 +232,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     logInfo(
       `page text edited`,
-      `api/teacher/reading/passages/edit-page passage_id=${passageId} page=${pageNumber} edited_by=${user.id} prose_score=${validation.qualityScore.toFixed(2)} page_issues=${pageIssues.length}`,
+      `api/teacher/reading/passages/edit-page passage_id=${passageId} page=${pageNumber} edited_by=${user.id} prose_score=${validation.qualityScore.toFixed(2)} page_issues=${pageIssues.length} broken_evidence_count=${staleQuestionIds.length}`,
     );
 
     return NextResponse.json(
@@ -210,6 +250,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           warningCount: validation.warningCount,
           pageIssues,
         },
+        stalePageImages,
+        staleQuestionIds,
+        passageReady: false,
       },
       { status: 200 },
     );

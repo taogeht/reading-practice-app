@@ -4,14 +4,23 @@ import {
   readingPassages,
   readingQuestions,
   storyPages,
+  vocabulary,
   type PassageGenerationMeta,
 } from '@/lib/db/schema';
 import { r2Client } from '@/lib/storage/r2-client';
 import { textClient } from '@/lib/llm';
 import { PANEL_IMAGE_MODEL } from '@/lib/image';
 import { logInfo, logError } from '@/lib/logger';
-import { generatePassageImages, DEFAULT_IMAGE_STYLE } from './images';
-import type { ImageStyle, PassagePlan } from './types';
+import { getReadingLevel, type EffectiveReadingLevel } from '@/lib/reading/levels';
+import { generatePassageImages, validatePassageImages, DEFAULT_IMAGE_STYLE } from './images';
+import { validatePagesProse } from './validate';
+import { validateQuestions } from './validate-questions';
+import type {
+  ImageStyle,
+  PassagePlan,
+  GeneratedPageProse,
+  GeneratedQuestion,
+} from './types';
 
 export interface CustomStoryPageInput {
   pageNumber: number;
@@ -434,7 +443,82 @@ export async function generateCustomPassage(
     }
   }
 
-  // 6. DB transaction
+  // 6. Validation of custom content
+  const allVocabRows = await db
+    .select({ id: vocabulary.id, word: vocabulary.word })
+    .from(vocabulary);
+
+  const proseValidation = validatePagesProse(
+    prosePages,
+    passagePlan,
+    input.readingLevelId,
+    allVocabRows,
+    [], // custom stories do not constrain to specific curriculum target words
+    { vocabStrictness: 'permissive' },
+  );
+
+  const imagesValidation = validatePassageImages(imageResult.pages, prosePages);
+
+  let questionsScore = 0;
+  let questionsErrorCount = 0;
+
+  if (questionRowsToInsert.length > 0) {
+    const generatedQuestions: GeneratedQuestion[] = [];
+    for (const row of questionRowsToInsert) {
+      if (row.questionType === 'mcq_comprehension') {
+        generatedQuestions.push({
+          type: 'mcq_comprehension',
+          questionText: row.questionText,
+          orderIndex: row.orderIndex,
+          payload: row.payload,
+          evidenceQuote: row.evidenceQuote ?? '',
+          evidencePageNumber: row.evidencePageNumber ?? 1,
+        });
+      } else if (row.questionType === 'sequence_order') {
+        generatedQuestions.push({
+          type: 'sequence_order',
+          questionText: row.questionText,
+          orderIndex: row.orderIndex,
+          payload: row.payload,
+        });
+      }
+    }
+
+    const baseLevel = getReadingLevel(input.readingLevelId);
+    const mcqCount = generatedQuestions.filter((q) => q.type === 'mcq_comprehension').length;
+    const seqCount = generatedQuestions.filter((q) => q.type === 'sequence_order').length;
+    const customEffectiveLevel: EffectiveReadingLevel = {
+      ...baseLevel,
+      questionTypeMix: {
+        mcq_comprehension: mcqCount,
+        vocab_matching: 0,
+        sequence_order: seqCount,
+      },
+    };
+
+    const qValidation = validateQuestions(
+      generatedQuestions,
+      prosePages,
+      [],
+      allVocabRows,
+      input.readingLevelId,
+      passageId,
+      customEffectiveLevel,
+    );
+    questionsScore = qValidation.qualityScore;
+    questionsErrorCount = qValidation.errorCount;
+  }
+
+  const proseScore = proseValidation.qualityScore;
+  const imagesValid = imagesValidation.valid && imageResult.pages.length === prosePages.length;
+  const passageReady =
+    imagesValid &&
+    proseValidation.errorCount === 0 &&
+    (questionRowsToInsert.length === 0 || questionsErrorCount === 0) &&
+    proseScore >= 0.7 &&
+    (questionRowsToInsert.length === 0 || questionsScore >= 0.5);
+
+  // 7. DB transaction
   input.onProgress?.({
     step: 'saving',
     message: 'Saving book to the reading library...',
@@ -451,10 +535,10 @@ export async function generateCustomPassage(
       generationDurationMs: totalDurationMs,
       imageCallCount: imageResult.pages.length,
       qualityReport: {
-        proseScore: 1.0,
-        questionsScore: questionRowsToInsert.length > 0 ? 1.0 : 0.0,
-        imagesValid: true,
-        passageReady: true,
+        proseScore,
+        questionsScore,
+        imagesValid,
+        passageReady,
       },
       plan: passagePlan,
     };
@@ -502,7 +586,7 @@ export async function generateCustomPassage(
 
   logInfo(
     `custom passage generation completed`,
-    `lib/reading/generate/custom-passage passage_id=${passageId} pages=${prosePages.length} questions=${questionRowsToInsert.length} duration_ms=${totalDurationMs}`,
+    `lib/reading/generate/custom-passage passage_id=${passageId} pages=${prosePages.length} questions=${questionRowsToInsert.length} prose_score=${proseScore.toFixed(2)} ready=${passageReady} duration_ms=${totalDurationMs}`,
   );
 
   return {

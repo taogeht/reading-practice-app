@@ -170,21 +170,60 @@ function finalize(
   };
 }
 
-/** Best = highest qualityScore (errors weighted 4× warnings). Ties broken
- *  by latest attemptNumber so a regen that tied with attempt 1 still
- *  wins — the regen had explicit feedback and is more likely to have
- *  fixed *some* issues even if the score tied, and it's the one we want
- *  to publish. Score-based selection naturally handles the case where
- *  a regen swapped 2 errors for 5 warnings (0.60 → 0.75). */
-function pickBestAttempt(attempts: AttemptRecord[]): AttemptRecord {
+/**
+ * Select the best attempt:
+ * 1. If any attempt passed validation cleanly (errorCount === 0), choose among passing
+ *    attempts (lowest warnings, highest score, latest attempt).
+ * 2. If all attempts failed, rank by:
+ *    - Lowest error count
+ *    - Lowest warning count
+ *    - Highest quality score
+ *    - Most recent attemptNumber
+ */
+export function pickBestAttempt(attempts: AttemptRecord[]): AttemptRecord {
+  if (attempts.length === 0) {
+    throw new Error('pickBestAttempt requires at least one attempt');
+  }
+
+  const passing = attempts.filter((a) => a.validation.valid || a.validation.errorCount === 0);
+  if (passing.length > 0) {
+    let bestPassing = passing[0]!;
+    for (const a of passing.slice(1)) {
+      if (a.validation.warningCount < bestPassing.validation.warningCount) {
+        bestPassing = a;
+      } else if (
+        a.validation.warningCount === bestPassing.validation.warningCount &&
+        a.validation.qualityScore > bestPassing.validation.qualityScore
+      ) {
+        bestPassing = a;
+      } else if (
+        a.validation.warningCount === bestPassing.validation.warningCount &&
+        a.validation.qualityScore === bestPassing.validation.qualityScore &&
+        a.attemptNumber > bestPassing.attemptNumber
+      ) {
+        bestPassing = a;
+      }
+    }
+    return bestPassing;
+  }
+
   let best = attempts[0]!;
-  for (const a of attempts) {
-    const aScore = a.validation.qualityScore;
-    const bScore = best.validation.qualityScore;
-    if (aScore > bScore) {
+  for (const a of attempts.slice(1)) {
+    if (a.validation.errorCount < best.validation.errorCount) {
       best = a;
-    } else if (aScore === bScore && a.attemptNumber > best.attemptNumber) {
-      best = a;
+    } else if (a.validation.errorCount === best.validation.errorCount) {
+      if (a.validation.warningCount < best.validation.warningCount) {
+        best = a;
+      } else if (a.validation.warningCount === best.validation.warningCount) {
+        if (a.validation.qualityScore > best.validation.qualityScore) {
+          best = a;
+        } else if (
+          a.validation.qualityScore === best.validation.qualityScore &&
+          a.attemptNumber > best.attemptNumber
+        ) {
+          best = a;
+        }
+      }
     }
   }
   return best;
