@@ -167,15 +167,8 @@ export async function GET(
 
     // Handle teacher/admin access
     if (['teacher', 'admin'].includes(user.role)) {
-      // For teachers, verify they own this assignment
-      if (user.role === 'teacher') {
-        const teacher = await db.query.teachers.findFirst({
-          where: eq(teachers.id, user.id),
-        });
-
-        if (!teacher || assignmentData.teacherId !== teacher.id) {
-          return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-        }
+      if (!(await userCanManageAssignment(user.id, user.role, assignmentId))) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
 
       const progressRows = await db
@@ -293,13 +286,14 @@ export async function PUT(
 
     const { id: assignmentId } = await params;
 
-    // Get teacher ID
-    const teacher = await db.query.teachers.findFirst({
-      where: eq(teachers.id, user.id),
-    });
+    if (user.role === 'teacher') {
+      const teacher = await db.query.teachers.findFirst({
+        where: eq(teachers.id, user.id),
+      });
 
-    if (!teacher) {
-      return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
+      if (!teacher) {
+        return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
+      }
     }
 
     const body = await request.json();
@@ -380,13 +374,14 @@ export async function DELETE(
 
     const { id: assignmentId } = await params;
 
-    // Get teacher ID
-    const teacher = await db.query.teachers.findFirst({
-      where: eq(teachers.id, user.id),
-    });
+    if (user.role === 'teacher') {
+      const teacher = await db.query.teachers.findFirst({
+        where: eq(teachers.id, user.id),
+      });
 
-    if (!teacher) {
-      return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
+      if (!teacher) {
+        return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
+      }
     }
 
     if (!(await userCanManageAssignment(user.id, user.role, assignmentId))) {
