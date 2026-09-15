@@ -281,6 +281,7 @@ export interface EffectiveReadingLevel {
     allowConditionals: boolean;
     allowPhrasalVerbs: boolean;
     maxClausesPerSentence: number;
+    allowWasWere?: boolean;
   };
   targetVocabPerStory: number;
   questionTypeMix: {
@@ -323,6 +324,9 @@ export function applyOverridesToLevel(
   }
   if (typeof overrides.allowPastTense === 'boolean') {
     out.grammarConstraints.allowPastTense = overrides.allowPastTense;
+  }
+  if (typeof overrides.allowWasWere === 'boolean') {
+    out.grammarConstraints.allowWasWere = overrides.allowWasWere;
   }
   if (typeof overrides.allowContractions === 'boolean') {
     out.grammarConstraints.allowContractions = overrides.allowContractions;

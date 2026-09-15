@@ -22,6 +22,7 @@
 import { applyOverridesToLevel, getReadingLevel } from '@/lib/reading/levels';
 import type { GenerateOverrides } from './types';
 import { tokenizeStoryText } from './tokenize';
+import { resolveEffectiveGrammar, resolveVocabScope, type AfFLevel } from './vocab-scope';
 import type {
   GeneratedPageProse,
   IssueSeverity,
@@ -30,9 +31,11 @@ import type {
   ValidationResult,
 } from './types';
 
-interface VocabIdentity {
+export interface VocabIdentity {
   id: string;
   word: string;
+  afFLevel?: AfFLevel | null;
+  afFUnit?: number | null;
 }
 
 const UNKNOWN_WORD_WARNING_TIER_STRICT = 2; // 1-2 distinct unknowns = warning; 3+ = error
@@ -61,7 +64,16 @@ export function validatePagesProse(
   targetVocabRows: VocabIdentity[],
   overrides?: GenerateOverrides,
 ): ValidationResult {
-  const level = applyOverridesToLevel(getReadingLevel(readingLevelId), overrides);
+  let level = applyOverridesToLevel(getReadingLevel(readingLevelId), overrides);
+  if (targetVocabRows.length > 0 && targetVocabRows.some((r) => r.afFLevel !== undefined)) {
+    const scope = resolveVocabScope(
+      targetVocabRows.map((r) => ({
+        afFLevel: r.afFLevel ?? null,
+        afFUnit: r.afFUnit ?? null,
+      })),
+    );
+    level = resolveEffectiveGrammar(level, scope);
+  }
   // Bump the unknown-word severity tier when the teacher chose
   // permissive strictness — 1-4 unknowns become warnings instead of
   // 1-2, so the model can introduce a few stretch words without
@@ -199,6 +211,9 @@ export function validatePagesProse(
         const words = sentence.toLowerCase().match(/\b[a-z]+(?:'[a-z]+)?\b/g) ?? [];
         for (const w of words) {
           if (seenPastWords.has(w)) continue;
+          if (level.grammarConstraints.allowWasWere && (w === 'was' || w === 'were')) {
+            continue;
+          }
           const isIrregular = IRREGULAR_PAST_VERBS.has(w);
           const isRegularEd =
             w.endsWith('ed') &&

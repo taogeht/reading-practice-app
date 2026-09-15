@@ -5,6 +5,7 @@
 // itself stays pure and unit-testable. vocab.ts turns a scope into SQL.
 
 import { afFLevelEnum } from '@/lib/db/schema';
+import type { EffectiveReadingLevel } from '@/lib/reading/levels';
 
 export type AfFLevel = (typeof afFLevelEnum.enumValues)[number];
 
@@ -71,3 +72,32 @@ export function resolveVocabScope(
     unitCap,
   };
 }
+
+/**
+ * Adjust effective grammar constraints based on curriculum scope.
+ *
+ * Specifically: Family and Friends 2 Units 14-15 introduce "was/were" while
+ * keeping general past tense out of scope. When a Grade 2 story's scope covers
+ * Unit 14+, allow was/were even though general past tense remains forbidden.
+ */
+export function resolveEffectiveGrammar(
+  baseLevel: EffectiveReadingLevel,
+  scope: VocabScope,
+): EffectiveReadingLevel {
+  if (
+    baseLevel.id === 2 &&
+    scope.currentLevel === 'grade2' &&
+    scope.unitCap !== null &&
+    scope.unitCap >= 14
+  ) {
+    return {
+      ...baseLevel,
+      grammarConstraints: {
+        ...baseLevel.grammarConstraints,
+        allowWasWere: true,
+      },
+    };
+  }
+  return baseLevel;
+}
+

@@ -457,6 +457,22 @@ export async function generateQuestions(
           return { word: p.word, vocabId: '', imageKey: '' };
         }
         const key = r2Client.generateStoryVocabImageKey(input.passageId, p.vocabId);
+        const canonicalKey = r2Client.generateCanonicalVocabImageKey(p.vocabId);
+
+        // Check if a reusable flashcard illustration already exists in R2
+        try {
+          const existing = await r2Client.getFileMetadata(canonicalKey);
+          if (existing) {
+            await r2Client.copyFile(canonicalKey, key);
+            return { word: p.word, vocabId: p.vocabId, imageKey: key };
+          }
+        } catch (err) {
+          console.warn(
+            `[generateQuestions] Failed to check/copy canonical image for "${p.word}" (vocab=${p.vocabId}):`,
+            err,
+          );
+        }
+
         const prompt = buildVocabImagePrompt(p.word);
         const result = await imageClient.generateImagePanel({
           prompt,
@@ -486,6 +502,20 @@ export async function generateQuestions(
           word: p.word,
           vocabId: p.vocabId,
         });
+
+        // Cache canonical image in R2 asynchronously so future stories practicing this word reuse it
+        r2Client
+          .uploadFile(canonicalKey, result.imageBuffer, result.contentType ?? 'image/png', {
+            'vocab-id': p.vocabId,
+            'vocab-word': p.word,
+          })
+          .catch((err) =>
+            console.warn(
+              `[generateQuestions] Failed to cache canonical vocab image for "${p.word}":`,
+              err,
+            ),
+          );
+
         return { word: p.word, vocabId: p.vocabId, imageKey: key };
       }),
     );

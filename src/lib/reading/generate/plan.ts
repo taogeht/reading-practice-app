@@ -44,6 +44,7 @@ import {
   type CumulativeRow,
   type TargetRow,
 } from './vocab';
+import { resolveEffectiveGrammar, resolveVocabScope } from './vocab-scope';
 import { assertPassagePlanMatchesRequest } from './validate-plan';
 import { textClient, type TextSegment } from '@/lib/llm';
 // `CumulativeRow` and `TargetRow` are imported even though only used as
@@ -176,7 +177,7 @@ function buildLevelConstraintsBlock(level: EffectiveReadingLevel): string {
     '',
     'GRAMMAR ALLOWED:',
     `- Contractions: ${yn(grammar.allowContractions)}`,
-    `- Past tense: ${yn(grammar.allowPastTense)}${!grammar.allowPastTense ? ' (STRICT: All story beats must be PRESENT TENSE only — no past actions)' : ''}`,
+    `- Past tense: ${yn(grammar.allowPastTense)}${!grammar.allowPastTense ? (grammar.allowWasWere ? ' (PRESENT TENSE actions; "was/were" permitted)' : ' (STRICT: All story beats must be PRESENT TENSE only — no past actions)') : ''}`,
     `- Future tense: ${yn(grammar.allowFutureTense)}`,
     `- Conditionals: ${yn(grammar.allowConditionals)}`,
     `- Phrasal verbs: ${yn(grammar.allowPhrasalVerbs)}`,
@@ -314,6 +315,8 @@ export async function generatePassagePlan(
 
   // 2. Pull target rows + reject function words / missing IDs.
   const targetRows = await fetchTargetVocab(input.targetVocabIds);
+  const scope = resolveVocabScope(targetRows);
+  const effectiveLevel = resolveEffectiveGrammar(level, scope);
 
   // 3. Cumulative vocab — explicit override if given, derived from targets otherwise.
   const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds);
@@ -334,7 +337,7 @@ export async function generatePassagePlan(
     }
   }
 
-  const levelBlock = buildLevelConstraintsBlock(level);
+  const levelBlock = buildLevelConstraintsBlock(effectiveLevel);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
   const castBlock = buildCastBlock(castId);
   const themeBlock = buildThemeBlock(

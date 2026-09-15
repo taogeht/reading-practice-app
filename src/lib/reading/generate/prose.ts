@@ -34,6 +34,7 @@ import {
   type CumulativeRow,
   type TargetRow,
 } from './vocab';
+import { resolveEffectiveGrammar, resolveVocabScope } from './vocab-scope';
 import { textClient, type TextSegment } from '@/lib/llm';
 
 
@@ -81,7 +82,15 @@ function buildSystemPrompt(level: EffectiveReadingLevel): string {
     grammarLines.push('- Contractions FORBIDDEN — write "do not" instead of "don\'t", "it is" instead of "it\'s", and so on.');
   }
   if (!grammar.allowPastTense) {
-    grammarLines.push('- Use PRESENT TENSE only — every action happens right now ("runs", "looks", "is", "sees", "says"). NO past tense, NO "-ed" verbs, NO irregular past (was/were/had/went/saw/ran/said).');
+    if (grammar.allowWasWere) {
+      grammarLines.push(
+        '- Use PRESENT TENSE for narrative actions ("runs", "looks", "is", "sees", "says"). NO general past tense or "-ed" verbs. EXCEPTION: "was" and "were" are permitted (introduced in Unit 14-15).',
+      );
+    } else {
+      grammarLines.push(
+        '- Use PRESENT TENSE only — every action happens right now ("runs", "looks", "is", "sees", "says"). NO past tense, NO "-ed" verbs, NO irregular past (was/were/had/went/saw/ran/said).',
+      );
+    }
   } else {
     grammarLines.push('- Past tense allowed (ran, walked, said).');
   }
@@ -234,12 +243,14 @@ export async function generatePagesProse(
     throw new Error('PassagePlan has no target vocabulary across any page');
   }
   const targetRows = await fetchTargetVocab(targetIds);
+  const scope = resolveVocabScope(targetRows);
+  const effectiveLevel = resolveEffectiveGrammar(level, scope);
 
   // 3. Cumulative vocab — same resolution rule as Stage 1.
   const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds);
 
   // 4. Build prompt.
-  const systemPrompt = buildSystemPrompt(level);
+  const systemPrompt = buildSystemPrompt(effectiveLevel);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
   const planBlock = buildPlanBlock(input.plan, targetRows);
 
@@ -355,12 +366,14 @@ export async function generatePagesProseWithFeedback(
     throw new Error('PassagePlan has no target vocabulary across any page');
   }
   const targetRows = await fetchTargetVocab(targetIds);
+  const scope = resolveVocabScope(targetRows);
+  const effectiveLevel = resolveEffectiveGrammar(level, scope);
   const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds);
 
-  const systemPrompt = buildSystemPrompt(level);
+  const systemPrompt = buildSystemPrompt(effectiveLevel);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
   const planBlock = buildPlanBlock(input.plan, targetRows);
-  const feedbackBlock = buildFeedbackBlock(feedback, level);
+  const feedbackBlock = buildFeedbackBlock(feedback, effectiveLevel);
 
   // Same cache layout as the first-pass call, with the feedback block
   // appended uncached at the end. The cumulative + plan prefix matches

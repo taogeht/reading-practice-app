@@ -55,7 +55,12 @@ export async function generateValidatedProse(
     targetRows,
     input.cumulativeVocabIds,
   );
-  const targetIdentities = targetRows.map((r) => ({ id: r.id, word: r.word }));
+  const targetIdentities = targetRows.map((r) => ({
+    id: r.id,
+    word: r.word,
+    afFLevel: r.afFLevel,
+    afFUnit: r.afFUnit,
+  }));
   const cumulativeIdentities = cumulativeRows.map((r) => ({
     id: r.id,
     word: r.word,

@@ -87,6 +87,7 @@ export interface GenerateOverrides {
   allowContractions?: boolean;
   allowPhrasalVerbs?: boolean;
   allowFutureTense?: boolean;
+  allowWasWere?: boolean;
 
   // Setting & tone — both surface to plan.ts as soft hints.
   seedTheme?: string;
@@ -486,7 +487,11 @@ export type QuestionValidationIssue =
   | { type: 'legacy_vocab_matching_format'; severity: 'error'; questionIndex: number }
   /** V2 pair has a missing or misshapen imageKey — typically a sign
    *  questions.ts skipped the upload step. */
-  | { type: 'pair_image_key_invalid'; severity: 'error'; questionIndex: number; pairIndex: number; imageKey: string };
+  | { type: 'pair_image_key_invalid'; severity: 'error'; questionIndex: number; pairIndex: number; imageKey: string }
+  | { type: 'duplicate_options'; severity: 'error'; questionIndex: number; option: string }
+  | { type: 'empty_option'; severity: 'error'; questionIndex: number; optionIndex: number }
+  | { type: 'invalid_correct_index'; severity: 'error'; questionIndex: number; correctIndex: number; optionCount: number }
+  | { type: 'invalid_option_count'; severity: 'error'; questionIndex: number; actualCount: number; expectedCount: number };
 
 export interface QuestionValidationStats {
   mcqCount: number;

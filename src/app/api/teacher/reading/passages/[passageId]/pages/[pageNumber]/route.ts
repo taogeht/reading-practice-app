@@ -150,7 +150,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       planFromMeta,
       passage.readingLevel,
       cumulativeFull.map((r) => ({ id: r.id, word: r.word })),
-      targetRowsFull.map((r) => ({ id: r.id, word: r.word })),
+      targetRowsFull.map((r) => ({
+        id: r.id,
+        word: r.word,
+        afFLevel: r.afFLevel,
+        afFUnit: r.afFUnit,
+      })),
       overrides,
     );
 

@@ -68,6 +68,14 @@ const QUESTION_ISSUE_COPY: Record<string, string> = {
     "The questions weren't generated in the right mix. This is a system issue — try again.",
   legacy_vocab_matching_format:
     "An older vocab question shape was returned. Try again.",
+  duplicate_options:
+    "A question had duplicate answer options. Try generating again.",
+  empty_option:
+    "A question had an empty answer option. Try generating again.",
+  invalid_correct_index:
+    "A question had an invalid correct answer index. Try generating again.",
+  invalid_option_count:
+    "A question did not have the required 4 answer options. Try generating again.",
 };
 
 /** Walk the orchestrator's issue list and produce a single

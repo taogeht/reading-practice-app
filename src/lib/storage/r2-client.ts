@@ -387,6 +387,16 @@ class R2Client {
   }
 
   /**
+   * Generate a canonical file key for a shared vocabulary flashcard illustration.
+   * Allows multiple stories practicing the same word to reuse the same image.
+   * Layout: vocab-images/{vocabId}.png
+   */
+  generateCanonicalVocabImageKey(vocabId: string): string {
+    assertSafePathSegment(vocabId, 'vocabId');
+    return `vocab-images/${vocabId}.png`;
+  }
+
+  /**
    * Get file metadata
    */
   async getFileMetadata(key: string): Promise<{

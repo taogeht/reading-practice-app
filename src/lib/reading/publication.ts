@@ -163,7 +163,12 @@ export async function assessPassageForPublication(
         planResult.data,
         passage.readingLevel,
         cumulativeRows.map((row) => ({ id: row.id, word: row.word })),
-        targetRows.map((row) => ({ id: row.id, word: row.word })),
+        targetRows.map((row) => ({
+          id: row.id,
+          word: row.word,
+          afFLevel: row.afFLevel,
+          afFUnit: row.afFUnit,
+        })),
         overrides,
       );
       proseScore = proseValidation.qualityScore;

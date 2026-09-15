@@ -257,6 +257,21 @@ export async function generateSingleQuestion(
           return { word: p.word, vocabId: '', imageKey: '' };
         }
         const key = r2Client.generateStoryVocabImageKey(input.passageId, vocabId);
+        const canonicalKey = r2Client.generateCanonicalVocabImageKey(vocabId);
+
+        try {
+          const existing = await r2Client.getFileMetadata(canonicalKey);
+          if (existing) {
+            await r2Client.copyFile(canonicalKey, key);
+            return { word: p.word, vocabId, imageKey: key };
+          }
+        } catch (err) {
+          console.warn(
+            `[generateSingleQuestion] Failed to check/copy canonical image for "${p.word}":`,
+            err,
+          );
+        }
+
         const imgResult = await imageClient.generateImagePanel({
           prompt: buildVocabImagePromptForRegen(p.word),
           referenceImage: undefined,
@@ -278,6 +293,17 @@ export async function generateSingleQuestion(
             'vocab-word': p.word,
           },
         );
+        r2Client
+          .uploadFile(canonicalKey, imgResult.imageBuffer, imgResult.contentType ?? 'image/png', {
+            'vocab-id': vocabId,
+            'vocab-word': p.word,
+          })
+          .catch((err) =>
+            console.warn(
+              `[generateSingleQuestion] Failed to cache canonical vocab image for "${p.word}":`,
+              err,
+            ),
+          );
         return { word: p.word, vocabId, imageKey: key };
       }),
     );

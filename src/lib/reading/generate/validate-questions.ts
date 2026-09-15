@@ -224,40 +224,100 @@ function validateMcq(
   knownVocab: { id?: string; word: string }[],
   issues: QuestionValidationIssue[],
 ): void {
-  // Evidence quote — exact verbatim substring of some page.
-  const found = pages.find((p) => p.text.includes(q.evidenceQuote));
-  if (!found) {
+  // Evidence quote — non-empty, min length, and exact verbatim substring of some page.
+  if (!q.evidenceQuote || q.evidenceQuote.trim().length < 3) {
     issues.push({
       type: 'evidence_not_found',
       severity: 'error',
       questionIndex: qIdx,
-      evidenceQuote: q.evidenceQuote,
+      evidenceQuote: q.evidenceQuote ?? '',
     });
-  } else if (found.pageNumber !== q.evidencePageNumber) {
+  } else {
+    const found = pages.find((p) => p.text.includes(q.evidenceQuote));
+    if (!found) {
+      issues.push({
+        type: 'evidence_not_found',
+        severity: 'error',
+        questionIndex: qIdx,
+        evidenceQuote: q.evidenceQuote,
+      });
+    } else if (found.pageNumber !== q.evidencePageNumber) {
+      issues.push({
+        type: 'evidence_page_mismatch',
+        severity: 'warning',
+        questionIndex: qIdx,
+        statedPage: q.evidencePageNumber,
+        foundOnPage: found.pageNumber,
+      });
+    }
+  }
+
+  // Option count & correct index bounds.
+  const options = q.payload.options;
+  if (!Array.isArray(options) || options.length !== 4) {
     issues.push({
-      type: 'evidence_page_mismatch',
-      severity: 'warning',
+      type: 'invalid_option_count',
+      severity: 'error',
       questionIndex: qIdx,
-      statedPage: q.evidencePageNumber,
-      foundOnPage: found.pageNumber,
+      actualCount: Array.isArray(options) ? options.length : 0,
+      expectedCount: 4,
     });
   }
 
-  // Option vocab — same morphology-aware check as question text, dedup
-  // unknowns per option so a repeated unmatched word doesn't double-fire.
-  for (let oIdx = 0; oIdx < q.payload.options.length; oIdx++) {
-    const tokens = tokenizeStoryText(q.payload.options[oIdx]!, knownVocab);
-    const seen = new Set<string>();
-    for (const u of tokens.unmatched) {
-      if (seen.has(u)) continue;
-      seen.add(u);
-      issues.push({
-        type: 'unknown_word_in_options',
-        severity: 'warning',
-        questionIndex: qIdx,
-        optionIndex: oIdx,
-        word: u,
-      });
+  if (
+    typeof q.payload.correctIndex !== 'number' ||
+    !Number.isInteger(q.payload.correctIndex) ||
+    q.payload.correctIndex < 0 ||
+    q.payload.correctIndex >= (options?.length ?? 0)
+  ) {
+    issues.push({
+      type: 'invalid_correct_index',
+      severity: 'error',
+      questionIndex: qIdx,
+      correctIndex: q.payload.correctIndex,
+      optionCount: options?.length ?? 0,
+    });
+  }
+
+  // Option text validity (non-empty, unique) and option vocab.
+  const seenOptionTexts = new Set<string>();
+  if (Array.isArray(options)) {
+    for (let oIdx = 0; oIdx < options.length; oIdx++) {
+      const opt = options[oIdx];
+      const trimmed = typeof opt === 'string' ? opt.trim() : '';
+      if (!trimmed) {
+        issues.push({
+          type: 'empty_option',
+          severity: 'error',
+          questionIndex: qIdx,
+          optionIndex: oIdx,
+        });
+        continue;
+      }
+      const normalized = trimmed.toLowerCase();
+      if (seenOptionTexts.has(normalized)) {
+        issues.push({
+          type: 'duplicate_options',
+          severity: 'error',
+          questionIndex: qIdx,
+          option: trimmed,
+        });
+      }
+      seenOptionTexts.add(normalized);
+
+      const tokens = tokenizeStoryText(trimmed, knownVocab);
+      const seen = new Set<string>();
+      for (const u of tokens.unmatched) {
+        if (seen.has(u)) continue;
+        seen.add(u);
+        issues.push({
+          type: 'unknown_word_in_options',
+          severity: 'warning',
+          questionIndex: qIdx,
+          optionIndex: oIdx,
+          word: u,
+        });
+      }
     }
   }
 }
@@ -300,7 +360,6 @@ function validateVocabMatching(
     const idValid = canonicalWord !== undefined;
     const wordMatches =
       idValid && canonicalWord!.toLowerCase().trim() === pair.word.toLowerCase().trim();
-
     if (!idValid || !wordMatches) {
       issues.push({
         type: 'vocab_id_invalid',
@@ -308,28 +367,22 @@ function validateVocabMatching(
         questionIndex: qIdx,
         pairIndex: pIdx,
         word: pair.word,
-        vocabId: pair.vocabId,
+        vocabId: pair.vocabId ?? '',
       });
-      // Skip the rest of this pair's checks — the data we'd test against
-      // isn't trustworthy.
       continue;
     }
 
-    // imageKey shape — must match the canonical
-    // story-images/{passageId}/vocab-{vocabId}.png path. A missing or
-    // wrong key signals questions.ts skipped the upload step, so the
-    // student would see a broken image; we surface as an error.
-    //
-    // Exception: under --skip-images the orchestrator deliberately
-    // writes a "skipped:vocab-{vocabId}" sentinel. Those rows are test
-    // artifacts (status='draft') and the V2 shape is otherwise valid;
-    // we accept the sentinel so the validator doesn't false-flag.
+    // imageKey check: must be non-empty, matching the expected
+    // per-passage key, a shared canonical key, or the test sentinel.
     const expectedKey = `story-images/${passageId}/vocab-${pair.vocabId}.png`;
     const expectedSentinel = `skipped:vocab-${pair.vocabId}`;
+    const canonicalKey = `vocab-images/${pair.vocabId}.png`;
     const keyOk =
       typeof pair.imageKey === 'string' &&
       pair.imageKey.length > 0 &&
-      (pair.imageKey === expectedKey || pair.imageKey === expectedSentinel);
+      (pair.imageKey === expectedKey ||
+        pair.imageKey === expectedSentinel ||
+        pair.imageKey === canonicalKey);
     if (!keyOk) {
       issues.push({
         type: 'pair_image_key_invalid',
