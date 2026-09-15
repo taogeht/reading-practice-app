@@ -13,7 +13,6 @@ import { ClassMediaUploadSection } from "@/components/teacher/class-media-upload
 import { ClassEngagementSection } from "@/components/gamification/class-engagement-section";
 import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-units-section";
 import { ClassPracticeSection } from "@/components/practice/class-practice-section";
-import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { ClassTeachersCard } from "@/components/teachers/class-teachers-card";
 import { RecapConfirmationSummary } from "@/components/recap/recap-confirmation-summary";
 import {
@@ -188,7 +187,6 @@ export function ClassBodyV2({
           <ClassEngagementSection classId={classId} defaultExpanded={false} />
           <ClassPracticeUnitsSection classId={classId} defaultExpanded={false} />
           <ClassPracticeSection classId={classId} defaultExpanded={false} />
-          <LoginActivitySection classId={classId} defaultExpanded={false} />
           <ClassTeachersCard classId={classId} />
         </div>
       </details>

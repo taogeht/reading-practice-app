@@ -34,17 +34,14 @@ const ZERO_RESULT: AwardResult = {
     bonusEvents: [],
 };
 
+import { getTodayDateString, getDaysBetweenDates } from '@/lib/date-utils';
+
 function todayDateString(): string {
-    // YYYY-MM-DD in server local time. The schema column is `date` so date math
-    // is straightforward and timezone-naive — fine for first cut.
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return getTodayDateString();
 }
 
 function daysBetween(earlierIso: string, laterIso: string): number {
-    const earlier = new Date(earlierIso);
-    const later = new Date(laterIso);
-    return Math.floor((later.getTime() - earlier.getTime()) / (24 * 60 * 60 * 1000));
+    return getDaysBetweenDates(earlierIso, laterIso);
 }
 
 /**

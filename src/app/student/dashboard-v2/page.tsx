@@ -38,7 +38,6 @@ import { FlashcardGame } from '@/components/spelling/flashcard-game';
 import { RecordedPassagesSection } from '@/components/recordings/recorded-passages-section';
 import { StudentMediaGallery } from '@/components/student-media/student-media-gallery';
 import { ReadingLibrary } from '@/components/reading/reading-library';
-import { StoryLibrary } from '@/components/stories/story-library';
 import { StudentHomeworkSection } from '@/components/student/student-homework-section';
 import { PracticeSession } from '@/components/practice/practice-session';
 import { PracticeStatsCard } from '@/components/practice/practice-stats-card';
@@ -392,20 +391,6 @@ export default function StudentDashboardV2Page() {
             <ReadingLibrary
               student={{ firstName: student.firstName, readingLevel: student.readingLevel }}
             />
-            {showPracticeStories && (
-              <div className="space-y-3">
-                <h2 className="flex items-center gap-2 font-[family-name:var(--font-kid-display)] text-xl font-bold text-slate-800">
-                  <BookOpen className="w-6 h-6 text-emerald-500" /> Practice stories · 練習故事
-                </h2>
-                <StoryLibrary
-                  variant="compact"
-                  filter={{ readingLevel: student.readingLevel || undefined, gradeLevel: student.gradeLevel || undefined }}
-                  onStorySelect={(story) => router.push(`/student/practice/${story.id}`)}
-                  selectable
-                  showCreateButton={false}
-                />
-              </div>
-            )}
             <StudentHomeworkSection />
           </TabsContent>
 

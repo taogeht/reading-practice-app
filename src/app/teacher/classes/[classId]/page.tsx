@@ -16,7 +16,6 @@ import { MakeupWorkSection } from "@/components/attendance/makeup-work-section";
 import { ClassPracticeSection } from "@/components/practice/class-practice-section";
 import { ClassPracticeUnitsSection } from "@/components/practice/class-practice-units-section";
 import { ClassEngagementSection } from "@/components/gamification/class-engagement-section";
-import { LoginActivitySection } from "@/components/activity/login-activity-section";
 import { RecapConfirmationSummary } from "@/components/recap/recap-confirmation-summary";
 import { SyllabusImportDialog } from "@/components/syllabus/syllabus-import-dialog";
 import { ClassTeachersCard } from "@/components/teachers/class-teachers-card";
@@ -547,9 +546,6 @@ export default function ClassDetailPage() {
 
             {/* Weekly Recap summary — current week's status + parent confirmations */}
             <RecapConfirmationSummary classId={classId} />
-
-            {/* Login Activity */}
-            <LoginActivitySection classId={classId} defaultExpanded={false} />
 
             {/* Advanced Settings - Collapsible — primary-only (contains
                 class edit + delete; co-teachers don't own this class). */}

@@ -53,33 +53,50 @@ export function TeacherShell({
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const primary: NavItem[] = [
-    { label: "Home", href: "/teacher/dashboard", icon: Home },
-    { label: "Classes", href: "/teacher/classes", icon: GraduationCap },
-    ...(caps.canManageAssignments
-      ? [{ label: "Assignments", href: "/teacher/assignments", icon: ClipboardList }]
-      : []),
-    ...(caps.canManageSpellingLists
-      ? [{ label: "Spelling", href: "/teacher/spelling-lists", icon: SpellCheck2 }]
-      : []),
-    { label: "Students", href: "/teacher/students", icon: Users },
-    { label: "Review", href: "/teacher/submissions", icon: Inbox },
-  ];
+  interface NavGroup {
+    title: string;
+    items: NavItem[];
+  }
 
-  const more: NavItem[] = [
-    ...(caps.canGenerateReadingContent
-      ? [{ label: "Reading Practice", href: "/teacher/reading", icon: Sparkles }]
-      : []),
-    ...(caps.canGeneratePracticeQuestions
-      ? [{ label: "Practice Questions", href: "/teacher/practice-questions", icon: Trophy }]
-      : []),
-    ...(caps.canGeneratePracticeQuestions
-      ? [{ label: "Tests", href: "/teacher/tests", icon: FileText }]
-      : []),
-    ...(caps.canUseSunnyPreview
-      ? [{ label: "Sunny", href: "/teacher/helper", icon: Sun }]
-      : []),
-    { label: "Stories", href: "/teacher/stories", icon: Library },
+  const sections: NavGroup[] = [
+    {
+      title: "Teaching",
+      items: [
+        { label: "Home", href: "/teacher/dashboard", icon: Home },
+        { label: "Classes", href: "/teacher/classes", icon: GraduationCap },
+        { label: "Students", href: "/teacher/students", icon: Users },
+      ],
+    },
+    {
+      title: "Assignments & Grading",
+      items: [
+        ...(caps.canManageAssignments
+          ? [{ label: "Assignments", href: "/teacher/assignments", icon: ClipboardList }]
+          : []),
+        { label: "Review", href: "/teacher/submissions", icon: Inbox },
+      ],
+    },
+    {
+      title: "Curriculum & Content",
+      items: [
+        ...(caps.canGenerateReadingContent
+          ? [{ label: "Reading Practice", href: "/teacher/reading", icon: Sparkles }]
+          : []),
+        ...(caps.canManageSpellingLists
+          ? [{ label: "Spelling Lists", href: "/teacher/spelling-lists", icon: SpellCheck2 }]
+          : []),
+        ...(caps.canGeneratePracticeQuestions
+          ? [
+              { label: "Practice Questions", href: "/teacher/practice-questions", icon: Trophy },
+              { label: "Tests", href: "/teacher/tests", icon: FileText },
+            ]
+          : []),
+        { label: "Story Library", href: "/teacher/stories", icon: Library },
+        ...(caps.canUseSunnyPreview
+          ? [{ label: "Sunny Helper", href: "/teacher/helper", icon: Sun }]
+          : []),
+      ],
+    },
   ];
 
   // Home only matches exactly so deeper /teacher/* routes don't both light it
@@ -109,7 +126,7 @@ export function TeacherShell({
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
           active
-            ? "bg-blue-50 text-blue-700"
+            ? "bg-blue-50 text-blue-700 font-semibold"
             : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
         )}
       >
@@ -128,20 +145,20 @@ export function TeacherShell({
         <span className="font-semibold text-gray-900">Teacher</span>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {primary.map((item) => (
-          <NavLink key={item.href} item={item} />
-        ))}
-        {more.length > 0 && (
-          <>
-            <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-              More
-            </p>
-            {more.map((item) => (
-              <NavLink key={item.href} item={item} />
-            ))}
-          </>
-        )}
+      <nav className="flex-1 space-y-5 overflow-y-auto p-3">
+        {sections.map((section) => {
+          if (section.items.length === 0) return null;
+          return (
+            <div key={section.title} className="space-y-1">
+              <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                {section.title}
+              </p>
+              {section.items.map((item) => (
+                <NavLink key={item.href} item={item} />
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="border-t p-3">
