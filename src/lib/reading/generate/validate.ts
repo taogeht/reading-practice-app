@@ -40,6 +40,19 @@ const UNKNOWN_WORD_WARNING_TIER_PERMISSIVE = 4; // teacher opted in to stretch v
 const SENTENCE_OVER_WARNING_TIER = 2; // 1-2 words over = warning; 3+ = error
 const PAGE_RANGE_WARNING_PCT = 0.2;   // within 20% of the cap = warning
 
+const IRREGULAR_PAST_VERBS = new Set([
+  'was', 'were', 'had', 'did', 'went', 'saw', 'ate', 'came', 'ran', 'said',
+  'took', 'got', 'found', 'made', 'told', 'gave', 'thought', 'felt', 'knew',
+  'heard', 'fell', 'slept', 'flew', 'sat', 'swam', 'bought', 'brought',
+  'spoke', 'wrote', 'drank', 'drove', 'rode', 'stood', 'wore', 'began',
+]);
+
+const NON_PAST_ED_WORDS = new Set([
+  'bed', 'red', 'sled', 'shed', 'feed', 'need', 'seed', 'weed', 'bleed', 'speed',
+  'breed', 'freed', 'greed', 'steed', 'creed', 'hundred', 'tired', 'scared',
+  'bored', 'excited', 'wicked', 'naked', 'sacred',
+]);
+
 export function validatePagesProse(
   pages: GeneratedPageProse[],
   plan: PassagePlan,
@@ -176,6 +189,63 @@ export function validatePagesProse(
           pageNumber: page.pageNumber,
           sentence: trimForReport(containing),
           reason: `Contractions not allowed at level ${level.id} (found "${found}")`,
+        });
+      }
+    }
+
+    if (!level.grammarConstraints.allowPastTense) {
+      const seenPastWords = new Set<string>();
+      for (const sentence of sentences) {
+        const words = sentence.toLowerCase().match(/\b[a-z]+(?:'[a-z]+)?\b/g) ?? [];
+        for (const w of words) {
+          if (seenPastWords.has(w)) continue;
+          const isIrregular = IRREGULAR_PAST_VERBS.has(w);
+          const isRegularEd =
+            w.endsWith('ed') &&
+            w.length >= 4 &&
+            !NON_PAST_ED_WORDS.has(w);
+          if (isIrregular || isRegularEd) {
+            seenPastWords.add(w);
+            rawForbiddenFindings.push({
+              pageNumber: page.pageNumber,
+              sentence: trimForReport(sentence),
+              reason: `Past tense not allowed at level ${level.id} (found "${w}"). Write in present tense.`,
+            });
+          }
+        }
+      }
+    }
+
+    if (!level.grammarConstraints.allowFutureTense) {
+      const seenFutureWords = new Set<string>();
+      const futureRe = /\b(?:will|won't|going to\s+[a-z]+)\b/gi;
+      let m: RegExpExecArray | null;
+      while ((m = futureRe.exec(page.text)) !== null) {
+        const found = m[0];
+        if (seenFutureWords.has(found.toLowerCase())) continue;
+        seenFutureWords.add(found.toLowerCase());
+        const containing = findSentenceContaining(sentences, found) ?? page.text;
+        rawForbiddenFindings.push({
+          pageNumber: page.pageNumber,
+          sentence: trimForReport(containing),
+          reason: `Future tense not allowed at level ${level.id} (found "${found}").`,
+        });
+      }
+    }
+
+    if (!level.grammarConstraints.allowConditionals) {
+      const seenConditionals = new Set<string>();
+      const condRe = /\b(?:if|would)\b/gi;
+      let m: RegExpExecArray | null;
+      while ((m = condRe.exec(page.text)) !== null) {
+        const found = m[0];
+        if (seenConditionals.has(found.toLowerCase())) continue;
+        seenConditionals.add(found.toLowerCase());
+        const containing = findSentenceContaining(sentences, found) ?? page.text;
+        rawForbiddenFindings.push({
+          pageNumber: page.pageNumber,
+          sentence: trimForReport(containing),
+          reason: `Conditionals not allowed at level ${level.id} (found "${found}").`,
         });
       }
     }

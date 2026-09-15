@@ -62,19 +62,25 @@ export function buildImagePrompt(
   page: PassagePagePlan,
   plan: PassagePlan,
   style: ImageStyle = DEFAULT_IMAGE_STYLE,
+  proseText?: string,
 ): string {
   const characterDescriptions = plan.characters
     .map((c) => `${c.name} (${c.description})`)
     .join('; ');
 
-  return [
-    page.sceneDescription,
-    `Characters in this scene: ${characterDescriptions}`,
-    `Setting: ${plan.setting}`,
-    style.promptSuffix.trimStart(),
-  ]
-    .filter(Boolean)
-    .join('. ');
+  const promptParts: string[] = [];
+
+  if (proseText?.trim()) {
+    promptParts.push(`Story action happening on this page: "${proseText.trim()}"`);
+  }
+  promptParts.push(page.sceneDescription);
+  promptParts.push(`Characters in this scene: ${characterDescriptions}`);
+  promptParts.push(`Setting: ${plan.setting}`);
+  if (style.promptSuffix) {
+    promptParts.push(style.promptSuffix.trimStart());
+  }
+
+  return promptParts.filter(Boolean).join('. ');
 }
 
 // ---------- Main entry point ----------
@@ -121,7 +127,7 @@ export async function generatePassageImages(
     }
 
     const isFirstPage = pageOneImage === null;
-    const prompt = buildImagePrompt(planPage, input.plan, style);
+    const prompt = buildImagePrompt(planPage, input.plan, style, proseRow.text);
     const t0 = Date.now();
 
     const result = await imageClient.generateImagePanel({

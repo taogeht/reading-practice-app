@@ -80,6 +80,7 @@ TONE
 STRUCTURE
 - 3-act mini-arc: setup → problem → attempt → resolution.
 - Every page advances the story by exactly one beat.
+- Tense alignment: When past tense is not allowed for the level, the entire story arc must be planned in the PRESENT TENSE ("Sally is in the garden. She sees a kitten."). Do NOT plan past-tense beats.
 - 1 to 3 named characters. Each character description must be concrete enough that an image generator can render the same character consistently across pages — name, approximate age, hair, signature outfit details.
 
 CHARACTER NAMES
@@ -175,7 +176,7 @@ function buildLevelConstraintsBlock(level: EffectiveReadingLevel): string {
     '',
     'GRAMMAR ALLOWED:',
     `- Contractions: ${yn(grammar.allowContractions)}`,
-    `- Past tense: ${yn(grammar.allowPastTense)}`,
+    `- Past tense: ${yn(grammar.allowPastTense)}${!grammar.allowPastTense ? ' (STRICT: All story beats must be PRESENT TENSE only — no past actions)' : ''}`,
     `- Future tense: ${yn(grammar.allowFutureTense)}`,
     `- Conditionals: ${yn(grammar.allowConditionals)}`,
     `- Phrasal verbs: ${yn(grammar.allowPhrasalVerbs)}`,

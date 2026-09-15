@@ -16,8 +16,9 @@ export const READING_LEVELS = [
     id: 1,
     name: 'Early',
     targetAfFLevel: 'grade1',
-    // Grade 1. Past tense introduced, basic conjunctions ("and", "but"),
-    // contractions OK. Still single-clause-mostly to keep cognitive load low.
+    // Grade 1 / Family and Friends 1. Present simple, present continuous,
+    // imperatives, "can", "let's". Basic conjunctions ("and", "but"), contractions OK.
+    // Zero past tense taught in FF1 — stories must be in present tense. Single-clause.
     maxSentenceWords: 8,
     avgSentenceWords: 6,
     pageCount: { min: 8, max: 10 },
@@ -38,7 +39,7 @@ export const READING_LEVELS = [
     },
     grammarConstraints: {
       allowContractions: true,
-      allowPastTense: true,
+      allowPastTense: false,
       allowFutureTense: false,
       allowConditionals: false,
       allowPhrasalVerbs: false,
@@ -52,8 +53,10 @@ export const READING_LEVELS = [
     id: 2,
     name: 'Developing',
     targetAfFLevel: 'grade2',
-    // Grade 2. Future tense + simple phrasal verbs, two-clause sentences.
-    // CEFR cap rises to A2 so generator can use slightly less-frequent words.
+    // Grade 2 / Family and Friends 2. Present tense reinforced ("have got", "like/don't like").
+    // Future tense ("going to") + simple phrasal verbs, two-clause sentences.
+    // General past tense is deferred (FF2 only introduces was/were in Units 14-15;
+    // general regular past actions begin in Grade 3).
     maxSentenceWords: 10,
     avgSentenceWords: 7,
     pageCount: { min: 10, max: 12 },
@@ -74,7 +77,7 @@ export const READING_LEVELS = [
     },
     grammarConstraints: {
       allowContractions: true,
-      allowPastTense: true,
+      allowPastTense: false,
       allowFutureTense: true,
       allowConditionals: false,
       allowPhrasalVerbs: true,

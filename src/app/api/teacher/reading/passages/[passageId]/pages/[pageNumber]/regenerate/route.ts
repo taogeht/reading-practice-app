@@ -3,7 +3,11 @@ import { and, eq, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { canGenerateReadingContent } from '@/lib/auth/reading-content';
 import { db } from '@/lib/db';
-import { readingPassages, storyPages } from '@/lib/db/schema';
+import {
+  readingPassages,
+  storyPages,
+  type PassageGenerationMeta,
+} from '@/lib/db/schema';
 import { r2Client } from '@/lib/storage/r2-client';
 import { imageClient } from '@/lib/image';
 import { logError, logInfo } from '@/lib/logger';
@@ -141,7 +145,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 400 },
       );
     }
-    const imagePrompt = buildImagePrompt(planPage, planFromMeta);
+    const imagePrompt = buildImagePrompt(
+      planPage,
+      planFromMeta,
+      undefined,
+      proseResult.page.text,
+    );
     const imageResult = await imageClient.generateImagePanel({
       prompt: imagePrompt,
       referenceImage,
@@ -188,10 +197,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         ),
       );
 
-    // 6. Bump the passage's updatedAt so the review queue reflects the change.
+    // 6. Bump the passage's updatedAt and clear this page from stalePageImages.
+    const currentMeta = (passage.generationMeta as PassageGenerationMeta | null) ?? {};
+    const updatedStalePageImages = (currentMeta.stalePageImages ?? []).filter(
+      (p) => p !== pageNumber,
+    );
+    const updatedMeta: PassageGenerationMeta = {
+      ...currentMeta,
+      stalePageImages: updatedStalePageImages,
+    };
+
     await db
       .update(readingPassages)
-      .set({ updatedAt: sql`now()` })
+      .set({ generationMeta: updatedMeta, updatedAt: sql`now()` })
       .where(eq(readingPassages.id, passageId));
 
     logInfo(

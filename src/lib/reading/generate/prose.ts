@@ -81,7 +81,7 @@ function buildSystemPrompt(level: EffectiveReadingLevel): string {
     grammarLines.push('- Contractions FORBIDDEN — write "do not" instead of "don\'t", "it is" instead of "it\'s", and so on.');
   }
   if (!grammar.allowPastTense) {
-    grammarLines.push('- Use PRESENT TENSE only — no past tense, no "-ed" verbs.');
+    grammarLines.push('- Use PRESENT TENSE only — every action happens right now ("runs", "looks", "is", "sees", "says"). NO past tense, NO "-ed" verbs, NO irregular past (was/were/had/went/saw/ran/said).');
   } else {
     grammarLines.push('- Past tense allowed (ran, walked, said).');
   }
