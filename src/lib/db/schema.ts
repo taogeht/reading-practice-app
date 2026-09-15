@@ -1924,10 +1924,48 @@ export const session = pgTable('session', {
   ipAddress: varchar('ipAddress', { length: 255 }),
   userAgent: varchar('userAgent', { length: 500 }),
   userId: uuid('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  currentActivityType: varchar('current_activity_type', { length: 32 }),
+  currentActivityLabel: varchar('current_activity_label', { length: 255 }),
 });
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(users, { fields: [session.userId], references: [users.id] }),
+}));
+
+// Granular student daily activity and time tracking table.
+// Stores daily rollup of active seconds per student, per date (Asia/Taipei),
+// per activity category ('reading', 'spelling', 'assignment', 'practice', 'general').
+export const studentDailyActivity = pgTable(
+  'student_daily_activity',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+    activityType: varchar('activity_type', { length: 32 }).notNull(),
+    secondsActive: integer('seconds_active').default(0).notNull(),
+    lastContextLabel: varchar('last_context_label', { length: 255 }),
+    lastHeartbeatAt: timestamp('last_heartbeat_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueStudentDateActivity: uniqueIndex('uq_student_daily_activity').on(
+      table.studentId,
+      table.date,
+      table.activityType,
+    ),
+    lookupIdx: index('idx_student_daily_activity_lookup').on(table.studentId, table.date),
+    dateIdx: index('idx_student_daily_activity_date').on(table.date),
+  }),
+);
+
+export type StudentDailyActivity = typeof studentDailyActivity.$inferSelect;
+export type NewStudentDailyActivity = typeof studentDailyActivity.$inferInsert;
+
+export const studentDailyActivityRelations = relations(studentDailyActivity, ({ one }) => ({
+  student: one(users, { fields: [studentDailyActivity.studentId], references: [users.id] }),
 }));
 
 // Long-lived native-app credentials. The device receives the opaque refresh

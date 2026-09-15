@@ -45,8 +45,16 @@ export interface StudentEngagementRow {
     lastActivityAt: string | null;
     status: ActivityStatus;
     isCurrentlyOnline: boolean;
+    currentActivity?: { type: string; label: string | null } | null;
     activeInWindow: boolean;
     totalMinutesOnline: number;
+    timeBreakdown: {
+        reading: number;
+        spelling: number;
+        assignment: number;
+        practice: number;
+        general: number;
+    };
     recordingsCount: number;
     questionsAnswered: number;
     spellingGames: number;
@@ -60,6 +68,13 @@ export interface EngagementSummary {
     slippingCount: number;
     neverCount: number;
     totalMinutesOnline: number;
+    timeBreakdown?: {
+        reading: number;
+        spelling: number;
+        assignment: number;
+        practice: number;
+        general: number;
+    };
     totalRecordings: number;
     totalQuestions: number;
     totalSpellingGames: number;
@@ -305,7 +320,7 @@ export function ClassEngagementSection({
                                 </div>
                                 <div className="p-3 rounded-lg bg-amber-50/70 border border-amber-200 col-span-2 sm:col-span-1">
                                     <div className="flex items-center gap-1.5 text-xs text-amber-800">
-                                        <Sparkles className="w-3.5 h-3.5" />
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                                         <span>Class XP</span>
                                     </div>
                                     <div className="text-lg font-bold text-amber-900 mt-0.5">
@@ -313,6 +328,28 @@ export function ClassEngagementSection({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Class Time by Subject Breakdown Strip */}
+                            {data.summary.timeBreakdown && data.summary.totalMinutesOnline > 0 && (
+                                <div className="flex items-center gap-3 text-xs text-gray-600 bg-gray-50/80 px-3.5 py-2 rounded-lg border border-gray-200 overflow-x-auto">
+                                    <span className="font-semibold text-gray-700 shrink-0">Class Time ({windowLabel}):</span>
+                                    <span className="flex items-center gap-1 shrink-0 text-emerald-700 font-medium">
+                                        📖 Reading <strong>{data.summary.timeBreakdown.reading}m</strong>
+                                    </span>
+                                    <span className="text-gray-300">·</span>
+                                    <span className="flex items-center gap-1 shrink-0 text-sky-700 font-medium">
+                                        🔤 Spelling <strong>{data.summary.timeBreakdown.spelling}m</strong>
+                                    </span>
+                                    <span className="text-gray-300">·</span>
+                                    <span className="flex items-center gap-1 shrink-0 text-indigo-700 font-medium">
+                                        🎙️ Assignments <strong>{data.summary.timeBreakdown.assignment}m</strong>
+                                    </span>
+                                    <span className="text-gray-300">·</span>
+                                    <span className="flex items-center gap-1 shrink-0 text-purple-700 font-medium">
+                                        🏆 Practice <strong>{data.summary.timeBreakdown.practice}m</strong>
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Controls: Time Window + Filters + Sort */}
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
@@ -486,9 +523,17 @@ export function ClassEngagementSection({
 
                                                             {/* Status Badge */}
                                                             {s.isCurrentlyOnline ? (
-                                                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                                                                <span
+                                                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"
+                                                                    title={s.currentActivity?.label ? `Active now: ${s.currentActivity.label}` : 'Online now'}
+                                                                >
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                                    Online
+                                                                    <span>Online</span>
+                                                                    {s.currentActivity?.label && (
+                                                                        <span className="text-emerald-600 font-normal max-w-[180px] truncate hidden sm:inline">
+                                                                            · {s.currentActivity.label}
+                                                                        </span>
+                                                                    )}
                                                                 </span>
                                                             ) : s.status === 'active' ? (
                                                                 <span className="inline-flex items-center text-[11px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-200">
@@ -568,7 +613,7 @@ export function ClassEngagementSection({
 
                                                 {/* Expanded Breakdown Drawer */}
                                                 {isExpandedRow && (
-                                                    <div className="px-4 py-3 bg-gray-50/70 border-t border-gray-200 text-xs space-y-2 rounded-b-lg">
+                                                    <div className="px-4 py-3 bg-gray-50/70 border-t border-gray-200 text-xs space-y-3 rounded-b-lg">
                                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                             <div>
                                                                 <span className="text-gray-500">Last login:</span>
@@ -591,6 +636,31 @@ export function ClassEngagementSection({
                                                                 <p className="font-medium text-gray-900 mt-0.5">
                                                                     Level {s.currentLevel} ({s.animal.displayName})
                                                                 </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Granular Time by Activity */}
+                                                        <div className="pt-2 border-t border-gray-200/60">
+                                                            <span className="text-gray-500 font-medium block mb-1.5">
+                                                                Time by Subject ({windowLabel}):
+                                                            </span>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                                <div className="p-2 rounded-md bg-white border border-gray-200">
+                                                                    <span className="text-gray-400 block text-[10px] uppercase font-bold">📖 Reading</span>
+                                                                    <span className="text-sm font-semibold text-emerald-700">{s.timeBreakdown?.reading ?? 0}m</span>
+                                                                </div>
+                                                                <div className="p-2 rounded-md bg-white border border-gray-200">
+                                                                    <span className="text-gray-400 block text-[10px] uppercase font-bold">🔤 Spelling</span>
+                                                                    <span className="text-sm font-semibold text-sky-700">{s.timeBreakdown?.spelling ?? 0}m</span>
+                                                                </div>
+                                                                <div className="p-2 rounded-md bg-white border border-gray-200">
+                                                                    <span className="text-gray-400 block text-[10px] uppercase font-bold">🎙️ Assignment</span>
+                                                                    <span className="text-sm font-semibold text-indigo-700">{s.timeBreakdown?.assignment ?? 0}m</span>
+                                                                </div>
+                                                                <div className="p-2 rounded-md bg-white border border-gray-200">
+                                                                    <span className="text-gray-400 block text-[10px] uppercase font-bold">🏆 Practice</span>
+                                                                    <span className="text-sm font-semibold text-purple-700">{s.timeBreakdown?.practice ?? 0}m</span>
+                                                                </div>
                                                             </div>
                                                         </div>
 

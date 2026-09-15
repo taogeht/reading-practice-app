@@ -102,10 +102,11 @@ export default function StudentReadingPassagePage({
   params: Promise<{ passageId: string }>;
 }) {
   const { passageId } = use(params);
-  const router = useRouter();
-  useHeartbeat();
-
   const [data, setData] = useState<PassageData | null>(null);
+  useHeartbeat({
+    activityType: 'reading',
+    contextLabel: data?.passage?.title ? `Reading: ${data.passage.title}` : 'Reading Passage',
+  });
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);

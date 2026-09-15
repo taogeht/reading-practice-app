@@ -168,7 +168,14 @@ export default function StudentDashboardV2Page() {
   const [tab, setTab] = useState('home');
   const [copied, setCopied] = useState<string | null>(null);
 
-  useHeartbeat();
+  const tabActivityMap: Record<string, { activityType: 'reading' | 'spelling' | 'assignment' | 'practice' | 'general'; contextLabel: string }> = {
+    assignments: { activityType: 'assignment', contextLabel: 'Homework Assignments' },
+    spelling: { activityType: 'spelling', contextLabel: 'Spelling Games' },
+    stories: { activityType: 'reading', contextLabel: 'Reading Library' },
+    practice: { activityType: 'practice', contextLabel: 'Grammar Practice' },
+  };
+  const activeTabContext = tabActivityMap[tab] || { activityType: 'general', contextLabel: 'Student Dashboard' };
+  useHeartbeat(activeTabContext);
 
   useEffect(() => {
     (async () => {

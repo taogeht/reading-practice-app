@@ -184,8 +184,16 @@ export async function GET(
                 lastActivityAt: m?.lastActivityAt ? m.lastActivityAt.toISOString() : null,
                 status,
                 isCurrentlyOnline: Boolean(m?.isCurrentlyOnline),
+                currentActivity: m?.currentActivity ?? null,
                 activeInWindow: Boolean(m?.activeInWindow),
                 totalMinutesOnline: minutes,
+                timeBreakdown: m?.timeBreakdown ?? {
+                    reading: 0,
+                    spelling: 0,
+                    assignment: 0,
+                    practice: 0,
+                    general: 0,
+                },
                 recordingsCount: recs,
                 questionsAnswered: qCount,
                 spellingGames: spelling,
@@ -196,6 +204,14 @@ export async function GET(
         const weekTotalXp = studentsPayload.reduce((sum, s) => sum + s.weekXp, 0);
         const monthTotalXp = studentsPayload.reduce((sum, s) => sum + s.monthXp, 0);
         const allTimeTotalXp = studentsPayload.reduce((sum, s) => sum + s.totalXp, 0);
+
+        const classTimeBreakdown = {
+            reading: studentsPayload.reduce((sum, s) => sum + s.timeBreakdown.reading, 0),
+            spelling: studentsPayload.reduce((sum, s) => sum + s.timeBreakdown.spelling, 0),
+            assignment: studentsPayload.reduce((sum, s) => sum + s.timeBreakdown.assignment, 0),
+            practice: studentsPayload.reduce((sum, s) => sum + s.timeBreakdown.practice, 0),
+            general: studentsPayload.reduce((sum, s) => sum + s.timeBreakdown.general, 0),
+        };
 
         return NextResponse.json({
             students: studentsPayload,
@@ -211,6 +227,7 @@ export async function GET(
                 slippingCount,
                 neverCount,
                 totalMinutesOnline,
+                timeBreakdown: classTimeBreakdown,
                 totalRecordings,
                 totalQuestions,
                 totalSpellingGames,

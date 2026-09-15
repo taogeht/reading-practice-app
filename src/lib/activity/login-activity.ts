@@ -6,8 +6,10 @@ import {
     studentReadingSessions,
     spellingGameResults,
     studentProgression,
+    studentDailyActivity,
 } from '@/lib/db/schema';
 import { and, count, gte, inArray, max, sql } from 'drizzle-orm';
+import { getTodayDateString } from '@/lib/date-utils';
 
 // A student is "online" if their last heartbeat landed within this window.
 // Heartbeats fire from the student dashboard + reading pages (see
@@ -21,6 +23,19 @@ export const ONLINE_THRESHOLD_MS = 3 * 60 * 1000; // 3 minutes
 // be conflated with `never`.
 export type ActivityStatus = 'online' | 'active' | 'slipping' | 'never';
 
+export interface ActivitySubjectMinutes {
+    reading: number;
+    spelling: number;
+    assignment: number;
+    practice: number;
+    general: number;
+}
+
+export interface CurrentActivityStatus {
+    type: string;
+    label: string | null;
+}
+
 export interface StudentActivityMetrics {
     // ── Lifetime (never filtered by the window) ──────────────────────────
     /** Most recent session start, ever. Null ⇒ truly never logged in. */
@@ -29,12 +44,16 @@ export interface StudentActivityMetrics {
     lastActivityAt: Date | null;
     hasEverLoggedIn: boolean;
     isCurrentlyOnline: boolean;
+    /** Current real-time activity when online */
+    currentActivity: CurrentActivityStatus | null;
 
     // ── Windowed (scoped to the selected date range) ─────────────────────
     /** Logins counted within the window. */
     sessionCount: number;
-    /** Approx minutes with the app open in the window (capped 4h/session). */
+    /** Approx minutes with the app open in the window. */
     totalMinutesOnline: number;
+    /** Granular minutes breakdown by subject/activity in the selected window */
+    timeBreakdown: ActivitySubjectMinutes;
     /** Read-aloud recordings submitted in the window (assignment + passage). */
     recordingsCount: number;
     /** Reading-comprehension questions answered in the window. */
@@ -59,8 +78,16 @@ function emptyMetrics(): StudentActivityMetrics {
         lastActivityAt: null,
         hasEverLoggedIn: false,
         isCurrentlyOnline: false,
+        currentActivity: null,
         sessionCount: 0,
         totalMinutesOnline: 0,
+        timeBreakdown: {
+            reading: 0,
+            spelling: 0,
+            assignment: 0,
+            practice: 0,
+            general: 0,
+        },
         recordingsCount: 0,
         questionsAnswered: 0,
         spellingGames: 0,
@@ -127,6 +154,7 @@ export async function computeStudentActivity(
         readingAgg,
         spellingCounts,
         progression,
+        activityBreakdown,
     ] = await Promise.all([
         // Lifetime login + activity — NO window filter. This is the fix: a
         // student who logged in long ago is still "logged in", never "never".
@@ -135,6 +163,8 @@ export async function computeStudentActivity(
                 userId: session.userId,
                 lastLoginAt: max(session.createdAt),
                 lastActivityAt: max(session.lastActivityAt),
+                currentActivityType: max(session.currentActivityType),
+                currentActivityLabel: max(session.currentActivityLabel),
             })
             .from(session)
             .where(inArray(session.userId, ids))
@@ -222,6 +252,24 @@ export async function computeStudentActivity(
             })
             .from(studentProgression)
             .where(inArray(studentProgression.studentId, ids)),
+
+        // Granular subject time breakdown from studentDailyActivity
+        db
+            .select({
+                studentId: studentDailyActivity.studentId,
+                activityType: studentDailyActivity.activityType,
+                seconds: sql<number>`COALESCE(SUM(${studentDailyActivity.secondsActive}), 0)`,
+            })
+            .from(studentDailyActivity)
+            .where(
+                startDate
+                    ? and(
+                          inArray(studentDailyActivity.studentId, ids),
+                          gte(studentDailyActivity.date, getTodayDateString(startDate)),
+                      )
+                    : inArray(studentDailyActivity.studentId, ids),
+            )
+            .groupBy(studentDailyActivity.studentId, studentDailyActivity.activityType),
     ]);
 
     for (const row of lifetimeSessions) {
@@ -232,6 +280,12 @@ export async function computeStudentActivity(
         m.lastActivityAt = row.lastActivityAt ?? null;
         m.hasEverLoggedIn = m.lastLoginAt !== null;
         m.isCurrentlyOnline = m.lastActivityAt !== null && m.lastActivityAt > onlineThreshold;
+        if (m.isCurrentlyOnline && row.currentActivityType) {
+            m.currentActivity = {
+                type: row.currentActivityType,
+                label: row.currentActivityLabel ?? null,
+            };
+        }
     }
 
     for (const row of windowSessions) {
@@ -263,9 +317,32 @@ export async function computeStudentActivity(
         if (m) m.currentStreakDays = Number(row.streak) || 0;
     }
 
+    for (const row of activityBreakdown) {
+        const m = result.get(row.studentId);
+        if (!m) continue;
+        const mins = Math.round((Number(row.seconds) || 0) / 60);
+        const type = row.activityType as keyof ActivitySubjectMinutes;
+        if (type in m.timeBreakdown) {
+            m.timeBreakdown[type] += mins;
+        } else {
+            m.timeBreakdown.general += mins;
+        }
+    }
+
     for (const m of result.values()) {
+        const trackedTotal =
+            m.timeBreakdown.reading +
+            m.timeBreakdown.spelling +
+            m.timeBreakdown.assignment +
+            m.timeBreakdown.practice +
+            m.timeBreakdown.general;
+
+        if (trackedTotal > 0) {
+            m.totalMinutesOnline = trackedTotal;
+        }
+
         m.actionsCount = m.recordingsCount + m.questionsAnswered + m.spellingGames;
-        m.activeInWindow = m.sessionCount > 0 || m.actionsCount > 0;
+        m.activeInWindow = m.sessionCount > 0 || m.actionsCount > 0 || m.totalMinutesOnline > 0;
         m.status = deriveStatus(m);
     }
 

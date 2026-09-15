@@ -20,6 +20,7 @@ import { StudentPassageRecordingsSection } from "@/components/recordings/student
 import { TeacherStarGrantsCard } from "@/components/gamification/teacher-star-grants-card";
 import { StudentJourneySection } from "@/components/teacher/student-journey-section";
 import { StudentScoresSection } from "@/components/teacher/student-scores-section";
+import { StudentTimeActivityCard } from "@/components/teacher/student-time-activity-card";
 
 interface StudentClass {
   id: string;
@@ -459,6 +460,8 @@ export default function TeacherStudentProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {studentId && <StudentTimeActivityCard studentId={studentId} />}
 
         {studentId && <StudentJourneySection studentId={studentId} refreshKey={journeyKey} />}
 

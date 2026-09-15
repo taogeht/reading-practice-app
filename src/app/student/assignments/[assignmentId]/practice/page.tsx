@@ -11,6 +11,7 @@ import { ArrowLeft, Volume2, Mic, Square, Upload, CheckCircle, RotateCcw, BookOp
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { usePlaybackRate } from "@/hooks/use-playback-rate";
+import { useHeartbeat } from "@/hooks/use-heartbeat";
 
 import type { StoryTtsAudio } from "@/types/story";
 
@@ -49,6 +50,10 @@ export default function AssignmentPracticePage() {
   const assignmentId = params.assignmentId as string;
 
   const [assignment, setAssignment] = useState<Assignment | null>(null);
+  useHeartbeat({
+    activityType: 'assignment',
+    contextLabel: assignment?.title ? `Assignment: ${assignment.title}` : 'Assignment Practice',
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [hasRecording, setHasRecording] = useState(false);

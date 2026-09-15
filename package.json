@@ -40,6 +40,7 @@
     "migrate:reading-jobs": "tsx scripts/apply-durable-reading-generation-jobs.ts",
     "migrate:reading-levels": "tsx scripts/apply-reading-levels-ff-alignment.ts",
     "migrate:spelling-release": "tsx scripts/apply-spelling-available-from.ts",
+    "migrate:student-activity": "tsx scripts/apply-student-daily-activity.ts",
     "test:plan": "tsx scripts/test-plan-generation.ts",
     "test:prose": "tsx scripts/test-prose-generation.ts",
     "test:regen": "tsx scripts/test-regen.ts",
