@@ -373,29 +373,6 @@ export default function ViewAssignmentPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" onClick={() => router.push(`/student/practice/${assignment.storyId}`)}>
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Preview Story
-                </Button>
-                <Button variant="outline">
-                  <Users className="w-4 h-4 mr-2" />
-                  View Student Progress
-                </Button>
-                <Button variant="outline">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Download Reports
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
