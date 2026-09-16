@@ -128,6 +128,16 @@ const MIGRATIONS: { id: string; label: string; checks: Check[] }[] = [
       { kind: 'index', name: 'idx_spelling_lists_available_from' },
     ],
   },
+  {
+    id: '0062',
+    label: 'student daily activity and real-time tracking',
+    checks: [
+      { kind: 'table', name: 'student_daily_activity' },
+      { kind: 'column', table: 'session', name: 'current_activity_type' },
+      { kind: 'column', table: 'session', name: 'current_activity_label' },
+      { kind: 'index', name: 'uq_student_daily_activity' },
+    ],
+  },
 ];
 
 async function main() {

@@ -11,6 +11,8 @@ import {
 import { and, count, gte, inArray, max, sql } from 'drizzle-orm';
 import { getTodayDateString } from '@/lib/date-utils';
 
+import { ensureStudentDailyActivitySchema } from './ensure-schema';
+
 // A student is "online" if their last heartbeat landed within this window.
 // Heartbeats fire from the student dashboard + reading pages (see
 // src/hooks/use-heartbeat.ts).
@@ -146,6 +148,62 @@ export async function computeStudentActivity(
         : sql`${session.createdAt}`;
     const minutesExpr = sql<number>`COALESCE(SUM(LEAST(GREATEST(EXTRACT(EPOCH FROM (COALESCE(${session.lastActivityAt}, ${session.createdAt}) - ${windowStart})) / 60.0, 0), 240)), 0)`;
 
+    await ensureStudentDailyActivitySchema();
+
+    const fetchLifetimeSessions = async () => {
+        try {
+            return await db
+                .select({
+                    userId: session.userId,
+                    lastLoginAt: max(session.createdAt),
+                    lastActivityAt: max(session.lastActivityAt),
+                    currentActivityType: max(session.currentActivityType),
+                    currentActivityLabel: max(session.currentActivityLabel),
+                })
+                .from(session)
+                .where(inArray(session.userId, ids))
+                .groupBy(session.userId);
+        } catch {
+            const fallback = await db
+                .select({
+                    userId: session.userId,
+                    lastLoginAt: max(session.createdAt),
+                    lastActivityAt: max(session.lastActivityAt),
+                })
+                .from(session)
+                .where(inArray(session.userId, ids))
+                .groupBy(session.userId);
+            return fallback.map((r) => ({
+                ...r,
+                currentActivityType: null,
+                currentActivityLabel: null,
+            }));
+        }
+    };
+
+    const fetchActivityBreakdown = async () => {
+        try {
+            return await db
+                .select({
+                    studentId: studentDailyActivity.studentId,
+                    activityType: studentDailyActivity.activityType,
+                    seconds: sql<number>`COALESCE(SUM(${studentDailyActivity.secondsActive}), 0)`,
+                })
+                .from(studentDailyActivity)
+                .where(
+                    startDate
+                        ? and(
+                              inArray(studentDailyActivity.studentId, ids),
+                              gte(studentDailyActivity.date, getTodayDateString(startDate)),
+                          )
+                        : inArray(studentDailyActivity.studentId, ids),
+                )
+                .groupBy(studentDailyActivity.studentId, studentDailyActivity.activityType);
+        } catch {
+            return [];
+        }
+    };
+
     const [
         lifetimeSessions,
         windowSessions,
@@ -156,19 +214,7 @@ export async function computeStudentActivity(
         progression,
         activityBreakdown,
     ] = await Promise.all([
-        // Lifetime login + activity — NO window filter. This is the fix: a
-        // student who logged in long ago is still "logged in", never "never".
-        db
-            .select({
-                userId: session.userId,
-                lastLoginAt: max(session.createdAt),
-                lastActivityAt: max(session.lastActivityAt),
-                currentActivityType: max(session.currentActivityType),
-                currentActivityLabel: max(session.currentActivityLabel),
-            })
-            .from(session)
-            .where(inArray(session.userId, ids))
-            .groupBy(session.userId),
+        fetchLifetimeSessions(),
 
         // Windowed sessions: count + approximate minutes online. Filtered by
         // last activity so a session that started before the window but stayed
@@ -253,23 +299,7 @@ export async function computeStudentActivity(
             .from(studentProgression)
             .where(inArray(studentProgression.studentId, ids)),
 
-        // Granular subject time breakdown from studentDailyActivity
-        db
-            .select({
-                studentId: studentDailyActivity.studentId,
-                activityType: studentDailyActivity.activityType,
-                seconds: sql<number>`COALESCE(SUM(${studentDailyActivity.secondsActive}), 0)`,
-            })
-            .from(studentDailyActivity)
-            .where(
-                startDate
-                    ? and(
-                          inArray(studentDailyActivity.studentId, ids),
-                          gte(studentDailyActivity.date, getTodayDateString(startDate)),
-                      )
-                    : inArray(studentDailyActivity.studentId, ids),
-            )
-            .groupBy(studentDailyActivity.studentId, studentDailyActivity.activityType),
+        fetchActivityBreakdown(),
     ]);
 
     for (const row of lifetimeSessions) {

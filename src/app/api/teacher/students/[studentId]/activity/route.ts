@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { classEnrollments, classes, session, studentDailyActivity } from '@/lib/db/schema';
 import { getDaysAgo, getStartOfMonth, getStartOfWeek, getTodayDateString } from '@/lib/date-utils';
 import { ONLINE_THRESHOLD_MS } from '@/lib/activity/login-activity';
+import { ensureStudentDailyActivitySchema } from '@/lib/activity/ensure-schema';
 
 export const runtime = 'nodejs';
 
@@ -49,35 +50,65 @@ export async function GET(
 
     const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
 
+    await ensureStudentDailyActivitySchema();
+
+    const fetchSession = async () => {
+      try {
+        return await db
+          .select({
+            createdAt: session.createdAt,
+            lastActivityAt: session.lastActivityAt,
+            currentActivityType: session.currentActivityType,
+            currentActivityLabel: session.currentActivityLabel,
+          })
+          .from(session)
+          .where(eq(session.userId, studentId))
+          .orderBy(desc(session.lastActivityAt))
+          .limit(1);
+      } catch {
+        const fallback = await db
+          .select({
+            createdAt: session.createdAt,
+            lastActivityAt: session.lastActivityAt,
+          })
+          .from(session)
+          .where(eq(session.userId, studentId))
+          .orderBy(desc(session.lastActivityAt))
+          .limit(1);
+        return fallback.map((s) => ({
+          ...s,
+          currentActivityType: null,
+          currentActivityLabel: null,
+        }));
+      }
+    };
+
+    const fetchDailyRows = async () => {
+      try {
+        return await db
+          .select({
+            date: studentDailyActivity.date,
+            activityType: studentDailyActivity.activityType,
+            secondsActive: studentDailyActivity.secondsActive,
+            lastContextLabel: studentDailyActivity.lastContextLabel,
+          })
+          .from(studentDailyActivity)
+          .where(
+            and(
+              eq(studentDailyActivity.studentId, studentId),
+              gte(studentDailyActivity.date, fourteenDaysAgoStr)
+            )
+          )
+          .orderBy(desc(studentDailyActivity.date));
+      } catch {
+        return [];
+      }
+    };
+
     // Parallel queries: active session, daily logs, and aggregate summaries
     const [sessions, allDailyRows] = await Promise.all([
-      db
-        .select({
-          createdAt: session.createdAt,
-          lastActivityAt: session.lastActivityAt,
-          currentActivityType: session.currentActivityType,
-          currentActivityLabel: session.currentActivityLabel,
-        })
-        .from(session)
-        .where(eq(session.userId, studentId))
-        .orderBy(desc(session.lastActivityAt))
-        .limit(1),
-
-      db
-        .select({
-          date: studentDailyActivity.date,
-          activityType: studentDailyActivity.activityType,
-          secondsActive: studentDailyActivity.secondsActive,
-          lastContextLabel: studentDailyActivity.lastContextLabel,
-        })
-        .from(studentDailyActivity)
-        .where(
-          and(
-            eq(studentDailyActivity.studentId, studentId),
-            gte(studentDailyActivity.date, fourteenDaysAgoStr)
-          )
-        )
-        .orderBy(desc(studentDailyActivity.date)),
+      fetchSession(),
+      fetchDailyRows(),
     ]);
 
     const latestSession = sessions[0];
