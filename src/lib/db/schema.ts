@@ -1511,6 +1511,8 @@ export interface PassageGenerationMeta {
   staleQuestionIds?: string[];
   /** SHA-256 hash prefix of the page text at last edit/generation. */
   pageTextHashes?: Record<number, string>;
+  /** Selected visual art style identifier (e.g. 'watercolor', 'cartoon', 'claymation'). */
+  artStyleId?: string;
 }
 
 export const readingPassages = pgTable(

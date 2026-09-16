@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { READING_LEVELS } from "@/lib/reading/levels";
+import { getReadingArtStyle } from "@/lib/reading/art-styles";
 
 interface PassageRow {
   id: string;
@@ -34,6 +35,7 @@ interface PassageRow {
   coverImageKey: string | null;
   summary: string | null;
   generationMeta: {
+    artStyleId?: string;
     qualityReport?: {
       proseScore: number;
       questionsScore: number;
@@ -495,6 +497,21 @@ export default function ReadingReviewFocusPage() {
                   <Badge variant="outline" className="text-xs">
                     {passage.status}
                   </Badge>
+                  {(() => {
+                    const artStyle = getReadingArtStyle(passage.generationMeta?.artStyleId);
+                    return (
+                      <>
+                        <span>•</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-purple-50 text-purple-700 border-purple-200 gap-1 font-medium hover:bg-purple-100/80"
+                        >
+                          <span>{artStyle.badgeEmoji}</span>
+                          <span>{artStyle.label}</span>
+                        </Badge>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

@@ -41,6 +41,8 @@ import {
   type CharacterCast,
 } from '@/lib/reading/names';
 import type { ThemeSource } from '@/lib/reading/generate/types';
+import { ArtStylePicker } from '@/components/reading/art-style-picker';
+import type { ReadingArtStyleId } from '@/lib/reading/art-styles';
 
 type SelectionMode = 'random_level' | 'random_unit' | 'specific';
 
@@ -149,6 +151,7 @@ export default function TeacherGeneratePage() {
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('random_level');
   const [unit, setUnit] = useState<number>(1);
   const [pickedVocab, setPickedVocab] = useState<VocabPick[]>([]);
+  const [artStyleId, setArtStyleId] = useState<ReadingArtStyleId>('watercolor');
 
   // Submission state.
   const [submitting, setSubmitting] = useState(false);
@@ -198,6 +201,7 @@ export default function TeacherGeneratePage() {
     setThemeSource('unit_topic');
     setUnit(1);
     setPickedVocab([]);
+    setArtStyleId('watercolor');
   }, [levelId]);
 
   const questionMixSum = mcqCount + vocabMatchCount + sequenceCount;
@@ -255,6 +259,7 @@ export default function TeacherGeneratePage() {
       if (seedTheme.trim()) overrides.seedTheme = seedTheme.trim();
       overrides.castId = castId;
       overrides.themeSource = themeSource;
+      if (artStyleId) overrides.artStyleId = artStyleId;
       if (vocabStrictness !== 'strict') overrides.vocabStrictness = vocabStrictness;
       if (questionCount !== defaults.questionCount) overrides.questionCount = questionCount;
       if (
@@ -504,6 +509,14 @@ export default function TeacherGeneratePage() {
                 seedTheme={seedTheme}
                 setSeedTheme={setSeedTheme}
               />
+
+              <div className="pt-2">
+                <ArtStylePicker
+                  value={artStyleId}
+                  onChange={setArtStyleId}
+                  disabled={submitting}
+                />
+              </div>
 
               <SectionVocabStrictness
                 vocabStrictness={vocabStrictness}

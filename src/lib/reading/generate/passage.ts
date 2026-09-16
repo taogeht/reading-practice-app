@@ -26,6 +26,7 @@ import {
 import { r2Client } from '@/lib/storage/r2-client';
 import { PANEL_IMAGE_MODEL } from '@/lib/image';
 import { applyOverridesToLevel, getReadingLevel } from '@/lib/reading/levels';
+import { getReadingArtStyle, toImageStyle } from '@/lib/reading/art-styles';
 import {
   generatePassagePlan,
   generatePassageImages,
@@ -459,8 +460,13 @@ export async function generatePassage(
     );
   } else {
     try {
+      const artStyle = getReadingArtStyle(input.overrides?.artStyleId);
       const t0 = Date.now();
-      const imgResult = await generatePassageImages({ plan, pages });
+      const imgResult = await generatePassageImages({
+        plan,
+        pages,
+        style: toImageStyle(artStyle),
+      });
       timing.imagesMs = Date.now() - t0;
       images = imgResult.pages;
       cost.imageCallsCount += images.length;
@@ -602,6 +608,7 @@ export async function generatePassage(
         totalInputTokens: cost.totalInputTokens,
         totalOutputTokens: cost.totalOutputTokens,
         qualityReport,
+        artStyleId: getReadingArtStyle(input.overrides?.artStyleId).id,
         // Persist the full plan so per-page and per-question regen
         // endpoints can rebuild the prompt context without re-running
         // Stage 1.

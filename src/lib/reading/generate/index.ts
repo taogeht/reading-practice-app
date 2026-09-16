@@ -15,6 +15,7 @@ export {
   validatePassageImages,
   buildImagePrompt,
   DEFAULT_IMAGE_STYLE,
+  resolveImageStyle,
 } from './images';
 export { generatePassage } from './passage';
 export type {

@@ -15,6 +15,11 @@
 
 import { imageClient, PANEL_IMAGE_MODEL } from '@/lib/image';
 import { logInfo } from '@/lib/logger';
+import {
+  getReadingArtStyle,
+  toImageStyle,
+  type ReadingArtStyleId,
+} from '@/lib/reading/art-styles';
 import type {
   GeneratedPageImage,
   GeneratedPageProse,
@@ -31,17 +36,19 @@ import type {
 // model change cannot leave this pointing at a retired id.
 const MODEL = PANEL_IMAGE_MODEL;
 
-/** Default house style applied when the caller doesn't override.
- *  The "no text / no words / no letters" repetition is intentional —
- *  image models notoriously generate garbled text otherwise, and ESL
- *  kids should not see misspelled English in an illustration. */
-export const DEFAULT_IMAGE_STYLE: ImageStyle = {
-  promptSuffix:
-    ', soft watercolor illustration style, warm pastel colors, ' +
-    'simple shapes, friendly faces, white background, no text in image, ' +
-    "no words, no letters, children's book illustration, age 6-10",
-  aspectRatio: '1:1',
-};
+/** Default house style applied when the caller doesn't override. */
+export const DEFAULT_IMAGE_STYLE: ImageStyle = toImageStyle(getReadingArtStyle('watercolor'));
+
+/** Resolves an ImageStyle from either an explicit ImageStyle object or an artStyleId. */
+export function resolveImageStyle(
+  styleOrId?: ImageStyle | ReadingArtStyleId | string | null,
+): ImageStyle {
+  if (!styleOrId) return DEFAULT_IMAGE_STYLE;
+  if (typeof styleOrId === 'object' && 'promptSuffix' in styleOrId) {
+    return styleOrId;
+  }
+  return toImageStyle(getReadingArtStyle(styleOrId));
+}
 
 /** Minimum / maximum bytes for a "looks-plausible" image. Outside this
  *  range the validator emits a warning. The minimum filters out the

@@ -17,6 +17,7 @@ import {
   type GenerateOverrides,
   type PassagePlan,
 } from '@/lib/reading/generate';
+import { getReadingArtStyle, toImageStyle } from '@/lib/reading/art-styles';
 
 export const runtime = 'nodejs';
 
@@ -145,10 +146,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 400 },
       );
     }
+    const artStyleId = (passage.generationMeta as PassageGenerationMeta | null)?.artStyleId;
+    const artStyle = getReadingArtStyle(artStyleId);
+    const imageStyle = toImageStyle(artStyle);
+
     const imagePrompt = buildImagePrompt(
       planPage,
       planFromMeta,
-      undefined,
+      imageStyle,
       proseResult.page.text,
     );
     const imageResult = await imageClient.generateImagePanel({

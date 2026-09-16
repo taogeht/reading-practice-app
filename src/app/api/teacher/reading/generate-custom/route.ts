@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
           setting: body.setting,
           summary: body.summary,
           generateQuestions: body.generateQuestions !== false,
+          artStyleId: typeof body.artStyleId === 'string' ? body.artStyleId : undefined,
           style: body.style,
           onProgress: (event) => {
             void sendEvent(event);

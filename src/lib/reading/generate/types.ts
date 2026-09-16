@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import type { CastId } from '@/lib/reading/names';
+import type { ReadingArtStyleId } from '../art-styles';
 
 /** Where a generated story's premise comes from. See GenerateOverrides.themeSource. */
 export type ThemeSource = 'unit_topic' | 'custom' | 'model_choice';
@@ -119,6 +120,9 @@ export interface GenerateOverrides {
     vocab_matching: number;
     sequence_order: number;
   };
+
+  /** Selected visual art style for illustrations. Defaults to 'watercolor'. */
+  artStyleId?: ReadingArtStyleId;
 }
 
 export interface GeneratePassagePlanInput {

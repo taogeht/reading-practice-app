@@ -12,6 +12,7 @@ import { textClient } from '@/lib/llm';
 import { PANEL_IMAGE_MODEL } from '@/lib/image';
 import { logInfo, logError } from '@/lib/logger';
 import { getReadingLevel, type EffectiveReadingLevel } from '@/lib/reading/levels';
+import { getReadingArtStyle, toImageStyle } from '@/lib/reading/art-styles';
 import { generatePassageImages, validatePassageImages, DEFAULT_IMAGE_STYLE } from './images';
 import { validatePagesProse } from './validate';
 import { validateQuestions } from './validate-questions';
@@ -68,6 +69,7 @@ export interface GenerateCustomPassageInput {
   summary?: string;
   generateQuestions?: boolean;
   style?: ImageStyle;
+  artStyleId?: string;
   onProgress?: (event: CustomPassageProgressEvent) => void;
 }
 
@@ -355,7 +357,8 @@ export async function generateCustomPassage(
     message: 'Generating Page 1 illustration (establishing reference character & style)...',
   });
 
-  const style = input.style || DEFAULT_IMAGE_STYLE;
+  const artStyle = getReadingArtStyle(input.artStyleId);
+  const style = input.style || toImageStyle(artStyle);
 
   const imageResult = await generatePassageImages({
     plan: passagePlan,
@@ -534,6 +537,7 @@ export async function generateCustomPassage(
       generatedAt: new Date().toISOString(),
       generationDurationMs: totalDurationMs,
       imageCallCount: imageResult.pages.length,
+      artStyleId: artStyle.id,
       qualityReport: {
         proseScore,
         questionsScore,

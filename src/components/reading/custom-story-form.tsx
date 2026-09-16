@@ -32,6 +32,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { READING_LEVELS } from '@/lib/reading/levels';
+import { ArtStylePicker } from '@/components/reading/art-style-picker';
+import type { ReadingArtStyleId } from '@/lib/reading/art-styles';
 
 interface PageItem {
   id: string;
@@ -102,6 +104,7 @@ export function CustomStoryForm() {
   // Art Direction & Characters
   const [setting, setSetting] = useState('');
   const [characters, setCharacters] = useState<CharacterItem[]>([]);
+  const [artStyleId, setArtStyleId] = useState<ReadingArtStyleId>('watercolor');
   const [artPlanOpen, setArtPlanOpen] = useState(false);
   const [analyzingArt, setAnalyzingArt] = useState(false);
   const [planError, setPlanError] = useState<string | null>(null);
@@ -352,6 +355,7 @@ export function CustomStoryForm() {
                   .map((c) => ({ name: c.name.trim(), description: c.description.trim() }))
               : undefined,
           setting: setting.trim() || undefined,
+          artStyleId,
           generateQuestions,
         }),
       });
@@ -493,6 +497,7 @@ export function CustomStoryForm() {
                 setPastedStory('');
                 setCharacters([]);
                 setSetting('');
+                setArtStyleId('watercolor');
                 setPages([
                   { id: 'p-1', pageNumber: 1, text: '', sceneDescription: '' },
                   { id: 'p-2', pageNumber: 2, text: '', sceneDescription: '' },
@@ -804,6 +809,13 @@ export function CustomStoryForm() {
                 <strong>How Character Consistency Works:</strong> Page 1 is generated first to anchor the visual style. Its image buffer is then passed as a direct reference image for all subsequent pages, while repeating the character appearance sheet below in every prompt.
               </div>
             </div>
+
+            {/* Illustration Art Style */}
+            <ArtStylePicker
+              value={artStyleId}
+              onChange={setArtStyleId}
+              disabled={isGenerating}
+            />
 
             {/* Story Setting */}
             <div>
