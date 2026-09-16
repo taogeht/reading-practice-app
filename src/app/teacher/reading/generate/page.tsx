@@ -33,16 +33,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { READING_LEVELS } from '@/lib/reading/levels';
+import { READING_LEVELS, resolveStoryLengthConfig } from '@/lib/reading/levels';
+import { ALL_STORY_PATTERNS } from '@/lib/reading/story-patterns';
 import {
   CHARACTER_CASTS,
   DEFAULT_CAST_ID,
   type CastId,
   type CharacterCast,
 } from '@/lib/reading/names';
-import type { ThemeSource } from '@/lib/reading/generate/types';
+import type { StoryLength, StoryPattern, ThemeSource } from '@/lib/reading/generate/types';
 import { ArtStylePicker } from '@/components/reading/art-style-picker';
 import type { ReadingArtStyleId } from '@/lib/reading/art-styles';
+
 
 type SelectionMode = 'random_level' | 'random_unit' | 'specific';
 
@@ -125,6 +127,8 @@ export default function TeacherGeneratePage() {
   // Simple-mode state.
   const [levelId, setLevelId] = useState<number>(2);
   const [countToGenerate, setCountToGenerate] = useState<number>(1);
+  const [storyPattern, setStoryPattern] = useState<StoryPattern>('adventure');
+  const [storyLength, setStoryLength] = useState<StoryLength>('medium');
 
   // Advanced-mode disclosure.
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -177,7 +181,15 @@ export default function TeacherGeneratePage() {
     setVocabMatchCount(d.vocabMatchCount);
     setSequenceCount(d.sequenceCount);
     setPickedVocab([]); // selected words rarely match a new level
+    setStoryPattern((prev) =>
+      levelId === 0 && prev === 'adventure'
+        ? 'pattern'
+        : levelId !== 0 && prev === 'pattern'
+        ? 'adventure'
+        : prev,
+    );
   }, [levelId]);
+
 
   const resetToDefaults = useCallback(() => {
     const d = levelDefaults(levelId);
@@ -230,7 +242,10 @@ export default function TeacherGeneratePage() {
     setSubmitIssues([]);
     try {
       const overrides: Record<string, unknown> = {};
+      overrides.storyPattern = storyPattern;
+      overrides.storyLength = storyLength;
       // Only send fields that differ from the level default — keeps
+
       // the request payload self-documenting in logs and lets the
       // server side fall back to level defaults when an override
       // wasn't actually customized.
@@ -398,14 +413,102 @@ export default function TeacherGeneratePage() {
               <select
                 value={levelId}
                 onChange={(e) => setLevelId(parseInt(e.target.value, 10))}
-                className="w-full max-w-sm border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full max-w-sm border border-gray-300 rounded-md px-3 py-2 text-sm bg-white font-medium shadow-sm"
               >
                 {READING_LEVELS.map((l) => (
                   <option key={l.id} value={l.id}>
-                    Level {l.id} — {l.name} (AF&amp;F {l.targetAfFLevel})
+                    Level {l.id} — {l.name} {l.id === 0 ? '(Kindergarten / Emergent ESL)' : `(AF&F ${l.targetAfFLevel})`}
                   </option>
                 ))}
               </select>
+              {levelId === 0 && (
+                <p className="mt-1.5 text-xs text-amber-700 font-medium flex items-center gap-1.5">
+                  <span>⭐</span>
+                  <span><strong>Level 0 Starter:</strong> Ultra-simple sentence cap (max 5 words), predictable repetitive phrasing, emergent phonics vocabulary.</span>
+                </p>
+              )}
+            </div>
+
+            {/* Story Pattern Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="block text-sm font-medium text-gray-700">
+                  Story pattern
+                </span>
+                <span className="text-xs text-gray-500">
+                  {ALL_STORY_PATTERNS.find((p) => p.id === storyPattern)?.bestFor}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {ALL_STORY_PATTERNS.map((p) => {
+                  const isSelected = storyPattern === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setStoryPattern(p.id)}
+                      className={`text-left p-3.5 rounded-xl border transition-all relative ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-50/70 shadow-sm ring-1 ring-blue-500'
+                          : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl" role="img" aria-label={p.label}>
+                          {p.emoji}
+                        </span>
+                        <span className="font-semibold text-sm text-gray-900">
+                          {p.label}
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium text-blue-700 mb-1">
+                        {p.tagline}
+                      </p>
+                      <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                        {p.description}
+                      </p>
+                      <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] italic text-gray-600 truncate">
+                        {p.exampleSentence}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Story Length Selection */}
+            <div>
+              <span className="block text-sm font-medium text-gray-700 mb-2">
+                Story length
+              </span>
+              <div className="grid grid-cols-3 gap-2 max-w-md">
+                {(['short', 'medium', 'long'] as const).map((len) => {
+                  const isSelected = storyLength === len;
+                  const cfg = resolveStoryLengthConfig(levelId, len);
+                  return (
+                    <button
+                      key={len}
+                      type="button"
+                      onClick={() => setStoryLength(len)}
+                      className={`py-2.5 px-3 rounded-lg border text-center transition-all ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="text-xs font-semibold capitalize mb-0.5">
+                        {len}
+                      </div>
+                      <div className={`text-[11px] ${isSelected ? 'text-blue-100' : 'text-gray-500'}`}>
+                        {cfg.pageCount.min}–{cfg.pageCount.max} pages
+                      </div>
+                      <div className={`text-[10px] ${isSelected ? 'text-blue-200' : 'text-gray-400'}`}>
+                        {cfg.wordsPerPage.min}–{cfg.wordsPerPage.max} w/pg
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
@@ -431,6 +534,7 @@ export default function TeacherGeneratePage() {
               </div>
             </div>
           </CardContent>
+
         </Card>
 
         {/* Customize disclosure */}
@@ -652,7 +756,7 @@ function SectionLengthAndShape({
       <div className="space-y-4">
         <Slider
           label="Sentence length cap"
-          min={4}
+          min={3}
           max={25}
           value={maxSentenceWords}
           onChange={setMaxSentenceWords}
@@ -662,7 +766,7 @@ function SectionLengthAndShape({
         <Slider
           label="Pages per story"
           min={4}
-          max={16}
+          max={18}
           value={pageCount}
           onChange={setPageCount}
           formatValue={(v) => `${v} pages`}
@@ -670,13 +774,14 @@ function SectionLengthAndShape({
         />
         <Slider
           label="Average words per page"
-          min={5}
-          max={50}
+          min={3}
+          max={55}
           value={wordsPerPageAvg}
           onChange={setWordsPerPageAvg}
           formatValue={(v) => `~${v} words per page`}
           defaultValue={defaults.wordsPerPageAvg}
         />
+
       </div>
     </section>
   );

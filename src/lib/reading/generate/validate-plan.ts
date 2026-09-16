@@ -1,9 +1,11 @@
-import type { PassagePlan } from './types';
+import type { PassagePlan, StoryPattern } from './types';
 
 export interface PassagePlanRequirements {
   pageCount: { min: number; max: number };
   requiredTargetVocabIds: string[];
+  expectedStoryPattern?: StoryPattern;
 }
+
 
 /**
  * Enforce the request-level invariants that the provider JSON schema cannot
@@ -71,7 +73,18 @@ export function assertPassagePlanMatchesRequest(
     );
   }
 
+  if (
+    requirements.expectedStoryPattern &&
+    plan.storyPattern &&
+    plan.storyPattern !== requirements.expectedStoryPattern
+  ) {
+    issues.push(
+      `expected story pattern "${requirements.expectedStoryPattern}", received "${plan.storyPattern}"`,
+    );
+  }
+
   if (issues.length > 0) {
     throw new Error(`PassagePlan request validation failed: ${issues.join('; ')}`);
   }
 }
+

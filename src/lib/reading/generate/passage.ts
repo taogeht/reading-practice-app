@@ -26,7 +26,9 @@ import {
 import { r2Client } from '@/lib/storage/r2-client';
 import { PANEL_IMAGE_MODEL } from '@/lib/image';
 import { applyOverridesToLevel, getReadingLevel } from '@/lib/reading/levels';
+import { resolveStoryPattern } from '@/lib/reading/story-patterns';
 import { getReadingArtStyle, toImageStyle } from '@/lib/reading/art-styles';
+
 import {
   generatePassagePlan,
   generatePassageImages,
@@ -594,6 +596,13 @@ export async function generatePassage(
   const totalMsBeforeDb = Date.now() - overallStart;
   try {
     const t0 = Date.now();
+    const baseLevel = getReadingLevel(input.readingLevelId);
+    const effectiveLevel = applyOverridesToLevel(baseLevel, input.overrides);
+    const patternId = resolveStoryPattern(
+      input.readingLevelId,
+      plan.storyPattern ?? input.overrides?.storyPattern,
+    );
+
     await db.transaction(async (tx) => {
       const generationMeta: PassageGenerationMeta = {
         model: combinedModelLabel(textModel, input.skipImages === true),
@@ -609,11 +618,16 @@ export async function generatePassage(
         totalOutputTokens: cost.totalOutputTokens,
         qualityReport,
         artStyleId: getReadingArtStyle(input.overrides?.artStyleId).id,
+        storyPattern: patternId,
+        storyLength: input.overrides?.storyLength,
+        resolvedPageCount: effectiveLevel.pageCount,
+        resolvedWordsPerPage: effectiveLevel.wordsPerPage,
         // Persist the full plan so per-page and per-question regen
         // endpoints can rebuild the prompt context without re-running
         // Stage 1.
         plan,
       };
+
 
       // 1. readingPassages — single row. status='draft' under
       //    --skip-images so these test artifacts never reach the

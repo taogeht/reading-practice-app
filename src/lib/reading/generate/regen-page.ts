@@ -93,7 +93,7 @@ export async function generateSinglePage(
     throw new Error('generateSinglePage: plan has no target vocabulary');
   }
   const targetRows = await fetchTargetVocab(targetIds);
-  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds);
+  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds, level.id);
 
   const systemPrompt = buildSystemPrompt(level);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);

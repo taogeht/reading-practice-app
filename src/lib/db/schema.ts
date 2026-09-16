@@ -1513,6 +1513,14 @@ export interface PassageGenerationMeta {
   pageTextHashes?: Record<number, string>;
   /** Selected visual art style identifier (e.g. 'watercolor', 'cartoon', 'claymation'). */
   artStyleId?: string;
+  /** Selected narrative pattern (e.g. 'pattern', 'discovery', 'cumulative', 'process', 'adventure', 'nonfiction'). */
+  storyPattern?: string;
+  /** Selected length preset ('short' | 'medium' | 'long'). */
+  storyLength?: string;
+  /** Resolved target page count range applied during generation. */
+  resolvedPageCount?: { min: number; max: number };
+  /** Resolved words-per-page range applied during generation. */
+  resolvedWordsPerPage?: { min: number; max: number };
 }
 
 export const readingPassages = pgTable(

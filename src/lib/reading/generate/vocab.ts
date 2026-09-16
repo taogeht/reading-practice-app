@@ -14,6 +14,8 @@ import {
   type VocabScope,
   resolveVocabScope,
 } from './vocab-scope';
+import type { ReadingLevelId } from '@/lib/reading/levels';
+
 
 // Re-exported so existing importers keep their current import path; the rule
 // itself lives in vocab-scope.ts, which stays free of the DB pool.
@@ -167,6 +169,7 @@ function selectScopedVocab(
  *  back to the full level rather than shipping an unwritable lexicon. */
 export async function deriveCumulativeVocab(
   targetRows: TargetRow[],
+  levelId?: ReadingLevelId,
 ): Promise<CumulativeRow[]> {
   const scope = resolveVocabScope(targetRows);
 
@@ -175,6 +178,12 @@ export async function deriveCumulativeVocab(
   if (scope.currentLevel === null) return selectScopedVocab(scope, false);
 
   if (scope.unitCap === null) return selectScopedVocab(scope, true);
+
+  // For Level 0 / Starter, NEVER widen to the full level even if curriculum count
+  // is under MIN_CURRICULUM_LEXICON. Level 0 readers cannot handle late-grade-1 words.
+  if (levelId === 0 || scope.currentLevel === 'starter') {
+    return selectScopedVocab(scope, true);
+  }
 
   const curriculumCount = await countCurriculumVocab(scope, true);
   const capUnits = curriculumCount >= MIN_CURRICULUM_LEXICON;
@@ -217,8 +226,10 @@ async function countCurriculumVocab(
 export async function resolveCumulativeVocab(
   targetRows: TargetRow[],
   cumulativeVocabIds: string[] | undefined,
+  levelId?: ReadingLevelId,
 ): Promise<CumulativeRow[]> {
   return cumulativeVocabIds
     ? fetchVocabByIds(cumulativeVocabIds)
-    : deriveCumulativeVocab(targetRows);
+    : deriveCumulativeVocab(targetRows, levelId);
 }
+

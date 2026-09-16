@@ -51,7 +51,8 @@ export function mapStudentReadingLevel(text: string | null | undefined): Reading
     /\bk\b/.test(lower) ||
     lower.includes('emerging')
   ) {
-    return 1;
+    return 0;
   }
   return 1;
 }
+

@@ -37,6 +37,11 @@ import {
   isApprovedCharacterName,
   type CastId,
 } from '@/lib/reading/names';
+import {
+  getStoryPattern,
+  resolveStoryPattern,
+  type StoryPatternDefinition,
+} from '@/lib/reading/story-patterns';
 import { getUnitTheme, pickDominantUnit, type UnitTheme } from '@/lib/reading/unit-theme';
 import {
   fetchTargetVocab,
@@ -62,7 +67,8 @@ const MAX_TOKENS = 3000;
 
 // ---------- Prompt structure ----------
 
-const SYSTEM_PROMPT = `You are a curriculum-aligned story PLANNER for ESL students at Macmillan Language School in Kaohsiung, Taiwan, ages 6-10. You design story plans that will later be expanded into full prose by a separate writing pass.
+function buildPlannerSystemPrompt(patternDef: StoryPatternDefinition): string {
+  return `You are a curriculum-aligned story PLANNER for ESL students at Macmillan Language School in Kaohsiung, Taiwan, ages 6-10. You design story plans that will later be expanded into full prose by a separate writing pass.
 
 YOU DO NOT WRITE THE PROSE IN THIS STEP. Your job is the structure, characters, page-by-page beats, and scene descriptions only. The prose writer will follow your plan.
 
@@ -76,13 +82,17 @@ CULTURAL CALIBRATION
 
 TONE
 - Warm, age-appropriate, encouraging.
-- A character may have a problem, but it MUST resolve positively by the end. No scary or sad endings, no unresolved conflict, no violence.
+- Safe, wholesome themes. No scary or sad endings, no unresolved conflict, no violence.
 
-STRUCTURE
-- 3-act mini-arc: setup → problem → attempt → resolution.
+STORY PATTERN ARCHETYPE: ${patternDef.label.toUpperCase()} (${patternDef.tagline})
+${patternDef.plannerDirectives}
+
+GENERAL STRUCTURAL DIRECTIVES:
+- Follow the pattern archetype above.
 - Every page advances the story by exactly one beat.
 - Tense alignment: When past tense is not allowed for the level, the entire story arc must be planned in the PRESENT TENSE ("Sally is in the garden. She sees a kitten."). Do NOT plan past-tense beats.
-- 1 to 3 named characters. Each character description must be concrete enough that an image generator can render the same character consistently across pages — name, approximate age, hair, signature outfit details.
+- 1 to 3 named characters (or narrator/guide for nonfiction/process). Each character description must be concrete enough that an image generator can render the same character consistently across pages — name, approximate age, hair, signature outfit details.
+- Structural plan must define opening, development, and ending according to the pattern directives.
 
 CHARACTER NAMES
 - Character names MUST come from the CHARACTER NAMES list supplied in the user message, using the exact casing shown there.
@@ -95,10 +105,16 @@ FIELD SEMANTICS
 - "beat" is a SUMMARY of what happens on the page, not the prose itself. Example beat: "Sally sees the cat run into the night market." NOT: "Sally said, 'Oh, look at the cat!'"
 - "sceneDescription" is art direction for the page's image — describe what should appear in the picture concretely (subjects, setting, action, key props), and reference character outfits so the same characters look the same on every page.
 - "targetVocabUsed" lists which TARGET VOCABULARY words land on this page. Use the EXACT words from the TARGET VOCABULARY list given in the user message — match case and spelling. Every target word must be introduced on at least one page. A page may have an empty list.
+- "structuralPlan" has three parts:
+  * "opening": The starting scene / premise / frame
+  * "development": The progression / discoveries / steps / attempts
+  * "ending": The resolution / culmination / conclusion
+- "storyPattern" MUST be "${patternDef.id}".
 
 OUTPUT
 - JSON only, matching the provided schema.
 - No markdown, no commentary outside the JSON.`;
+}
 
 /** JSON Schema handed to the text provider so the response is shape-
  *  constrained at decode time. Mirrors PassagePlanSchema (zod) — both are
@@ -142,17 +158,22 @@ const PASSAGE_PLAN_JSON_SCHEMA = {
     structuralPlan: {
       type: 'object',
       properties: {
-        problem: { type: 'string' },
-        attempt: { type: 'string' },
-        resolution: { type: 'string' },
+        opening: { type: 'string' },
+        development: { type: 'string' },
+        ending: { type: 'string' },
       },
-      required: ['problem', 'attempt', 'resolution'],
+      required: ['opening', 'development', 'ending'],
       additionalProperties: false,
+    },
+    storyPattern: {
+      type: 'string',
+      enum: ['pattern', 'discovery', 'cumulative', 'process', 'adventure', 'nonfiction'],
     },
   },
   required: ['title', 'summary', 'setting', 'characters', 'pages', 'structuralPlan'],
   additionalProperties: false,
 } as const;
+
 
 // DB lookups (fetchTargetVocab, deriveCumulativeVocab, resolveCumulativeVocab)
 // now live in ./vocab so Stage 2 (prose) can reuse the exact same logic.
@@ -312,6 +333,8 @@ export async function generatePassagePlan(
   //    read from one effective config.
   const baseLevel = getReadingLevel(input.readingLevel);
   const level = applyOverridesToLevel(baseLevel, input.overrides);
+  const patternId = resolveStoryPattern(level.id, input.overrides?.storyPattern);
+  const patternDef = getStoryPattern(patternId);
 
   // 2. Pull target rows + reject function words / missing IDs.
   const targetRows = await fetchTargetVocab(input.targetVocabIds);
@@ -319,7 +342,7 @@ export async function generatePassagePlan(
   const effectiveLevel = resolveEffectiveGrammar(level, scope);
 
   // 3. Cumulative vocab — explicit override if given, derived from targets otherwise.
-  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds);
+  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds, level.id);
 
   // 4. Build prompt blocks. cache_control on the level + cumulative blocks
   //    so repeated calls at the same (level, vocab cap) reuse the cache.
@@ -360,7 +383,7 @@ export async function generatePassagePlan(
   // 5. Call the configured text model.
   const startedAt = Date.now();
   const response = await textClient.complete({
-    system: [{ text: SYSTEM_PROMPT, cacheable: true }],
+    system: [{ text: buildPlannerSystemPrompt(patternDef), cacheable: true }],
     messages: [{ role: 'user', content: userContent }],
     maxTokens: MAX_TOKENS,
     effort: 'medium',
@@ -411,6 +434,7 @@ export async function generatePassagePlan(
   const wordToId = new Map(targetRows.map((r) => [r.word.toLowerCase(), r.id]));
   const plan: PassagePlan = {
     ...result.data,
+    storyPattern: result.data.storyPattern ?? patternId,
     pages: result.data.pages.map((page) => ({
       ...page,
       targetVocabUsed: page.targetVocabUsed.map((raw) => {
@@ -430,6 +454,7 @@ export async function generatePassagePlan(
   assertPassagePlanMatchesRequest(plan, {
     pageCount: level.pageCount,
     requiredTargetVocabIds: input.targetVocabIds,
+    expectedStoryPattern: patternId,
   });
 
   const meta: GenerationCallMeta = {
@@ -443,9 +468,10 @@ export async function generatePassagePlan(
     ? `${unitTheme.bookSlug} u${unitTheme.unit} "${unitTheme.topic}"`
     : themeSource;
   logInfo(
-    `passage plan generated (${plan.pages.length} pages, level ${level.id} ${level.name}, cast ${castId}, theme ${themeLabel})`,
+    `passage plan generated (${plan.pages.length} pages, level ${level.id} ${level.name}, pattern ${patternId}, cast ${castId}, theme ${themeLabel})`,
     `lib/reading/generate/plan model=${meta.model} input_tokens=${meta.inputTokens} output_tokens=${meta.outputTokens} duration_ms=${meta.durationMs}`,
   );
 
   return { plan, meta };
 }
+

@@ -34,27 +34,33 @@ import {
   type GenerateQuestionsResult,
   type GenerationCallMeta,
   type PassagePlan,
+  type StoryPattern,
 } from './types';
+import {
+  getStoryPattern,
+  resolveStoryPattern,
+} from '@/lib/reading/story-patterns';
 import { questionCountForMix } from './question-mix';
 import { textClient, type TextSegment } from '@/lib/llm';
 
-const MAX_TOKENS = 4000;
+// Story variety used to come from temperature 0.5 here. Sonnet 5 rejects
+// sampling parameters, so question diversity now has to come from the
+// prompt and the source text.
 
-// ---------- Prompt builders ----------
+const MAX_TOKENS = 3000;
 
-const SYSTEM_PROMPT_PREFIX = `You generate comprehension questions for ESL stories at Macmillan Language School in Kaohsiung, Taiwan, ages 6-10.
+// ---------- Prompts ----------
 
-For each story, produce exactly the requested number of questions. The exact
-type mix per reading level is given below; produce questions in that order
-(MCQs first, then vocab_matching, then sequence_order).
+const SYSTEM_PROMPT_PREFIX = `You are an ESL reading-comprehension question writer for Macmillan Language School in Kaohsiung, Taiwan, ages 6-10. You generate questions for a completed reading passage.
 
-QUESTION TYPE RULES
+GLOBAL QUESTION TYPES
 
 mcq_comprehension:
-- Exactly 4 answer options. Exactly 1 correct, 3 plausible-but-wrong distractors.
-- The correct answer must be supported by an EXACT verbatim quote from the prose. That quote goes in evidenceQuote — do not paraphrase, do not change punctuation, copy a substring of one page word-for-word. evidencePageNumber names which page.
-- Distractors must be plausible — same category and similar grammatical shape as the correct answer. Not silly or obviously wrong.
-- All four options must use only words from the cumulative vocabulary list, OR character names that appear in the story.
+- 4 options: exactly one correct answer (isCorrect: true) and 3 plausible distractors (isCorrect: false).
+- Clear, unambiguous questions.
+- Distractors must be plausible to a child who skimmed, but clearly contradicted or unsupported by the text.
+- NEVER use "all of the above", "none of the above", or "both A and B".
+- Each MCQ MUST carry an "evidenceQuote" (the exact verbatim sentence from the story that proves the answer) and "evidencePageNumber" (the 1-indexed page where that sentence appears). The evidence quote must match character-for-character with text in the story prose.
 
 vocab_matching:
 - 4-6 pairs. Each pair only has a "word" (a target vocabulary word) — the calling code generates a kid-friendly illustration for it and the student tap-matches words to pictures, so do NOT emit any kind of meaning, definition, sentence, or vocabId.
@@ -78,7 +84,9 @@ OUTPUT
 
 `;
 
-function buildSystemPrompt(level: EffectiveReadingLevel): string {
+function buildSystemPrompt(level: EffectiveReadingLevel, pattern?: StoryPattern): string {
+  const patternId = resolveStoryPattern(level.id, pattern);
+  const patternDef = getStoryPattern(patternId);
   const mix = level.questionTypeMix;
   const totalQuestionCount = questionCountForMix(mix);
   // Build a human-readable breakdown listing only the non-zero counts
@@ -98,6 +106,9 @@ function buildSystemPrompt(level: EffectiveReadingLevel): string {
   return [
     SYSTEM_PROMPT_PREFIX,
     `READING LEVEL: ${level.id} (${level.name})`,
+    `STORY PATTERN: ${patternDef.label.toUpperCase()} (${patternDef.tagline})`,
+    patternDef.questionStrategy,
+    '',
     `Maximum question / sentence length: ${level.maxSentenceWords} words.`,
     `Produce EXACTLY ${totalQuestionCount} questions.`,
     '',
@@ -274,8 +285,10 @@ export async function generateQuestions(
     throw new Error('generateQuestions: targetVocabRows is empty');
   }
 
-  const systemPrompt = buildSystemPrompt(level);
+  const pattern = input.plan.storyPattern ?? input.overrides?.storyPattern;
+  const systemPrompt = buildSystemPrompt(level, pattern);
   const cumulativeBlock = buildCumulativeBlock(input.cumulativeVocabRows);
+
   const contextBlock = buildContextBlock(
     input.plan,
     input.pages,

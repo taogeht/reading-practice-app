@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, BookOpen, Loader2, Sparkles } from "lucide-react";
 import { READING_LEVELS } from "@/lib/reading/levels";
 import { getReadingArtStyle } from "@/lib/reading/art-styles";
+import { getStoryPattern } from "@/lib/reading/story-patterns";
 
 interface PassageRow {
   id: string;
@@ -27,6 +28,8 @@ interface PassageRow {
   summary: string | null;
   generationMeta: {
     artStyleId?: string;
+    storyPattern?: string;
+    storyLength?: string;
     qualityReport?: {
       proseScore: number;
       questionsScore: number;
@@ -39,6 +42,7 @@ interface PassageRow {
   createdAt: string;
   questionCount: number;
 }
+
 
 type StatusFilter = 'review' | 'draft' | 'published' | 'archived' | 'all';
 type SortKey = 'quality' | 'recency';
@@ -263,7 +267,18 @@ export default function ReadingReviewListPage() {
                                 {getReadingArtStyle(p.generationMeta.artStyleId).badgeEmoji} {getReadingArtStyle(p.generationMeta.artStyleId).label}
                               </Badge>
                             )}
+                            {p.generationMeta?.storyPattern && (
+                              <Badge variant="secondary" className="text-[11px] bg-blue-50 text-blue-700 border-blue-200">
+                                {getStoryPattern(p.generationMeta.storyPattern).emoji} {getStoryPattern(p.generationMeta.storyPattern).label}
+                              </Badge>
+                            )}
+                            {p.generationMeta?.storyLength && (
+                              <Badge variant="secondary" className="text-[11px] bg-emerald-50 text-emerald-700 border-emerald-200 capitalize">
+                                {p.generationMeta.storyLength}
+                              </Badge>
+                            )}
                           </div>
+
                         </div>
                       </div>
 

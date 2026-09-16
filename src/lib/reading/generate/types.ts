@@ -28,12 +28,59 @@ export const PassagePagePlanSchema = z.object({
   targetVocabUsed: z.array(z.string()),
 });
 
-/** Three-act structural skeleton; the page beats should realise this arc. */
-export const StructuralPlanSchema = z.object({
-  problem: z.string().min(1),
-  attempt: z.string().min(1),
-  resolution: z.string().min(1),
-});
+export const STORY_PATTERNS = [
+  'pattern',
+  'discovery',
+  'cumulative',
+  'process',
+  'adventure',
+  'nonfiction',
+] as const;
+export type StoryPattern = (typeof STORY_PATTERNS)[number];
+
+export const STORY_LENGTHS = ['short', 'medium', 'long'] as const;
+export type StoryLength = (typeof STORY_LENGTHS)[number];
+
+/** Pattern-neutral structural skeleton (opening, development, ending) with
+ *  backward-compatible fallback for legacy plans (problem, attempt, resolution). */
+export const StructuralPlanSchema = z.preprocess((val: any) => {
+  if (val && typeof val === 'object') {
+    const opening =
+      typeof val.opening === 'string' && val.opening.trim()
+        ? val.opening.trim()
+        : typeof val.problem === 'string'
+          ? val.problem.trim()
+          : '';
+    const development =
+      typeof val.development === 'string' && val.development.trim()
+        ? val.development.trim()
+        : typeof val.attempt === 'string'
+          ? val.attempt.trim()
+          : '';
+    const ending =
+      typeof val.ending === 'string' && val.ending.trim()
+        ? val.ending.trim()
+        : typeof val.resolution === 'string'
+          ? val.resolution.trim()
+          : '';
+    return {
+      opening,
+      development,
+      ending,
+      problem: typeof val.problem === 'string' ? val.problem : opening,
+      attempt: typeof val.attempt === 'string' ? val.attempt : development,
+      resolution: typeof val.resolution === 'string' ? val.resolution : ending,
+    };
+  }
+  return val;
+}, z.object({
+  opening: z.string().min(1),
+  development: z.string().min(1),
+  ending: z.string().min(1),
+  problem: z.string().optional(),
+  attempt: z.string().optional(),
+  resolution: z.string().optional(),
+}));
 
 export const PassagePlanSchema = z.object({
   title: z.string().min(1),
@@ -42,6 +89,7 @@ export const PassagePlanSchema = z.object({
   characters: z.array(CharacterSchema).min(1).max(3),
   pages: z.array(PassagePagePlanSchema).min(1),
   structuralPlan: StructuralPlanSchema,
+  storyPattern: z.enum(STORY_PATTERNS).optional(),
 });
 
 export type Character = z.infer<typeof CharacterSchema>;
@@ -123,6 +171,12 @@ export interface GenerateOverrides {
 
   /** Selected visual art style for illustrations. Defaults to 'watercolor'. */
   artStyleId?: ReadingArtStyleId;
+
+  /** Narrative pattern (e.g. 'pattern', 'discovery', 'cumulative', 'process', 'adventure', 'nonfiction'). */
+  storyPattern?: StoryPattern;
+
+  /** Length preset ('short' | 'medium' | 'long'). Calibrates page count & words per page. */
+  storyLength?: StoryLength;
 }
 
 export interface GeneratePassagePlanInput {

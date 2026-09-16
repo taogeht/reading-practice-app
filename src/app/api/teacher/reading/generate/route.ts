@@ -9,7 +9,8 @@
 // Auth: teacher or admin.
 
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, lte } from 'drizzle-orm';
+
 import { getCurrentUser } from '@/lib/auth';
 import { canGenerateReadingContent } from '@/lib/auth/reading-content';
 import { db } from '@/lib/db';
@@ -57,12 +58,13 @@ export async function POST(request: NextRequest) {
     }
 
     const readingLevelId = body.readingLevelId;
-    if (!Number.isInteger(readingLevelId) || readingLevelId! < 1 || readingLevelId! > 5) {
+    if (!Number.isInteger(readingLevelId) || readingLevelId! < 0 || readingLevelId! > 5) {
       return NextResponse.json(
-        { error: 'readingLevelId must be 1-5' },
+        { error: 'readingLevelId must be 0-5' },
         { status: 400 },
       );
     }
+
     const countToGenerate = body.countToGenerate ?? 1;
     if (
       !Number.isInteger(countToGenerate) ||
@@ -247,10 +249,29 @@ async function pickTargetIds(args: PickTargetsArgs): Promise<string[]> {
   if (args.mode === 'random_unit' && typeof args.unit === 'number') {
     conditions.push(eq(vocabulary.afFUnit, args.unit));
   }
-  const candidates = await db
+  let candidates = await db
     .select({ id: vocabulary.id })
     .from(vocabulary)
     .where(and(...conditions));
+
+  if (args.levelTargetAfFLevel === 'starter' && candidates.length < args.targetCount) {
+    const fallbackConditions = [
+      eq(vocabulary.afFLevel, 'grade1'),
+      lte(vocabulary.afFUnit, 2),
+      eq(vocabulary.isFunctionWord, false),
+      eq(vocabulary.isScaffold, false),
+    ];
+    if (args.needsPicturable) {
+      fallbackConditions.push(eq(vocabulary.isPicturable, true));
+    }
+    const fallbackCandidates = await db
+      .select({ id: vocabulary.id })
+      .from(vocabulary)
+      .where(and(...fallbackConditions));
+    candidates = [...candidates, ...fallbackCandidates];
+  }
+
   const shuffled = candidates.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, args.targetCount).map((r) => r.id);
 }
+

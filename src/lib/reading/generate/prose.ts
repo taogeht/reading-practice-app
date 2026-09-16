@@ -27,7 +27,12 @@ import {
   type GenerationCallMeta,
   type PassagePlan,
   type ProseFeedback,
+  type StoryPattern,
 } from './types';
+import {
+  getStoryPattern,
+  resolveStoryPattern,
+} from '@/lib/reading/story-patterns';
 import {
   fetchTargetVocab,
   resolveCumulativeVocab,
@@ -49,14 +54,23 @@ const SYSTEM_PROMPT_PREFIX = `You are a curriculum-aligned ESL prose writer for 
 
 YOU FOLLOW THE PLAN EXACTLY. The plan tells you the title, characters, setting, page-by-page beats, and which target words land on which pages. Your job is to write the actual sentences for each page.
 
-VOCAB RULES
-- You may use ONLY words from the CUMULATIVE VOCABULARY list provided. Function words (a, the, is, are, etc., listed in that block) are always allowed.
-- Proper nouns from the plan's characters[].name are allowed (you'll see them in the plan).
-- Each TARGET vocabulary word marked on a page MUST appear naturally in that page's prose, in a context where its meaning is recoverable from surrounding text (don't bury it in a list).
-- NO words outside the cumulative list + targets + character names. If a planned beat needs a word you don't have, paraphrase using words you do have.
+GLOBAL RULES (apply to every story):
 
-TONE
-- Warm, age-appropriate, encouraging. The plan's tone applies — no scary or sad endings, no unresolved conflict.
+ACCURACY TO PLAN
+- Write prose for EVERY page in the plan. Do NOT skip pages.
+- Each page's prose must match that page's beat and introduce the target words assigned to it.
+- Do not introduce a target word on an earlier page than the plan specifies.
+
+VOCABULARY COMPLIANCE
+- Every word you write must come from one of:
+  1. The CUMULATIVE VOCABULARY list for this level (provided below).
+  2. The TARGET VOCABULARY words assigned to that specific page.
+  3. Character names defined in the plan.
+- Do NOT use words outside these sources. A single off-list word will cause the page to be rejected.
+- When you need a word that isn't in the list, paraphrase using words that ARE in the list.
+
+VOICE AND TONE
+- Natural, engaging, age-appropriate for ESL learners.
 - Sentences should sound natural to a child reader. Vary sentence shapes within the constraints (statements, questions, simple exclamations).
 
 OUTPUT
@@ -65,9 +79,10 @@ OUTPUT
 
 `;
 
-function buildSystemPrompt(level: EffectiveReadingLevel): string {
+function buildSystemPrompt(level: EffectiveReadingLevel, pattern?: StoryPattern): string {
+  const patternId = resolveStoryPattern(level.id, pattern);
+  const patternDef = getStoryPattern(patternId);
   const grammar = level.grammarConstraints;
-  const yn = (b: boolean) => (b ? 'YES' : 'NO');
   const grammarLines: string[] = [];
   grammarLines.push(`- Maximum sentence length: ${level.maxSentenceWords} words (HARD CAP — do not exceed)`);
   grammarLines.push(`- Average sentence length target: around ${level.avgSentenceWords} words`);
@@ -113,6 +128,9 @@ function buildSystemPrompt(level: EffectiveReadingLevel): string {
   return [
     SYSTEM_PROMPT_PREFIX,
     `READING LEVEL: ${level.id} (${level.name}) — AF&F target ${level.targetAfFLevel}`,
+    '',
+    `STORY PATTERN: ${patternDef.label.toUpperCase()} (${patternDef.tagline})`,
+    patternDef.proseDirectives,
     '',
     'CONSTRAINTS for this level:',
     ...grammarLines,
@@ -164,16 +182,19 @@ function buildPlanBlock(plan: PassagePlan, targetRows: TargetRow[]): string {
   lines.push(`TITLE: ${plan.title}`);
   lines.push(`SETTING: ${plan.setting}`);
   lines.push(`SUMMARY: ${plan.summary}`);
+  if (plan.storyPattern) {
+    lines.push(`STORY PATTERN: ${plan.storyPattern}`);
+  }
   lines.push('');
   lines.push('CHARACTERS:');
   for (const c of plan.characters) {
     lines.push(`- ${c.name}: ${c.description}`);
   }
   lines.push('');
-  lines.push('STRUCTURAL ARC:');
-  lines.push(`- Problem:    ${plan.structuralPlan.problem}`);
-  lines.push(`- Attempt:    ${plan.structuralPlan.attempt}`);
-  lines.push(`- Resolution: ${plan.structuralPlan.resolution}`);
+  lines.push('STRUCTURAL PLAN:');
+  lines.push(`- Opening:     ${plan.structuralPlan.opening}`);
+  lines.push(`- Development: ${plan.structuralPlan.development}`);
+  lines.push(`- Ending:      ${plan.structuralPlan.ending}`);
   lines.push('');
   lines.push(`PAGES (${plan.pages.length}):`);
   for (const p of plan.pages) {
@@ -233,6 +254,7 @@ export async function generatePagesProse(
     getReadingLevel(input.readingLevelId),
     input.overrides,
   );
+  const pattern = input.plan.storyPattern ?? input.overrides?.storyPattern;
 
   // 2. Re-derive target rows from the plan's targetVocabUsed UUIDs so the
   //    model gets words rather than UUIDs in the per-page hints. Pulling
@@ -247,12 +269,13 @@ export async function generatePagesProse(
   const effectiveLevel = resolveEffectiveGrammar(level, scope);
 
   // 3. Cumulative vocab — same resolution rule as Stage 1.
-  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds);
+  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds, level.id);
 
   // 4. Build prompt.
-  const systemPrompt = buildSystemPrompt(effectiveLevel);
+  const systemPrompt = buildSystemPrompt(effectiveLevel, pattern);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
   const planBlock = buildPlanBlock(input.plan, targetRows);
+
 
   const userContent: TextSegment[] = [
     { text: cumulativeBlock, cacheable: true },
@@ -360,6 +383,7 @@ export async function generatePagesProseWithFeedback(
     getReadingLevel(input.readingLevelId),
     input.overrides,
   );
+  const pattern = input.plan.storyPattern ?? input.overrides?.storyPattern;
 
   const targetIds = uniqueIdsFromPlan(input.plan);
   if (targetIds.length === 0) {
@@ -368,12 +392,13 @@ export async function generatePagesProseWithFeedback(
   const targetRows = await fetchTargetVocab(targetIds);
   const scope = resolveVocabScope(targetRows);
   const effectiveLevel = resolveEffectiveGrammar(level, scope);
-  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds);
+  const cumulativeRows = await resolveCumulativeVocab(targetRows, input.cumulativeVocabIds, level.id);
 
-  const systemPrompt = buildSystemPrompt(effectiveLevel);
+  const systemPrompt = buildSystemPrompt(effectiveLevel, pattern);
   const cumulativeBlock = buildCumulativeBlock(cumulativeRows);
   const planBlock = buildPlanBlock(input.plan, targetRows);
   const feedbackBlock = buildFeedbackBlock(feedback, effectiveLevel);
+
 
   // Same cache layout as the first-pass call, with the feedback block
   // appended uncached at the end. The cumulative + plan prefix matches

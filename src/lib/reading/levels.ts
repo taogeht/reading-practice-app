@@ -13,6 +13,41 @@
 
 export const READING_LEVELS = [
   {
+    id: 0,
+    name: 'Starter',
+    targetAfFLevel: 'starter',
+    // Kindergarten / Pre-K / Early ESL emergent readers. Ultra-simple repetitive
+    // sentence frames ("I can jump", "It is a ball"), basic pronouns, concrete nouns.
+    maxSentenceWords: 5,
+    avgSentenceWords: 4,
+    pageCount: { min: 6, max: 8 },
+    wordsPerPage: { min: 3, max: 8 },
+    vocabConstraints: {
+      cumulativeCefrCap: 'A1',
+      allowedPartsOfSpeech: [
+        'noun',
+        'verb',
+        'adjective',
+        'adverb',
+        'pronoun',
+        'determiner',
+        'preposition',
+        'conjunction',
+        'interjection',
+      ],
+    },
+    grammarConstraints: {
+      allowContractions: false,
+      allowPastTense: false,
+      allowFutureTense: false,
+      allowConditionals: false,
+      allowPhrasalVerbs: false,
+      maxClausesPerSentence: 1,
+    },
+    targetVocabPerStory: 3,
+    questionTypeMix: { mcq_comprehension: 2, vocab_matching: 1, sequence_order: 0 },
+  },
+  {
     id: 1,
     name: 'Early',
     targetAfFLevel: 'grade1',
@@ -254,8 +289,55 @@ export function getLevelByAfFLevel(afFLevel: string): ReadingLevel | undefined {
 //   - id / name / targetAfFLevel / avgSentenceWords — identity +
 //     soft targets the model treats as hints.
 
-import type { GenerateOverrides, ThemeSource } from './generate/types';
+import type { GenerateOverrides, ThemeSource, StoryLength } from './generate/types';
 import { CHARACTER_CASTS, isCastId } from './names';
+
+export interface StoryLengthConfig {
+  pageCount: { min: number; max: number };
+  wordsPerPage: { min: number; max: number };
+}
+
+export const STORY_LENGTH_MATRIX: Record<number, Record<StoryLength, StoryLengthConfig>> = {
+  0: {
+    short: { pageCount: { min: 5, max: 6 }, wordsPerPage: { min: 3, max: 5 } },
+    medium: { pageCount: { min: 6, max: 8 }, wordsPerPage: { min: 3, max: 8 } },
+    long: { pageCount: { min: 8, max: 10 }, wordsPerPage: { min: 4, max: 8 } },
+  },
+  1: {
+    short: { pageCount: { min: 6, max: 8 }, wordsPerPage: { min: 8, max: 12 } },
+    medium: { pageCount: { min: 8, max: 10 }, wordsPerPage: { min: 12, max: 20 } },
+    long: { pageCount: { min: 10, max: 12 }, wordsPerPage: { min: 16, max: 22 } },
+  },
+  2: {
+    short: { pageCount: { min: 8, max: 10 }, wordsPerPage: { min: 14, max: 18 } },
+    medium: { pageCount: { min: 10, max: 12 }, wordsPerPage: { min: 18, max: 25 } },
+    long: { pageCount: { min: 12, max: 14 }, wordsPerPage: { min: 22, max: 28 } },
+  },
+  3: {
+    short: { pageCount: { min: 8, max: 10 }, wordsPerPage: { min: 20, max: 25 } },
+    medium: { pageCount: { min: 12, max: 14 }, wordsPerPage: { min: 25, max: 35 } },
+    long: { pageCount: { min: 14, max: 16 }, wordsPerPage: { min: 30, max: 40 } },
+  },
+  4: {
+    short: { pageCount: { min: 10, max: 12 }, wordsPerPage: { min: 25, max: 35 } },
+    medium: { pageCount: { min: 14, max: 16 }, wordsPerPage: { min: 30, max: 45 } },
+    long: { pageCount: { min: 16, max: 18 }, wordsPerPage: { min: 35, max: 50 } },
+  },
+  5: {
+    short: { pageCount: { min: 12, max: 14 }, wordsPerPage: { min: 28, max: 40 } },
+    medium: { pageCount: { min: 16, max: 18 }, wordsPerPage: { min: 35, max: 55 } },
+    long: { pageCount: { min: 18, max: 20 }, wordsPerPage: { min: 40, max: 60 } },
+  },
+};
+
+export function resolveStoryLengthConfig(
+  levelId: number,
+  length?: StoryLength,
+): StoryLengthConfig {
+  const chosenLength: StoryLength = length ?? 'medium';
+  const matrixForLevel = STORY_LENGTH_MATRIX[levelId] ?? STORY_LENGTH_MATRIX[1];
+  return matrixForLevel[chosenLength] ?? matrixForLevel.medium;
+}
 
 /** Level-shaped object with overridden fields applied. The literal
  *  types from `as const READING_LEVELS` are widened here so callers
@@ -308,6 +390,14 @@ export function applyOverridesToLevel(
   };
   if (!overrides) return out;
 
+  // Precedence Tier 2: Story Length preset ('short' | 'medium' | 'long')
+  if (overrides.storyLength) {
+    const lengthConfig = resolveStoryLengthConfig(level.id, overrides.storyLength);
+    out.pageCount = { ...lengthConfig.pageCount };
+    out.wordsPerPage = { ...lengthConfig.wordsPerPage };
+  }
+
+  // Precedence Tier 1: Explicit numerical overrides (highest precedence)
   if (typeof overrides.pageCount === 'number') {
     // Lock both ends to the single value the teacher chose so the
     // prose stage gets an exact target rather than a range.
@@ -363,11 +453,11 @@ const THEME_SOURCES: ThemeSource[] = ['unit_topic', 'custom', 'model_choice'];
 
 const PAGE_COUNT_MIN = 3;
 const PAGE_COUNT_MAX = 20;
-const MAX_SENTENCE_WORDS_MIN = 4;
+const MAX_SENTENCE_WORDS_MIN = 3;
 const MAX_SENTENCE_WORDS_MAX = 25;
-const TARGET_VOCAB_COUNT_MIN = 2;
+const TARGET_VOCAB_COUNT_MIN = 1;
 const TARGET_VOCAB_COUNT_MAX = 10;
-const WORDS_PER_PAGE_MIN = 5;
+const WORDS_PER_PAGE_MIN = 3;
 const WORDS_PER_PAGE_MAX = 60;
 const QUESTION_COUNT_MIN = 3;
 const QUESTION_COUNT_MAX = 8;

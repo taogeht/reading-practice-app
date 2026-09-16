@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { READING_LEVELS } from "@/lib/reading/levels";
 import { getReadingArtStyle } from "@/lib/reading/art-styles";
+import { getStoryPattern } from "@/lib/reading/story-patterns";
 
 interface PassageRow {
   id: string;
@@ -36,6 +37,8 @@ interface PassageRow {
   summary: string | null;
   generationMeta: {
     artStyleId?: string;
+    storyPattern?: string;
+    storyLength?: string;
     qualityReport?: {
       proseScore: number;
       questionsScore: number;
@@ -46,6 +49,7 @@ interface PassageRow {
   } | null;
   createdAt: string;
 }
+
 
 interface PageRow {
   id: string;
@@ -512,7 +516,31 @@ export default function ReadingReviewFocusPage() {
                       </>
                     );
                   })()}
+                  {passage.generationMeta?.storyPattern && (
+                    <>
+                      <span>•</span>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-blue-50 text-blue-700 border-blue-200 gap-1 font-medium hover:bg-blue-100/80"
+                      >
+                        <span>{getStoryPattern(passage.generationMeta.storyPattern).emoji}</span>
+                        <span>{getStoryPattern(passage.generationMeta.storyPattern).label}</span>
+                      </Badge>
+                    </>
+                  )}
+                  {passage.generationMeta?.storyLength && (
+                    <>
+                      <span>•</span>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 capitalize font-medium hover:bg-emerald-100/80"
+                      >
+                        {passage.generationMeta.storyLength}
+                      </Badge>
+                    </>
+                  )}
                 </div>
+
               </div>
             </div>
             <div className="flex gap-2">

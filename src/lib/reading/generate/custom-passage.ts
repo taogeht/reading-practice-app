@@ -338,10 +338,11 @@ export async function generateCustomPassage(
       targetVocabUsed: [],
     })),
     structuralPlan: {
-      problem: 'Custom story arc',
-      attempt: 'Custom story arc',
-      resolution: 'Custom story arc',
+      opening: 'Custom story arc',
+      development: 'Custom story arc',
+      ending: 'Custom story arc',
     },
+
   };
 
   const prosePages = planData.pages.map((p) => ({
