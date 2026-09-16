@@ -26,7 +26,12 @@ import {
 import { assertPassagePlanMatchesRequest } from './generate/validate-plan';
 import { validateQuestions } from './generate/validate-questions';
 import { questionCountForMix } from './generate/question-mix';
-import type { GeneratedQuestion, PassagePlan } from './generate/types';
+import {
+  buildImagePrompt,
+  resolvePageIllustrationPlan,
+  validatePassageImages,
+} from './generate';
+import type { GeneratedPageImage, GeneratedPageProse, GeneratedQuestion, PassagePlan } from './generate/types';
 import {
   evaluateStoryGeneration,
   type StoryGenerationSample,
@@ -539,24 +544,17 @@ test('the curriculum floor stays meaningful but under one full level', () => {
 });
 
 
-// ---------- level ladder (1:1 with Family and Friends 1-5) ----------
+// ---------- level ladder (1:1 with Family and Friends 1-5 plus Level 0 Starter) ----------
 
-test('every level targets the Family and Friends book of the same number', () => {
-  // The ladder used to open on a Starter rung, which put every level one
-  // ahead of its book. If this drifts again, stories get written from the
-  // wrong grade's vocabulary and benched against the wrong fluency norms.
+test('every level targets its designated curriculum book or starter band', () => {
   assert.deepEqual(
     READING_LEVELS.map((l) => [l.id, l.targetAfFLevel]),
-    [[1, 'grade1'], [2, 'grade2'], [3, 'grade3'], [4, 'grade4'], [5, 'grade5']],
+    [[0, 'starter'], [1, 'grade1'], [2, 'grade2'], [3, 'grade3'], [4, 'grade4'], [5, 'grade5']],
   );
 });
 
-test('no level targets the starter band', () => {
-  // The const assertion already makes this unreachable at the type level —
-  // the cast is what lets the runtime guard compile. Kept because the type
-  // guarantee disappears the moment someone widens the array's type.
-  const targets: string[] = READING_LEVELS.map((l) => l.targetAfFLevel);
-  assert.equal(targets.includes('starter'), false);
+test('level 0 targets the starter band', () => {
+  assert.equal(READING_LEVELS.find((l) => l.id === 0)?.targetAfFLevel, 'starter');
 });
 
 test('free-text student levels map onto the matching grade number', () => {
@@ -573,9 +571,103 @@ test('a named grade wins over a pre-grade-1 marker in the same label', () => {
   assert.equal(mapStudentReadingLevel('Starter - moving to Grade 2'), 2);
 });
 
-test('pre-grade-1 and unknown labels fall back to grade 1', () => {
-  assert.equal(mapStudentReadingLevel('Starter / KG'), 1);
-  assert.equal(mapStudentReadingLevel('kindergarten'), 1);
+test('pre-grade-1 labels map to level 0 and unknown labels fall back to grade 1', () => {
+  assert.equal(mapStudentReadingLevel('Starter / KG'), 0);
+  assert.equal(mapStudentReadingLevel('kindergarten'), 0);
   assert.equal(mapStudentReadingLevel(null), 1);
   assert.equal(mapStudentReadingLevel('something unrecognised'), 1);
+});
+
+// ---------- illustration density & spread planning ----------
+
+test('resolvePageIllustrationPlan in every_page mode marks all pages as required', () => {
+  const plan = resolvePageIllustrationPlan([1, 2, 3, 4], 'every_page');
+  assert.equal(plan.length, 4);
+  assert.deepEqual(
+    plan.map((p) => ({ page: p.pageNumber, role: p.illustrationRole, imgPage: p.illustrationPageNumber })),
+    [
+      { page: 1, role: 'required', imgPage: 1 },
+      { page: 2, role: 'required', imgPage: 2 },
+      { page: 3, role: 'required', imgPage: 3 },
+      { page: 4, role: 'required', imgPage: 4 },
+    ],
+  );
+});
+
+test('resolvePageIllustrationPlan in half_pages mode pairs spreads correctly', () => {
+  const plan = resolvePageIllustrationPlan([1, 2, 3, 4, 5], 'half_pages');
+  assert.equal(plan.length, 5);
+  assert.deepEqual(
+    plan.map((p) => ({
+      page: p.pageNumber,
+      spread: p.spreadIndex,
+      role: p.illustrationRole,
+      imgPage: p.illustrationPageNumber,
+    })),
+    [
+      { page: 1, spread: 1, role: 'required', imgPage: 1 },
+      { page: 2, spread: 1, role: 'paired_text', imgPage: 1 },
+      { page: 3, spread: 2, role: 'required', imgPage: 3 },
+      { page: 4, spread: 2, role: 'paired_text', imgPage: 3 },
+      { page: 5, spread: 3, role: 'required', imgPage: 5 },
+    ],
+  );
+});
+
+test('buildImagePrompt prioritizes final prose and surfaces physical state cues', () => {
+  const prompt = buildImagePrompt(
+    {
+      pageNumber: 2,
+      beat: 'Sally goes inside',
+      sceneDescription: 'Sally standing outside the cottage',
+      targetVocabUsed: [],
+    },
+    {
+      title: 'Sallys Adventure',
+      summary: 'Sally goes to cottage',
+      setting: 'A forest cottage',
+      characters: [{ name: 'Sally', description: 'Girl with brown pigtails and a yellow shirt' }],
+      pages: [],
+      structuralPlan: { opening: 'o', development: 'd', ending: 'e' },
+    },
+    { promptSuffix: 'Watercolor children storybook style' },
+    'Sally opens the front door and holds a blue cup.',
+  );
+
+  // Authoritative prose moment is primary
+  assert.ok(prompt.includes('[MOMENT TO ILLUSTRATE]: "Sally opens the front door and holds a blue cup."'));
+  // Physical state rules detected from prose
+  assert.ok(prompt.includes('Any door, window, or container described as being opened must be shown visibly wide open'));
+  assert.ok(prompt.includes("Items being held or carried must be shown visibly in the character's hands"));
+  // Character permanent anchor
+  assert.ok(prompt.includes('Sally (Girl with brown pigtails and a yellow shirt)'));
+  assert.ok(prompt.includes('Keep facial features, hair style, skin tone, and signature clothing colors strictly consistent'));
+  // Directive present
+  assert.ok(prompt.includes('DIRECTIVE: Illustrate the exact moment described in [MOMENT TO ILLUSTRATE]'));
+});
+
+test('validatePassageImages correctly checks required count under half_pages density', () => {
+  const dummyProse: GeneratedPageProse[] = [
+    { pageNumber: 1, text: 'P1' },
+    { pageNumber: 2, text: 'P2' },
+    { pageNumber: 3, text: 'P3' },
+    { pageNumber: 4, text: 'P4' },
+  ];
+  const validBuffer = Buffer.alloc(20_000);
+
+  // In half_pages mode, 4 pages need exactly 2 images (pages 1 and 3)
+  const spreadImages: GeneratedPageImage[] = [
+    { pageNumber: 1, buffer: validBuffer, mimeType: 'image/png', promptUsed: 'p1', referenceImageUsed: false },
+    { pageNumber: 3, buffer: validBuffer, mimeType: 'image/png', promptUsed: 'p3', referenceImageUsed: true },
+  ];
+
+  const validationHalf = validatePassageImages(spreadImages, dummyProse, 'half_pages');
+  assert.equal(validationHalf.valid, true);
+  assert.equal(validationHalf.errorCount, 0);
+
+  // Under every_page, 2 images for 4 pages produces an error
+  const validationEvery = validatePassageImages(spreadImages, dummyProse, 'every_page');
+  assert.equal(validationEvery.valid, false);
+  assert.equal(validationEvery.errorCount, 1);
+  assert.equal(validationEvery.issues[0].type, 'image_count_mismatch');
 });

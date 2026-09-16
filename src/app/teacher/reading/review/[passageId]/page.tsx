@@ -738,8 +738,12 @@ export default function ReadingReviewFocusPage() {
                       onClick={() => setZoomImageKey(p.imageKey)}
                     />
                   ) : (
-                    <div className="rounded border bg-gray-50 h-48 flex items-center justify-center text-gray-400 text-sm">
-                      no image
+                    <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/60 p-4 min-h-36 flex flex-col items-center justify-center text-center">
+                      <span className="text-2xl mb-1">📖</span>
+                      <p className="text-xs font-medium text-amber-900">Paired Spread Page</p>
+                      <p className="text-[11px] text-amber-700/80 mt-0.5">
+                        Reads together with Page {p.pageNumber - 1} illustration
+                      </p>
                     </div>
                   )}
                   <Button
@@ -756,7 +760,7 @@ export default function ReadingReviewFocusPage() {
                     ) : (
                       <>
                         <RefreshCw className="w-3 h-3 mr-2" />
-                        Regenerate this page
+                        {p.imageKey ? 'Regenerate this page' : 'Regenerate text'}
                       </>
                     )}
                   </Button>
@@ -780,9 +784,20 @@ export default function ReadingReviewFocusPage() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">
-                      Page {p.pageNumber}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">
+                        Page {p.pageNumber}
+                      </p>
+                      {p.imageKey ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          Illustrated Page
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                          Spread Pair Text Page
+                        </span>
+                      )}
+                    </div>
                     {edit.pageNumber !== p.pageNumber && (
                       <button
                         type="button"

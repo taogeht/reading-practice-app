@@ -41,7 +41,7 @@ import {
   type CastId,
   type CharacterCast,
 } from '@/lib/reading/names';
-import type { StoryLength, StoryPattern, ThemeSource } from '@/lib/reading/generate/types';
+import type { IllustrationDensity, StoryLength, StoryPattern, ThemeSource } from '@/lib/reading/generate/types';
 import { ArtStylePicker } from '@/components/reading/art-style-picker';
 import type { ReadingArtStyleId } from '@/lib/reading/art-styles';
 
@@ -156,6 +156,7 @@ export default function TeacherGeneratePage() {
   const [unit, setUnit] = useState<number>(1);
   const [pickedVocab, setPickedVocab] = useState<VocabPick[]>([]);
   const [artStyleId, setArtStyleId] = useState<ReadingArtStyleId>('watercolor');
+  const [illustrationDensity, setIllustrationDensity] = useState<IllustrationDensity>('every_page');
 
   // Submission state.
   const [submitting, setSubmitting] = useState(false);
@@ -214,6 +215,7 @@ export default function TeacherGeneratePage() {
     setUnit(1);
     setPickedVocab([]);
     setArtStyleId('watercolor');
+    setIllustrationDensity('every_page');
   }, [levelId]);
 
   const questionMixSum = mcqCount + vocabMatchCount + sequenceCount;
@@ -275,6 +277,7 @@ export default function TeacherGeneratePage() {
       overrides.castId = castId;
       overrides.themeSource = themeSource;
       if (artStyleId) overrides.artStyleId = artStyleId;
+      if (illustrationDensity) overrides.illustrationDensity = illustrationDensity;
       if (vocabStrictness !== 'strict') overrides.vocabStrictness = vocabStrictness;
       if (questionCount !== defaults.questionCount) overrides.questionCount = questionCount;
       if (
@@ -531,6 +534,55 @@ export default function TeacherGeneratePage() {
                     {n} {n === 1 ? 'story' : 'stories'}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div>
+              <span className="block text-sm font-medium text-gray-700 mb-2">
+                Illustration layout
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+                <button
+                  type="button"
+                  onClick={() => setIllustrationDensity('every_page')}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    illustrationDensity === 'every_page'
+                      ? 'bg-blue-50/70 border-blue-600 ring-1 ring-blue-600 text-gray-900 shadow-sm'
+                      : 'bg-white border-gray-200 text-gray-700 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-medium text-sm">
+                    <span className="text-base">🖼️</span>
+                    <span>Full Picture Book</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 leading-normal">
+                    1 illustration per page. Classic picture book reading.
+                  </p>
+                  <div className="mt-2 text-[11px] font-medium text-blue-700">
+                    ~{pageCount} images per story
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIllustrationDensity('half_pages')}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    illustrationDensity === 'half_pages'
+                      ? 'bg-blue-50/70 border-blue-600 ring-1 ring-blue-600 text-gray-900 shadow-sm'
+                      : 'bg-white border-gray-200 text-gray-700 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-medium text-sm">
+                    <span className="text-base">📖</span>
+                    <span>Storybook Spread</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 leading-normal">
+                    1 illustration per 2-page spread. Half the images, richer reading text.
+                  </p>
+                  <div className="mt-2 text-[11px] font-medium text-emerald-700">
+                    ~{Math.ceil(pageCount / 2)} images per story (~50% faster)
+                  </div>
+                </button>
               </div>
             </div>
           </CardContent>

@@ -91,7 +91,7 @@ GENERAL STRUCTURAL DIRECTIVES:
 - Follow the pattern archetype above.
 - Every page advances the story by exactly one beat.
 - Tense alignment: When past tense is not allowed for the level, the entire story arc must be planned in the PRESENT TENSE ("Sally is in the garden. She sees a kitten."). Do NOT plan past-tense beats.
-- 1 to 3 named characters (or narrator/guide for nonfiction/process). Each character description must be concrete enough that an image generator can render the same character consistently across pages — name, approximate age, hair, signature outfit details.
+- 1 to 3 named characters (or narrator/guide for nonfiction/process). Each character description must specify concrete, unchanging physical traits (exact hair color/style, skin tone, eye color, approximate age) and signature outfit/color palette so the image generator can render the character consistently across panels.
 - Structural plan must define opening, development, and ending according to the pattern directives.
 
 CHARACTER NAMES
@@ -103,7 +103,7 @@ CHARACTER NAMES
 
 FIELD SEMANTICS
 - "beat" is a SUMMARY of what happens on the page, not the prose itself. Example beat: "Sally sees the cat run into the night market." NOT: "Sally said, 'Oh, look at the cat!'"
-- "sceneDescription" is art direction for the page's image — describe what should appear in the picture concretely (subjects, setting, action, key props), and reference character outfits so the same characters look the same on every page.
+- "sceneDescription" is art direction for the page's image — describe what should appear in the picture concretely (subjects, setting, action, key props), referencing character outfits and distinctive features so the same characters look consistent on every page.
 - "targetVocabUsed" lists which TARGET VOCABULARY words land on this page. Use the EXACT words from the TARGET VOCABULARY list given in the user message — match case and spelling. Every target word must be introduced on at least one page. A page may have an empty list.
 - "structuralPlan" has three parts:
   * "opening": The starting scene / premise / frame

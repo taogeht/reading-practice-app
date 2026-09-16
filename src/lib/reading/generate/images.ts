@@ -25,9 +25,11 @@ import type {
   GeneratedPageProse,
   GeneratePassageImagesInput,
   GeneratePassageImagesResult,
+  IllustrationDensity,
   ImageStyle,
   ImageValidationIssue,
   ImageValidationResult,
+  PageIllustrationPlan,
   PassagePagePlan,
   PassagePlan,
 } from './types';
@@ -58,31 +60,112 @@ const IMAGE_MIN_BYTES = 10_000;
 const IMAGE_MAX_BYTES = 5_000_000;
 const ACCEPTABLE_MIME_TYPES = new Set(['image/png', 'image/jpeg']);
 
+// ---------- Illustration Plan Resolver ----------
+
+/**
+ * Resolves the illustration plan for a set of story page numbers and a given density.
+ * In 'every_page' mode, every page has an illustration role 'required'.
+ * In 'half_pages' mode (two-page spreads), the first page of each pair (e.g. 1, 3, 5)
+ * is 'required', and the second page (e.g. 2, 4, 6) is 'paired_text' sharing that illustration.
+ */
+export function resolvePageIllustrationPlan(
+  pageNumbers: number[],
+  density: IllustrationDensity = 'every_page',
+): PageIllustrationPlan[] {
+  const sorted = [...pageNumbers].sort((a, b) => a - b);
+  if (density === 'half_pages') {
+    return sorted.map((pageNumber, idx) => {
+      const spreadIndex = Math.floor(idx / 2) + 1;
+      const isFirstInSpread = idx % 2 === 0;
+      const illustrationPageNumber = isFirstInSpread
+        ? pageNumber
+        : sorted[idx - 1] ?? pageNumber;
+      return {
+        pageNumber,
+        spreadIndex,
+        illustrationRole: isFirstInSpread ? 'required' : 'paired_text',
+        illustrationPageNumber,
+      };
+    });
+  }
+  return sorted.map((pageNumber, idx) => ({
+    pageNumber,
+    spreadIndex: idx + 1,
+    illustrationRole: 'required',
+    illustrationPageNumber: pageNumber,
+  }));
+}
+
 // ---------- Prompt construction ----------
 
 /** Compose the prompt sent to Gemini for a given page. Character
  *  descriptions from the plan are repeated in EVERY prompt — the
  *  reference image gives visual anchoring, the text descriptions give
  *  semantic anchoring; both together carry character consistency
- *  across panels far better than either alone. */
+ *  across panels far better than either alone.
+ *
+ *  Layer priority:
+ *  1. [MOMENT TO ILLUSTRATE] from final prose (authoritative action).
+ *  2. [PHYSICAL OBJECT STATES] derived cues (e.g. open door, held items).
+ *  3. [CHARACTERS] with permanent identity anchors.
+ *  4. [SETTING & COMPOSITION] background & environment.
+ *  5. Style suffix.
+ */
 export function buildImagePrompt(
   page: PassagePagePlan,
   plan: PassagePlan,
   style: ImageStyle = DEFAULT_IMAGE_STYLE,
   proseText?: string,
 ): string {
+  const promptParts: string[] = [];
+
+  // Layer 1: Final prose moment and action (authoritative over earlier plan draft)
+  if (proseText?.trim()) {
+    promptParts.push(`[MOMENT TO ILLUSTRATE]: "${proseText.trim()}"`);
+
+    // Physical state cues derived from prose
+    const lowerProse = proseText.toLowerCase();
+    const stateRules: string[] = [];
+    if (/\b(open|opens|opened|opening)\b/.test(lowerProse)) {
+      stateRules.push('Any door, window, or container described as being opened must be shown visibly wide open');
+    }
+    if (/\b(close|closes|closed|shut)\b/.test(lowerProse)) {
+      stateRules.push('Any door, window, or container described as closed/shut must be shown visibly closed');
+    }
+    if (/\b(hold|holds|holding|held|carry|carries|carrying|pick up|picks up|picked up)\b/.test(lowerProse)) {
+      stateRules.push('Items being held or carried must be shown visibly in the character\'s hands');
+    }
+    if (/\b(sit|sits|sitting|sat)\b/.test(lowerProse)) {
+      stateRules.push('Character must be visibly seated');
+    }
+    if (/\b(run|runs|running|ran|jump|jumps|jumping|jumped)\b/.test(lowerProse)) {
+      stateRules.push('Character must be in dynamic active motion');
+    }
+
+    if (stateRules.length > 0) {
+      promptParts.push(`[PHYSICAL OBJECT STATES]: ${stateRules.join('; ')}`);
+    }
+  }
+
+  // Layer 2: Characters with permanent identity anchors
   const characterDescriptions = plan.characters
     .map((c) => `${c.name} (${c.description})`)
     .join('; ');
+  promptParts.push(
+    `[CHARACTERS]: ${characterDescriptions}. Keep facial features, hair style, skin tone, and signature clothing colors strictly consistent`,
+  );
 
-  const promptParts: string[] = [];
+  // Layer 3: Setting & environment (with scene framing from plan)
+  promptParts.push(`[SETTING & COMPOSITION]: ${plan.setting}. Framing details: ${page.sceneDescription}`);
 
+  // Layer 4: Action directive
   if (proseText?.trim()) {
-    promptParts.push(`Story action happening on this page: "${proseText.trim()}"`);
+    promptParts.push(
+      'DIRECTIVE: Illustrate the exact moment described in [MOMENT TO ILLUSTRATE]. Do not show a previous or subsequent state (for example, if an action was completed, show the finished result)',
+    );
   }
-  promptParts.push(page.sceneDescription);
-  promptParts.push(`Characters in this scene: ${characterDescriptions}`);
-  promptParts.push(`Setting: ${plan.setting}`);
+
+  // Layer 5: Visual style
   if (style.promptSuffix) {
     promptParts.push(style.promptSuffix.trimStart());
   }
@@ -92,15 +175,11 @@ export function buildImagePrompt(
 
 // ---------- Main entry point ----------
 
-/** Generate one image per page in the plan. Page 1 cold, pages 2..N
- *  with page 1 as reference. Sequential. If page 1 fails we throw —
- *  without a reference, the rest can't preserve character consistency
- *  and partial output isn't useful. If a later page fails we log,
- *  skip it (so it's missing from result.pages), and let the validator
- *  catch the count mismatch.
- *
- *  v1 reuses page 1 as the library cover (coverImage = pages[0]).
- *  Easy to upgrade to a dedicated cover-shot generation later. */
+/** Generate illustrations for pages in the plan.
+ *  In 'every_page' mode, 1 image per page.
+ *  In 'half_pages' mode, 1 image per 2-page spread.
+ *  Page 1 cold, subsequent required pages with page 1 as reference. Sequential.
+ */
 export async function generatePassageImages(
   input: GeneratePassageImagesInput,
 ): Promise<GeneratePassageImagesResult> {
@@ -111,30 +190,44 @@ export async function generatePassageImages(
     throw new Error('generatePassageImages: pages[] is empty');
   }
 
+  const density = input.illustrationDensity ?? 'every_page';
   const style = input.style ?? DEFAULT_IMAGE_STYLE;
   const planByPageNumber = new Map(input.plan.pages.map((p) => [p.pageNumber, p]));
+  const proseByPageNumber = new Map(input.pages.map((p) => [p.pageNumber, p.text]));
+
+  // Calculate page illustration plan
+  const illustrationPlans = resolvePageIllustrationPlan(
+    input.pages.map((p) => p.pageNumber),
+    density,
+  );
+  // Only pages with illustrationRole === 'required' need an image
+  const requiredPlans = illustrationPlans.filter((ip) => ip.illustrationRole === 'required');
 
   const generated: GeneratedPageImage[] = [];
   const perPageDurationMs: number[] = [];
   const startedAt = Date.now();
 
-  // Walk pages in pageNumber order — the reference-image trick depends
-  // on page 1 going first.
-  const ordered = [...input.pages].sort((a, b) => a.pageNumber - b.pageNumber);
-
   let pageOneImage: GeneratedPageImage | null = null;
-  for (const proseRow of ordered) {
-    const planPage = planByPageNumber.get(proseRow.pageNumber);
+  for (let idx = 0; idx < requiredPlans.length; idx++) {
+    const item = requiredPlans[idx];
+    const planPage = planByPageNumber.get(item.pageNumber);
     if (!planPage) {
       console.error(
-        `[generatePassageImages] page ${proseRow.pageNumber} has prose but no plan entry — skipping`,
+        `[generatePassageImages] page ${item.pageNumber} has required illustration plan but no plan entry — skipping`,
       );
       perPageDurationMs.push(0);
       continue;
     }
 
+    // If half_pages, find all prose pages belonging to this spread so the prompt reflects the full spread
+    const spreadPages = illustrationPlans.filter((ip) => ip.spreadIndex === item.spreadIndex);
+    const combinedProse = spreadPages
+      .map((sp) => proseByPageNumber.get(sp.pageNumber))
+      .filter(Boolean)
+      .join(' ');
+
     const isFirstPage = pageOneImage === null;
-    const prompt = buildImagePrompt(planPage, input.plan, style, proseRow.text);
+    const prompt = buildImagePrompt(planPage, input.plan, style, combinedProse);
     const t0 = Date.now();
 
     const result = await imageClient.generateImagePanel({
@@ -142,7 +235,7 @@ export async function generatePassageImages(
       referenceImage: isFirstPage
         ? undefined
         : { buffer: pageOneImage!.buffer, mimeType: pageOneImage!.mimeType },
-      label: `passage page ${proseRow.pageNumber}`,
+      label: `passage page ${item.pageNumber}${density === 'half_pages' ? ` (spread ${item.spreadIndex})` : ''}`,
     });
 
     const durationMs = Date.now() - t0;
@@ -159,13 +252,13 @@ export async function generatePassageImages(
         );
       }
       console.error(
-        `[generatePassageImages] page ${proseRow.pageNumber} failed: ${msg} — continuing without it`,
+        `[generatePassageImages] page ${item.pageNumber} failed: ${msg} — continuing without it`,
       );
       continue;
     }
 
     const image: GeneratedPageImage = {
-      pageNumber: proseRow.pageNumber,
+      pageNumber: item.pageNumber,
       buffer: result.imageBuffer,
       mimeType: result.contentType ?? 'image/png',
       promptUsed: prompt,
@@ -173,14 +266,14 @@ export async function generatePassageImages(
     };
     generated.push(image);
     if (isFirstPage) pageOneImage = image;
-    input.onPageGenerated?.(proseRow.pageNumber, ordered.length);
+    input.onPageGenerated?.(item.pageNumber, requiredPlans.length);
   }
 
   const totalDurationMs = Date.now() - startedAt;
 
   logInfo(
-    `passage images generated (${generated.length}/${input.pages.length} pages)`,
-    `lib/reading/generate/images model=${MODEL} pages_generated=${generated.length} pages_expected=${input.pages.length} total_duration_ms=${totalDurationMs}`,
+    `passage images generated (${generated.length}/${requiredPlans.length} required images, density=${density})`,
+    `lib/reading/generate/images model=${MODEL} pages_generated=${generated.length} pages_required=${requiredPlans.length} total_duration_ms=${totalDurationMs}`,
   );
 
   return {
@@ -195,15 +288,22 @@ export async function generatePassageImages(
 export function validatePassageImages(
   images: GeneratedPageImage[],
   pages: GeneratedPageProse[],
+  density: IllustrationDensity = 'every_page',
 ): ImageValidationResult {
   const issues: ImageValidationIssue[] = [];
 
-  // Count mismatch — every prose page should have a corresponding image.
-  if (images.length !== pages.length) {
+  const plans = resolvePageIllustrationPlan(
+    pages.map((p) => p.pageNumber),
+    density,
+  );
+  const requiredCount = plans.filter((p) => p.illustrationRole === 'required').length;
+
+  // Count mismatch — every required illustration should have a corresponding image.
+  if (images.length !== requiredCount) {
     issues.push({
       type: 'image_count_mismatch',
       severity: 'error',
-      expected: pages.length,
+      expected: requiredCount,
       actual: images.length,
     });
   }

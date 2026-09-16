@@ -11,10 +11,12 @@ import { applyOverridesToLevel, getReadingLevel } from './levels';
 import {
   assertPassagePlanMatchesRequest,
   PassagePlanSchema,
+  resolvePageIllustrationPlan,
   validatePagesProse,
   validateQuestions,
   type GeneratedQuestion,
   type GenerateOverrides,
+  type IllustrationDensity,
 } from './generate';
 import { fetchTargetVocab, resolveCumulativeVocab } from './generate/vocab';
 
@@ -138,17 +140,33 @@ export async function assessPassageForPublication(
     );
   }
 
-  const pagesWithoutImages = pages
-    .filter((page) => !page.imageKey)
+  const illustrationDensity =
+    (generationMeta.illustrationDensity as IllustrationDensity | undefined) ??
+    (overrides?.illustrationDensity as IllustrationDensity | undefined) ??
+    'every_page';
+
+  const illustrationPlan = resolvePageIllustrationPlan(
+    pages.map((p) => p.pageNumber),
+    illustrationDensity,
+  );
+  const requiredPageNumbers = new Set(
+    illustrationPlan
+      .filter((ip) => ip.illustrationRole === 'required')
+      .map((ip) => ip.pageNumber),
+  );
+
+  const missingRequiredImages = pages
+    .filter((page) => requiredPageNumbers.has(page.pageNumber) && !page.imageKey)
     .map((page) => page.pageNumber);
+
   if (!passage.coverImageKey) {
     addError(issues, 'cover_image_missing', 'The passage has no cover image.');
   }
-  if (pagesWithoutImages.length > 0) {
+  if (missingRequiredImages.length > 0) {
     addError(
       issues,
       'page_images_missing',
-      `Missing illustrations for page${pagesWithoutImages.length === 1 ? '' : 's'} ${pagesWithoutImages.join(', ')}.`,
+      `Missing illustrations for page${missingRequiredImages.length === 1 ? '' : 's'} ${missingRequiredImages.join(', ')}.`,
     );
   }
 

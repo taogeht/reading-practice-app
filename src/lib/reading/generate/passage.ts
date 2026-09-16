@@ -463,17 +463,19 @@ export async function generatePassage(
   } else {
     try {
       const artStyle = getReadingArtStyle(input.overrides?.artStyleId);
+      const illustrationDensity = input.overrides?.illustrationDensity ?? 'every_page';
       const t0 = Date.now();
       const imgResult = await generatePassageImages({
         plan,
         pages,
         style: toImageStyle(artStyle),
+        illustrationDensity,
       });
       timing.imagesMs = Date.now() - t0;
       images = imgResult.pages;
       cost.imageCallsCount += images.length;
 
-      imagesValidation = validatePassageImages(images, pages);
+      imagesValidation = validatePassageImages(images, pages, illustrationDensity);
       for (const issue of imagesValidation.issues) {
         issues.push({ ...issue, stage: 'images' } as PassageIssue);
       }
@@ -620,6 +622,7 @@ export async function generatePassage(
         artStyleId: getReadingArtStyle(input.overrides?.artStyleId).id,
         storyPattern: patternId,
         storyLength: input.overrides?.storyLength,
+        illustrationDensity: input.overrides?.illustrationDensity ?? 'every_page',
         resolvedPageCount: effectiveLevel.pageCount,
         resolvedWordsPerPage: effectiveLevel.wordsPerPage,
         // Persist the full plan so per-page and per-question regen
@@ -651,23 +654,20 @@ export async function generatePassage(
         isActive: true,
       });
 
-      // 2. story_pages — one row per prose page. Under --skip-images
-      //    we walk the prose array directly (no images to iterate);
-      //    imageKey is null on every row.
-      const sourcePages = input.skipImages
-        ? pages.map((p) => ({ pageNumber: p.pageNumber, promptUsed: null as string | null }))
-        : images.map((img) => ({ pageNumber: img.pageNumber, promptUsed: img.promptUsed }));
-      const pageRows = sourcePages
+      // 2. story_pages — one row per prose page. All prose pages are inserted,
+      //    attaching imageKey by pageNumber lookup (or null for paired_text / skipImages).
+      const imageByPage = new Map(images.map((img) => [img.pageNumber, img]));
+      const pageRows = pages
         .slice()
         .sort((a, b) => a.pageNumber - b.pageNumber)
-        .map((src) => {
-          const proseRow = pages.find((p) => p.pageNumber === src.pageNumber)!;
+        .map((proseRow) => {
+          const img = imageByPage.get(proseRow.pageNumber);
           return {
             passageId,
-            pageNumber: src.pageNumber,
+            pageNumber: proseRow.pageNumber,
             text: proseRow.text,
-            imageKey: input.skipImages ? null : imageKeyByPage.get(src.pageNumber) ?? null,
-            imagePromptUsed: src.promptUsed,
+            imageKey: input.skipImages ? null : (imageKeyByPage.get(proseRow.pageNumber) ?? null),
+            imagePromptUsed: img?.promptUsed ?? null,
             ttsAudioKey: null,
             ttsVoice: null,
           };

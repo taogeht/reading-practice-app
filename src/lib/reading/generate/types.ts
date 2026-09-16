@@ -177,6 +177,18 @@ export interface GenerateOverrides {
 
   /** Length preset ('short' | 'medium' | 'long'). Calibrates page count & words per page. */
   storyLength?: StoryLength;
+
+  /** Illustration density across pages ('every_page' or 'half_pages'). */
+  illustrationDensity?: IllustrationDensity;
+}
+
+export type IllustrationDensity = 'every_page' | 'half_pages';
+
+export interface PageIllustrationPlan {
+  pageNumber: number;
+  spreadIndex: number;
+  illustrationRole: 'required' | 'paired_text';
+  illustrationPageNumber: number;
 }
 
 export interface GeneratePassagePlanInput {
@@ -599,6 +611,8 @@ export interface GeneratePassageImagesInput {
   pages: GeneratedPageProse[];
   /** If omitted, DEFAULT_IMAGE_STYLE in images.ts applies. */
   style?: ImageStyle;
+  /** Illustration density layout across pages ('every_page' | 'half_pages'). Defaults to 'every_page'. */
+  illustrationDensity?: IllustrationDensity;
   /** Optional callback fired after each page illustration finishes generating */
   onPageGenerated?: (pageNumber: number, totalPages: number) => void;
 }

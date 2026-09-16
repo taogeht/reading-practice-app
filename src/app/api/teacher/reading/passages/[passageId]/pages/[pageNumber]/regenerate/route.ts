@@ -102,94 +102,100 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       overrides,
     });
 
-    // 3. Regenerate image. The character-consistency anchor is the
-    //    EXISTING page-1 image — fetch it from R2 and pass as reference.
-    const pageOneRow = allPages.find((p) => p.pageNumber === 1);
-    if (!pageOneRow?.imageKey) {
-      return NextResponse.json(
-        {
-          error:
-            "Page 1 has no image_key on file; cannot anchor character consistency. Regenerate the entire passage instead.",
-        },
-        { status: 400 },
-      );
-    }
+    // 3. Regenerate image if this page is illustrated. If this is a paired
+    //    text page (imageKey === null), only prose is regenerated.
+    let newKey: string | null = null;
+    let imagePrompt: string | null = null;
 
-    let referenceImage: { buffer: Buffer; mimeType: string } | undefined;
-    if (pageNumber !== 1) {
-      const refObj = await r2Client.getObject(pageOneRow.imageKey);
-      if (!refObj || !refObj.body) {
+    if (targetPageRow.imageKey) {
+      const pageOneRow = allPages.find((p) => p.pageNumber === 1);
+      if (!pageOneRow?.imageKey) {
         return NextResponse.json(
-          { error: 'Page 1 reference image missing from R2' },
-          { status: 500 },
+          {
+            error:
+              "Page 1 has no image_key on file; cannot anchor character consistency. Regenerate the entire passage instead.",
+          },
+          { status: 400 },
         );
       }
-      // r2Client.getObject returns a Web ReadableStream; collect it
-      // into a Node Buffer for the Gemini multi-part request.
-      const reader = refObj.body.getReader();
-      const chunks: Uint8Array[] = [];
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) chunks.push(value);
+
+      let referenceImage: { buffer: Buffer; mimeType: string } | undefined;
+      if (pageNumber !== 1) {
+        const refObj = await r2Client.getObject(pageOneRow.imageKey);
+        if (!refObj || !refObj.body) {
+          return NextResponse.json(
+            { error: 'Page 1 reference image missing from R2' },
+            { status: 500 },
+          );
+        }
+        // r2Client.getObject returns a Web ReadableStream; collect it
+        // into a Node Buffer for the Gemini multi-part request.
+        const reader = refObj.body.getReader();
+        const chunks: Uint8Array[] = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) chunks.push(value);
+        }
+        referenceImage = {
+          buffer: Buffer.concat(chunks),
+          mimeType: refObj.contentType ?? 'image/png',
+        };
       }
-      referenceImage = {
-        buffer: Buffer.concat(chunks),
-        mimeType: refObj.contentType ?? 'image/png',
-      };
-    }
 
-    const planPage = planFromMeta.pages.find((p) => p.pageNumber === pageNumber);
-    if (!planPage) {
-      return NextResponse.json(
-        { error: `Page ${pageNumber} not in plan` },
-        { status: 400 },
+      const planPage = planFromMeta.pages.find((p) => p.pageNumber === pageNumber);
+      if (!planPage) {
+        return NextResponse.json(
+          { error: `Page ${pageNumber} not in plan` },
+          { status: 400 },
+        );
+      }
+      const artStyleId = (passage.generationMeta as PassageGenerationMeta | null)?.artStyleId;
+      const artStyle = getReadingArtStyle(artStyleId);
+      const imageStyle = toImageStyle(artStyle);
+
+      imagePrompt = buildImagePrompt(
+        planPage,
+        planFromMeta,
+        imageStyle,
+        proseResult.page.text,
       );
-    }
-    const artStyleId = (passage.generationMeta as PassageGenerationMeta | null)?.artStyleId;
-    const artStyle = getReadingArtStyle(artStyleId);
-    const imageStyle = toImageStyle(artStyle);
+      const imageResult = await imageClient.generateImagePanel({
+        prompt: imagePrompt,
+        referenceImage,
+        label: `regen page ${pageNumber} of ${passageId}`,
+      });
+      if (!imageResult.success || !imageResult.imageBuffer) {
+        return NextResponse.json(
+          { error: `Image generation failed: ${imageResult.error ?? 'unknown'}` },
+          { status: 502 },
+        );
+      }
 
-    const imagePrompt = buildImagePrompt(
-      planPage,
-      planFromMeta,
-      imageStyle,
-      proseResult.page.text,
-    );
-    const imageResult = await imageClient.generateImagePanel({
-      prompt: imagePrompt,
-      referenceImage,
-      label: `regen page ${pageNumber} of ${passageId}`,
-    });
-    if (!imageResult.success || !imageResult.imageBuffer) {
-      return NextResponse.json(
-        { error: `Image generation failed: ${imageResult.error ?? 'unknown'}` },
-        { status: 502 },
+      // 4. Determine next version number for the image key. Existing key
+      //    `page-N.png` → v2. `page-N.v2.png` → v3. Otherwise → v2.
+      const nextVersion = nextImageVersion(targetPageRow.imageKey);
+      newKey = r2Client.generateStoryImageKeyVersioned(
+        passageId,
+        pageNumber,
+        nextVersion,
       );
+      await r2Client.putObject(newKey, imageResult.imageBuffer, {
+        contentType: imageResult.contentType ?? 'image/png',
+        'passage-id': passageId,
+        'page-number': String(pageNumber),
+        'regen-version': String(nextVersion),
+        'regenerated-by': user.id,
+      });
     }
-
-    // 4. Determine next version number for the image key. Existing key
-    //    `page-N.png` → v2. `page-N.v2.png` → v3. Otherwise → v2.
-    const nextVersion = nextImageVersion(targetPageRow.imageKey);
-    const newKey = r2Client.generateStoryImageKeyVersioned(
-      passageId,
-      pageNumber,
-      nextVersion,
-    );
-    await r2Client.uploadFile(newKey, imageResult.imageBuffer, imageResult.contentType ?? 'image/png', {
-      'passage-id': passageId,
-      'page-number': String(pageNumber),
-      'regen-version': String(nextVersion),
-      'regenerated-by': user.id,
-    });
 
     // 5. Update the storyPages row in place.
     await db
       .update(storyPages)
       .set({
         text: proseResult.page.text,
-        imageKey: newKey,
-        imagePromptUsed: imagePrompt,
+        imageKey: newKey ?? targetPageRow.imageKey,
+        imagePromptUsed: imagePrompt ?? targetPageRow.imagePromptUsed,
         // Regenerated prose invalidates any narration made from the old text.
         ttsAudioKey: null,
         ttsVoice: null,

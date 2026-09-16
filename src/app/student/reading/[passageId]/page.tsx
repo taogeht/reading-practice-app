@@ -572,19 +572,29 @@ function ReaderView({
         className="animate-page-in"
       >
         {page.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={page.imageUrl}
-            alt={`Page ${page.pageNumber}`}
-            className="w-full max-w-2xl mx-auto aspect-square object-cover rounded-2xl shadow-md bg-gray-100"
-            draggable={false}
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={page.imageUrl}
+              alt={`Page ${page.pageNumber}`}
+              className="w-full max-w-2xl mx-auto aspect-square object-cover rounded-2xl shadow-md bg-gray-100"
+              draggable={false}
+            />
+            <p className="mt-6 text-lg sm:text-xl lg:text-2xl leading-relaxed text-gray-900 max-w-2xl mx-auto whitespace-pre-wrap">
+              {page.text}
+            </p>
+          </>
         ) : (
-          <div className="w-full max-w-2xl mx-auto aspect-square rounded-2xl bg-gray-100 shadow-inner" />
+          <div className="w-full max-w-2xl mx-auto py-8 sm:py-12 px-6 sm:px-10 rounded-2xl bg-gradient-to-b from-amber-50/50 to-orange-50/30 border border-amber-100/80 shadow-sm flex flex-col items-center text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100/70 text-amber-800 text-xs font-medium mb-6">
+              <span>📖</span>
+              <span>Spread Reading</span>
+            </div>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-serif leading-relaxed text-gray-900 max-w-xl mx-auto whitespace-pre-wrap">
+              {page.text}
+            </p>
+          </div>
         )}
-        <p className="mt-6 text-lg sm:text-xl lg:text-2xl leading-relaxed text-gray-900 max-w-2xl mx-auto whitespace-pre-wrap">
-          {page.text}
-        </p>
         {page.audioUrl && (
           <div className="mt-4 max-w-2xl mx-auto flex flex-col items-center gap-2">
             <PlaybackSpeedSlider

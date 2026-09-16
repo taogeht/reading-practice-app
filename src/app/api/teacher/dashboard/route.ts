@@ -16,7 +16,7 @@ import {
   schoolMemberships,
   academicTerms,
 } from '@/lib/db/schema';
-import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, count, sql, inArray, isNull, ne } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -164,7 +164,9 @@ export async function GET(request: NextRequest) {
       )
       .where(and(
         user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
-        inArray(assignments.status, ['published'])
+        inArray(assignments.status, ['published']),
+        eq(classes.active, true),
+        isNull(classes.promotedToClassId),
       ))
       .groupBy(
         assignments.id,
@@ -179,22 +181,33 @@ export async function GET(request: NextRequest) {
         sql`COALESCE(${assignments.dueAt}, ${assignments.createdAt}) ASC`
       );
 
-    // Get active assignments count (across every accessible class)
+    // Get active assignments count (across every accessible active class)
     const activeAssignmentsResult = await db
       .select({ count: count() })
       .from(assignments)
-      .where(user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds));
+      .innerJoin(classes, eq(assignments.classId, classes.id))
+      .where(and(
+        user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
+        eq(classes.active, true),
+        isNull(classes.promotedToClassId),
+        ne(assignments.status, 'archived'),
+      ));
 
     // Get pending reviews count. New recordings land as 'pending' or
     // 'submitted' depending on the upload path; both still need teacher
     // attention. 'reviewed'/'flagged' mean the teacher already acted.
+    // Exclude archived classes and assignments so old work doesn't linger.
     const pendingReviewsResult = await db
       .select({ count: count() })
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
+      .innerJoin(classes, eq(assignments.classId, classes.id))
       .where(and(
         user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
-        inArray(recordings.status, ['pending', 'submitted'])
+        inArray(recordings.status, ['pending', 'submitted']),
+        eq(classes.active, true),
+        isNull(classes.promotedToClassId),
+        ne(assignments.status, 'archived'),
       ));
 
     // Get stories without TTS audio count
@@ -205,7 +218,8 @@ export async function GET(request: NextRequest) {
 
     // Get recent submissions awaiting review (last 10). Feeds the dashboard's
     // "Needs review" card, so exclude anything the teacher already handled —
-    // filter server-side so handled rows don't eat the 10-row limit.
+    // filter server-side so handled rows don't eat the 10-row limit. Exclude
+    // archived classes and archived assignments so historical cohorts don't surface.
     const recentSubmissions = await db
       .select({
         id: recordings.id,
@@ -220,11 +234,15 @@ export async function GET(request: NextRequest) {
       })
       .from(recordings)
       .innerJoin(assignments, eq(recordings.assignmentId, assignments.id))
+      .innerJoin(classes, eq(assignments.classId, classes.id))
       .innerJoin(students, eq(recordings.studentId, students.id))
       .innerJoin(users, eq(students.id, users.id))
       .where(and(
         user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
-        inArray(recordings.status, ['pending', 'submitted'])
+        inArray(recordings.status, ['pending', 'submitted']),
+        eq(classes.active, true),
+        isNull(classes.promotedToClassId),
+        ne(assignments.status, 'archived'),
       ))
       .orderBy(desc(recordings.submittedAt))
       .limit(10);

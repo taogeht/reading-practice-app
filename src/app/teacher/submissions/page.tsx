@@ -96,6 +96,7 @@ export default function TeacherSubmissionsPage() {
   const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
   const [expandedClassIds, setExpandedClassIds] = useState<Set<string>>(() => new Set());
   const [hideReviewed, setHideReviewed] = useState<boolean>(true);
+  const [includeArchived, setIncludeArchived] = useState<boolean>(false);
 
   useEffect(() => {
     fetchRecordings();
@@ -123,6 +124,14 @@ export default function TeacherSubmissionsPage() {
     });
   };
 
+  const toggleIncludeArchived = () => {
+    setIncludeArchived((prev) => {
+      const next = !prev;
+      void fetchRecordings(next);
+      return next;
+    });
+  };
+
   const toggleClassExpanded = (classId: string) => {
     setExpandedClassIds((prev) => {
       const next = new Set(prev);
@@ -132,10 +141,11 @@ export default function TeacherSubmissionsPage() {
     });
   };
 
-  const fetchRecordings = async () => {
+  const fetchRecordings = async (showArchived = includeArchived) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/recordings');
+      const url = showArchived ? '/api/recordings?includeArchived=true' : '/api/recordings';
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch recordings');
       const data = await response.json();
       setRecordings(data.recordings || []);
@@ -396,22 +406,36 @@ export default function TeacherSubmissionsPage() {
             })}
           </div>
 
-          <label
-            className={`inline-flex items-center gap-2 text-[13px] select-none ${
-              filter === 'reviewed'
-                ? 'text-stone-300 cursor-not-allowed'
-                : 'text-stone-600 cursor-pointer hover:text-stone-900 transition-colors duration-150'
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={hideReviewed}
-              onChange={toggleHideReviewed}
-              disabled={filter === 'reviewed'}
-              className="h-3.5 w-3.5 rounded-[3px] border-stone-400 accent-stone-900"
-            />
-            Hide reviewed
-          </label>
+          <div className="flex items-center gap-4 flex-wrap">
+            <label
+              className={`inline-flex items-center gap-2 text-[13px] select-none ${
+                filter === 'reviewed'
+                  ? 'text-stone-300 cursor-not-allowed'
+                  : 'text-stone-600 cursor-pointer hover:text-stone-900 transition-colors duration-150'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={hideReviewed}
+                onChange={toggleHideReviewed}
+                disabled={filter === 'reviewed'}
+                className="h-3.5 w-3.5 rounded-[3px] border-stone-400 accent-stone-900"
+              />
+              Hide reviewed
+            </label>
+
+            <label
+              className="inline-flex items-center gap-2 text-[13px] select-none text-stone-600 cursor-pointer hover:text-stone-900 transition-colors duration-150"
+            >
+              <input
+                type="checkbox"
+                checked={includeArchived}
+                onChange={toggleIncludeArchived}
+                className="h-3.5 w-3.5 rounded-[3px] border-stone-400 accent-stone-900"
+              />
+              Include archived classes
+            </label>
+          </div>
         </div>
 
         {error && (

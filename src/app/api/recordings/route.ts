@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { recordings, assignments, students, classes, classEnrollments, users, stories } from '@/lib/db/schema';
-import { eq, and, desc, inArray, sql } from 'drizzle-orm';
+import { eq, and, desc, inArray, sql, isNull, ne } from 'drizzle-orm';
 import { logError, createRequestContext } from '@/lib/logger';
 import { accessibleClassIds, userCanManageClass } from '@/lib/auth/class-access';
 
@@ -141,6 +141,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, recordings: [] });
     }
 
+    const url = new URL(request.url);
+    const includeArchived = url.searchParams.get('includeArchived') === 'true';
+
+    const whereConditions = [
+      user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds),
+    ];
+    if (!includeArchived) {
+      whereConditions.push(
+        eq(classes.active, true),
+        isNull(classes.promotedToClassId),
+        ne(assignments.status, 'archived')
+      );
+    }
+
     // For teachers, get recordings from their assignments with class information
     const teacherRecordings = await db
       .select({
@@ -152,6 +166,8 @@ export async function GET(request: NextRequest) {
         studentLastName: users.lastName,
         classId: assignments.classId,
         className: classes.name,
+        classActive: classes.active,
+        classPromotedToClassId: classes.promotedToClassId,
         audioUrl: recordings.audioUrl,
         audioDurationSeconds: recordings.audioDurationSeconds,
         attemptNumber: recordings.attemptNumber,
@@ -187,7 +203,7 @@ export async function GET(request: NextRequest) {
       .innerJoin(students, eq(recordings.studentId, students.id))
       .innerJoin(users, eq(students.id, users.id))
       .innerJoin(classes, eq(assignments.classId, classes.id))
-      .where(user.role === 'admin' ? undefined : inArray(assignments.classId, allowedClassIds))
+      .where(and(...whereConditions.filter(Boolean) as any))
       .orderBy(desc(recordings.submittedAt));
 
     console.log(`Found ${teacherRecordings.length} recordings for teacher ${user.id}`);

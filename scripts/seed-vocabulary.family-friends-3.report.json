@@ -1,0 +1,240 @@
+{
+  "generatedAt": "2026-09-16T09:28:41.800Z",
+  "mode": "write",
+  "totals": {
+    "candidatesBeforeDedupe": 267,
+    "uniqueAfterDedupe": 260,
+    "duplicatesCollapsed": 7,
+    "skipped": 18
+  },
+  "bySourceFile": {
+    "unit-0.json": 54,
+    "unit-1.json": 14,
+    "unit-2.json": 14,
+    "unit-3.json": 14,
+    "unit-4.json": 17,
+    "unit-5.json": 14,
+    "unit-6.json": 14,
+    "unit-7.json": 14,
+    "unit-8.json": 14,
+    "unit-9.json": 14,
+    "unit-10.json": 14,
+    "unit-11.json": 14,
+    "unit-12.json": 14,
+    "unit-13.json": 14,
+    "unit-14.json": 14,
+    "unit-15.json": 14,
+    "<narrative-audit>": 0
+  },
+  "byAfFLevel": {
+    "grade3": 242
+  },
+  "byCefrLevel": {
+    "null": 242
+  },
+  "byPartOfSpeech": {
+    "noun": 146,
+    "adjective": 40,
+    "other": 28,
+    "verb": 24,
+    "preposition": 4
+  },
+  "topAmbiguous": [
+    {
+      "word": "play",
+      "detail": "kept unit-4.json#verbs as verb; later seen in unit-7.json#vocabulary as noun — review if you want the later POS instead"
+    }
+  ],
+  "topMultiWord": [
+    {
+      "word": "one hundred",
+      "detail": "from unit-0.json#numbers, unit 0, POS=other"
+    },
+    {
+      "word": "south korea",
+      "detail": "from unit-1.json#vocabulary, unit 1, POS=noun"
+    },
+    {
+      "word": "the u.s.a.",
+      "detail": "from unit-1.json#vocabulary, unit 1, POS=noun"
+    },
+    {
+      "word": "dvd player",
+      "detail": "from unit-3.json#vocabulary, unit 3, POS=noun"
+    },
+    {
+      "word": "cd player",
+      "detail": "from unit-3.json#vocabulary, unit 3, POS=noun"
+    },
+    {
+      "word": "mp3 player",
+      "detail": "from unit-3.json#vocabulary, unit 3, POS=noun"
+    },
+    {
+      "word": "turn on",
+      "detail": "from unit-3.json#vocabulary, unit 3, POS=noun"
+    },
+    {
+      "word": "turn off",
+      "detail": "from unit-3.json#vocabulary, unit 3, POS=noun"
+    },
+    {
+      "word": "catch the bus",
+      "detail": "from unit-6.json#vocabulary, unit 6, POS=noun"
+    },
+    {
+      "word": "walk to school",
+      "detail": "from unit-6.json#vocabulary, unit 6, POS=noun"
+    },
+    {
+      "word": "every day",
+      "detail": "from unit-6.json#vocabulary, unit 6, POS=noun"
+    },
+    {
+      "word": "shopping mall",
+      "detail": "from unit-7.json#vocabulary, unit 7, POS=noun"
+    },
+    {
+      "word": "sports center",
+      "detail": "from unit-7.json#vocabulary, unit 7, POS=noun"
+    },
+    {
+      "word": "swimming pool",
+      "detail": "from unit-7.json#vocabulary, unit 7, POS=noun"
+    },
+    {
+      "word": "movie theater",
+      "detail": "from unit-7.json#vocabulary, unit 7, POS=noun"
+    },
+    {
+      "word": "garbage can",
+      "detail": "from unit-10.json#vocabulary, unit 10, POS=noun"
+    },
+    {
+      "word": "p.e. clothes",
+      "detail": "from unit-14.json#vocabulary, unit 14, POS=noun"
+    },
+    {
+      "word": "sleeping bag",
+      "detail": "from unit-14.json#vocabulary, unit 14, POS=noun"
+    },
+    {
+      "word": "frying pan",
+      "detail": "from unit-14.json#vocabulary, unit 14, POS=noun"
+    },
+    {
+      "word": "this afternoon",
+      "detail": "from unit-15.json#vocabulary, unit 15, POS=noun"
+    }
+  ],
+  "duplicates": [
+    {
+      "word": "play",
+      "detail": "kept unit-4.json#verbs as verb; later seen in unit-7.json#vocabulary as noun — review if you want the later POS instead"
+    },
+    {
+      "word": "big",
+      "detail": "kept unit-0.json#adjectives (unit 0); also seen in unit-9.json#adjectives (unit 9)"
+    },
+    {
+      "word": "playground",
+      "detail": "kept unit-7.json#vocabulary (unit 7); also seen in unit-10.json#vocabulary (unit 10)"
+    },
+    {
+      "word": "old",
+      "detail": "kept unit-9.json#adjectives (unit 9); also seen in unit-12.json#adjectives (unit 12)"
+    },
+    {
+      "word": "tall",
+      "detail": "kept unit-0.json#adjectives (unit 0); also seen in unit-12.json#adjectives (unit 12)"
+    },
+    {
+      "word": "laugh",
+      "detail": "kept unit-10.json#verbs (unit 10); also seen in unit-13.json#vocabulary (unit 13)"
+    },
+    {
+      "word": "paint",
+      "detail": "kept unit-2.json#vocabulary (unit 2); also seen in unit-14.json#vocabulary (unit 14)"
+    }
+  ],
+  "skipped": [
+    {
+      "word": "read comics",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "do gymnastics",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play chess",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play basketball",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "take photos",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play volleyball",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play the guitar",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "play the piano",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "visit family",
+      "detail": "multi-word noun phrase from unit-2.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "have a shower",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "brush my teeth",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "get dressed",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "have breakfast",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "brush my hair",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "get up",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "on the weekend",
+      "detail": "multi-word noun phrase from unit-6.json#vocabulary — excluded from master vocab"
+    },
+    {
+      "word": "in the middle of",
+      "detail": "multi-word preposition phrase from unit-11.json#prepositions — excluded from master vocab"
+    },
+    {
+      "word": "at the top of",
+      "detail": "multi-word preposition phrase from unit-11.json#prepositions — excluded from master vocab"
+    }
+  ],
+  "functionWordCollisions": [
+    {
+      "word": "may",
+      "detail": "seeded as POS=noun from unit-0.json#vocabulary; is_function_word=true on insert"
+    }
+  ]
+}

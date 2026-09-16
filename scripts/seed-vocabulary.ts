@@ -548,24 +548,26 @@ async function main() {
     isFunctionWord: c.isFunctionWord,
   }));
 
-  await db
-    .insert(vocabulary)
-    .values(rows)
-    .onConflictDoUpdate({
-      target: vocabulary.word,
-      set: {
-        partOfSpeech: sql`COALESCE(${vocabulary.partOfSpeech}, EXCLUDED.part_of_speech)`,
-        afFLevel: sql`COALESCE(${vocabulary.afFLevel}, EXCLUDED.af_f_level)`,
-        afFUnit: sql`COALESCE(${vocabulary.afFUnit}, EXCLUDED.af_f_unit)`,
-        isFunctionWord: sql`${vocabulary.isFunctionWord} OR EXCLUDED.is_function_word`,
-        // Curriculum classification wins over scaffold: any pre-existing
-        // scaffold row for a word that's now curriculum-tagged should be
-        // demoted. The mutual-exclusion invariant lives in the seed
-        // scripts per the schema comment on is_scaffold.
-        isScaffold: sql`false`,
-        updatedAt: sql`now()`,
-      },
-    });
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(vocabulary)
+      .values(rows)
+      .onConflictDoUpdate({
+        target: vocabulary.word,
+        set: {
+          partOfSpeech: sql`COALESCE(${vocabulary.partOfSpeech}, EXCLUDED.part_of_speech)`,
+          afFLevel: sql`COALESCE(${vocabulary.afFLevel}, EXCLUDED.af_f_level)`,
+          afFUnit: sql`COALESCE(${vocabulary.afFUnit}, EXCLUDED.af_f_unit)`,
+          isFunctionWord: sql`${vocabulary.isFunctionWord} OR EXCLUDED.is_function_word`,
+          // Curriculum classification wins over scaffold: any pre-existing
+          // scaffold row for a word that's now curriculum-tagged should be
+          // demoted. The mutual-exclusion invariant lives in the seed
+          // scripts per the schema comment on is_scaffold.
+          isScaffold: sql`false`,
+          updatedAt: sql`now()`,
+        },
+      });
+  });
 
   console.log('Done.');
   process.exit(0);

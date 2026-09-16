@@ -1521,6 +1521,8 @@ export interface PassageGenerationMeta {
   resolvedPageCount?: { min: number; max: number };
   /** Resolved words-per-page range applied during generation. */
   resolvedWordsPerPage?: { min: number; max: number };
+  /** Illustration density layout across pages ('every_page' or 'half_pages'). */
+  illustrationDensity?: 'every_page' | 'half_pages';
 }
 
 export const readingPassages = pgTable(

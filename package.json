@@ -57,7 +57,7 @@
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:prod-sql": "tsx scripts/check-prod-sql.ts",
     "db:sync-from-prod": "tsx scripts/sync-local-from-prod.ts",
-    "test:story-generation": "node --import tsx --test src/lib/reading/story-generation.test.ts"
+    "test:story-generation": "node --env-file=.env.local --import tsx --test src/lib/reading/story-generation.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

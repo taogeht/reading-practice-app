@@ -154,7 +154,7 @@ class GeminiImageClient implements ImageClient {
     > = [];
     if (opts.referenceImage) {
       parts.push({
-        text: 'REFERENCE IMAGE — use this to keep the character appearance, outfits, and overall art style consistent in the new scene described below.',
+        text: 'REFERENCE IMAGE: Use this image ONLY to keep the character facial identity, hair, skin tone, and overall illustration art style consistent. Do NOT copy the character pose, background, or physical object states from this reference image. Follow the exact new action, pose, and visible object states (e.g. opened/closed doors, held items) described in the scene prompt below.',
       });
       parts.push({
         inlineData: {

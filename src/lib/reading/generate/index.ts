@@ -14,9 +14,11 @@ export {
   generatePassageImages,
   validatePassageImages,
   buildImagePrompt,
+  resolvePageIllustrationPlan,
   DEFAULT_IMAGE_STYLE,
   resolveImageStyle,
 } from './images';
+export type { IllustrationDensity, PageIllustrationPlan } from './types';
 export { generatePassage } from './passage';
 export type {
   GeneratePassageInput,

@@ -8,6 +8,8 @@
 //
 // Auth: teacher or admin.
 
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, inArray, lte } from 'drizzle-orm';
 
@@ -234,6 +236,15 @@ interface PickTargetsArgs {
   specificIds: string[] | undefined;
 }
 
+const LEVEL_TO_BOOK_SLUG: Record<string, string> = {
+  starter: 'family-friends-starter',
+  grade1: 'family-friends-1',
+  grade2: 'family-friends-2',
+  grade3: 'family-friends-3',
+  grade4: 'family-friends-4',
+  grade5: 'family-friends-5',
+};
+
 async function pickTargetIds(args: PickTargetsArgs): Promise<string[]> {
   if (args.mode === 'specific' && args.specificIds) {
     return args.specificIds;
@@ -254,6 +265,71 @@ async function pickTargetIds(args: PickTargetsArgs): Promise<string[]> {
     .from(vocabulary)
     .where(and(...conditions));
 
+  // If selecting by unit, words taught in this unit may have been originally
+  // seeded under an earlier book (e.g. Unit 0 review words or repeated vocab).
+  // Check the unit's curriculum JSON file and match those words against the
+  // vocabulary table.
+  if (
+    args.mode === 'random_unit' &&
+    typeof args.unit === 'number' &&
+    candidates.length < args.targetCount
+  ) {
+    const bookSlug = LEVEL_TO_BOOK_SLUG[args.levelTargetAfFLevel];
+    if (bookSlug) {
+      try {
+        const unitFilePath = path.join(
+          process.cwd(),
+          'src/lib/curriculum',
+          bookSlug,
+          `unit-${args.unit}.json`,
+        );
+        const fileContent = await readFile(unitFilePath, 'utf-8');
+        const unitData = JSON.parse(fileContent);
+        const rawWords: string[] = [];
+
+        if (Array.isArray(unitData.vocabulary)) {
+          for (const item of unitData.vocabulary) {
+            if (typeof item?.word === 'string') rawWords.push(item.word.toLowerCase().trim());
+          }
+        }
+        for (const key of ['verbs', 'adjectives', 'numbers', 'colors', 'prepositions']) {
+          if (Array.isArray(unitData[key])) {
+            for (const item of unitData[key]) {
+              if (typeof item === 'string') rawWords.push(item.toLowerCase().trim());
+            }
+          }
+        }
+
+        const unitWords = Array.from(new Set(rawWords)).filter(Boolean);
+        if (unitWords.length > 0) {
+          const matchingConditions = [
+            inArray(vocabulary.word, unitWords),
+            eq(vocabulary.isFunctionWord, false),
+            eq(vocabulary.isScaffold, false),
+          ];
+          if (args.needsPicturable) {
+            matchingConditions.push(eq(vocabulary.isPicturable, true));
+          }
+          const matchedRows = await db
+            .select({ id: vocabulary.id })
+            .from(vocabulary)
+            .where(and(...matchingConditions));
+
+          const existingIds = new Set(candidates.map((c) => c.id));
+          for (const row of matchedRows) {
+            if (!existingIds.has(row.id)) {
+              candidates.push(row);
+              existingIds.add(row.id);
+            }
+          }
+        }
+      } catch (err) {
+        logError(err, `pickTargetIds curriculum fallback for unit ${args.unit}`);
+      }
+    }
+  }
+
+  // Starter level fallback: if not enough starter words, allow Grade 1 units 1-2 words
   if (args.levelTargetAfFLevel === 'starter' && candidates.length < args.targetCount) {
     const fallbackConditions = [
       eq(vocabulary.afFLevel, 'grade1'),
@@ -268,7 +344,30 @@ async function pickTargetIds(args: PickTargetsArgs): Promise<string[]> {
       .select({ id: vocabulary.id })
       .from(vocabulary)
       .where(and(...fallbackConditions));
-    candidates = [...candidates, ...fallbackCandidates];
+    const existingIds = new Set(candidates.map((c) => c.id));
+    for (const row of fallbackCandidates) {
+      if (!existingIds.has(row.id)) {
+        candidates.push(row);
+        existingIds.add(row.id);
+      }
+    }
+  }
+
+  // If still 0 candidates for a specific unit, fall back to general level vocabulary
+  if (args.mode === 'random_unit' && candidates.length === 0) {
+    const levelConditions = [
+      eq(vocabulary.afFLevel, args.levelTargetAfFLevel as 'starter'),
+      eq(vocabulary.isFunctionWord, false),
+      eq(vocabulary.isScaffold, false),
+    ];
+    if (args.needsPicturable) {
+      levelConditions.push(eq(vocabulary.isPicturable, true));
+    }
+    const levelCandidates = await db
+      .select({ id: vocabulary.id })
+      .from(vocabulary)
+      .where(and(...levelConditions));
+    candidates = levelCandidates;
   }
 
   const shuffled = candidates.sort(() => Math.random() - 0.5);
