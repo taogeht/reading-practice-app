@@ -26,6 +26,7 @@ import {
 import type { GenerateOverrides } from '@/lib/reading/generate';
 import { launchGenerationJob } from '@/lib/reading/generation-job-runner';
 import { buildGenerationWorkItems } from '@/lib/reading/generation-job-plan';
+import { ensureCurriculumVocabSeeded } from '@/lib/curriculum/ensure-vocab';
 
 export const runtime = 'nodejs';
 
@@ -264,6 +265,16 @@ async function pickTargetIds(args: PickTargetsArgs): Promise<string[]> {
     .select({ id: vocabulary.id })
     .from(vocabulary)
     .where(and(...conditions));
+
+  if (candidates.length < args.targetCount) {
+    const seeded = await ensureCurriculumVocabSeeded(args.levelTargetAfFLevel);
+    if (seeded) {
+      candidates = await db
+        .select({ id: vocabulary.id })
+        .from(vocabulary)
+        .where(and(...conditions));
+    }
+  }
 
   // If selecting by unit, words taught in this unit may have been originally
   // seeded under an earlier book (e.g. Unit 0 review words or repeated vocab).

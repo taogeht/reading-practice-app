@@ -275,7 +275,7 @@ export async function assessPassageForPublication(
     );
   }
 
-  const imagesValid = Boolean(passage.coverImageKey) && pagesWithoutImages.length === 0;
+  const imagesValid = Boolean(passage.coverImageKey) && missingRequiredImages.length === 0;
   const passageReady = !issues.some((issue) => issue.severity === 'error');
 
   return {

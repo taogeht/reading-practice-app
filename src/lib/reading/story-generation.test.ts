@@ -671,3 +671,15 @@ test('validatePassageImages correctly checks required count under half_pages den
   assert.equal(validationEvery.errorCount, 1);
   assert.equal(validationEvery.issues[0].type, 'image_count_mismatch');
 });
+
+test('ensureCurriculumVocabSeeded correctly identifies seeded status or handles unknown levels', async () => {
+  const { ensureCurriculumVocabSeeded } = await import('../curriculum/ensure-vocab');
+  // Unknown level returns false
+  const unknownResult = await ensureCurriculumVocabSeeded('nonexistent_level');
+  assert.equal(unknownResult, false);
+
+  // Grade 3 (already seeded in local DB) returns true without error
+  const g3Result = await ensureCurriculumVocabSeeded('grade3');
+  assert.equal(g3Result, true);
+});
+
