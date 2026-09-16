@@ -66,7 +66,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         and(
           eq(readingPassages.id, passageId),
           eq(readingPassages.status, 'review'),
-          eq(readingPassages.updatedAt, assessment.snapshotUpdatedAt),
         ),
       )
       .returning();
@@ -75,7 +74,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           error:
-            'The passage changed while it was being validated. Review the latest version and approve again.',
+            'Cannot approve passage: it is no longer in review status (it may have already been approved or archived).',
         },
         { status: 409 },
       );

@@ -4,6 +4,7 @@ import {
   readingPassages,
   readingQuestions,
   storyPages,
+  vocabulary,
   type PassageGenerationMeta,
 } from '@/lib/db/schema';
 import { applyOverridesToLevel, getReadingLevel } from './levels';
@@ -89,11 +90,16 @@ export async function assessPassageForPublication(
   const targetVocabIds = Array.isArray(passage.targetVocabIds)
     ? passage.targetVocabIds.filter((id): id is string => typeof id === 'string')
     : [];
-  if (targetVocabIds.length === 0) {
+
+  const isCustomPassage =
+    generationMeta.promptVersion === 'reading-passage-custom-v1' ||
+    targetVocabIds.length === 0;
+
+  if (!isCustomPassage && targetVocabIds.length === 0) {
     addError(issues, 'target_vocabulary_missing', 'The passage has no target vocabulary.');
   }
 
-  if (planResult.success) {
+  if (planResult.success && !isCustomPassage) {
     try {
       assertPassagePlanMatchesRequest(planResult.data, {
         pageCount: effectiveLevel.pageCount,
@@ -149,10 +155,29 @@ export async function assessPassageForPublication(
   let proseScore = 0;
   let questionsScore = 0;
 
-  if (planResult.success && targetVocabIds.length > 0) {
+  if (planResult.success && (targetVocabIds.length > 0 || isCustomPassage)) {
     try {
-      const targetRows = await fetchTargetVocab(targetVocabIds);
-      const cumulativeRows = await resolveCumulativeVocab(targetRows, undefined);
+      let cumulativeWords: { id: string; word: string }[] = [];
+      let targetRows: { id: string; word: string; afFLevel?: any; afFUnit?: any }[] = [];
+
+      if (isCustomPassage) {
+        const allVocab = await db
+          .select({ id: vocabulary.id, word: vocabulary.word })
+          .from(vocabulary);
+        cumulativeWords = allVocab;
+        targetRows = [];
+      } else {
+        const fetchedTargets = await fetchTargetVocab(targetVocabIds);
+        const fetchedCumulative = await resolveCumulativeVocab(fetchedTargets, undefined);
+        targetRows = fetchedTargets.map((row) => ({
+          id: row.id,
+          word: row.word,
+          afFLevel: row.afFLevel,
+          afFUnit: row.afFUnit,
+        }));
+        cumulativeWords = fetchedCumulative.map((row) => ({ id: row.id, word: row.word }));
+      }
+
       const prosePages = pages.map((page) => ({
         pageNumber: page.pageNumber,
         text: page.text,
@@ -162,14 +187,9 @@ export async function assessPassageForPublication(
         prosePages,
         planResult.data,
         passage.readingLevel,
-        cumulativeRows.map((row) => ({ id: row.id, word: row.word })),
-        targetRows.map((row) => ({
-          id: row.id,
-          word: row.word,
-          afFLevel: row.afFLevel,
-          afFUnit: row.afFUnit,
-        })),
-        overrides,
+        cumulativeWords,
+        targetRows,
+        isCustomPassage ? { vocabStrictness: 'permissive', ...overrides } : overrides,
       );
       proseScore = proseValidation.qualityScore;
       for (const issue of proseValidation.issues) {
@@ -194,22 +214,24 @@ export async function assessPassageForPublication(
         }
       }
 
-      const questionValidation = validateQuestions(
-        questions,
-        prosePages,
-        targetRows.map((row) => ({ id: row.id, word: row.word })),
-        cumulativeRows,
-        passage.readingLevel,
-        passageId,
-        effectiveLevel,
-      );
-      questionsScore = questionValidation.qualityScore;
-      for (const issue of questionValidation.issues) {
-        issues.push({
-          severity: issue.severity,
-          code: `questions.${issue.type}`,
-          message: describeValidationIssue(issue),
-        });
+      if (questions.length > 0) {
+        const questionValidation = validateQuestions(
+          questions,
+          prosePages,
+          targetRows.map((row) => ({ id: row.id, word: row.word })),
+          cumulativeWords,
+          passage.readingLevel,
+          passageId,
+          effectiveLevel,
+        );
+        questionsScore = questionValidation.qualityScore;
+        for (const issue of questionValidation.issues) {
+          issues.push({
+            severity: issue.severity,
+            code: `questions.${issue.type}`,
+            message: describeValidationIssue(issue),
+          });
+        }
       }
     } catch (error) {
       addError(
@@ -227,7 +249,7 @@ export async function assessPassageForPublication(
       `Prose quality ${proseScore.toFixed(2)} is below ${PROSE_QUALITY_FLOOR.toFixed(2)}.`,
     );
   }
-  if (questionsScore < QUESTIONS_QUALITY_FLOOR) {
+  if (questionRows.length > 0 && questionsScore < QUESTIONS_QUALITY_FLOOR) {
     addError(
       issues,
       'question_quality_below_floor',
@@ -263,8 +285,41 @@ function addError(
   issues.push({ severity: 'error', code, message });
 }
 
-function describeValidationIssue(issue: { type: string }): string {
-  return `Validation reported ${issue.type.replaceAll('_', ' ')}.`;
+function describeValidationIssue(issue: any): string {
+  if (issue.type === 'unknown_word') {
+    return `Page ${issue.pageNumber}: Unknown word "${issue.word}"`;
+  }
+  if (issue.type === 'sentence_too_long') {
+    return `Page ${issue.pageNumber}: Sentence is too long (${issue.wordCount} words; max ${issue.maxAllowed})`;
+  }
+  if (issue.type === 'target_word_missing') {
+    return `Story is missing target vocabulary word "${issue.word}"`;
+  }
+  if (issue.type === 'page_too_short') {
+    return `Page ${issue.pageNumber}: Page has too few words (${issue.wordCount} words; min ${issue.minRequired})`;
+  }
+  if (issue.type === 'page_too_long') {
+    return `Page ${issue.pageNumber}: Page has too many words (${issue.wordCount} words; max ${issue.maxAllowed})`;
+  }
+  if (issue.type === 'forbidden_construction') {
+    return `Page ${issue.pageNumber}: Disallowed grammar detected — ${issue.reason ?? 'forbidden construction'} in "${issue.sentence}"`;
+  }
+  if (issue.type === 'duplicate_options') {
+    return `Question ${Number(issue.orderIndex ?? 0) + 1}: Multiple choice options must be unique`;
+  }
+  if (issue.type === 'empty_option') {
+    return `Question ${Number(issue.orderIndex ?? 0) + 1}: Multiple choice options cannot be blank`;
+  }
+  if (issue.type === 'invalid_option_count') {
+    return `Question ${Number(issue.orderIndex ?? 0) + 1}: Multiple choice questions must have exactly 4 options`;
+  }
+  if (issue.type === 'invalid_correct_index') {
+    return `Question ${Number(issue.orderIndex ?? 0) + 1}: Correct answer index is invalid`;
+  }
+  if (issue.type === 'evidence_not_found') {
+    return `Question ${Number(issue.orderIndex ?? 0) + 1}: Evidence quote "${issue.evidenceQuote ?? ''}" was not found on page ${issue.evidencePageNumber ?? ''}`;
+  }
+  return `Validation issue: ${issue.type.replaceAll('_', ' ')}${issue.details ? ` (${issue.details})` : ''}`;
 }
 
 function mapQuestionRow(
