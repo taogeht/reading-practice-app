@@ -19,7 +19,7 @@ import {
   buildDuplexCardGrid,
   chunkStudents,
   type StudentCardData,
-} from "@/lib/pdf/login-cards-html";
+} from "@/lib/pdf/login-cards-shared";
 
 type Student = StudentCardData;
 
