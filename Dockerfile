@@ -19,8 +19,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Build Next.js application
 RUN npm run build
 
-# Remove development dependencies to heavily shrink the final image size
-RUN npm prune --omit=dev
+# Clean Next.js build cache to drastically reduce image size and memory footprint
+RUN rm -rf .next/cache
+
+# Prune dev dependencies (non-fatal if mobile workspace engine mismatches in node:20)
+RUN npm prune --omit=dev --no-audit || true
 
 # Production image, copy all the files and run next
 FROM base AS runner
