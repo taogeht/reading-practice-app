@@ -99,7 +99,7 @@ export async function loginWithToken(token: string): Promise<User | null> {
     where: eq(users.loginToken, token),
   });
 
-  if (!user || !user.active || user.role !== 'student') {
+  if (!user || !user.active) {
     return null;
   }
 

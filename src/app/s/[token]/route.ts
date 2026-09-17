@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ipAddress: requestIp(request),
     });
     if (!login.ok) {
-        return NextResponse.redirect(`${baseUrl}/student-login`);
+        return NextResponse.redirect(`${baseUrl}/login`);
     }
 
     // Create a session and set the cookie
@@ -33,7 +33,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ipAddress: requestIp(request),
         userAgent: request.headers.get('user-agent') ?? undefined,
     });
-    const response = NextResponse.redirect(`${baseUrl}/student/dashboard`);
+
+    const redirectPath =
+        login.user.role === 'teacher'
+            ? '/teacher/classes'
+            : login.user.role === 'admin'
+            ? '/dashboard'
+            : '/student/dashboard';
+
+    const response = NextResponse.redirect(`${baseUrl}${redirectPath}`);
     response.cookies.set(COOKIE_NAME, sessionId, COOKIE_OPTIONS);
 
     return response;

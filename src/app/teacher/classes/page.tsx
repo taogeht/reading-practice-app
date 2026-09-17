@@ -17,9 +17,11 @@ import {
   UserPlus,
   Calendar,
   GraduationCap,
-  ArrowLeft,
   Printer,
+  QrCode,
+  ArrowLeft,
 } from "lucide-react";
+import { TeacherQrModal } from "@/components/teacher/teacher-qr-modal";
 
 interface Class {
   id: string;
@@ -54,6 +56,7 @@ export default function TeacherClassesPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateClass, setShowCreateClass] = useState(false);
   const [showCreateStudent, setShowCreateStudent] = useState(false);
+  const [showTeacherQr, setShowTeacherQr] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
   // Class names repeat every year — a school runs a "1B" each September — so
@@ -163,20 +166,26 @@ export default function TeacherClassesPage() {
                 </p>
               </div>
             </div>
-            {/* Owner-only creation CTAs — co-teachers don't author classes
-                or students from this page. */}
-            {!isCoTeacherOnly && (
-              <div className="flex items-center gap-3">
-                <Button onClick={() => setShowCreateStudent(true)} variant="outline">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add Student
-                </Button>
-                <Button onClick={() => setShowCreateClass(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Class
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <Button onClick={() => setShowTeacherQr(true)} variant="outline">
+                <QrCode className="w-4 h-4 mr-2" />
+                My Login QR
+              </Button>
+              {/* Owner-only creation CTAs — co-teachers don't author classes
+                  or students from this page. */}
+              {!isCoTeacherOnly && (
+                <>
+                  <Button onClick={() => setShowCreateStudent(true)} variant="outline">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add Student
+                  </Button>
+                  <Button onClick={() => setShowCreateClass(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Class
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -367,6 +376,11 @@ export default function TeacherClassesPage() {
         }}
         onSuccess={handleStudentCreated}
         preselectedClassId={selectedClassId || undefined}
+      />
+
+      <TeacherQrModal
+        open={showTeacherQr}
+        onOpenChange={setShowTeacherQr}
       />
     </div>
   );

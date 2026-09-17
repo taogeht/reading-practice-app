@@ -17,11 +17,13 @@ import {
   Sun,
   BookOpen,
   FileText,
-  Library,
   LogOut,
   Menu,
+  QrCode,
   X,
+  Library,
 } from "lucide-react";
+import { TeacherQrModal } from "@/components/teacher/teacher-qr-modal";
 
 export interface TeacherNavCaps {
   canManageSpellingLists: boolean;
@@ -52,6 +54,7 @@ export function TeacherShell({
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   interface NavGroup {
     title: string;
@@ -165,6 +168,17 @@ export function TeacherShell({
         <div className="truncate px-3 pb-2 text-xs text-gray-500">{teacherName}</div>
         <button
           type="button"
+          onClick={() => {
+            setOpen(false);
+            setShowQrModal(true);
+          }}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 mb-1"
+        >
+          <QrCode className="h-5 w-5 text-gray-400" />
+          My Login QR
+        </button>
+        <button
+          type="button"
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
         >
@@ -215,6 +229,9 @@ export function TeacherShell({
 
       {/* Main content */}
       <main className="lg:pl-60">{children}</main>
+
+      {/* Teacher QR Code Modal */}
+      <TeacherQrModal open={showQrModal} onOpenChange={setShowQrModal} />
     </div>
   );
 }

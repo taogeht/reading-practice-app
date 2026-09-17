@@ -49,26 +49,26 @@ const DialogContent = ({ children, className = "" }: DialogContentProps) => (
   </div>
 );
 
-const DialogHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col space-y-2 text-center sm:text-left mb-4">
+const DialogHeader = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`flex flex-col space-y-2 text-center sm:text-left mb-4 ${className}`}>
     {children}
   </div>
 );
 
-const DialogTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-lg font-semibold leading-none tracking-tight">
+const DialogTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <h2 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
     {children}
   </h2>
 );
 
-const DialogDescription = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-sm text-gray-600 dark:text-gray-400">
+const DialogDescription = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <p className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}>
     {children}
   </p>
 );
 
-const DialogFooter = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6">
+const DialogFooter = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6 ${className}`}>
     {children}
   </div>
 );
