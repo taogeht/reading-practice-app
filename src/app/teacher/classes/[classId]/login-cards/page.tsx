@@ -12,22 +12,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, Loader2, Printer, Users } from "lucide-react";
+import { ArrowLeft, Download, Loader2, Printer, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import {
-  ANIMALS,
-  OBJECTS,
-  type VisualPasswordOption,
-} from "@/components/auth/visual-password-options";
+  lookupPasswordOption,
+  buildDuplexCardGrid,
+  chunkStudents,
+  type StudentCardData,
+} from "@/lib/pdf/login-cards-html";
 
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  loginToken: string | null;
-  visualPasswordType: 'animal' | 'object' | null;
-  visualPasswordData: { animal?: string; object?: string } | null;
-}
+type Student = StudentCardData;
 
 interface ClassResponse {
   class: {
@@ -39,19 +33,7 @@ interface ClassResponse {
   };
 }
 
-type Layout = 'qr' | 'passcode';
-
-function lookupPasswordOption(student: Student): VisualPasswordOption | null {
-  const data = student.visualPasswordData;
-  if (!data) return null;
-  if (student.visualPasswordType === 'animal' && data.animal) {
-    return ANIMALS.find((o) => o.id === data.animal) ?? null;
-  }
-  if (student.visualPasswordType === 'object' && data.object) {
-    return OBJECTS.find((o) => o.id === data.object) ?? null;
-  }
-  return null;
-}
+type Layout = 'double_sided' | 'qr' | 'passcode';
 
 export default function LoginCardsPage() {
   const router = useRouter();
@@ -62,8 +44,9 @@ export default function LoginCardsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [origin, setOrigin] = useState<string>("");
-  const [layout, setLayout] = useState<Layout>('qr');
+  const [layout, setLayout] = useState<Layout>('double_sided');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -107,6 +90,10 @@ export default function LoginCardsPage() {
     return classData.students.filter((s) => selectedIds.has(s.id));
   }, [classData, selectedIds]);
 
+  const studentChunks = useMemo(() => {
+    return chunkStudents(visibleStudents, 4);
+  }, [visibleStudents]);
+
   const toggleStudent = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -121,6 +108,34 @@ export default function LoginCardsPage() {
     setSelectedIds(new Set(classData.students.map((s) => s.id)));
   };
   const selectNone = () => setSelectedIds(new Set());
+
+  const handleDownloadPdf = async () => {
+    if (!classId || visibleStudents.length === 0) return;
+    setDownloading(true);
+    try {
+      const studentIds = visibleStudents.map((s) => s.id).join(',');
+      const url = `/api/teacher/classes/${classId}/login-cards/pdf?layout=${layout}&students=${encodeURIComponent(studentIds)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to generate PDF");
+      }
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      const safeName = (classData?.name || "class").replace(/[^a-z0-9]+/gi, "-");
+      a.download = `${safeName}-login-cards-${layout}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to download PDF");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (loading || !origin) {
     return (
@@ -137,7 +152,7 @@ export default function LoginCardsPage() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
         <p className="text-red-600 mb-4">{error || "Class not found"}</p>
         <Button onClick={() => router.push(`/teacher/classes/${classId}`)}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Classes
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Class
         </Button>
       </div>
     );
@@ -154,38 +169,89 @@ export default function LoginCardsPage() {
   const selectedCount = selectedIds.size;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 print:p-0 print:bg-white print:min-h-0">
       <style>{`
         @media print {
-          @page { size: letter portrait; margin: 0.4in; }
-          html, body { background: #fff !important; }
-          .print-cards-grid {
+          @page {
+            size: letter portrait;
+            margin: 0.4in;
+          }
+          html, body {
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-page {
+            width: 100% !important;
+            height: 10.2in !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+          }
+          .print-page:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          .print-page-grid {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
+            grid-template-rows: 1fr 1fr !important;
             gap: 0.25in !important;
+            width: 100% !important;
+            height: 100% !important;
           }
           .print-card {
-            break-inside: avoid;
-            page-break-inside: avoid;
-            height: 4.85in;
-            box-sizing: border-box;
+            height: 4.85in !important;
+            max-height: 4.85in !important;
+            box-sizing: border-box !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            border: 2px dashed #94a3b8 !important;
+            box-shadow: none !important;
+            border-radius: 12px !important;
+          }
+          .print-card-empty {
+            border: 2px dashed transparent !important;
+            visibility: hidden !important;
           }
         }
       `}</style>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto print:max-w-none print:w-full">
+        {/* Controls header (hidden on print) */}
         <div className="flex flex-col gap-4 mb-6 print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Login Cards for {classData.name}</h1>
-              <p className="text-gray-600">
-                {layout === 'qr'
-                  ? 'Each student has one reusable QR code for instant login across terms and levels.'
-                  : 'Each student gets the class URL and the picture they tap on the login screen.'}
+              <p className="text-gray-600 mt-1">
+                {layout === 'double_sided' &&
+                  'Double-sided printing: QR code on the front and website/picture password on the back.'}
+                {layout === 'qr' &&
+                  'Single-sided QR layout: each card contains the student’s permanent scan-to-login QR code.'}
+                {layout === 'passcode' &&
+                  'Single-sided password layout: each card contains the class URL and picture password.'}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => router.push(`/teacher/classes/${classId}`)}>
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Classes
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Class
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownloadPdf}
+                disabled={selectedCount === 0 || downloading}
+              >
+                {downloading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                {downloading ? "Generating PDF…" : "Download PDF"}
               </Button>
               <Button onClick={handlePrint} disabled={selectedCount === 0}>
                 <Printer className="w-4 h-4 mr-2" /> Print Cards
@@ -195,7 +261,7 @@ export default function LoginCardsPage() {
 
           <Card>
             <CardContent className="p-4 flex flex-col sm:flex-row sm:items-end gap-4">
-              <div className="flex-1 min-w-[220px]">
+              <div className="flex-1 min-w-[240px]">
                 <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                   Card layout
                 </label>
@@ -204,8 +270,9 @@ export default function LoginCardsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="qr">QR code only</SelectItem>
-                    <SelectItem value="passcode">URL + picture password</SelectItem>
+                    <SelectItem value="double_sided">Double-Sided (QR front + Password back)</SelectItem>
+                    <SelectItem value="qr">QR code only (Single-sided)</SelectItem>
+                    <SelectItem value="passcode">URL + picture password (Single-sided)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -269,36 +336,149 @@ export default function LoginCardsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Teacher guidance banner for double-sided mode */}
+          {layout === 'double_sided' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+              <Printer className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-900 leading-relaxed">
+                <span className="font-semibold">Ready for Double-Sided Printing: </span>
+                When printing from your browser or PDF viewer, select <span className="font-semibold">Print on both sides (Duplex)</span> and <span className="font-semibold">Flip on long edge</span>. Cards are pre-aligned so that each student’s passcode prints directly on the reverse side of their QR code.
+              </div>
+            </div>
+          )}
         </div>
 
         {totalCount === 0 ? (
-          <div className="bg-white border rounded-lg p-8 text-center">
+          <div className="bg-white border rounded-lg p-8 text-center print:hidden">
             <p className="text-gray-600">No students enrolled in this class yet.</p>
           </div>
         ) : visibleStudents.length === 0 ? (
-          <div className="bg-white border rounded-lg p-8 text-center">
+          <div className="bg-white border rounded-lg p-8 text-center print:hidden">
             <p className="text-gray-600">No students selected. Pick at least one to print.</p>
           </div>
         ) : (
-          <div className="print-cards-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 print:grid-cols-2 print:gap-3">
-            {visibleStudents.map((student) =>
-              layout === 'qr' ? (
-                <QrCard
-                  key={student.id}
-                  student={student}
-                  base={base}
-                  className={classData.name}
-                />
-              ) : (
-                <PasscodeCard
-                  key={student.id}
-                  student={student}
-                  loginUrl={classLoginUrl}
-                  loginUrlDisplay={classLoginUrlDisplay}
-                  className={classData.name}
-                />
-              )
-            )}
+          <div className="space-y-8 print:space-y-0">
+            {studentChunks.map((chunk, cIdx) => {
+              const paddedChunk: (Student | null)[] = [
+                chunk[0] ?? null,
+                chunk[1] ?? null,
+                chunk[2] ?? null,
+                chunk[3] ?? null,
+              ];
+              const sheetNum = cIdx + 1;
+
+              if (layout === 'double_sided') {
+                const { front, back } = buildDuplexCardGrid(paddedChunk);
+
+                return (
+                  <div key={`duplex-chunk-${cIdx}`} className="space-y-6 print:space-y-0">
+                    {/* Front Sheet: QR Codes */}
+                    <div className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm print:p-0 print:border-0 print:shadow-none print:bg-transparent print-page">
+                      <div className="print:hidden flex items-center justify-between mb-3 pb-2 border-b">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-800">
+                            Sheet {sheetNum} · Front
+                          </span>
+                          <span className="text-sm font-semibold text-gray-700">QR Code Cards</span>
+                        </div>
+                        <span className="text-xs text-gray-400">Prints on Page {(sheetNum - 1) * 2 + 1}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print-page-grid">
+                        {front.map((s, sIdx) =>
+                          s ? (
+                            <QrCard key={s.id} student={s} base={base} className={classData.name} />
+                          ) : (
+                            <EmptyCard key={`empty-front-${cIdx}-${sIdx}`} />
+                          ),
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Back Sheet: Passcodes (horizontally mirrored for duplex) */}
+                    <div className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm print:p-0 print:border-0 print:shadow-none print:bg-transparent print-page">
+                      <div className="print:hidden flex items-center justify-between mb-3 pb-2 border-b">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800">
+                            Sheet {sheetNum} · Back
+                          </span>
+                          <span className="text-sm font-semibold text-gray-700">URL & Picture Passwords</span>
+                        </div>
+                        <span className="text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-medium">
+                          Mirrored for Duplex (Page {(sheetNum - 1) * 2 + 2})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print-page-grid">
+                        {back.map((s, sIdx) =>
+                          s ? (
+                            <PasscodeCard
+                              key={s.id}
+                              student={s}
+                              loginUrl={classLoginUrl}
+                              loginUrlDisplay={classLoginUrlDisplay}
+                              className={classData.name}
+                            />
+                          ) : (
+                            <EmptyCard key={`empty-back-${cIdx}-${sIdx}`} />
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (layout === 'qr') {
+                return (
+                  <div
+                    key={`qr-chunk-${cIdx}`}
+                    className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm print:p-0 print:border-0 print:shadow-none print:bg-transparent print-page"
+                  >
+                    <div className="print:hidden flex items-center justify-between mb-3 pb-2 border-b">
+                      <span className="text-sm font-semibold text-gray-700">Sheet {sheetNum} (QR Codes)</span>
+                      <span className="text-xs text-gray-400">Page {sheetNum}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print-page-grid">
+                      {paddedChunk.map((s, sIdx) =>
+                        s ? (
+                          <QrCard key={s.id} student={s} base={base} className={classData.name} />
+                        ) : (
+                          <EmptyCard key={`empty-qr-${cIdx}-${sIdx}`} />
+                        ),
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Passcode single-sided
+              return (
+                <div
+                  key={`passcode-chunk-${cIdx}`}
+                  className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm print:p-0 print:border-0 print:shadow-none print:bg-transparent print-page"
+                >
+                  <div className="print:hidden flex items-center justify-between mb-3 pb-2 border-b">
+                    <span className="text-sm font-semibold text-gray-700">Sheet {sheetNum} (Passwords)</span>
+                    <span className="text-xs text-gray-400">Page {sheetNum}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print-page-grid">
+                    {paddedChunk.map((s, sIdx) =>
+                      s ? (
+                        <PasscodeCard
+                          key={s.id}
+                          student={s}
+                          loginUrl={classLoginUrl}
+                          loginUrlDisplay={classLoginUrlDisplay}
+                          className={classData.name}
+                        />
+                      ) : (
+                        <EmptyCard key={`empty-passcode-${cIdx}-${sIdx}`} />
+                      ),
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -317,39 +497,43 @@ function QrCard({
 }) {
   const loginUrl = student.loginToken ? `${base}/s/${student.loginToken}` : null;
   return (
-    <Card className="print-card bg-white border-2 border-gray-200 shadow-sm print:shadow-none print:border-gray-400">
-      <CardContent className="p-4 flex flex-col h-full justify-between">
-        <div className="space-y-3 text-center">
-          <div className="flex flex-col items-center">
+    <Card className="print-card bg-white border-2 border-dashed border-gray-300 shadow-sm print:shadow-none print:border-dashed print:border-slate-400 rounded-xl overflow-hidden">
+      <CardContent className="p-5 flex flex-col h-full justify-between">
+        <div className="space-y-3 text-center flex flex-col h-full justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 leading-tight">
+              {student.firstName} {student.lastName}
+            </h2>
+            <p className="text-sm font-medium text-gray-500 mt-0.5">{className}</p>
+          </div>
+
+          <div className="flex flex-col items-center justify-center my-1">
             {loginUrl ? (
-              <QRCodeSVG
-                value={loginUrl}
-                size={120}
-                level="M"
-                className="border border-gray-200 rounded p-1"
-              />
+              <div className="p-2 border border-gray-200 rounded-lg bg-white shadow-xs">
+                <QRCodeSVG
+                  value={loginUrl}
+                  size={126}
+                  level="M"
+                />
+              </div>
             ) : (
-              <div className="w-[120px] h-[120px] border border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">
+              <div className="w-[126px] h-[126px] border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs">
                 No token
               </div>
             )}
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {student.firstName} {student.lastName}
-            </h2>
-            <p className="text-sm text-gray-500">{className}</p>
-          </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">
+
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2.5">
+            <p className="text-xs font-bold text-green-700 uppercase tracking-wide">
               Scan to Log In
             </p>
-            <p className="text-sm text-green-800 mt-1">
-              Keep this card — the QR code continues to work in future classes.
+            <p className="text-xs text-green-800 mt-0.5">
+              Point camera or scan with Starling Rise app
             </p>
           </div>
-          <p className="text-xs text-gray-500">
-            Ask your teacher for help if you have trouble logging in.
+
+          <p className="text-[11px] text-gray-400">
+            Permanent QR code · Keep this card safe
           </p>
         </div>
       </CardContent>
@@ -370,51 +554,60 @@ function PasscodeCard({
 }) {
   const password = lookupPasswordOption(student);
   return (
-    <Card className="print-card bg-white border-2 border-gray-200 shadow-sm print:shadow-none print:border-gray-400">
-      <CardContent className="p-4 flex flex-col h-full justify-between">
-        <div className="space-y-3 text-center">
+    <Card className="print-card bg-white border-2 border-dashed border-gray-300 shadow-sm print:shadow-none print:border-dashed print:border-slate-400 rounded-xl overflow-hidden">
+      <CardContent className="p-5 flex flex-col h-full justify-between">
+        <div className="space-y-3 text-center flex flex-col h-full justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 leading-tight">
               {student.firstName} {student.lastName}
             </h2>
-            <p className="text-sm text-gray-500">{className}</p>
+            <p className="text-sm font-medium text-gray-500 mt-0.5">{className}</p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
-              Step 1 — Go to
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
+            <p className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+              Step 1 — Go to website
             </p>
-            <p className="text-base font-mono font-semibold text-blue-900 break-all mt-1">
+            <p className="text-sm font-mono font-bold text-blue-900 break-all mt-0.5">
               {loginUrlDisplay}
             </p>
-            {/* Hidden link to keep the full URL discoverable for digital copies. */}
             <a href={loginUrl} className="hidden">{loginUrl}</a>
           </div>
 
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-2.5">
+            <p className="text-[11px] font-bold text-purple-700 uppercase tracking-wider">
               Step 2 — Tap your picture
             </p>
             {password ? (
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <span className="text-5xl leading-none" aria-hidden>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <span className="text-4xl leading-none" aria-hidden>
                   {password.emoji}
                 </span>
-                <span className="text-lg font-semibold text-purple-900">
+                <span className="text-base font-bold text-purple-900">
                   {password.name}
                 </span>
               </div>
             ) : (
-              <p className="text-sm text-purple-900 mt-2 italic">
-                No picture password set yet — ask your teacher.
+              <p className="text-xs text-purple-800 mt-1 italic">
+                Ask your teacher for picture password
               </p>
             )}
           </div>
 
-          <p className="text-xs text-gray-500">
-            Tap your name on the class page, then tap your picture to log in.
+          <p className="text-[11px] text-gray-400">
+            Tap your name, then tap your picture to log in
           </p>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyCard() {
+  return (
+    <Card className="print-card print-card-empty border-2 border-dashed border-transparent bg-transparent opacity-40 print:opacity-0 flex items-center justify-center">
+      <CardContent className="p-4 flex items-center justify-center text-xs text-gray-400">
+        (Empty slot)
       </CardContent>
     </Card>
   );
