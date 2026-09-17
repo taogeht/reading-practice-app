@@ -26,6 +26,18 @@ function safeFilename(className: string, layout: string): string {
   return `${base}-login-cards-${layout}.pdf`;
 }
 
+function getBaseUrl(request: NextRequest): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, '');
+  }
+  const proto = request.headers.get('x-forwarded-proto') || 'https';
+  const host =
+    request.headers.get('x-forwarded-host') ||
+    request.headers.get('host') ||
+    'localhost:3000';
+  return `${proto}://${host}`;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ classId: string }> },
@@ -93,7 +105,7 @@ export async function GET(
       return NextResponse.json({ error: 'No students selected to print' }, { status: 400 });
     }
 
-    const baseUrl = request.nextUrl.origin;
+    const baseUrl = getBaseUrl(request);
     const html = renderLoginCardsHtml({
       classData: classRow,
       students: targetStudents,

@@ -217,6 +217,7 @@ export function renderLoginCardsHtml({
   <meta charset="UTF-8">
   <title>Login Cards - ${escapeHtml(classData.name)}</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
     @page {
       size: letter portrait;
       margin: 0.4in;
@@ -227,7 +228,7 @@ export function renderLoginCardsHtml({
       padding: 0;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
       background: #ffffff;
       color: #111827;
       -webkit-print-color-adjust: exact;
@@ -388,6 +389,7 @@ export function renderLoginCardsHtml({
       margin-top: 4px;
     }
     .password-emoji {
+      font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
       font-size: 2.5rem;
       line-height: 1;
     }
