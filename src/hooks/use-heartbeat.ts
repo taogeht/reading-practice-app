@@ -17,15 +17,19 @@ export interface HeartbeatContext {
  * When unmounted, the explicit context is cleared and falls back to URL inference.
  */
 export function useHeartbeat(explicitContext?: HeartbeatContext) {
-  const activity = useStudentActivity();
+  const setActivityContext = useStudentActivity()?.setActivityContext;
+  const hasExplicitContext = explicitContext !== undefined;
+  const activityType = explicitContext?.activityType;
+  const contextLabel = explicitContext?.contextLabel;
 
+  // Depend on the stable setter, not the context value this effect updates.
   useEffect(() => {
-    if (!activity || !explicitContext) return;
+    if (!setActivityContext || !hasExplicitContext) return;
 
-    activity.setActivityContext(explicitContext);
+    setActivityContext({ activityType, contextLabel });
 
     return () => {
-      activity.setActivityContext(null);
+      setActivityContext(null);
     };
-  }, [activity, explicitContext?.activityType, explicitContext?.contextLabel]);
+  }, [setActivityContext, hasExplicitContext, activityType, contextLabel]);
 }

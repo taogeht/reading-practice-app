@@ -8,13 +8,18 @@ export const APP_TIMEZONE = 'Asia/Taipei';
  * Defaults to Asia/Taipei so midnight transitions match school day boundaries.
  */
 export function getTodayDateString(timeZone: string = APP_TIMEZONE): string {
+    return getDateString(new Date(), timeZone);
+}
+
+/** Format an instant as a calendar date in the school's timezone. */
+export function getDateString(date: Date, timeZone: string = APP_TIMEZONE): string {
     const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
     });
-    return formatter.format(new Date());
+    return formatter.format(date);
 }
 
 /**

@@ -9,7 +9,7 @@ import {
     studentDailyActivity,
 } from '@/lib/db/schema';
 import { and, count, gte, inArray, max, sql } from 'drizzle-orm';
-import { getTodayDateString } from '@/lib/date-utils';
+import { getDateString } from '@/lib/date-utils';
 
 import { ensureStudentDailyActivitySchema } from './ensure-schema';
 
@@ -194,7 +194,7 @@ export async function computeStudentActivity(
                     startDate
                         ? and(
                               inArray(studentDailyActivity.studentId, ids),
-                              gte(studentDailyActivity.date, getTodayDateString(startDate)),
+                              gte(studentDailyActivity.date, getDateString(startDate)),
                           )
                         : inArray(studentDailyActivity.studentId, ids),
                 )

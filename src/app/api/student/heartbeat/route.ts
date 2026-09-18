@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { session, studentDailyActivity } from '@/lib/db/schema';
 import { eq, and, gt, sql } from 'drizzle-orm';
 import { getCurrentSession } from '@/lib/auth';
-import { getTodayDateString } from '@/lib/date-utils';
+import { getDateString } from '@/lib/date-utils';
 
 import { ensureStudentDailyActivitySchema } from '@/lib/activity/ensure-schema';
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
             : null;
 
         const now = new Date();
-        const todayStr = getTodayDateString(now);
+        const todayStr = getDateString(now);
 
         await ensureStudentDailyActivitySchema();
 
