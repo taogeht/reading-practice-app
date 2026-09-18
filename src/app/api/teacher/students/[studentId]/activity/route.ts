@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth';
 import { accessibleClassIds } from '@/lib/auth/class-access';
 import { db } from '@/lib/db';
 import { classEnrollments, classes, session, studentDailyActivity } from '@/lib/db/schema';
-import { getDaysAgo, getStartOfMonth, getStartOfWeek, getTodayDateString } from '@/lib/date-utils';
+import { getDateString, getDaysAgo, getStartOfMonth, getStartOfWeek } from '@/lib/date-utils';
 import { ONLINE_THRESHOLD_MS } from '@/lib/activity/login-activity';
 import { ensureStudentDailyActivitySchema } from '@/lib/activity/ensure-schema';
 
@@ -43,10 +43,10 @@ export async function GET(
     }
 
     const now = new Date();
-    const todayStr = getTodayDateString(now);
-    const startOfWeekStr = getTodayDateString(getStartOfWeek(now));
-    const startOfMonthStr = getTodayDateString(getStartOfMonth(now));
-    const fourteenDaysAgoStr = getTodayDateString(getDaysAgo(14, now));
+    const todayStr = getDateString(now);
+    const startOfWeekStr = getDateString(getStartOfWeek());
+    const startOfMonthStr = getDateString(getStartOfMonth());
+    const fourteenDaysAgoStr = getDateString(getDaysAgo(14));
 
     const onlineThreshold = new Date(now.getTime() - ONLINE_THRESHOLD_MS);
 

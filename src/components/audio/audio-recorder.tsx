@@ -41,6 +41,7 @@ export function AudioRecorder({
   customUpload,
 }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isRequestingMicrophone, setIsRequestingMicrophone] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -55,6 +56,14 @@ export function AudioRecorder({
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const microphoneRequestRef = useRef<object | null>(null);
+
+  useEffect(() => {
+    return () => {
+      // A permission prompt can finish after the student leaves this page.
+      microphoneRequestRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -73,8 +82,18 @@ export function AudioRecorder({
   }, [audioUrl]);
 
   const startRecording = async () => {
+    if (disabled || microphoneRequestRef.current || mediaRecorderRef.current?.state === 'recording') return;
+    const request = {};
+    microphoneRequestRef.current = request;
+    setIsRequestingMicrophone(true);
+    let acquiredStream: MediaStream | null = null;
     try {
       setError('');
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+        setError('Recording is not available in this browser. Open this page directly in Safari or Chrome and try again.');
+        return;
+      }
+      // Keep this in the click handler, before any await, for browser permission prompts.
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -83,6 +102,11 @@ export function AudioRecorder({
         }
       });
 
+      if (microphoneRequestRef.current !== request) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      acquiredStream = stream;
       streamRef.current = stream;
 
       // Try most compatible formats first
@@ -146,9 +170,27 @@ export function AudioRecorder({
       }, 1000);
 
     } catch (error) {
+      acquiredStream?.getTracks().forEach(track => track.stop());
+      if (microphoneRequestRef.current !== request) return;
+      streamRef.current = null;
+      mediaRecorderRef.current = null;
       console.error('Error starting recording:', error);
-      setError('Could not access microphone. Please check permissions.');
+      const name = error instanceof Error ? error.name : '';
+      setError(name === 'NotAllowedError'
+        ? 'Microphone access was not allowed. Allow microphone access for this website in your browser settings, then try again.'
+        : 'Could not start recording. Check that your microphone is available, then try again.');
+    } finally {
+      if (microphoneRequestRef.current === request) {
+        microphoneRequestRef.current = null;
+        setIsRequestingMicrophone(false);
+      }
     }
+  };
+
+  const cancelMicrophoneRequest = () => {
+    // The browser prompt cannot be dismissed by the page. Ignore its eventual result.
+    microphoneRequestRef.current = null;
+    setIsRequestingMicrophone(false);
   };
 
   const stopRecording = () => {
@@ -329,15 +371,31 @@ export function AudioRecorder({
     <div className="w-full space-y-6">
       {/* Main Recording Button */}
       {!isRecording && !audioBlob ? (
-        <Button
-          size="lg"
-          onClick={startRecording}
-          disabled={disabled}
-          className="w-full h-24 text-2xl bg-green-600 hover:bg-green-700 text-white rounded-2xl shadow-lg transform transition-transform hover:scale-105"
-        >
-          <Mic className="w-12 h-12 mr-4" />
-          Start Recording
-        </Button>
+        <div className="space-y-3">
+          <Button
+            type="button"
+            size="lg"
+            onClick={startRecording}
+            disabled={disabled || isRequestingMicrophone}
+            aria-busy={isRequestingMicrophone}
+            className="w-full h-24 whitespace-normal text-2xl bg-green-600 hover:bg-green-700 text-white rounded-2xl shadow-lg transform transition-transform hover:scale-105"
+          >
+            <Mic className="w-12 h-12 mr-4" />
+            {isRequestingMicrophone ? 'Waiting for mic…' : 'Start Recording'}
+          </Button>
+          {isRequestingMicrophone && (
+            <div className="space-y-2">
+              <p role="status" className="text-sm text-gray-600">
+                Choose Allow if your browser asks to use the microphone. Recording will start automatically.
+                <br />
+                若出現麥克風權限提示，請選「允許」，錄音就會自動開始。
+              </p>
+              <Button type="button" variant="outline" onClick={cancelMicrophoneRequest}>
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
       ) : isRecording ? (
         <div className="space-y-4">
           <Button
